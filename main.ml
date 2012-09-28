@@ -17,7 +17,7 @@ let main () =
     Gc.minor_heap_size = 8 * 1024 * 1024;
   };
 
-  let ptree = true in
+  let ptree = false in
 
   let tables = Cc.ccParseTables in
   let actions = Cc.ccUserActions in
@@ -26,11 +26,21 @@ let main () =
   let lexbuf = Lexing.from_channel (open_in input_file) in
 
   let getToken lex = lex.Lexerint.tokType <- Obj.magic (Lexer.token lexbuf); lex in
-  let getToken lex = Ptreeact.getToken actions getToken lex in
+  let getToken =
+    if ptree then
+      Ptreeact.getToken actions getToken
+    else
+      getToken
+  in
 
   let module Glr = Glr.Make (CLexer) in
 
-  let actions = Ptreeact.makeParseTreeActions actions tables in
+  let actions =
+    if ptree then
+      Ptreeact.makeParseTreeActions actions tables
+    else
+      actions
+  in
   let glr = Glr.makeGLR tables actions in
 
   let treeTop =
