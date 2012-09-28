@@ -3,10 +3,8 @@
 
 
 (* grow an array *)
-let growArray (arr: 'a array) (newLen: int) (null: 'a) : 'a array =
-begin
+let growArray arr newLen null =
   let newArr = Array.make newLen null in
-  Printf.printf "%d\n" newLen;
 
   (* copy *)
   Array.blit
@@ -18,17 +16,14 @@ begin
 
   (* return new array *)
   newArr
-end
 
 
 (* ensure the array has at least the given index, growing its size
  * if necessary (by doubling) *)
-let ensureIndexDoubler (arr: 'a array ref) (idx: int) (null: 'a) : unit =
-begin
+let ensureIndexDoubler arr idx null =
   while Array.length !arr < idx + 1 do
     arr := growArray !arr (Array.length !arr * 2) null;
-  done;
-end
+  done
 
 
 type 'a t = {

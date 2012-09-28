@@ -2,3 +2,5 @@
 "glr": include
 "tok": include
 <*.ml>: syntax_camlp4o, pkg_sexplib.syntax
+
+"oink-stack": -traverse

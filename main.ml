@@ -4,6 +4,13 @@ module CLexer = struct
 end
 
 
+let input_file =
+  if Array.length Sys.argv > 1 then
+    Sys.argv.(1)
+  else
+    "test.ii"
+
+
 let main () =
   Gc.set {
     (Gc.get ()) with
@@ -16,12 +23,12 @@ let main () =
   let actions = Cc.ccUserActions in
   let lex = Lexerint.({ tokType = 0; sval = Useract.cNULL_SVAL }) in
 
-  let lexbuf = Lexing.from_channel (open_in "test.ii") in
+  let lexbuf = Lexing.from_channel (open_in input_file) in
 
   let getToken lex = lex.Lexerint.tokType <- Obj.magic (Lexer.token lexbuf); lex in
   let getToken lex = Ptreeact.getToken actions getToken lex in
 
-  let module Glr = Glr.Make(CLexer) in
+  let module Glr = Glr.Make (CLexer) in
 
   let actions = Ptreeact.makeParseTreeActions actions tables in
   let glr = Glr.makeGLR tables actions in
@@ -31,7 +38,7 @@ let main () =
     if Glr.glrParse glr getToken lex tree then
       !tree
     else
-      failwith "parsing"
+      failwith ("parsing at position " ^ (string_of_int (Lexing.lexeme_start lexbuf)) ^ ": " ^ (Lexing.lexeme lexbuf))
   in
 
   (* print accounting statistics from glr.ml *)
@@ -49,7 +56,7 @@ let main () =
 
   if ptree then
     let t = Ptreeact.project treeTop in
-    (*Ptreenode.printTree t stdout true;*)
+    Ptreenode.printTree t stdout true;
     ()
 
 

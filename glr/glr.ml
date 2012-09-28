@@ -8,7 +8,7 @@ open Smutil          (* getSome, etc. *)
 open Lexerint
 
 
-module Make(L : Lexerint.Interface) = struct
+module Make (L : Lexerint.Interface) = struct
 
   (* Relative to C++ implementation, what is not done:
    *   - Token reclassification

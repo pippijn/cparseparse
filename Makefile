@@ -1,3 +1,5 @@
+-include config.mk
+
 GR_MODS = gr/cc.gr gr/gnu.gr gr/kandr.gr
 TOK_MODS = tok/cc_tokens.tok tok/gnu_ext.tok
 ELKHOUND ?= elkhound
