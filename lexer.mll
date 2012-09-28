@@ -8,6 +8,7 @@
   module StringMap = Map.Make (String)
 
   let keywords = [
+    "asm",                 TOK_ASM;
     "__asm",               TOK_ASM;
     "__asm__",             TOK_ASM;
     "auto",                TOK_AUTO;
