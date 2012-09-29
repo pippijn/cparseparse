@@ -17,9 +17,15 @@ let execute cmd =
 let ptree = ref false
 let inputs = ref []
 
+module Options = struct
+  let _e = ref false
+  let _ptree = ref false
+end
+
 let () =
   Arg.(parse (align [
-    "-ptree",	Set ptree,		" print parse tree";
+    "-E", Set Options._e,                      " print preprocessed file";
+    "-ptree",	Set Options._ptree,	       " print parse tree";
   ]) (fun input -> inputs := input :: !inputs) "Usage: cxxparse [option...] <file...>")
 
 
@@ -29,14 +35,16 @@ let main () =
     Gc.minor_heap_size = 8 * 1024 * 1024;
   };
 
-  let ptree = !ptree in
+  let ptree = !Options._ptree in
 
   List.iter (fun input ->
     let tables = Cc.ccParseTables in
     let actions = Cc.ccUserActions in
     let lex = Lexerint.({ tokType = 0; sval = Useract.cNULL_SVAL }) in
 
-    let preprocessed = execute (Printf.sprintf "gcc -E -P %s" Sys.argv.(1)) in
+    let preprocessed = execute (Printf.sprintf "gcc -E -P %s" input) in
+    (if !Options._e then
+      print_endline preprocessed);
     let lexbuf = Lexing.from_string preprocessed in
 
     let getToken lex = lex.Lexerint.tokType <- Obj.magic (Lexer.token lexbuf); lex in
