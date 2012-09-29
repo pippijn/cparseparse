@@ -1,0 +1,1121 @@
+(* Tokens *)
+line_terminator ::= "\r\n" | "\n";
+input_character ::= ~line_terminator sigma;
+spacing ::= space*;
+space ::= white_space | comment;
+white_space ::= [ \t\012]+ | line_terminator;
+comment ::= traditional_comment | end_of_line_comment;
+traditional_comment ::= "/*" (~ "*/" sigma)* "*/";
+end_of_line_comment ::= "//" (~ line_terminator sigma)* line_terminator;
+
+string_character ::= ~'"' input_character;
+
+TOK_NAME ::= [_a-zA-Z]+ [_a-zA-Z0-9]*;
+
+TOK_INT_LITERAL ::= [0-9]+;
+TOK_FLOAT_LITERAL ::= [0-9]*'.'[0-9]+;
+TOK_STRING_LITERAL ::= '"' string_character* '"';
+TOK_CHAR_LITERAL ::= "char_literal";
+TOK_ANNOTATION ::= "//*" (~ line_terminator sigma)*;
+
+
+(* Syntax *)
+
+outfixing spacing do
+  appending spacing do
+
+
+    identifier ::= TOK_NAME;
+
+    translation_unit ::= sigma
+                       | translation_unit declaration
+                       | translation_unit ";"
+                       ;
+
+    primaryExpression ::= literal
+                        | "this"
+                        | "(" expression ")"
+                        | idExpression
+                        | "(" compoundStatement ")"
+                        | "(" typeId ")" compoundInitializer
+                        | "__real__" primaryExpression
+                        | "__imag__" primaryExpression
+                        ;
+
+    literal ::= TOK_INT_LITERAL
+              | TOK_FLOAT_LITERAL
+              | stringLiteral
+              | TOK_CHAR_LITERAL
+              | "true"
+              | "false"
+              ;
+
+    preprocString ::= TOK_STRING_LITERAL
+                    | "__FUNCTION__"
+                    | "__PRETTY_FUNCTION__"
+                    ;
+
+    stringLiteral ::= preprocString
+                    | preprocString stringLiteral
+                    ;
+
+    idExpression ::= p_qualifiedId
+                   | "::" p_qualifiedId
+                   ;
+
+    unqualifiedId ::= identifier
+                    | operatorFunctionId
+                    | conversionFunctionId
+                    | templateId
+                    ;
+
+    p_qualifiedId ::= unqualifiedId
+                   | identifier "::" p_qualifiedId
+                   | identifier "<" templateArgumentListOpt ">" "::" p_qualifiedId
+                   | "template" identifier "<" templateArgumentListOpt ">" "::" p_qualifiedId
+                   ;
+
+    argumentList ::= "(" expressionListOpt ")";
+
+    postfixExpression ::= primaryExpression
+                        | postfixExpression "[" expression "]"
+                        | postfixExpression argumentList
+                        | "typename" idExpression argumentList
+                        | ctorExpressionType argumentList
+                        | postfixExpression "." nameAfterDot
+                        | postfixExpression "->" nameAfterDot
+                        | postfixExpression "++"
+                        | postfixExpression "--"
+                        | castKeyword "<" typeId ">" "(" expression ")"
+                        | "typeid" "(" expression ")"
+                        | "typeid" "(" typeId ")"
+                        | "__builtin_constant_p" parenthesizedExpression
+                        | "__alignof__" "(" typeId ")"
+                        | "__alignof__" "(" expression ")"
+                        | "__builtin_offsetof" "(" typeId "," namesAfterDot ")"
+                        | "__offsetof__" "(" expression ")"
+                        | "__builtin_expect" "(" expression "," expression ")"
+                        | "__builtin_va_arg" "(" expression "," typeId ")"
+                        ;
+
+    ctorExpressionType ::= pq_type_name
+                         | "char"
+                         | "wchar_t"
+                         | "bool"
+                         | "short"
+                         | "int"
+                         | "long"
+                         | "signed"
+                         | "unsigned"
+                         | "float"
+                         | "double"
+                         | "void"
+                         ;
+
+    castKeyword ::= "dynamic_cast"
+                  | "static_cast"
+                  | "reinterpret_cast"
+                  | "const_cast"
+                  ;
+
+    expressionList ::= assignmentExpression
+                     | assignmentExpression "," expressionList
+                     ;
+
+    expressionListOpt ::= sigma
+                        | expressionList
+                        ;
+
+    unaryExpression ::= postfixExpression
+                      | "++" castExpression
+                      | "--" castExpression
+                      | "sizeof" unaryExpression
+                      | deleteExpression
+                      | "*" castExpression
+                      | "&" castExpression
+                      | "+" castExpression
+                      | "-" castExpression
+                      | "!" castExpression
+                      | "~" castExpression
+                      | "sizeof" "(" typeId ")"
+                      | newExpression
+                      | "&&" identifier
+                      ;
+
+    colonColonOpt ::= sigma
+                    | "::"
+                    ;
+
+    newExpression ::= colonColonOpt "new" newPlacementOpt newTypeId newInitializerOpt
+                    | colonColonOpt "new" newPlacementOpt "(" typeId ")" newInitializerOpt
+                    ;
+
+    newPlacementOpt ::= sigma
+                      | "(" expressionList ")"
+                      ;
+
+    newTypeId ::= typeSpecifier newDeclaratorOpt;
+
+    newDeclaratorOpt ::= sigma
+                       | "*" cv_qualifierSeqOpt newDeclaratorOpt
+                       | ptrToMemberName "*" cv_qualifierSeqOpt newDeclaratorOpt
+                       | directNewDeclarator
+                       ;
+
+    directNewDeclarator ::= "[" expression "]"
+                          | directNewDeclarator "[" constantExpression "]"
+                          ;
+
+    newInitializerOpt ::= sigma
+                        | "(" expressionListOpt ")"
+                        ;
+
+    deleteExpression ::= colonColonOpt "delete" castExpression
+                       | colonColonOpt "delete" "[" "]" castExpression
+                       ;
+
+    nameAfterDot ::= nad1
+                   | "::" nad2
+                   ;
+
+    nad1 ::= nad2
+           | "template" identifier "<" templateArgumentListOpt ">"
+           | "~" identifier
+           | "~" identifier "<" templateArgumentListOpt ">"
+           | conversionFunctionId
+           | "template" identifier "<" templateArgumentListOpt ">" "::" nad1
+           ;
+
+    nad2 ::= identifier "<" templateArgumentListOpt ">"
+           | identifier
+           | operatorFunctionId
+           | operatorFunctionId "<" templateArgumentListOpt ">"
+           | "template" operatorFunctionId "<" templateArgumentListOpt ">"
+           | identifier "<" templateArgumentListOpt ">" "::" nad1
+           | identifier "::" nad1
+           ;
+
+    castExpression ::= unaryExpression
+                     | "(" typeId ")" castExpression
+                     | "(" implicitIntTypeId ")" castExpression
+                     ;
+
+    binExp_high ::= castExpression
+                  | binExp_high ".*" binExp_high
+                  | binExp_high "->*" binExp_high
+                  | binExp_high "*" binExp_high
+                  | binExp_high "/" binExp_high
+                  | binExp_high "%" binExp_high
+                  | binExp_high "+" binExp_high
+                  | binExp_high "-" binExp_high
+                  | binExp_high "<<" binExp_high
+                  | binExp_high ">>" binExp_high
+                  ;
+
+    binExp_mid ::= binExp_high
+                 | binExp_mid "<" binExp_high
+                 | binExp_mid ">" binExp_high
+                 | binExp_mid "<=" binExp_high
+                 | binExp_mid ">=" binExp_high
+                 | binExp_mid "<?" binExp_high
+                 | binExp_mid ">?" binExp_high
+                 ;
+
+    binaryExpression ::= binExp_mid
+                       | binaryExpression "==" binaryExpression
+                       | binaryExpression "!=" binaryExpression
+                       | binaryExpression "&" binaryExpression
+                       | binaryExpression "^" binaryExpression
+                       | binaryExpression "|" binaryExpression
+                       | binaryExpression "&&" binaryExpression
+                       | binaryExpression "||" binaryExpression
+                       ;
+
+    conditionalExpression ::= binaryExpression
+                            | binaryExpression "?" expression ":" assignmentExpression
+                            | binaryExpression "?" ":" assignmentExpression
+                            ;
+
+    assignmentExpression ::= conditionalExpression
+                           | binaryExpression assignmentOperator assignmentExpression
+                           | throwExpression
+                           ;
+
+    assignmentOperator ::= "*="
+                         | "/="
+                         | "%="
+                         | "+="
+                         | "-="
+                         | ">>="
+                         | "<<="
+                         | "&="
+                         | "^="
+                         | "|="
+                         | "="
+                         ;
+
+    expression ::= assignmentExpression
+                 | expression "," assignmentExpression
+                 ;
+
+    expressionOpt ::= sigma
+                    | expression
+                    ;
+
+    constantExpression ::= assignmentExpression;
+
+    constantExpressionOpt ::= sigma
+                            | constantExpression
+                            ;
+
+    labelAndColon ::= identifier ":"
+                    | identifier ":" attributeSpecifierList
+                    ;
+
+    statement ::= labelAndColon statement
+                | "case" constantExpression ":" statement
+                | "default" ":" statement
+                | expressionStatement
+                | compoundStatement
+                | "if" "(" condition ")" statement
+                | "if" "(" condition ")" statement "else" statement
+                | "switch" "(" condition ")" statement
+                | "while" "(" condition ")" statement
+                | "do" statement "while" "(" expression ")" ";"
+                | "for" "(" forInitStatement conditionOpt ";" expressionOpt ")" statement
+                | "break" ";"
+                | "continue" ";"
+                | "return" expression ";"
+                | "return" ";"
+                | "goto" identifier ";"
+                | blockDeclaration
+                | tryBlock
+                | asmDefinition
+                | namespaceDecl
+                | functionDefinition
+                | kandRFunctionDefinition
+                | "case" constantExpression "..." constantExpression ":" statement
+                | "goto" "*" expression ";"
+                | uberModifierSeq initDeclaratorList ";"
+                ;
+
+    expressionStatement ::= ";"
+                          | expression ";"
+                          ;
+
+    compoundStatement ::= compoundStmtHelper "}"
+                        | compoundStmtHelper labeledEmptyStatementList "}"
+                        ;
+
+    compoundStmtHelper ::= "{"
+                         | compoundStmtHelper statement annotationOpt
+                         ;
+
+    condition ::= expression
+                | typeSpecifier declarator "=" assignmentExpression
+                ;
+
+    conditionOpt ::= sigma
+                   | condition
+                   ;
+
+    forInitStatement ::= expressionStatement
+                       | simpleDeclaration
+                       ;
+
+    declaration ::= blockDeclaration
+                  | functionDefinition
+                  | templateDeclaration
+                  | explicitInstantiation
+                  | linkageSpecification
+                  | asmDefinition
+                  | namespaceDefinition
+                  | namespaceDecl
+                  | kandRFunctionDefinition
+                  | kandRFunctionDefinition_implInt
+                  | implIntFunctionDefinition
+                  | uberModifierSeqOpt initDeclaratorList ";"
+                  ;
+
+    blockDeclaration ::= simpleDeclaration;
+
+    simpleDeclaration ::= declSpecifier initDeclaratorList ";"
+                        | declSpecifier ";"
+                        ;
+
+    declSpecifier ::= pq_type_name uberModifierSeqOpt
+                    | uberModifierSeq pq_type_name uberModifierSeqOpt
+                    | uberTypeKeyword uberTypeAndModifierSeqOpt
+                    | uberModifierSeq uberTypeKeyword uberTypeAndModifierSeqOpt
+                    | elaboratedOrSpecifier uberModifierSeqOpt
+                    | uberModifierSeq elaboratedOrSpecifier uberModifierSeqOpt
+                    | typeofTypeSpecifier uberModifierSeqOpt
+                    | uberModifierSeq typeofTypeSpecifier uberModifierSeqOpt
+                    | pq_type_name buggyGccTypeModifier uberModifierSeqOpt
+                    | uberModifierSeq pq_type_name buggyGccTypeModifier uberModifierSeqOpt
+                    ;
+
+    elaboratedOrSpecifier ::= elaboratedTypeSpecifier
+                            | classSpecifier
+                            | enumSpecifier
+                            ;
+
+    uberModifierSeq ::= uberModifier
+                      | uberModifierSeq uberModifier
+                      ;
+
+    uberModifierSeqOpt ::= sigma
+                         | uberModifierSeq
+                         ;
+
+    uberTypeAndModifierSeqOpt ::= sigma
+                                | uberTypeAndModifierSeqOpt uberModifier
+                                | uberTypeAndModifierSeqOpt uberTypeKeyword
+                                ;
+
+    ubercv_qualifierSeq ::= ubercv_qualifier
+                         | ubercv_qualifierSeq ubercv_qualifier
+                         ;
+
+    ubercv_qualifierSeqOpt ::= sigma
+                            | ubercv_qualifierSeq
+                            ;
+
+    uberTypeAndcv_qualifierSeqOpt ::= sigma
+                                   | uberTypeAndcv_qualifierSeqOpt ubercv_qualifier
+                                   | uberTypeAndcv_qualifierSeqOpt uberTypeKeyword
+                                   ;
+
+    uberModifier ::= "auto"
+                   | "register"
+                   | "static"
+                   | "extern"
+                   | "mutable"
+                   | "inline"
+                   | "virtual"
+                   | "friend"
+                   | "typedef"
+                   | "const"
+                   | "volatile"
+                   | "restrict"
+                   | attributeSpecifier
+                   ;
+
+    ubercv_qualifier ::= "const"
+                      | "volatile"
+                      | "restrict"
+                      | attributeSpecifier
+                      ;
+
+    uberTypeKeyword ::= "char"
+                      | "wchar_t"
+                      | "bool"
+                      | "short"
+                      | "int"
+                      | "long"
+                      | "signed"
+                      | "unsigned"
+                      | "float"
+                      | "double"
+                      | "void"
+                      | "complex"
+                      | "imaginary"
+                      ;
+
+    elaboratedTypeSpecifier ::= classKey pq_type_name
+                              | "enum" pq_type_name
+                              | "typename" pq_type_name
+                              | classKey attributeSpecifier pq_type_name
+                              | "enum" attributeSpecifierList pq_type_name
+                              ;
+
+    typeSpecifier ::= pq_type_name ubercv_qualifierSeqOpt
+                    | ubercv_qualifierSeq pq_type_name ubercv_qualifierSeqOpt
+                    | uberTypeKeyword uberTypeAndcv_qualifierSeqOpt
+                    | ubercv_qualifierSeq uberTypeKeyword uberTypeAndcv_qualifierSeqOpt
+                    | elaboratedOrSpecifier ubercv_qualifierSeqOpt
+                    | ubercv_qualifierSeq elaboratedOrSpecifier ubercv_qualifierSeqOpt
+                    | typeofTypeSpecifier ubercv_qualifierSeqOpt
+                    | ubercv_qualifierSeq typeofTypeSpecifier ubercv_qualifierSeqOpt
+                    ;
+
+    pq_type_name ::= pq_type_name_ncc
+                 | "::" pq_type_name_ncc
+                 ;
+
+    pq_type_name_ncc ::= identifier
+                     | templateId
+                     | identifier "::" pq_type_name_notfirst
+                     | identifier "<" templateArgumentListOpt ">" "::" pq_type_name_notfirst
+                     ;
+
+    pq_type_name_notfirst ::= pq_type_name_ncc
+                          | "template" templateId
+                          | "template" identifier "<" templateArgumentListOpt ">" "::" pq_type_name_notfirst
+                          ;
+
+    enumSpecifier ::= "enum" "{" enumeratorListOpt "}"
+                    | "enum" identifier "{" enumeratorListOpt "}"
+                    | "enum" attributeSpecifierList "{" enumeratorListOpt "}"
+                    | "enum" attributeSpecifierList pq_type_name "{" enumeratorListOpt "}"
+                    ;
+
+    enumeratorListOpt ::= sigma
+                        | enumeratorDefinition
+                        | enumeratorDefinition "," enumeratorListOpt
+                        ;
+
+    enumeratorDefinition ::= identifier
+                           | identifier "=" constantExpression
+                           ;
+
+    asmDefinition ::= "asm" "(" stringLiteral ")" ";"
+                    | "asm" cv_qualifierSeq "(" stringLiteral ")" ";"
+                    | "asm" cv_qualifierSeq "(" stringLiteral nonemptyOpConstraints ")" ";"
+                    | "asm" "(" stringLiteral nonemptyOpConstraints ")" ";"
+                    ;
+
+    linkageSpecification ::= "extern" TOK_STRING_LITERAL "{" translation_unit "}"
+                           | "extern" TOK_STRING_LITERAL declaration
+                           ;
+
+    initDeclaratorList ::= initDeclarator
+                         | initDeclarator "," initDeclaratorList
+                         | initDeclarator "," attributeSpecifierList initDeclaratorList
+                         ;
+
+    initDeclarator ::= declarator
+                     | declarator initializer
+                     ;
+
+    initializer ::= "=" simpleInitializerClause
+                  | "(" expressionList ")"
+                  ;
+
+    simpleInitializerClause ::= assignmentExpression
+                              | compoundInitializer
+                              ;
+
+    initializerClause ::= simpleInitializerClause
+                        | identifier ":" simpleInitializerClause
+                        | designatorList "=" simpleInitializerClause
+                        | designatorList simpleInitializerClause
+                        ;
+
+    compoundInitializer ::= "{" initializerList commaOpt "}"
+                          | "{" "}"
+                          ;
+
+    commaOpt ::= sigma
+               | ","
+               ;
+
+    initializerList ::= initializerClause
+                      | initializerList "," initializerClause
+                      ;
+
+    declarator ::= "*" cv_qualifierSeqOpt declarator
+                 | "&" cv_qualifierSeqOpt declarator
+                 | ptrToMemberName "*" cv_qualifierSeqOpt declarator
+                 | directDeclarator
+                 | directDeclarator "asm" "(" stringLiteral ")"
+                 | directDeclarator "asm" "(" stringLiteral ")" attributeSpecifierList
+                 | "*" cv_qualifierSeqOpt attributeSpecifier cv_qualAttrSeqOpt declarator
+                 | directDeclarator attributeSpecifierList
+                 ;
+
+    directDeclarator ::= idExpression
+                       | pq_dtorName
+                       | directDeclarator "(" parameterDeclarationClause ")" cv_qualifierSeqOpt exceptionSpecificationOpt
+                       | directDeclarator "[" constantExpressionOpt "]"
+                       | "(" declarator ")"
+                       | directDeclarator "[" cv_qualifierSeq "]"
+                       | "(" attributeSpecifierList declarator ")"
+                       ;
+
+    pq_dtorName ::= "~" identifier
+                 | "~" identifier "<" templateArgumentListOpt ">"
+                 | identifier "::" pq_dtorName
+                 | identifier "<" templateArgumentListOpt ">" "::" pq_dtorName
+                 | "template" identifier "<" templateArgumentListOpt ">" "::" pq_dtorName
+                 ;
+
+    ptrToMemberName ::= idExpression "::";
+
+    cv_qualifierSeqOpt ::= sigma
+                        | cv_qualifierSeq
+                        ;
+
+    cv_qualifierSeq ::= cv_qualifier
+                     | cv_qualifier cv_qualifierSeq
+                     ;
+
+    cv_qualifier ::= "const"
+                  | "volatile"
+                  | "restrict"
+                  ;
+
+    typeId ::= typeSpecifier abstractDeclaratorOpt;
+
+    abstractDeclaratorOpt ::= sigma
+                            | abstractDeclarator
+                            ;
+
+    abstractDeclarator ::= "*" cv_qualifierSeqOpt abstractDeclaratorOpt
+                         | "&" cv_qualifierSeqOpt abstractDeclaratorOpt
+                         | ptrToMemberName "*" cv_qualifierSeqOpt abstractDeclaratorOpt
+                         | directAbstractDeclarator
+                         | "*" cv_qualifierSeqOpt attributeSpecifier cv_qualAttrSeqOpt abstractDeclaratorOpt
+                         | directAbstractDeclarator attributeSpecifierList
+                         ;
+
+    directAbstractDeclaratorOpt ::= sigma
+                                  | directAbstractDeclarator
+                                  ;
+
+    directAbstractDeclarator ::= directAbstractDeclaratorOpt "(" parameterDeclarationClause ")" cv_qualifierSeqOpt exceptionSpecificationOpt
+                               | directAbstractDeclaratorOpt "[" constantExpressionOpt "]"
+                               | "(" abstractDeclarator ")"
+                               | directAbstractDeclaratorOpt "[" cv_qualifierSeq "]"
+                               | "(" attributeSpecifierList abstractDeclarator ")"
+                               ;
+
+    parameterDeclarationClause ::= parameterDeclarationList
+                                 | sigma
+                                 ;
+
+    parameterDeclarationList ::= "..."
+                               | parameterDeclaration "..."
+                               | parameterDeclaration
+                               | parameterDeclaration "," parameterDeclarationList
+                               ;
+
+    parameterDeclaration ::= typeSpecifier parameterDeclarator
+                           | "register" typeSpecifier parameterDeclarator
+                           | typeSpecifier "register" parameterDeclarator
+                           | unqualifiedDeclarator
+                           | "register" unqualifiedDeclarator
+                           ;
+
+    parameterDeclarator ::= unqualifiedDeclarator
+                          | unqualifiedDeclarator "=" assignmentExpression
+                          | abstractDeclaratorOpt
+                          | abstractDeclaratorOpt "=" assignmentExpression
+                          ;
+
+    functionDefinition ::= declSpecifier fd_declarator functionBody
+                         | declSpecifier fd_declarator "try" functionBody handlerSeq
+                         | cdtorModifierSeq fd_declarator ctorInitializerOpt functionBody
+                         | fd_declarator ctorInitializerOpt functionBody
+                         | cdtorModifierSeq fd_declarator "try" ctorInitializerOpt functionBody handlerSeq
+                         | fd_declarator "try" ctorInitializerOpt functionBody handlerSeq
+                         ;
+
+    fd_declarator ::= declarator;
+
+    functionBody ::= compoundStatement;
+
+    ctorInitializerOpt ::= sigma
+                         | ":" memInitializerList
+                         ;
+
+    classSpecifier ::= classKey classHeadNameOpt baseClauseOpt "{" memberDeclarationSeqOpt "}"
+                     | classKey attributeSpecifierList classHeadNameOpt baseClauseOpt "{" memberDeclarationSeqOpt "}"
+                     ;
+
+    classHeadNameOpt ::= sigma
+                       | classHeadName
+                       ;
+
+    classHeadName ::= identifier
+                    | templateId
+                    | identifier "::" classHeadName
+                    | identifier "<" templateArgumentListOpt ">" "::" classHeadName
+                    | "template" identifier "<" templateArgumentListOpt ">" "::" classHeadName
+                    ;
+
+    classKey ::= "class"
+               | "struct"
+               | "union"
+               ;
+
+    memberDeclarationSeqOpt ::= sigma
+                              | memberDeclarationSeqOpt ";"
+                              | memberDeclarationSeqOpt memberDeclaration
+                              | memberDeclarationSeqOpt accessSpecifier ":"
+                              ;
+
+    accessSpecifier ::= "public"
+                      | "private"
+                      | "protected"
+                      ;
+
+    memberDeclaration ::= declSpecifier memberDeclaratorList ";"
+                        | declSpecifier ";"
+                        | p_qualifiedId ";"
+                        | "using" idExpression ";"
+                        | functionDefinition
+                        | cdtorProtoDecl
+                        | templateDeclaration
+                        ;
+
+    cdtorProtoDecl ::= cdtorModifierSeq memberDeclarator ";"
+                     | memberDeclarator ";"
+                     ;
+
+    memberDeclaratorList ::= memberDeclarator
+                           | memberDeclarator "," memberDeclaratorList
+                           ;
+
+    memberDeclarator ::= declarator
+                       | declarator "=" constantExpression
+                       | identifierOpt ":" constantExpression
+                       | identifierOpt ":" constantExpression attributeSpecifierList
+                       ;
+
+    identifierOpt ::= sigma
+                    | identifier
+                    ;
+
+    cdtorModifier ::= "explicit"
+                    | "virtual"
+                    | "inline"
+                    | "friend"
+                    | attributeSpecifier
+                    ;
+
+    cdtorModifierSeq ::= cdtorModifier
+                       | cdtorModifierSeq cdtorModifier
+                       ;
+
+    baseClauseOpt ::= sigma
+                    | ":" baseSpecifierList
+                    ;
+
+    baseSpecifierList ::= baseSpecifier
+                        | baseSpecifier "," baseSpecifierList
+                        ;
+
+    baseSpecifier ::= pq_class_name
+                    | "virtual" accessSpecifierOpt pq_class_name
+                    | accessSpecifier virtualOpt pq_class_name
+                    ;
+
+    virtualOpt ::= sigma
+                 | "virtual"
+                 ;
+
+    accessSpecifierOpt ::= sigma
+                         | accessSpecifier
+                         ;
+
+    pq_class_name ::= pq_type_name;
+
+    conversionFunctionId ::= "operator" conversionTypeId;
+
+    conversionTypeId ::= typeSpecifier conversionDeclaratorOpt;
+
+    conversionDeclaratorOpt ::= sigma
+                              | "*" cv_qualifierSeqOpt conversionDeclaratorOpt
+                              | "&" cv_qualifierSeqOpt conversionDeclaratorOpt
+                              | ptrToMemberName "*" cv_qualifierSeqOpt conversionDeclaratorOpt
+                              ;
+
+    memInitializerList ::= memInitializer
+                         | memInitializer "," memInitializerList
+                         ;
+
+    memInitializer ::= memInitializerId "(" expressionListOpt ")";
+
+    memInitializerId ::= pq_type_name;
+
+    operatorFunctionId ::= "operator" operator;
+
+    operator ::= "new"
+               | "delete"
+               | "new" "[" "]"
+               | "delete" "[" "]"
+               | "!"
+               | "~"
+               | "++"
+               | "--"
+               | "+"
+               | "-"
+               | "*"
+               | "/"
+               | "%"
+               | "<<"
+               | ">>"
+               | "&"
+               | "^"
+               | "|"
+               | "="
+               | "+="
+               | "-="
+               | "*="
+               | "/="
+               | "%="
+               | "<<="
+               | ">>="
+               | "&="
+               | "^="
+               | "|="
+               | "=="
+               | "!="
+               | "<"
+               | ">"
+               | "<="
+               | ">="
+               | "&&"
+               | "||"
+               | "->"
+               | "->*"
+               | "[" "]"
+               | "(" ")"
+               | ","
+               | "<?"
+               | ">?"
+               ;
+
+    templateDeclaration ::= templatePreamble functionDefinition
+                          | templatePreamble simpleDeclaration
+                          | templatePreamble templateDeclaration
+                          | templatePreamble cdtorProtoDecl
+                          ;
+
+    templatePreamble ::= "template" "<" templateParameterList ">"
+                       | "export" "template" "<" templateParameterList ">"
+                       | "template" "<" ">"
+                       | "export" "template" "<" ">"
+                       ;
+
+    templateParameterList ::= classOrTypename identifierOpt defaultTypeOpt templateParameterListContinuation
+                            | parameterDeclaration templateParameterListContinuation
+                            | "template" "<" templateParameterList ">" "class" identifierOpt defaultTemplateOpt templateParameterListContinuation
+                            ;
+
+    templateParameterListContinuation ::= sigma
+                                        | "," templateParameterList
+                                        ;
+
+    classOrTypename ::= "class"
+                      | "typename"
+                      ;
+
+    defaultTypeOpt ::= sigma
+                     | "=" typeId
+                     ;
+
+    defaultTemplateOpt ::= sigma
+                         | "=" idExpression
+                         ;
+
+    templateArgumentListOpt ::= sigma
+                              | templateArgumentList
+                              ;
+
+    templateId ::= identifier "<" templateArgumentListOpt ">"
+                 | operatorFunctionId "<" templateArgumentListOpt ">"
+                 ;
+
+    templateArgumentList ::= templateArgument;
+
+    templateArgumentListTailOpt ::= sigma
+                                  | "," templateArgument
+                                  ;
+
+    templateArgument ::= typeId templateArgumentListTailOpt
+                       | assignmentExpression templateArgumentListTailOpt
+                       ;
+
+    explicitInstantiation ::= "template" blockDeclaration
+                            | "inline" "template" blockDeclaration
+                            | "extern" "template" blockDeclaration
+                            ;
+
+    tryBlock ::= "try" compoundStatement handlerSeq;
+
+    handlerSeq ::= handler
+                 | handler handlerSeq
+                 ;
+
+    handler ::= "catch" "(" handlerParameter ")" compoundStatement
+              | "catch" "(" "..." ")" compoundStatement
+              ;
+
+    handlerParameter ::= typeSpecifier unqualifiedDeclarator
+                       | typeSpecifier abstractDeclaratorOpt
+                       ;
+
+    unqualifiedDeclarator ::= declarator;
+
+    throwExpression ::= "throw"
+                      | "throw" assignmentExpression
+                      ;
+
+    exceptionSpecificationOpt ::= sigma
+                                | "throw" "(" ")"
+                                | "throw" "(" typeIdList ")"
+                                ;
+
+    typeIdList ::= typeId
+                 | typeId "," typeIdList
+                 ;
+
+    namespaceDefinition ::= "namespace" identifierOpt "{" translation_unit "}"
+                          | "namespace" identifierOpt attributeSpecifierList "{" translation_unit "}"
+                          ;
+
+    namespaceDecl ::= "namespace" identifier "=" idExpression ";"
+                    | "using" idExpression ";"
+                    | "using" "namespace" idExpression ";"
+                    | "using" "namespace" idExpression attributeSpecifierList ";"
+                    ;
+
+    annotationOpt ::= sigma
+                    | annotationList
+                    ;
+
+    annotationList ::= TOK_ANNOTATION
+                     | TOK_ANNOTATION annotationList
+                     ;
+
+    namesAfterDot ::= nameAfterDot
+                    | namesAfterDot "." nameAfterDot
+                    | namesAfterDot "[" expression "]"
+                    ;
+
+    parenthesizedExpression ::= "(" expression ")";
+
+    labeledEmptyStatementList ::= labelAndColon labeledEmptyStatementListOpt
+                                | "case" constantExpression ":" labeledEmptyStatementListOpt
+                                | "case" constantExpression "..." constantExpression ":" labeledEmptyStatementListOpt
+                                | "default" ":" labeledEmptyStatementListOpt
+                                ;
+
+    labeledEmptyStatementListOpt ::= sigma
+                                   | labeledEmptyStatementList
+                                   ;
+
+    typeofTypeSpecifier ::= typeofExpr
+                          | typeofType
+                          ;
+
+    typeofExpr ::= "__typeof__" "(" expression ")";
+
+    typeofType ::= "__typeof__" "(" typeId ")";
+
+    bracketedWordOpt ::= sigma
+                       | "[" identifier "]"
+                       ;
+
+    parenthesizedExpressionOpt ::= sigma
+                                 | "(" expression ")"
+                                 ;
+
+    opConstraint ::= bracketedWordOpt stringLiteral parenthesizedExpressionOpt;
+
+    opConstraintList ::= sigma
+                       | opConstraint
+                       | opConstraint "," opConstraintList
+                       ;
+
+    opConstraints ::= sigma
+                    | nonemptyOpConstraints
+                    ;
+
+    nonemptyOpConstraints ::= opConstraints ":" opConstraintList
+                            | opConstraints "::" opConstraintList
+                            ;
+
+    designatorList ::= designator
+                     | designator designatorList
+                     ;
+
+    designator ::= "." identifier
+                 | "[" constantExpression "]"
+                 | "[" constantExpression "..." constantExpression "]"
+                 ;
+
+    buggyGccTypeModifier ::= "long"
+                           | "short"
+                           | "signed"
+                           | "unsigned"
+                           | "long" buggyGccTypeModifier
+                           | "short" buggyGccTypeModifier
+                           | "signed" buggyGccTypeModifier
+                           | "unsigned" buggyGccTypeModifier
+                           ;
+
+    cv_qualAttrSeqOpt ::= sigma
+                       | cv_qualAttrSeq
+                       ;
+
+    cv_qualAttrSeq ::= cv_qualAttr
+                    | cv_qualAttr cv_qualAttrSeq
+                    ;
+
+    cv_qualAttr ::= cv_qualifier
+                 | attributeSpecifier
+                 ;
+
+    attributeWord ::= TOK_NAME
+                    | "asm"
+                    | "auto"
+                    | "break"
+                    | "bool"
+                    | "case"
+                    | "catch"
+                    | "cdecl"
+                    | "char"
+                    | "class"
+                    | "const"
+                    | "const_cast"
+                    | "continue"
+                    | "default"
+                    | "delete"
+                    | "do"
+                    | "double"
+                    | "dynamic_cast"
+                    | "else"
+                    | "enum"
+                    | "explicit"
+                    | "export"
+                    | "extern"
+                    | "false"
+                    | "float"
+                    | "for"
+                    | "friend"
+                    | "goto"
+                    | "if"
+                    | "inline"
+                    | "int"
+                    | "long"
+                    | "mutable"
+                    | "namespace"
+                    | "new"
+                    | "operator"
+                    | "pascal"
+                    | "private"
+                    | "protected"
+                    | "public"
+                    | "register"
+                    | "reinterpret_cast"
+                    | "return"
+                    | "short"
+                    | "signed"
+                    | "sizeof"
+                    | "static"
+                    | "static_cast"
+                    | "struct"
+                    | "switch"
+                    | "template"
+                    | "this"
+                    | "throw"
+                    | "true"
+                    | "try"
+                    | "typedef"
+                    | "typeid"
+                    | "typename"
+                    | "union"
+                    | "unsigned"
+                    | "using"
+                    | "virtual"
+                    | "void"
+                    | "volatile"
+                    | "wchar_t"
+                    | "while"
+                    ;
+
+    commaSepExpressionListOpt ::= sigma
+                                | expressionList
+                                ;
+
+    attributeParameters ::= commaSepExpressionListOpt;
+
+    attribute ::= sigma
+                | attributeWord
+                | attributeWord "(" attributeParameters ")"
+                ;
+
+    attributeList ::= attribute
+                    | attribute "," attributeList
+                    ;
+
+    attributeSpecifier ::= "__attribute__" "(" "(" attributeList ")" ")";
+
+    attributeSpecifierList ::= attributeSpecifier
+                             | attributeSpecifier attributeSpecifierList
+                             ;
+
+    kandRFunctionDefinition ::= declSpecifier kandRDeclarator kandRSimpleDeclarationSeq functionBody;
+
+    kandRFunctionDefinition_implInt ::= kandRDeclarator kandRSimpleDeclarationSeq functionBody
+                                      | uberModifierSeq kandRDeclarator kandRSimpleDeclarationSeq functionBody
+                                      ;
+
+    kandRSimpleDeclarationSeq ::= kandRSimpleDeclaration
+                                | kandRSimpleDeclarationSeq kandRSimpleDeclaration
+                                ;
+
+    kandRSimpleDeclaration ::= declSpecifier kandRInitDeclaratorList ";"
+                             | "register" kandRInitDeclaratorList ";"
+                             ;
+
+    kandRInitDeclaratorList ::= kandRInitDeclarator
+                              | kandRInitDeclarator "," kandRInitDeclaratorList
+                              ;
+
+    kandRInitDeclarator ::= declarator;
+
+    kandRDeclarator ::= "*" cv_qualifierSeqOpt kandRDeclarator
+                      | kandRDirectDeclarator
+                      ;
+
+    kandRDirectDeclarator ::= kandRIdExpression "(" kandRIdentifierList ")"
+                            | "(" kandRIdExpression ")" "(" kandRIdentifierList ")"
+                            | kandRDirectDeclarator "(" parameterDeclarationClause ")"
+                            | kandRDirectDeclarator "[" constantExpressionOpt "]"
+                            | "(" kandRDeclarator ")"
+                            ;
+
+    kandRIdExpression ::= kandRIdentifier;
+
+    kandRIdentifierList ::= kandRIdentifier
+                          | kandRIdentifier "," kandRIdentifierList
+                          ;
+
+    kandRIdentifier ::= identifier;
+
+    c_func_modifier_no_inline ::= "static"
+                              | "extern"
+                              | "const"
+                              | "volatile"
+                              ;
+
+    c_func_modifier ::= c_func_modifier_no_inline
+                    | "inline"
+                    ;
+
+    c_func_modifierSeq ::= c_func_modifier
+                       | c_func_modifierSeq c_func_modifier
+                       ;
+
+    c_func_modifierSeqOpt ::= sigma
+                          | c_func_modifier
+                          ;
+
+    implIntFunctionDefinition ::= c_func_modifier_no_inline declarator functionBody
+                                | c_func_modifier_no_inline c_func_modifierSeq declarator functionBody
+                                | "inline" c_func_modifier_no_inline c_func_modifierSeqOpt declarator functionBody
+                                ;
+
+    implicitIntTypeSpecifier ::= ubercv_qualifierSeq;
+
+    implicitIntTypeId ::= implicitIntTypeSpecifier;
+
+  done;
+done;
+
+
+start ::= spacing translation_unit EOF;
