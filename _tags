@@ -1,0 +1,12 @@
+# OASIS_START
+# DO NOT EDIT (digest: aadc963a7d742906c6419b0a5cee14f6)
+# Executable elkhound
+"elkhound/elkhound.native": pkg_ulex
+"elkhound/elkhound.native": pkg_sexplib
+<elkhound/*.ml{,i}>: pkg_ulex
+<elkhound/*.ml{,i}>: pkg_sexplib
+# OASIS_STOP
+
+true: debug
+true: use_menhir
+true: annot
