@@ -6,7 +6,6 @@ end
 let inputs = ref []
 
 module Options = struct
-  let _e = ref false
   let _ptree = ref false
 end
 
