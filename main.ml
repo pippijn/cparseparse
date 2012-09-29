@@ -3,18 +3,6 @@ module CLexer = struct
     Cc_tokens_desc.token_desc (Obj.magic kind)
 end
 
-(*+=====~~~-------------------------------------------------------~~~=====+*)
-(*|             Execute command and pipe the stdout to string             |*)
-(*+=====~~~-------------------------------------------------------~~~=====+*)
-
-let execute cmd =
-  let buf = Buffer.create 64000 in
-  let ic = Unix.open_process_in cmd in
-  try while true do Buffer.add_string buf (input_line ic) done; assert false
-  with End_of_file -> close_in ic; Buffer.contents buf
-
-
-let ptree = ref false
 let inputs = ref []
 
 module Options = struct
@@ -29,23 +17,27 @@ let () =
   ]) (fun input -> inputs := input :: !inputs) "Usage: cxxparse [option...] <file...>")
 
 
-let main () =
-  Gc.set {
-    (Gc.get ()) with
-    Gc.minor_heap_size = 8 * 1024 * 1024;
-  };
+exception ExitStatus of int
 
+let handle_return = function
+  | Unix.WEXITED 0 ->
+      ()
+  | Unix.WEXITED status ->
+      raise (ExitStatus status)
+  | Unix.WSIGNALED signum ->
+      Printf.printf "child was killed by signal %d\n" signum;
+      raise (ExitStatus 1)
+  | Unix.WSTOPPED signum ->
+      Printf.printf "child was stopped by signal %d\n" signum;
+      raise (ExitStatus 1)
+
+
+let parse glr actions cin =
   let ptree = !Options._ptree in
 
-  List.iter (fun input ->
-    let tables = Cc.ccParseTables in
-    let actions = Cc.ccUserActions in
     let lex = Lexerint.({ tokType = 0; sval = Useract.cNULL_SVAL }) in
 
-    let preprocessed = execute (Printf.sprintf "gcc -E -P %s" input) in
-    (if !Options._e then
-      print_endline preprocessed);
-    let lexbuf = Lexing.from_string preprocessed in
+    let lexbuf = Lexing.from_channel cin in
 
     let getToken lex = lex.Lexerint.tokType <- Obj.magic (Lexer.token lexbuf); lex in
     let getToken =
@@ -54,14 +46,6 @@ let main () =
       else
         getToken
     in
-
-    let actions =
-      if ptree then
-        Ptreeact.makeParseTreeActions actions tables
-      else
-        actions
-    in
-    let glr = Glr.makeGLR tables actions in
 
     let treeTop =
       let tree = ref Useract.cNULL_SVAL in
@@ -88,10 +72,47 @@ let main () =
       let t = Ptreeact.project treeTop in
       Ptreenode.printTree t stdout true;
       ()
+
+
+let main () =
+  Gc.set {
+    (Gc.get ()) with
+    Gc.minor_heap_size = 8 * 1024 * 1024;
+  };
+
+  let ptree = !Options._ptree in
+
+  let tables = Cc.ccParseTables in
+  let actions = Cc.ccUserActions in
+
+  let actions =
+    if ptree then
+      Ptreeact.makeParseTreeActions actions tables
+    else
+      actions
+  in
+  let glr = Glr.makeGLR tables actions in
+
+  List.iter (fun input ->
+    let cin = Unix.open_process_in (Printf.sprintf "gcc -xc++ -E -P %s" input) in
+
+    begin try
+      parse glr actions cin
+    with
+    | e ->
+        handle_return (Unix.close_process_in cin);
+        raise e
+    end;
+    handle_return (Unix.close_process_in cin)
+
   ) !inputs
 
 
 let () =
-  (*Printexc.record_backtrace true;*)
-  (*Printexc.print main ()*)
-  main ()
+  try
+    (*Printexc.record_backtrace true;*)
+    (*Printexc.print main ()*)
+    main ()
+  with
+  | ExitStatus status ->
+      exit status
