@@ -3,6 +3,16 @@ module CLexer = struct
     Cc_tokens_desc.token_desc (Obj.magic kind)
 end
 
+(*+=====~~~-------------------------------------------------------~~~=====+*)
+(*|             Execute command and pipe the stdout to string             |*)
+(*+=====~~~-------------------------------------------------------~~~=====+*)
+
+let execute cmd =
+  let buf = Buffer.create 64000 in
+  let ic = Unix.open_process_in cmd in
+  try while true do Buffer.add_string buf (input_line ic) done; assert false
+  with End_of_file -> close_in ic; Buffer.contents buf
+
 
 let main () =
   Gc.set {
@@ -15,8 +25,8 @@ let main () =
   let tables = Cc.ccParseTables in
   let actions = Cc.ccUserActions in
   let lex = Lexerint.({ tokType = 0; sval = Useract.cNULL_SVAL }) in
-
-  let lexbuf = Lexing.from_channel (open_in "test.ii") in
+  let preprocessed = execute (Printf.sprintf "gcc -E -P %s" Sys.argv.(1)) in
+  let lexbuf = Lexing.from_string preprocessed in
 
   let getToken lex = lex.Lexerint.tokType <- Obj.magic (Lexer.token lexbuf); lex in
   let getToken lex = Ptreeact.getToken actions getToken lex in
