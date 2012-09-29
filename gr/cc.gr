@@ -158,7 +158,7 @@ nonterm('identifier) Identifier {
 //
 // update: I've substituted it into the grammar elsewhere, since
 // it's just causing s/r conflicts with no gain
-nonterm TypeName {
+nonterm('typename) TypeName {
   -> n:TOK_TYPE_NAME     { unimplemented 4 }
 }
 

@@ -72,11 +72,6 @@ let parse glr actions cin =
 
 
 let elkmain () =
-  Gc.set {
-    (Gc.get ()) with
-    Gc.minor_heap_size = 8 * 1024 * 1024;
-  };
-
   let ptree = !Options._ptree in
 
   let tables = Cc.ccParseTables in
@@ -119,6 +114,11 @@ let dypmain () =
 
 
 let () =
+  Gc.set {
+    (Gc.get ()) with
+    Gc.minor_heap_size = 8 * 1024 * 1024;
+  };
+
   try
     (*Printexc.record_backtrace true;*)
     (*Printexc.print main ()*)
