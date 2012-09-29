@@ -71,7 +71,7 @@ let parse glr actions cin =
       Ptreenode.printTree t stdout true
 
 
-let main () =
+let elkmain () =
   Gc.set {
     (Gc.get ()) with
     Gc.minor_heap_size = 8 * 1024 * 1024;
@@ -105,11 +105,25 @@ let main () =
   ) !inputs
 
 
+let dypmain () =
+  let lexbuf = Lexing.from_channel (open_in (List.hd !inputs)) in
+
+  begin try
+    Dypcc.file Dyplexer.token lexbuf;
+  with
+  | Dyp.Syntax_error ->
+      failwith ("parsing on line " ^ (string_of_int !Lexer.line) ^ ", position " ^ (string_of_int (Lexing.lexeme_start lexbuf)) ^ ": " ^ (Lexing.lexeme lexbuf))
+  end;
+
+  ()
+
+
 let () =
   try
     (*Printexc.record_backtrace true;*)
     (*Printexc.print main ()*)
-    main ()
+    (*elkmain ()*)
+    dypmain ()
   with
   | ExitStatus status ->
       exit status

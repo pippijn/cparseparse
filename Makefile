@@ -4,8 +4,11 @@ GR_MODS = gr/cc.gr gr/gnu.gr gr/kandr.gr
 TOK_MODS = tok/cc_tokens.tok tok/gnu_ext.tok
 ELKHOUND ?= elkhound
 
-main.native: cc.ml $(wildcard *.ml *.mll glr/*)
-	ocamlbuild $@
+main.native: cc.ml dypcc.ml $(wildcard *.ml *.mll glr/*)
+	ocamlbuild -use-ocamlfind $@
+
+dypcc.ml: dypcc.y
+	dypgen --ocamlc '-I /usr/lib/ocaml/dyp' $<
 
 cc.ml: $(GR_MODS) tok/cc_tokens.ids
 	$(ELKHOUND) -ocaml -v -tr lrtable -o cc $(GR_MODS)
