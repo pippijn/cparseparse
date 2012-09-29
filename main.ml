@@ -12,7 +12,6 @@ end
 
 let () =
   Arg.(parse (align [
-    "-E", Set Options._e,                      " print preprocessed file";
     "-ptree",	Set Options._ptree,	       " print parse tree";
   ]) (fun input -> inputs := input :: !inputs) "Usage: cxxparse [option...] <file...>")
 
