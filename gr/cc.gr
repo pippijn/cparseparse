@@ -63,10 +63,10 @@ option useGCDefaults;
 option defaultMergeAborts;
 
 // expected statistics
-option shift_reduce_conflicts 58;
+option shift_reduce_conflicts 62;
 option reduce_reduce_conflicts 70;
 option unreachable_nonterminals 0;
-option unreachable_terminals 6;
+option unreachable_terminals 13;
 
 
 context_class cc { };
@@ -266,16 +266,16 @@ nonterm('pqualifiedid) PQualifiedId {
   -> n:Identifier "<" targs:TemplateArgumentListOpt ">" "::" id:PQualifiedId
        { unimplemented 29 }
 
+  // passing a dependent template as template template argument
+  -> n:Identifier "::" "template" n:Identifier
+       { unimplemented 30 }
+
   // versions with "template" in front (it's not clear to me that this
   // is equivalent to the standard grammar.. I'm hacking it for now);
   // I just ignore the keyword (is that right?)
   // NOTE: the pattern here is repeated FIVE times!  argh...
   // marking all as TEMPLATE_QUALIFIER_HACK
   //
-  // here, as below, I now realize that the first alternative (using
-  // "template" but not supplying template arguments) is illegal
-  //-> "template" n:Identifier "::" id:PQualifiedId
-  //     { unimplemented 30 }
   -> "template" n:Identifier "<" targs:TemplateArgumentListOpt ">" "::" id:PQualifiedId
        { unimplemented 31 }
 }

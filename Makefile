@@ -1,3 +1,5 @@
+-include config.mk
+
 GR_MODS = gr/cc.gr gr/gnu.gr gr/kandr.gr
 TOK_MODS = tok/cc_tokens.tok tok/gnu_ext.tok
 ELKHOUND ?= elkhound
@@ -10,3 +12,9 @@ cc.ml: $(GR_MODS) tok/cc_tokens.ids
 
 tok/cc_tokens.ids: $(TOK_MODS) make-token-files
 	./make-token-files $(TOK_MODS)
+
+test.ii: test.cpp
+	g++-4.4 -E -P $< -o $@ -I /usr/include/qt4
+
+check: test.ii main.native
+	./main.native $<

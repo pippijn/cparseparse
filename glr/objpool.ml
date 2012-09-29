@@ -9,29 +9,31 @@ type 'a t = {
   (* implementation is just an array of elements that have been made
    * available for re-use; this should be regarded as private
    * inheritance, though I don't see how to do that in OCaml *)
-  stack : 'a Arraystack.t;
+  mutable stack : 'a list;
 }
 
 let make allocFunc = {
   allocFunc;
-  stack = Arraystack.make (allocFunc ());
+  stack = [];
 }
 
 (* retrieve an object ready to be used; might return a pool element,
  * or if the pool is empty, will make a new element *)
-let alloc { allocFunc; stack } =
-  if Arraystack.isNotEmpty stack then
-    (* just grab the topmost element in the pool stack *)
-    Arraystack.pop stack
-  else
-    (* make a new object; I thought about making several at a time
-     * but there seems little advantage.. *)
-    allocFunc ()
+let alloc pool =
+  match pool.stack with
+  | obj :: stack ->
+      (* just grab the topmost element in the pool stack *)
+      pool.stack <- stack;
+      obj
+  | [] ->
+      (* make a new object; I thought about making several at a time
+       * but there seems little advantage.. *)
+      pool.allocFunc ()
 
 (* return an object to the pool so it can be re-used *)
-let dealloc { stack } obj =
+let dealloc pool obj =
   (* put the element into the stack *)
-  Arraystack.push stack obj
+  pool.stack <- obj :: pool.stack
 
 
 (* EOF *)
