@@ -36,8 +36,6 @@ let main () =
         getToken
     in
 
-    let module Glr = Glr.Make (CLexer) in
-
     let actions =
       if ptree then
         Ptreeact.makeParseTreeActions actions tables
@@ -48,7 +46,7 @@ let main () =
 
     let treeTop =
       let tree = ref Useract.cNULL_SVAL in
-      if Glr.glrParse glr getToken lex tree then
+      if Glr.glrParse glr CLexer.tokenKindDesc getToken lex tree then
         !tree
       else
         failwith ("parsing on line " ^ (string_of_int !Lexer.line) ^ ", position " ^ (string_of_int (Lexing.lexeme_start lexbuf)) ^ ": " ^ (Lexing.lexeme lexbuf))
