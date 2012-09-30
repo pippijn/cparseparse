@@ -6,20 +6,30 @@ let printsexp grammar =
 
 
 let () =
-  let basedir = ".." in
+  let basedir = "ccparse" in
 
   let grammars =
     List.map (
       fun file ->
-        let lexbuf = Lexing.from_channel (open_in (basedir ^ "/" ^ file)) in
+        let ulexbuf = Ulexing.from_utf8_channel (open_in (basedir ^ "/" ^ file)) in
+        let parse = MenhirLib.Convert.traditional2revised
+          (fun t -> t)
+          (fun _ -> Lexing.dummy_pos)
+          (fun _ -> Lexing.dummy_pos)
+          Grampar.parse
+        in
 
-        file, Grampar.parse Gramlex.(token (default_state basedir lexbuf)) lexbuf
+        let state = Gramlex.default_state basedir ulexbuf in
+
+        file, parse (fun () -> Gramlex.token state)
     ) ["gr/cc.gr"; "gr/gnu.gr"; "gr/kandr.gr"]
   in
 
-  for i = 1 to 10000 do
+  (*
+  for i = 1 to 100 do
     ignore (Merge.merge grammars)
   done;
+  *)
 
   let merged = Merge.merge grammars in
   Printast.print merged;

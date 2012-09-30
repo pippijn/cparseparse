@@ -42,3 +42,7 @@ setup.ml: _oasis
 
 check: build
 	./elkhound.native
+
+profile: build
+	rm -f callgrind.out.*
+	valgrind --tool=callgrind ./elkhound.native

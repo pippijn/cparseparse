@@ -19,9 +19,33 @@ SourceRepository head
         Browser:                http://xinutec.org/git/devel/elkhound.git
 
 
+Executable ccparse
+        Path:                   ccparse
+        BuildTools:             ocamlbuild
+        BuildDepends:           glr,unix
+        MainIs:                 ccparse.ml
+        CompiledObject:         native
+
+
 Executable elkhound
         Path:                   elkhound
         BuildTools:             ocamlbuild
-        BuildDepends:           sexplib,ulex
+        BuildDepends:           sexplib,ulex,menhirLib
         MainIs:                 elkhound.ml
+        CompiledObject:         native
+
+
+Library glr
+        Path:                   glr
+        BuildTools:             ocamlbuild
+#        BuildDepends:           sexplib,ulex
+        Modules:                Arraystack,
+                                Glr,
+                                Lexerint,
+                                Objpool,
+                                Parsetables,
+                                Ptreeact,
+                                Ptreenode,
+                                Smutil,
+                                Useract
         CompiledObject:         native
