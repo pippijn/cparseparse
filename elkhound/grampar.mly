@@ -48,7 +48,7 @@
 
 /* start symbol */
 parse
-	: top_form_list EOF		{ $1 }
+	: top_form_list EOF		{ List.rev $1 }
 
 
 top_form_list
@@ -78,6 +78,7 @@ verbatim
 parser_option
 	: TOK_OPTION TOK_NAME		  TOK_SEMICOLON { TF_option ($2,  1) }
 	| TOK_OPTION TOK_NAME TOK_INTEGER TOK_SEMICOLON { TF_option ($2, $3) }
+	| TOK_OPTION TOK_NAME TOK_NAME    TOK_SEMICOLON { TF_option ($2, (if $3 = "true" then 1 else 0)) }
 
 
 /* ------ terminals ------ */
@@ -177,9 +178,9 @@ formals
  */
 nonterminal
 	: TOK_NONTERM type_decl TOK_NAME production
-		{ TF_nonterm ($3, [], [$4], []) }
+		{ TF_nonterm ($3, $2, [], [$4], []) }
 	| TOK_NONTERM type_decl TOK_NAME TOK_LBRACE spec_funcs productions subsets TOK_RBRACE
-		{ TF_nonterm ($3, List.rev $5, List.rev $6, $7) }
+		{ TF_nonterm ($3, $2, List.rev $5, List.rev $6, $7) }
 
 
 productions

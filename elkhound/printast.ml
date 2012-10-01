@@ -75,8 +75,8 @@ let print_topform = function
       List.iter print_precspec prec;
       printf "  }\n";
       printf "}\n\n"
-  | TF_nonterm (name, funcs, prods, subsets) ->
-      printf "nonterm %s {\n" name;
+  | TF_nonterm (name, semtype, funcs, prods, subsets) ->
+      printf "nonterm%s %s {\n" semtype name;
       List.iter print_specfunc funcs;
       List.iter print_proddecl prods;
       List.iter (printf "  %s\n") subsets;

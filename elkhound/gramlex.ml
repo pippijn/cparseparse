@@ -1,3 +1,4 @@
+open Batteries_uni
 open Grampar
 
 type automaton =
@@ -81,6 +82,10 @@ let include_file inc =
   String.sub inc startpos (endpos - startpos)
 
 
+let remove_quotes str =
+  String.sub str 1 (String.length str - 2)
+
+
 let rec verbatim state = lexer
 | '{'		->
 		  state.brace_level <- state.brace_level + 1;
@@ -115,7 +120,7 @@ let rec typename state = lexer
 		    let code = String.copy (Buffer.contents state.code) in
 		    Buffer.clear state.code;
 		    state.automaton <- Normal;
-		    TOK_LIT_CODE code
+		    TOK_LIT_CODE (remove_quotes code)
 		  else
 		    typename state lexbuf
 
@@ -143,7 +148,7 @@ let rec normal state = lexer
 | "include" ws* "(" ws* '"' ([^ '"']+) '"' ws* ")" ->
     let lexeme = Ulexing.utf8_lexeme lexbuf in
     let file = state.basedir ^ "/" ^ (include_file lexeme) in
-    let nextbuf = Ulexing.from_utf8_channel (open_in file) in
+    let nextbuf = Ulexing.from_utf8_channel (Pervasives.open_in file) in
     state.stack <- nextbuf :: state.stack;
     normal state nextbuf
 
@@ -154,7 +159,7 @@ let rec normal state = lexer
 | ['0'-'9']+							-> TOK_INTEGER (int_of_string (Ulexing.utf8_lexeme lexbuf))
 
 (* Integer *)
-| '"' [^ '"']+ '"'						-> TOK_STRING (Ulexing.utf8_lexeme lexbuf)
+| '"' [^ '"']+ '"'						-> TOK_STRING (Ulexing.utf8_lexeme lexbuf |> remove_quotes)
 
 (* Punctuators *)
 | "{"								-> if state.in_rhs then (

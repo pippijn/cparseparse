@@ -22,7 +22,7 @@ SourceRepository head
 Executable ccparse
         Path:                   ccparse
         BuildTools:             ocamlbuild
-        BuildDepends:           glr,unix
+        BuildDepends:           glr,ulex,unix
         MainIs:                 ccparse.ml
         CompiledObject:         native
 
@@ -30,7 +30,7 @@ Executable ccparse
 Executable elkhound
         Path:                   elkhound
         BuildTools:             ocamlbuild
-        BuildDepends:           sexplib,ulex,menhirLib
+        BuildDepends:           sexplib,ulex,menhirLib,batteries
         MainIs:                 elkhound.ml
         CompiledObject:         native
 

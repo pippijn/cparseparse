@@ -41,8 +41,12 @@ setup.ml: _oasis
 	oasis setup
 
 check: build
-	./elkhound.native
+	_build/elkhound/elkhound.native
 
-profile: build
+profile-elkhound: build
 	rm -f callgrind.out.*
-	valgrind --tool=callgrind ./elkhound.native
+	valgrind --tool=callgrind _build/elkhound/elkhound.native
+
+profile-ccparse: build
+	rm -f callgrind.out.*
+	valgrind --tool=callgrind _build/ccparse/ccparse.native testsuite/ccparse/profile.cc

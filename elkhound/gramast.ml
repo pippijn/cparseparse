@@ -38,7 +38,7 @@ type topform =
   | TF_verbatim of bool * string
   | TF_option of string * int
   | TF_terminals of termdecl list * termtype list * precspec list
-  | TF_nonterm of string * specfunc list * proddecl list * string list
+  | TF_nonterm of string * string * specfunc list * proddecl list * string list
   with sexp
 
 type topforms = topform list with sexp

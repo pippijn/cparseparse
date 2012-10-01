@@ -1,19 +1,23 @@
 # OASIS_START
-# DO NOT EDIT (digest: e1f7d4323dc78f820a06cc90d58787f8)
+# DO NOT EDIT (digest: 8712e9dabc2418174271e98c7050d109)
 # Library glr
 "glr": include
 # Executable ccparse
 "ccparse/ccparse.native": use_glr
 "ccparse/ccparse.native": pkg_unix
+"ccparse/ccparse.native": pkg_ulex
 <ccparse/*.ml{,i}>: use_glr
 <ccparse/*.ml{,i}>: pkg_unix
+<ccparse/*.ml{,i}>: pkg_ulex
 # Executable elkhound
 "elkhound/elkhound.native": pkg_ulex
 "elkhound/elkhound.native": pkg_sexplib
 "elkhound/elkhound.native": pkg_menhirLib
+"elkhound/elkhound.native": pkg_batteries
 <elkhound/*.ml{,i}>: pkg_ulex
 <elkhound/*.ml{,i}>: pkg_sexplib
 <elkhound/*.ml{,i}>: pkg_menhirLib
+<elkhound/*.ml{,i}>: pkg_batteries
 # OASIS_STOP
 
 true: debug

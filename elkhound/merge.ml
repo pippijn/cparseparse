@@ -1,3 +1,4 @@
+open Sexplib.Conv
 open Gramast
 module Stringmap = Stringmap.M
 module Stringset = Stringset.M
@@ -21,8 +22,10 @@ type topforms = {
   types : termtype list;
   precs : precspec list;
 
+  first_nonterm : string;
   nonterms : topform Stringmap.t;
-}
+} with sexp
+
 
 let empty_topforms = {
   verbatims = [];
@@ -32,6 +35,7 @@ let empty_topforms = {
   types = [];
   precs = [];
 
+  first_nonterm = "";
   nonterms = Stringmap.empty;
 }
 
@@ -128,77 +132,88 @@ let list_merge a b =
 
 
 let merge grammars =
-  let topforms =
-    List.fold_left (fun topforms (file, grammar) ->
-      List.fold_left (fun topforms topform ->
-        match topform with
-        | TF_verbatim _ ->
-            { topforms with verbatims = topform :: topforms.verbatims }
+  List.fold_left (fun topforms (file, grammar) ->
+    List.fold_left (fun topforms topform ->
+      match topform with
+      | TF_verbatim _ ->
+          { topforms with verbatims = topform :: topforms.verbatims }
 
-        | TF_option (name, value) when Stringset.mem name accumulators ->
-            (* Sum up values for some options. *)
-            let found, options =
-              List.fold_left (fun (found, options) -> function
-                | TF_option (oname, ovalue) when oname = name ->
-                    true, TF_option (name, value + ovalue) :: options
-                | TF_option _ as option ->
-                    found, option :: options
-                | _ ->
-                    failwith "match"
-              ) (false, []) topforms.options
-            in
+      | TF_option (name, value) when Stringset.mem name accumulators ->
+          (* Sum up values for some options. *)
+          let found, options =
+            List.fold_left (fun (found, options) -> function
+              | TF_option (oname, ovalue) when oname = name ->
+                  true, TF_option (name, value + ovalue) :: options
+              | TF_option _ as option ->
+                  found, option :: options
+              | _ ->
+                  failwith "match"
+            ) (false, []) topforms.options
+          in
 
-            { topforms with
-              options = (
-                if found then
-                  options
-                else
-                  topform :: topforms.options
-              )
-            }
+          { topforms with
+            options = (
+              if found then
+                options
+              else
+                topform :: topforms.options
+            )
+          }
 
-        | TF_option (name, _) ->
-            (* Overwrite the value for others. *)
-            { topforms with
-              options = topform :: topforms.options
-            }
+      | TF_option (name, _) ->
+          (* Overwrite the value for others. *)
+          { topforms with
+            options = topform :: topforms.options
+          }
 
-        | TF_terminals (decls, types, precs) ->
-            { topforms with
-              decls = list_merge decls topforms.decls;
-              types = list_merge types topforms.types;
-              precs = list_merge precs topforms.precs;
-            }
+      | TF_terminals (decls, types, precs) ->
+          { topforms with
+            decls = list_merge decls topforms.decls;
+            types = list_merge types topforms.types;
+            precs = list_merge precs topforms.precs;
+          }
 
-        | TF_nonterm (name, nfuncs, nprods, nsubsets) ->
-            let topform =
-              try
-                (* Find an existing non-terminal. *)
-                match Stringmap.find name topforms.nonterms with
+      | TF_nonterm (name, nsemtype, nfuncs, nprods, nsubsets) ->
+          let topform =
+            try
+              (* Find an existing non-terminal. *)
+              match Stringmap.find name topforms.nonterms with
 
-                | TF_nonterm (_, ofuncs, oprods, osubsets) ->
-                    let funcs = merge_funcs nfuncs ofuncs in
-                    let prods = merge_prods nprods oprods in
-                    (* TODO: how to handle subset merges? (what are subsets?) *)
-                    let subsets = list_merge nsubsets osubsets in
+              | TF_nonterm (_, osemtype, ofuncs, oprods, osubsets) ->
+                  if nsemtype <> osemtype then
+                    failwith "non-terminal types inconsistent; do not use type aliases";
 
-                    TF_nonterm (name, funcs, prods, subsets)
+                  let funcs = merge_funcs nfuncs ofuncs in
+                  let prods = merge_prods nprods oprods in
+                  (* TODO: subsets are actual sets, they should be uniq'd *)
+                  let subsets = list_merge nsubsets osubsets in
 
-                | _ ->
-                    failwith "match"
+                  TF_nonterm (name, osemtype, funcs, prods, subsets)
 
-              with Not_found ->
-                topform
-            in
-            { topforms with
-              nonterms = Stringmap.add name topform topforms.nonterms;
-            }
+              | _ ->
+                  failwith "match"
 
-      ) topforms grammar
-    ) empty_topforms grammars
-  in
+            with Not_found ->
+              topform
+          in
 
-  []
+          let first_nonterm =
+            if topforms.first_nonterm = "" then
+              name
+            else
+              topforms.first_nonterm
+          in
+
+          { topforms with
+            nonterms = Stringmap.add name topform topforms.nonterms;
+            first_nonterm;
+          }
+
+    ) topforms grammar
+  ) empty_topforms grammars
+
+
+let to_ast topforms = []
   @ topforms.options
   @ topforms.verbatims
   @ [TF_terminals (topforms.decls, topforms.types, topforms.precs)]
