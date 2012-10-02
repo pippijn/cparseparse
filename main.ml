@@ -1,8 +1,3 @@
-module CLexer = struct
-  let tokenKindDesc kind =
-    Cc_tokens_desc.token_desc (Obj.magic kind)
-end
-
 let inputs = ref []
 
 module Options = struct
@@ -30,6 +25,9 @@ let handle_return = function
       raise (ExitStatus 1)
 
 
+let tokenKindDesc kind =
+  Cc_tokens_desc.token_desc (Obj.magic kind)
+
 let parse glr actions cin =
   let ptree = !Options._ptree in
 
@@ -47,7 +45,7 @@ let parse glr actions cin =
 
     let treeTop =
       let tree = ref Useract.cNULL_SVAL in
-      if Glr.glrParse glr CLexer.tokenKindDesc getToken lex tree then
+      if Glr.glrParse glr tokenKindDesc getToken lex tree then
         !tree
       else
         failwith ("parsing on line " ^ (string_of_int !Lexer.line) ^ ", position " ^ (string_of_int (Lexing.lexeme_start lexbuf)) ^ ": " ^ (Lexing.lexeme lexbuf))
@@ -122,8 +120,8 @@ let () =
   try
     (*Printexc.record_backtrace true;*)
     (*Printexc.print main ()*)
-    (*elkmain ()*)
-    dypmain ()
+    elkmain ()
+    (*dypmain ()*)
   with
   | ExitStatus status ->
       exit status

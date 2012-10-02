@@ -148,7 +148,7 @@ while (@ARGV > 0) {
 
     # emit to each file
     print $H  ("  | $enumerator\n");
-    print $CC ("  | $enumerator -> \"$enumerator\"\n");
+    print $CC ("  | $enumerator -> $spelling\n");
 
     my @f = ("0");
     if ($multiSpell) { push @f, "TF_MULTISPELL"; }
@@ -160,7 +160,7 @@ while (@ARGV > 0) {
     printf $IDS ("  %3d : %-30s %s;\n",
                 $nextId,
                 $enumerator,
-                ($multiSpell? "" : $spelling));
+                ($multiSpell ? "" : $spelling));
 
     $nextId++;
   }

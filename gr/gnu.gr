@@ -87,7 +87,7 @@ nonterm('postfixexpression) PostfixExpression {
   // GNU extension; dsw: Since the argument is an expression, I know
   // of no way to handle this other than putting it into the grammar
   // directly.
-  -> "__builtin_constant_p" pe:ParenthesizedExpression
+  -> "__builtin_constant_p" e:ParenthesizedExpression
        { unimplemented 542 }
 
   // http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Alignment.html
@@ -105,31 +105,8 @@ nonterm('postfixexpression) PostfixExpression {
   -> "__offsetof__" "(" e:Expression ")"
        { unimplemented 547 }
 
-  // sm: __builtin_expect is for static branch prediction, but none of
-  // the analyses I forsee for this parser care about such things, so
-  // I will simply pretend I never even saw it (though, this is a
-  // small problem for source to source ...); the alternative is to make
-  // a new AST node for it, or else squeeze it into E_funCall, neither of
-  // which is very attractive
-  //
-  // A third possibility is a new "semantically transparent but
-  // annotated in some way" AST node, of which __builtin_expect could
-  // be one kind.  I'm not sure what other kinds there would be,
-  // though.
-  -> "__builtin_expect" "(" e:Expression "," /*prediction*/Expression ")"
-       { unimplemented 548 }
-
-  // varargs; dsw: I think that we should make all of these their own
-  // AST node, I just don't want to deal with the parsing ambiguity
-  // with E_funCall right now
-//   -> "__builtin_va_start" "(" e:Expression "," e2:Expression ")"
-//        { unimplemented 549 }
-//   -> "__builtin_va_copy" "(" e:Expression "," e2:Expression ")"
-//        { unimplemented 550 }
   -> "__builtin_va_arg" "(" e:Expression "," t:TypeId ")"
        { unimplemented 551 }
-//   -> "__builtin_va_end" "(" e:Expression ")"
-//        { unimplemented 552 }
 }
 
 // dmandelin@mozilla.com  bug 416051

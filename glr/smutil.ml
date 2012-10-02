@@ -16,11 +16,3 @@ let isSome = function
 let getSome = function
   | None -> failwith "getSome applied to None"
   | Some v -> v
-
-(* true if 'o' is a Some, and it equals (==) 'v' *)
-let someEquals (o: 'a option) (v: 'a) : bool =
-begin
-  match o with
-  | None -> false
-  | Some(v2) -> v2 == v
-end

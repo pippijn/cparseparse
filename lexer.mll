@@ -3,11 +3,10 @@
 
 {
   open Cc_tokens
+  module Stringmap = Map.Make (String)
   exception Eof
 
-  module StringMap = Map.Make (String)
-
-  let keywords = [
+  let keywords = List.fold_left (fun map (kw, tok) -> Stringmap.add kw tok map) Stringmap.empty [
     "asm",                 TOK_ASM;
     "__asm",               TOK_ASM;
     "__asm__",             TOK_ASM;
@@ -75,10 +74,12 @@
     "using",               TOK_USING;
     "virtual",             TOK_VIRTUAL;
     "void",                TOK_VOID;
-    "__volatile__",        TOK_VOLATILE;
     "volatile",            TOK_VOLATILE;
+    "__volatile__",        TOK_VOLATILE;
     "wchar_t",             TOK_WCHAR_T;
     "while",               TOK_WHILE;
+
+    (* GNU *)
     "__attribute__",       TOK___ATTRIBUTE__;
     "__FUNCTION__",        TOK___FUNCTION__;
     "__label__",           TOK___LABEL__;
@@ -104,7 +105,7 @@
 
   let classify id =
     try
-      snd (List.find (fun (name, token) -> id = name) keywords)
+      Stringmap.find id keywords
     with Not_found ->
       TOK_NAME
 

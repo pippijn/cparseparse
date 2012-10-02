@@ -5,7 +5,7 @@ TOK_MODS = tok/cc_tokens.tok tok/gnu_ext.tok
 ELKHOUND ?= elkhound
 
 main.native: cc.ml dypcc.ml $(wildcard *.ml *.mll glr/*)
-	ocamlbuild -use-ocamlfind $@
+	ocamlbuild -cflags '-unsafe' -use-ocamlfind $@
 
 dypcc.ml: dypcc.y
 	dypgen --ocamlc '-I /usr/lib/ocaml/dyp' $<
@@ -21,3 +21,7 @@ test.ii: test.cpp
 
 check: test.ii main.native
 	./main.native $<
+
+profile: main.native
+	rm -f callgrind.out.*
+	valgrind --tool=callgrind ./main.native testsuite/profile.cc 2>&1 | grep "refs:"

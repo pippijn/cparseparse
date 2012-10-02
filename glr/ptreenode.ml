@@ -157,7 +157,7 @@ begin
     let cyclicSkip: bool = (
       if (checkForCycles) then (
         (* does 'self' appear in 'path'? *)
-        let idx:int = (Arraystack.findIndex path (fun p -> p == self)) in
+        let idx:int = (Arraystack.findIndex (fun p -> p == self) path) in
         if (idx >= 0) then (
           (* yes; print a cyclicity reference *)
           (indent out !indentation);

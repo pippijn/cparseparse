@@ -12,6 +12,11 @@ type 'a t = {
   mutable stack : 'a list;
 }
 
+let null () = {
+  allocFunc = (fun () -> failwith "unimplemented");
+  stack = [];
+}
+
 let make allocFunc = {
   allocFunc;
   stack = [];

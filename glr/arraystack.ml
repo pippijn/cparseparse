@@ -83,7 +83,7 @@ let iter rep f =
 
 
 (* search and return the element index, or -1 for not found *)
-let findIndex rep f =
+let findIndex f rep =
   (* ug.. must use tail recursion just so I can break early... *)
   let rec loop i =
     if i > rep.len - 1 then
@@ -98,8 +98,8 @@ let findIndex rep f =
 
 
 (* search and return the element, or None *)
-let findOption rep f =
-  let idx = findIndex rep f in
+let findOption f rep =
+  let idx = findIndex f rep in
   if idx < 0 then
     None                 (* not found *)
   else
@@ -107,8 +107,8 @@ let findOption rep f =
 
 
 (* search *)
-let contains rep f =
-  findIndex rep f >= 0
+let contains f rep =
+  findIndex f rep >= 0
 
 
 (* swap contents with another array stack *)
