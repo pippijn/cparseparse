@@ -316,7 +316,7 @@ outfixing spacing do
     </Capture>;
     lambda_declarator ::= <Lambda_declarator>
             "(" parameter_declaration_clause ")" "mutable"?
-    |       exception_specification? attribute_specifier_seq? trailing_return_type?
+    |       exception_specification? attribute_specifier* trailing_return_type?
     </Lambda_declarator>;
     postfix_expression ::= <Postfix_expression>
             primary_expression
@@ -380,8 +380,8 @@ outfixing spacing do
     |       noptr_new_declarator
     </New_declarator>;
     noptr_new_declarator ::= <Noptr_new_declarator>
-            "[" expression "]" attribute_specifier_seq?
-    |       noptr_new_declarator "[" constant_expression "]" attribute_specifier_seq?
+            "[" expression "]" attribute_specifier*
+    |       noptr_new_declarator "[" constant_expression "]" attribute_specifier*
     </Noptr_new_declarator>;
     new_initializer ::= <New_initializer>
             "(" expression_list? ")"
@@ -476,29 +476,25 @@ outfixing spacing do
 
     statement ::= <Statement>
             labeled_statement
-    |       attribute_specifier_seq? expression_statement
-    |       attribute_specifier_seq? compound_statement
-    |       attribute_specifier_seq? selection_statement
-    |       attribute_specifier_seq? iteration_statement
-    |       attribute_specifier_seq? jump_statement
+    |       attribute_specifier* jump_statement
+    |       attribute_specifier* selection_statement
+    |       attribute_specifier* iteration_statement
+    |       attribute_specifier* compound_statement
     |       declaration_statement
-    |       attribute_specifier_seq? try_block
+    |       attribute_specifier* try_block
+    |       attribute_specifier* expression_statement
     </Statement>;
     labeled_statement ::= <Labeled_statement>
-            attribute_specifier_seq? identifier ":" statement
-    |       attribute_specifier_seq? "case" constant_expression ":" statement
-    |       attribute_specifier_seq? "default" ":" statement
+            attribute_specifier* identifier ":" statement
+    |       attribute_specifier* "case" constant_expression ":" statement
+    |       attribute_specifier* "default" ":" statement
     </Labeled_statement>;
     expression_statement ::= <Expression_statement>
             expression? ";"
     </Expression_statement>;
     compound_statement ::= <Compound_statement>
-            "{" statement_seq? "}"
+            "{" statement* "}"
     </Compound_statement>;
-    statement_seq ::= <Statement_seq>
-            statement
-    |       statement_seq statement
-    </Statement_seq>;
     selection_statement ::= <Selection_statement>
             "if" "(" condition ")" statement
     |       "if" "(" condition ")" statement "else" statement
@@ -506,8 +502,8 @@ outfixing spacing do
     </Selection_statement>;
     condition ::= <Condition>
             expression
-    |       attribute_specifier_seq? decl_specifier_seq declarator "=" initializer_clause
-    |       attribute_specifier_seq? decl_specifier_seq declarator braced_init_list
+    |       attribute_specifier* decl_specifier_seq declarator "=" initializer_clause
+    |       attribute_specifier* decl_specifier_seq declarator braced_init_list
     </Condition>;
     iteration_statement ::= <Iteration_statement>
             "while" "(" condition ")" statement
@@ -520,7 +516,7 @@ outfixing spacing do
     |       simple_declaration
     </For_init_statement>;
     for_range_declaration ::= <For_range_declaration>
-            attribute_specifier_seq? decl_specifier_seq declarator
+            attribute_specifier* decl_specifier_seq declarator
     </For_range_declaration>;
     for_range_initializer ::= <For_range_initializer>
             expression
@@ -562,11 +558,11 @@ outfixing spacing do
     |       opaque_enum_declaration
     </Block_declaration>;
     alias_declaration ::= <Alias_declaration>
-            "using" identifier attribute_specifier_seq? "=" type_id ";"
+            "using" identifier attribute_specifier* "=" type_id ";"
     </Alias_declaration>;
     simple_declaration ::= <Simple_declaration>
             decl_specifier_seq? init_declarator_list? ";"
-    |       attribute_specifier_seq decl_specifier_seq? init_declarator_list ";"
+    |       attribute_specifier+ decl_specifier_seq? init_declarator_list ";"
     </Simple_declaration>;
     static_assert_declaration ::= <Static_assert_declaration>
             "static_assert" "(" constant_expression "," string_literal ")" ";"
@@ -575,7 +571,7 @@ outfixing spacing do
             <EmptyDeclaration/>";"
     </Empty_declaration>;
     attribute_declaration ::= <Attribute_declaration>
-            attribute_specifier_seq ";"
+            attribute_specifier+ ";"
     </Attribute_declaration>;
     decl_specifier ::= <Decl_specifier>
             storage_class_specifier
@@ -586,8 +582,7 @@ outfixing spacing do
     |       "constexpr"
     </Decl_specifier>;
     decl_specifier_seq ::= <Decl_specifier_seq>
-            decl_specifier attribute_specifier_seq?
-    |       decl_specifier decl_specifier_seq
+            decl_specifier (attribute_specifier | decl_specifier)*
     </Decl_specifier_seq>;
     storage_class_specifier ::= <Storage_class_specifier>
             "register"
@@ -616,12 +611,10 @@ outfixing spacing do
     |       cv_qualifier
     </Trailing_type_specifier>;
     type_specifier_seq ::= <Type_specifier_seq>
-            type_specifier attribute_specifier_seq?
-    |       type_specifier type_specifier_seq
+            type_specifier (attribute_specifier | type_specifier)*
     </Type_specifier_seq>;
     trailing_type_specifier_seq ::= <Trailing_type_specifier_seq>
-            trailing_type_specifier attribute_specifier_seq?
-    |       trailing_type_specifier trailing_type_specifier_seq
+            trailing_type_specifier (attribute_specifier | trailing_type_specifier)*
     </Trailing_type_specifier_seq>;
     simple_type_specifier ::= <Simple_type_specifier>
             s:"char"
@@ -652,7 +645,7 @@ outfixing spacing do
             "decltype" "(" expression ")"
     </Decltype_specifier>;
     elaborated_type_specifier ::= <Elaborated_type_specifier>
-            class_key attribute_specifier_seq? nested_name_specifier? identifier
+            class_key attribute_specifier* nested_name_specifier? identifier
     |       class_key nested_name_specifier? "template"? simple_template_id
     |       "enum" nested_name_specifier? identifier
     </Elaborated_type_specifier>;
@@ -664,12 +657,12 @@ outfixing spacing do
     |       enum_head "{" enumerator_list "," "}"
     </Enum_specifier>;
     enum_head ::= <Enum_head>
-            enum_key attribute_specifier_seq? identifier? enum_base?
-    |       enum_key attribute_specifier_seq? nested_name_specifier identifier
+            enum_key attribute_specifier* identifier? enum_base?
+    |       enum_key attribute_specifier* nested_name_specifier identifier
     |       enum_base?
     </Enum_head>;
     opaque_enum_declaration ::= <Opaque_enum_declaration>
-            enum_key attribute_specifier_seq? identifier enum_base? ";"
+            enum_key attribute_specifier* identifier enum_base? ";"
     </Opaque_enum_declaration>;
     enum_key ::= <Enum_key>
             "enum"
@@ -731,7 +724,7 @@ outfixing spacing do
     |       "using" "::" unqualified_id ";"
     </Using_declaration>;
     using_directive ::= <Using_directive>
-            attribute_specifier_seq? "using" "namespace" nested_name_specifier? namespace_name ";"
+            attribute_specifier* "using" "namespace" nested_name_specifier? namespace_name ";"
     </Using_directive>;
     asm_definition ::= <Asm_definition>
             "asm" "(" string_literal ")" ";"
@@ -740,9 +733,6 @@ outfixing spacing do
             "extern" string_literal "{" declaration* "}"
     |       "extern" string_literal declaration
     </Linkage_specification>;
-    attribute_specifier_seq ::= <Attribute_specifier_seq>
-            attribute_specifier_seq? attribute_specifier
-    </Attribute_specifier_seq>;
     attribute_specifier ::= <Attribute_specifier>
             "[" "[" attribute_list "]" "]"
     |       alignment_specifier
@@ -771,16 +761,12 @@ outfixing spacing do
             identifier
     </Attribute_namespace>;
     attribute_argument_clause ::= <Attribute_argument_clause>
-            "(" balanced_token_seq ")"
+            "(" balanced_token* ")"
     </Attribute_argument_clause>;
-    balanced_token_seq ::= <Balanced_token_seq>
-            balanced_token?
-    |       balanced_token_seq balanced_token
-    </Balanced_token_seq>;
     balanced_token ::= <Balanced_token>
-            "(" balanced_token_seq ")"
-    |       "[" balanced_token_seq "]"
-    |       "{" balanced_token_seq "}"
+            "(" balanced_token* ")"
+    |       "[" balanced_token* "]"
+    |       "{" balanced_token* "}"
     |       [^(\[{}\])] (* any token other than a parenthesis, a bracket, or a brace *)
     </Balanced_token>;
 
@@ -803,27 +789,24 @@ outfixing spacing do
     |       ptr_operator ptr_declarator
     </Ptr_declarator>;
     noptr_declarator ::= <Noptr_declarator>
-            declarator_id attribute_specifier_seq?
+            declarator_id attribute_specifier*
     |       noptr_declarator parameters_and_qualifiers
-    |       noptr_declarator "[" constant_expression? "]" attribute_specifier_seq?
+    |       noptr_declarator "[" constant_expression? "]" attribute_specifier*
     |       "(" ptr_declarator ")"
     </Noptr_declarator>;
     parameters_and_qualifiers ::= <Parameters_and_qualifiers>
-            "(" parameter_declaration_clause ")" attribute_specifier_seq? cv_qualifier_seq?
+            "(" parameter_declaration_clause ")" attribute_specifier* cv_qualifier*
     |       ref_qualifier? exception_specification?
     </Parameters_and_qualifiers>;
     trailing_return_type ::= <Trailing_return_type>
             "->" trailing_type_specifier_seq abstract_declarator?
     </Trailing_return_type>;
     ptr_operator ::= <Ptr_operator>
-            "*" attribute_specifier_seq? cv_qualifier_seq?
-    |       "&" attribute_specifier_seq?
-    |       "&&" attribute_specifier_seq?
-    |       nested_name_specifier "*" attribute_specifier_seq? cv_qualifier_seq?
+            "*" attribute_specifier* cv_qualifier*
+    |       "&" attribute_specifier*
+    |       "&&" attribute_specifier*
+    |       nested_name_specifier "*" attribute_specifier* cv_qualifier*
     </Ptr_operator>;
-    cv_qualifier_seq ::= <Cv_qualifier_seq>
-            cv_qualifier cv_qualifier_seq?
-    </Cv_qualifier_seq>;
     cv_qualifier ::= <Cv_qualifier>
             "const"
     |       "volatile"
@@ -850,7 +833,7 @@ outfixing spacing do
     </Ptr_abstract_declarator>;
     noptr_abstract_declarator ::= <Noptr_abstract_declarator>
             noptr_abstract_declarator? parameters_and_qualifiers
-    |       noptr_abstract_declarator? "[" constant_expression? "]" attribute_specifier_seq?
+    |       noptr_abstract_declarator? "[" constant_expression? "]" attribute_specifier*
     |       "(" ptr_abstract_declarator ")"
     </Noptr_abstract_declarator>;
     abstract_pack_declarator ::= <Abstract_pack_declarator>
@@ -859,7 +842,7 @@ outfixing spacing do
     </Abstract_pack_declarator>;
     noptr_abstract_pack_declarator ::= <Noptr_abstract_pack_declarator>
             noptr_abstract_pack_declarator parameters_and_qualifiers
-    |       noptr_abstract_pack_declarator "[" constant_expression? "]" attribute_specifier_seq?
+    |       noptr_abstract_pack_declarator "[" constant_expression? "]" attribute_specifier*
     |       "..."
     </Noptr_abstract_pack_declarator>;
     parameter_declaration_clause ::= <Parameter_declaration_clause>
@@ -871,13 +854,13 @@ outfixing spacing do
     |       parameter_declaration_list "," parameter_declaration
     </Parameter_declaration_list>;
     parameter_declaration ::= <Parameter_declaration>
-            attribute_specifier_seq? decl_specifier_seq declarator
-    |       attribute_specifier_seq? decl_specifier_seq declarator "=" initializer_clause
-    |       attribute_specifier_seq? decl_specifier_seq abstract_declarator?
-    |       attribute_specifier_seq? decl_specifier_seq abstract_declarator? "=" initializer_clause
+            attribute_specifier* decl_specifier_seq declarator
+    |       attribute_specifier* decl_specifier_seq declarator "=" initializer_clause
+    |       attribute_specifier* decl_specifier_seq abstract_declarator?
+    |       attribute_specifier* decl_specifier_seq abstract_declarator? "=" initializer_clause
     </Parameter_declaration>;
     function_definition ::= <Function_definition>
-            attribute_specifier_seq? decl_specifier_seq? declarator virt_specifier_seq? function_body
+            attribute_specifier* decl_specifier_seq? declarator virt_specifier* function_body
     </Function_definition>;
     function_body ::= <Function_body>
             ctor_initializer? compound_statement
@@ -917,8 +900,8 @@ outfixing spacing do
             class_head "{" member_specification? "}"
     </Class_specifier>;
     class_head ::= <Class_head>
-            class_key attribute_specifier_seq? class_head_name class_virt_specifier? base_clause?
-    |       class_key attribute_specifier_seq? base_clause?
+            class_key attribute_specifier* class_head_name class_virt_specifier? base_clause?
+    |       class_key attribute_specifier* base_clause?
     </Class_head>;
     class_head_name ::= <Class_head_name>
             nested_name_specifier? class_name
@@ -936,7 +919,7 @@ outfixing spacing do
     |       access_specifier ":" member_specification?
     </Member_specification>;
     member_declaration ::= <Member_declaration>
-            attribute_specifier_seq? decl_specifier_seq? member_declarator_list? ";"
+            attribute_specifier* decl_specifier_seq? member_declarator_list? ";"
     |       function_definition ";"?
     |       using_declaration
     |       static_assert_declaration
@@ -948,14 +931,10 @@ outfixing spacing do
     |       member_declarator_list "," member_declarator
     </Member_declarator_list>;
     member_declarator ::= <Member_declarator>
-            declarator virt_specifier_seq? pure_specifier?
+            declarator virt_specifier* pure_specifier?
     |       declarator brace_or_equal_initializer?
-    |       identifier? attribute_specifier_seq? ":" constant_expression
+    |       identifier? attribute_specifier* ":" constant_expression
     </Member_declarator>;
-    virt_specifier_seq ::= <Virt_specifier_seq>
-            virt_specifier
-    |       virt_specifier_seq virt_specifier
-    </Virt_specifier_seq>;
     virt_specifier ::= <Virt_specifier>
             "override"
     |       "final"
@@ -975,9 +954,9 @@ outfixing spacing do
     |       base_specifier_list "," base_specifier "..."?
     </Base_specifier_list>;
     base_specifier ::= <Base_specifier>
-            attribute_specifier_seq? base_type_specifier
-    |       attribute_specifier_seq? "virtual" access_specifier? base_type_specifier
-    |       attribute_specifier_seq? access_specifier "virtual"? base_type_specifier
+            attribute_specifier* base_type_specifier
+    |       attribute_specifier* "virtual" access_specifier? base_type_specifier
+    |       attribute_specifier* access_specifier "virtual"? base_type_specifier
     </Base_specifier>;
     class_or_decltype ::= <Class_or_decltype>
             nested_name_specifier? class_name
@@ -1095,20 +1074,17 @@ outfixing spacing do
     (* A.13 Exception handling [gram.except] *)
 
     try_block ::= <Try_block>
-            "try" compound_statement handler_seq
+            "try" compound_statement handler+
     </Try_block>;
     function_try_block ::= <Function_try_block>
-            "try" ctor_initializer? compound_statement handler_seq
+            "try" ctor_initializer? compound_statement handler+
     </Function_try_block>;
-    handler_seq ::= <Handler_seq>
-            handler handler_seq?
-    </Handler_seq>;
     handler ::= <Handler>
             "catch" "(" exception_declaration ")" compound_statement
     </Handler>;
     exception_declaration ::= <Exception_declaration>
-            attribute_specifier_seq? type_specifier_seq declarator
-    |       attribute_specifier_seq? type_specifier_seq abstract_declarator?
+            attribute_specifier* type_specifier_seq declarator
+    |       attribute_specifier* type_specifier_seq abstract_declarator?
     |       "..."
     </Exception_declaration>;
     throw_expression ::= <Throw_expression>
