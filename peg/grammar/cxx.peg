@@ -574,9 +574,9 @@ outfixing spacing do
             attribute_specifier+ ";"
     </Attribute_declaration>;
     decl_specifier ::= <Decl_specifier>
-            storage_class_specifier
+            function_specifier
+    |       storage_class_specifier
     |       type_specifier
-    |       function_specifier
     |       "friend"
     |       "typedef"
     |       "constexpr"
@@ -617,20 +617,20 @@ outfixing spacing do
             trailing_type_specifier (attribute_specifier | trailing_type_specifier)*
     </Trailing_type_specifier_seq>;
     simple_type_specifier ::= <Simple_type_specifier>
-            s:"char"
-    |       s:"char16_t"
-    |       s:"char32_t"
-    |       s:"wchar_t"
-    |       s:"bool"
-    |       s:"short"
-    |       s:"int"
-    |       s:"long"
-    |       s:"signed"
-    |       s:"unsigned"
-    |       s:"float"
-    |       s:"double"
-    |       s:"void"
-    |       s:"auto"
+            t:"char"
+    |       t:"char16_t"
+    |       t:"char32_t"
+    |       t:"wchar_t"
+    |       t:"bool"
+    |       t:"short"
+    |       t:"int"
+    |       t:"long"
+    |       t:"signed"
+    |       t:"unsigned"
+    |       t:"float"
+    |       t:"double"
+    |       t:"void"
+    |       t:"auto"
     |       decltype_specifier
     |       nested_name_specifier "template" simple_template_id
     |       nested_name_specifier? type_name
@@ -789,10 +789,13 @@ outfixing spacing do
     |       ptr_operator ptr_declarator
     </Ptr_declarator>;
     noptr_declarator ::= <Noptr_declarator>
-            declarator_id attribute_specifier*
-    |       noptr_declarator parameters_and_qualifiers
-    |       noptr_declarator "[" constant_expression? "]" attribute_specifier*
-    |       "(" ptr_declarator ")"
+    (       "(" ptr_declarator ")"
+    |       declarator_id attribute_specifier*
+    )
+    (
+            parameters_and_qualifiers
+    |       "[" constant_expression? "]" attribute_specifier*
+    )?
     </Noptr_declarator>;
     parameters_and_qualifiers ::= <Parameters_and_qualifiers>
             "(" parameter_declaration_clause ")" attribute_specifier* cv_qualifier*
