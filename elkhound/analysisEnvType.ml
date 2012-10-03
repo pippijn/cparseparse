@@ -8,9 +8,9 @@ type dotted_production = {
 }
 
 type env = {
-  nonterms               : nonterminal array;
-  terms                  : terminal array;
-  prods                  : production array;
+  indexed_nonterms       : nonterminal array;
+  indexed_terms          : terminal array;
+  indexed_prods          : production array;
   prods_by_lhs           : production list array;
   dotted_prods           : dotted_production array array;
   derivable              : Bit2d.t;

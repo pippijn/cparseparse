@@ -224,6 +224,8 @@ let collect_nonterminals nonterms =
             merge = spec_func funcs "merge" [2];
             keep  = spec_func funcs "keep"  [1];
             maximal = (match spec_func funcs "maximal" [0] with None -> false | Some _ -> true);
+            (* we simply store the (validated) string references here, because
+             * it is very hard to have cyclic immutable data structures *)
             subsets;
 
             (* Each nonterminal needs its own first/follow sets. *)

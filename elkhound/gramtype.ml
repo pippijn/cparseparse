@@ -79,7 +79,7 @@ type nonterminal = {
   follow 		: TerminalSet.t; (* set of terminals that can follow a string derived from 'this' *)
   mutable nt_index 	: int; (* nonterminal index in indexed_nonterminals for grammar analysis *)
   mutable cyclic 	: bool; (* true if this can derive itself in 1 or more steps *)
-  mutable superset	: nonterminal list; (* inverse of 'subsets' *)
+  mutable superset	: nonterminal option; (* inverse of 'subsets' *)
 } with sexp
 
 (* either a nonterminal or terminal symbol *)
@@ -179,7 +179,7 @@ let empty_nonterminal = {
   (* empty has an index of 0; all other nonterminals must have indices >= 1 *)
   nt_index = 0;
   cyclic   = false;
-  superset = [];
+  superset = None;
 }
 
 

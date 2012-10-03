@@ -1,5 +1,5 @@
+open AnalysisEnvType
 open Gramtype
-open Gramanltype
 
 
 let iterl f l =
@@ -40,7 +40,7 @@ let add_derivable_i env left right =
    * only calls to this with left==right will be when the
    * derivability code detects a nonzero-length path. *)
   if left == right then (
-    let left = env.nonterms.(left) in (* == right *)
+    let left = env.indexed_nonterms.(left) in (* == right *)
     left.cyclic <- true; (* => right.cyclic is also true *)
     env.cyclic_grammar <- true; (* for grammar as a whole *)
 
@@ -147,7 +147,7 @@ let add_derivable_relations env changed =
                 not (can_derive_empty env.derivable right_nonterm)
         ) false right)
 
-  ) env.prods
+  ) env.indexed_prods
 
 
 let compute_derivability_closure env changed =
@@ -160,7 +160,7 @@ let compute_derivability_closure env changed =
    * I don't consider edges (u,u) because it messes up my cyclicity
    * detection logic.  (But (u,v) and (v,u) is ok, and in fact is
    * what I want, for detecting cycles.) *)
-  let nonterm_count = Array.length env.nonterms in
+  let nonterm_count = Array.length env.indexed_nonterms in
   (* for each node u (except empty) *)
   for u = 1 to nonterm_count - 1 do
     (* for each edge (u,v) where u != v *)
