@@ -7,18 +7,19 @@ open Merge
 let start_name = "__EarlyStartSymbol"
 
 
+(* synthesize a rule "__EarlyStartSymbol -> Start EOF" *)
 let synthesise_start_rule topforms =
   (* find the name of the user's EOF token *)
   let TermDecl (_, eof, _) = List.find (fun (TermDecl (code, _, _)) -> code = 0) topforms.decls in
 
   (* build a start production *)
   let start =
-    TF_nonterm (start_name, "", [], [
+    TF_nonterm ((* name = *)start_name, (* type = *)"", (* funcs = *)[], (* prods = *)[
       ProdDecl (PDK_NEW, [
         RH_name ("top", topforms.first_nonterm);
         RH_name ("", eof);
-      ], "")
-    ], [])
+      ], (* code: *)"")
+    ], (* subsets: *)[])
   in
 
   { topforms with
@@ -26,6 +27,7 @@ let synthesise_start_rule topforms =
   }
 
 
+(* handle TF_option *)
 let collect_options options grammar =
   List.fold_left (fun grammar -> function
     | TF_option      ("useGCDefaults",              (0 | 1 as value)) ->
@@ -66,9 +68,12 @@ let collect_terminal_aliases decls =
   ) Stringmap.empty decls
 
 
+(* type annotations *)
 let collect_terminal_types types =
   let types =
     List.fold_left (fun types (TermType (name, _, _) as termtype) ->
+      if Stringmap.mem name types then
+        failwith "this token already has a type";
       Stringmap.add name termtype types
     ) Stringmap.empty types
   in
@@ -76,6 +81,7 @@ let collect_terminal_types types =
   types
 
 
+(* precedence specifications *)
 let collect_terminal_precs precs aliases =
   let precs =
     List.fold_left (fun precs (PrecSpec (kind, prec, tokens) as termtype) ->
@@ -88,8 +94,11 @@ let collect_terminal_precs precs aliases =
         in
 
         if prec = 0 then
+          (* 0 means precedence isn't specified *)
           failwith "you can't use 0 as a precedence level, because that value is used internally to mean something else";
 
+        if Stringmap.mem token precs then
+          failwith "this token already has a specified precedence";
         Stringmap.add token termtype precs
       ) precs tokens
     ) Stringmap.empty precs
@@ -119,6 +128,7 @@ let collect_terminals decls types precs =
       if Stringmap.mem name terminals then
         failwith "token already declared";
 
+      (* annotate with declared type *)
       let semtype, funcs =
         try
           let (TermType (_, termtype, funcs)) = Stringmap.find name types in
@@ -127,6 +137,7 @@ let collect_terminals decls types precs =
           "", []
       in
 
+      (* apply precedence spec *)
       let associativity, precedence =
         try
           let PrecSpec (kind, prec, _) = Stringmap.find name precs in
@@ -140,6 +151,8 @@ let collect_terminals decls types precs =
           name;
           semtype;
           dup = spec_func funcs "dup" [1];
+          (* not specified is ok, since it means the 'del' function
+           * doesn't use its parameter *)
           del = spec_func funcs "del" [0; 1];
           reachable = false;
         };
@@ -156,12 +169,15 @@ let collect_terminals decls types precs =
     ) (0, Stringmap.empty) decls
   in
 
+  (* track what terminals have codes *)
   let has_code = BitSet.create (max_code + 1) in
   List.iter (fun (TermDecl (code, _, _)) ->
     BitSet.set has_code code;
   ) decls;
 
   let terminals =
+    (* fill in any gaps in the code space; this is required because
+     * later analyses assume the terminal code space is dense *)
     Enum.fold (fun terminals i ->
       if BitSet.is_set has_code i then
         terminals
@@ -187,11 +203,16 @@ let collect_nonterminals nonterms =
     Stringmap.fold (fun _ nterm nonterminals ->
       match nterm with
       | TF_nonterm (name, semtype, funcs, prods, subsets) ->
+          (* record subsets *)
           List.iter (fun subset ->
             if not (Stringmap.mem subset nonterms) then
               failwith "subsets contains non-existent nonterminal"
+            (* note that, since context-free language inclusion is
+             * undecidable (Hopcroft/Ullman), we can't actually check that
+             * the given nonterminals really are in the subset relation *)
           ) subsets;
 
+          (* make the Grammar object to represent the new nonterminal *)
           let nonterminal = { empty_nonterminal with
             nbase = {
               name;
@@ -222,7 +243,7 @@ let collect_nonterminals nonterms =
 
 
 let add_forbid forbid tok =
-  (* XXX: in-place update breaks persistence of data structure *)
+  (* XXX: in-place update *)
   TerminalSet.set forbid tok.term_index;
   forbid
 
@@ -247,17 +268,23 @@ let collect_production_rhs aliases terminals nonterminals is_synthesised rhs_lis
 
   List.fold_left (fun production -> function
     | RH_name (tag, name) ->
+        (* "empty" is a syntactic convenience; it doesn't get
+         * added to the production *)
         if name = empty_nonterminal.nbase.name then
           production
         else
           let symbol, prec =
             try
               let terminal = find_terminal name in
+              (* whenever we see a terminal, copy its precedence spec to
+               * the production; thus, the last symbol appearing in the
+               * production will be the one that gives the precedence *)
               Terminal (tag, terminal), terminal.precedence
             with Not_found ->
               Nonterminal (tag, find_nonterminal name), production.prec
           in
 
+          (* add it to the production *)
           { production with right = symbol :: production.right; prec }
 
     | RH_string (tag, str) ->
@@ -266,6 +293,7 @@ let collect_production_rhs aliases terminals nonterminals is_synthesised rhs_lis
     | RH_prec (tokName) ->
         let { precedence } = find_terminal tokName in
 
+        (* apply the specified precedence *)
         { production with prec = precedence }
 
     | RH_forbid (tokName) ->
@@ -275,7 +303,6 @@ let collect_production_rhs aliases terminals nonterminals is_synthesised rhs_lis
           add_forbid production.forbid tok
         in
 
-        (* XXX: in-place mutation *)
         { production with forbid }
 
   ) production rhs_list
@@ -286,14 +313,18 @@ let collect_productions aliases terminals nonterminals nonterms =
     match nterm with
     | TF_nonterm (name, _, _, prods, _) ->
         let left = Stringmap.find name nonterminals in
+        (* is this the special start symbol I inserted? *)
         let is_synthesised = name = start_name in
 
         List.fold_left (fun productions (ProdDecl (kind, rhs, action)) ->
+          (* build a production *)
           let production =
             { empty_production with left; action; first_set = TerminalSet.empty () }
+            (* deal with RHS elements *)
             |> collect_production_rhs aliases terminals nonterminals is_synthesised rhs
           in
 
+          (* add production to grammar *)
           production :: productions
         ) productions prods
 
@@ -308,11 +339,14 @@ let of_ast topforms =
   let types = collect_terminal_types topforms.types in
   let precs = collect_terminal_precs topforms.precs aliases in
 
+  (* process all (non)terminal declarations first, so while we're 
+   * looking at productions we can tell if one isn't declared *)
   let terminals               = collect_terminals topforms.decls types precs
   and verbatim, impl_verbatim = collect_verbatims topforms.verbatims
   and nonterminals            = collect_nonterminals topforms.nonterms
   in
 
+  (* process nonterminal bodies *)
   let productions             = collect_productions aliases terminals nonterminals topforms.nonterms
   and start_symbol            = Stringmap.find topforms.first_nonterm nonterminals
   in

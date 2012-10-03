@@ -43,4 +43,4 @@ let () =
     Printast.print (Merge.to_ast topforms);
   let grammar = Grammar.of_ast topforms in
   Gramanl.run_analyses grammar;
-  print_grammar grammar
+  (*print_grammar grammar*)
