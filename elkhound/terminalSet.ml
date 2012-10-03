@@ -12,3 +12,11 @@ let t_of_sexp sexp =
 
 let sexp_of_t bset =
   Sexp.List []
+
+
+let merge a b =
+  (* check whether First(LHS) will change by uniting it with Firs(RHS-sequence) *)
+  let merged = union a b in
+  let changed = not (equals a merged) in
+  unite a b;
+  changed

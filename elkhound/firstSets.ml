@@ -52,12 +52,9 @@ let compute_first derivable indexed_nonterms indexed_prods =
       (* compute First(RHS-sequence) *)
       let first_of_rhs = first_of_sequence derivable prod.right in
 
-      (* check whether First(LHS) will change by uniting it with Firs(RHS-sequence) *)
-      let merged = TerminalSet.union lhs.first first_of_rhs in
-      if not (TerminalSet.equals lhs.first merged) then
-        changed := true;
       (* add everything in First(RHS-sequence) to First(LHS) *)
-      TerminalSet.unite lhs.first first_of_rhs
+      if TerminalSet.merge lhs.first first_of_rhs then
+        changed := true
     ) indexed_prods
 
   done
