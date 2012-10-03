@@ -4,6 +4,7 @@ open AnalysisEnvType
 
 (* clear first/follow sets by intersecting them with 0 *)
 let reset_first_follow prods nonterms term_count =
+  let open Gramtype in
   let empty = TerminalSet.empty () in
   let reset set = TerminalSet.intersect set empty in
 
@@ -79,7 +80,7 @@ let compute_indexed_prods productions nonterm_count =
   indexed, prods_by_lhs
 
 
-let compute_dotted_productions indexed_prods =
+let compute_dotted_productions indexed_prods term_count =
   let dotted_prods = Array.init (Array.length indexed_prods) (fun i ->
     let prod = indexed_prods.(i) in
     let rhs_length = List.length prod.right in
@@ -92,6 +93,8 @@ let compute_dotted_productions indexed_prods =
       { prod; dot;
         before_dot = (if dot_at_start then None else Some (List.nth prod.right (dot - 1)));
         after_dot  = (if dot_at_end   then None else Some (List.nth prod.right  dot));
+        first_set  = TerminalSet.create term_count;
+        can_derive_empty = false;
       }
     )
   ) in
@@ -111,7 +114,7 @@ let init_env grammar =
   and indexed_prods, prods_by_lhs = compute_indexed_prods grammar.productions nonterm_count
   in
 
-  let dotted_prods = compute_dotted_productions indexed_prods in
+  let dotted_prods = compute_dotted_productions indexed_prods term_count in
 
   let env = {
     indexed_nonterms;

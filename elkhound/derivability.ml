@@ -11,6 +11,18 @@ let can_derive derivable left right =
 let can_derive_empty derivable nonterm =
   can_derive derivable nonterm empty_nonterminal
 
+let can_sequence_derive_empty derivable seq =
+  not (
+    (* look through the sequence; if any members cannot derive
+     * the empty string, fail *)
+    ListUtil.iter_until (function
+      | Terminal _ ->
+          false (* terminals can't derive the empty string *)
+      | Nonterminal (_, nonterm) ->
+          can_derive_empty derivable nonterm
+    ) seq
+  )
+
 
 let add_derivable_i env left right =
   (* Almost as an aside, I'd like to track cyclicity in grammars.

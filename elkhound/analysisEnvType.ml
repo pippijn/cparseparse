@@ -5,6 +5,8 @@ type dotted_production = {
   dot  : int;
   before_dot : symbol option;
   after_dot  : symbol option;
+  first_set  : TerminalSet.t;
+  mutable can_derive_empty : bool;
 }
 
 type env = {

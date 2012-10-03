@@ -12,7 +12,8 @@ let run_analyses grammar =
   Reachability.compute_reachable env.indexed_nonterms env.indexed_terms env.prods_by_lhs grammar.start_symbol;
   Derivability.compute_derivability_relation env;
   SuperSets.compute_supersets env.indexed_nonterms grammar.nonterminals;
-  Timing.time (FirstSets.compute_first env.derivable env.indexed_nonterms env.indexed_prods) term_count;
+  FirstSets.compute_first env.derivable env.indexed_nonterms env.indexed_prods;
+  Timing.time (FirstSets.compute_dprod_first env.derivable env.dotted_prods) env.indexed_prods;
 
   (*Bit2d.print env.derivable;*)
 
