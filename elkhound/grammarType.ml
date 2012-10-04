@@ -174,8 +174,8 @@ let empty_nonterminal = {
 
   subsets  = [];
 
-  first    = TerminalSet.empty ();
-  follow   = TerminalSet.empty ();
+  first    = TerminalSet.empty_set;
+  follow   = TerminalSet.empty_set;
   (* empty has an index of 0; all other nonterminals must have indices >= 1 *)
   nt_index = 0;
   cyclic   = false;
@@ -187,11 +187,11 @@ let empty_production = {
   left       = empty_nonterminal;
   right      = [];
   prec       = 0;
-  forbid     = TerminalSet.empty ();
+  forbid     = TerminalSet.empty_set;
             
   action     = "";
 
-  first_set  = TerminalSet.empty ();
+  first_set  = TerminalSet.empty_set;
   prod_index = -1;
 }
 

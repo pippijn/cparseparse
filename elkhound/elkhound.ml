@@ -1,3 +1,6 @@
+open GrammarType
+
+
 let print_ast topforms =
   let sexpr = Gramast.sexp_of_topforms topforms in
 
@@ -6,7 +9,7 @@ let print_ast topforms =
 
 
 let print_grammar grammar =
-  let sexpr = Gramtype.sexp_of_grammar grammar in
+  let sexpr = GrammarType.sexp_of_grammar grammar in
 
   Sexplib.Sexp.output_hum stdout sexpr;
   print_newline ()
@@ -42,5 +45,6 @@ let () =
   if false then
     Printast.print (Merge.to_ast topforms);
   let grammar = Grammar.of_ast topforms in
+  (*PrintGrammar.print_productions grammar.productions;*)
   Gramanl.run_analyses grammar;
   (*print_grammar grammar*)

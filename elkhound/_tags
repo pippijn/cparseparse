@@ -1,2 +1,2 @@
-<{assoc,gramast,merge,gramtype}.ml>: syntax_camlp4o, pkg_sexplib.syntax
-"gramlex.ml": syntax_camlp4o
+<*.ml>: syntax_camlp4o, pkg_sexplib.syntax
+"grampar.ml": -syntax_camlp4o

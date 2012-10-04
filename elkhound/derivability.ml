@@ -1,5 +1,5 @@
 open AnalysisEnvType
-open Gramtype
+open GrammarType
 
 
 let can_derive_i derivable left right =

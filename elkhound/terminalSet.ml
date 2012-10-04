@@ -4,6 +4,10 @@
 open Sexplib
 include BatBitSet
 
+
+let empty_set = empty ()
+
+
 let t_of_sexp sexp =
   (* batteries 2:
   of_list (Conv.list_of_sexp Conv.int_of_sexp sexp)
@@ -15,8 +19,20 @@ let sexp_of_t bset =
 
 
 let merge a b =
-  (* check whether First(LHS) will change by uniting it with Firs(RHS-sequence) *)
-  let merged = union a b in
-  let changed = not (equals a merged) in
-  unite a b;
-  changed
+  (* check whether a will change by uniting it with b *)
+  if not (equals a (union a b)) then (
+    unite a b;
+    true
+  ) else (
+    false
+  )
+
+
+let clear set =
+  (* clear the set by intersecting it with 0 *)
+  intersect set empty_set
+
+
+let assign a b =
+  clear a;
+  unite a b

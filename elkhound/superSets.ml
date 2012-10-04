@@ -1,4 +1,4 @@
-open Gramtype
+open GrammarType
 
 
 let compute_supersets indexed_nonterms nonterms =

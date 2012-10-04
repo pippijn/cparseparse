@@ -1,5 +1,5 @@
 let first_of_sequence derivable seq =
-  let open Gramtype in
+  let open GrammarType in
   let dest = TerminalSet.create 160 in
 
   (* for each sequence member such that all
@@ -39,7 +39,7 @@ let first_of_sequence derivable seq =
  * I also don't "compute" First for terminals, since they are trivial
  * (First(x) = {x}). *)
 let compute_first derivable indexed_nonterms indexed_prods =
-  let open Gramtype in
+  let open GrammarType in
   let changed = ref true in
 
   while !changed do
@@ -61,23 +61,22 @@ let compute_first derivable indexed_nonterms indexed_prods =
 
 
 let compute_dprod_first derivable dotted_prods indexed_prods =
-  let open Gramtype in
+  let open GrammarType in
   let open AnalysisEnvType in
-
-  let empty = TerminalSet.empty () in
-
   (* for each production *)
   Array.iter (fun prod ->
+
     (* for each dotted production where the dot is not at the end.. *)
     let rhs_length = List.length prod.right in
     for posn = 0 to rhs_length do
       let dprod = dotted_prods.(prod.prod_index).(posn) in
 
       (* compute its first *)
-      TerminalSet.intersect dprod.first_set empty;
+      TerminalSet.clear dprod.first_set;
       let first_of_rhs = first_of_sequence derivable dprod.prod.right in
 
       (* can it derive empty? *)
       dprod.can_derive_empty <- Derivability.can_sequence_derive_empty derivable dprod.prod.right
     done
+
   ) indexed_prods

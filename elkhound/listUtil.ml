@@ -4,6 +4,12 @@ let iter_until f l =
   ) false l
 
 
+let iter2_until f l1 l2 =
+  List.fold_left2 (fun finished head1 head2 ->
+    finished || f head1 head2
+  ) false l1 l2
+
+
 let iterl f l =
   ignore (
     List.fold_left (fun tail head ->
@@ -43,3 +49,7 @@ let fold_leftl_until f x l =
 
   in
   x
+
+
+let fold_left_many f x ll =
+  List.fold_left (List.fold_left f) x ll

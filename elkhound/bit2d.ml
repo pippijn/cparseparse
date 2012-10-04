@@ -49,3 +49,10 @@ let print matrix =
     done;
     print_endline "]"
   done
+
+
+let t_of_sexp s =
+  create 0 0
+
+let sexp_of_t v =
+  Sexplib.Sexp.List []

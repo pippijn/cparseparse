@@ -1,6 +1,6 @@
 open Batteries_uni
 open Gramast
-open Gramtype
+open GrammarType
 open Merge
 
 
@@ -268,46 +268,51 @@ let collect_production_rhs aliases terminals nonterminals is_synthesised rhs_lis
     terminal
   in
 
-  List.fold_left (fun production -> function
-    | RH_name (tag, name) ->
-        (* "empty" is a syntactic convenience; it doesn't get
-         * added to the production *)
-        if name = empty_nonterminal.nbase.name then
-          production
-        else
-          let symbol, prec =
-            try
-              let terminal = find_terminal name in
-              (* whenever we see a terminal, copy its precedence spec to
-               * the production; thus, the last symbol appearing in the
-               * production will be the one that gives the precedence *)
-              Terminal (tag, terminal), terminal.precedence
-            with Not_found ->
-              Nonterminal (tag, find_nonterminal name), production.prec
+  let production =
+    List.fold_left (fun production -> function
+      | RH_name (tag, name) ->
+          (* "empty" is a syntactic convenience; it doesn't get
+           * added to the production *)
+          if name = empty_nonterminal.nbase.name then
+            production
+          else
+            let symbol, prec =
+              try
+                let terminal = find_terminal name in
+                (* whenever we see a terminal, copy its precedence spec to
+                 * the production; thus, the last symbol appearing in the
+                 * production will be the one that gives the precedence *)
+                Terminal (tag, terminal), terminal.precedence
+              with Not_found ->
+                Nonterminal (tag, find_nonterminal name), production.prec
+            in
+
+            (* add it to the production *)
+            { production with right = symbol :: production.right; prec }
+
+      | RH_string (tag, str) ->
+          { production with right = Terminal (tag, find_terminal str) :: production.right }
+
+      | RH_prec (tokName) ->
+          let { precedence } = find_terminal tokName in
+
+          (* apply the specified precedence *)
+          { production with prec = precedence }
+
+      | RH_forbid (tokName) ->
+          let tok = find_terminal tokName in
+
+          let forbid =
+            add_forbid production.forbid tok
           in
 
-          (* add it to the production *)
-          { production with right = symbol :: production.right; prec }
+          { production with forbid }
 
-    | RH_string (tag, str) ->
-        { production with right = Terminal (tag, find_terminal str) :: production.right }
+    ) production rhs_list
+  in
 
-    | RH_prec (tokName) ->
-        let { precedence } = find_terminal tokName in
-
-        (* apply the specified precedence *)
-        { production with prec = precedence }
-
-    | RH_forbid (tokName) ->
-        let tok = find_terminal tokName in
-
-        let forbid =
-          add_forbid production.forbid tok
-        in
-
-        { production with forbid }
-
-  ) production rhs_list
+  (* The list was built in reverse order; reverse it again, here *)
+  { production with right = List.rev production.right }
 
 
 let collect_productions aliases terminals nonterminals nonterms =

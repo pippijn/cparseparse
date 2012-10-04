@@ -1,4 +1,4 @@
-open Gramtype
+open GrammarType
 
 
 let rec compute_reachable_dfs prods_by_lhs nonterm =

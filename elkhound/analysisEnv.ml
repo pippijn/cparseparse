@@ -1,12 +1,13 @@
-open Gramtype
+open GrammarType
 open AnalysisEnvType
+open LrItem
+open ItemSet
 
 
 (* clear first/follow sets by intersecting them with 0 *)
 let reset_first_follow prods nonterms term_count =
-  let open Gramtype in
-  let empty = TerminalSet.empty () in
-  let reset set = TerminalSet.intersect set empty in
+  let open GrammarType in
+  let reset set = TerminalSet.clear set in
 
   Stringmap.iter (fun _ nonterm ->
     reset nonterm.first;
@@ -38,6 +39,9 @@ let compute_indexed_nonterms nonterms =
     assert (nonterm != empty_nonterminal || nonterm.nt_index = 0)
   ) indexed;
 
+  (* number of nonterminals + 1 for empty_nonterminal *)
+  assert (Array.length indexed = Stringmap.cardinal nonterms + 1);
+
   indexed
 
 
@@ -52,6 +56,8 @@ let compute_indexed_terms terms =
 
   (* verify we filled the term_index map *)
   Array.iter (fun term -> assert (term != empty_terminal)) indexed;
+
+  assert (Array.length indexed = Stringmap.cardinal terms);
 
   indexed
 
@@ -82,8 +88,10 @@ let compute_indexed_prods productions nonterm_count =
 
 let compute_dotted_productions indexed_prods term_count =
   let dotted_prods = Array.init (Array.length indexed_prods) (fun i ->
+
     let prod = indexed_prods.(i) in
     let rhs_length = List.length prod.right in
+
     (* one dottedproduction for every dot position, which is one
      * more than the # of RHS elements *)
     Array.init (rhs_length + 1) (fun dot ->
@@ -95,27 +103,33 @@ let compute_dotted_productions indexed_prods term_count =
         after_dot  = (if dot_at_end   then None else Some (List.nth prod.right  dot));
         first_set  = TerminalSet.create term_count;
         can_derive_empty = false;
+        back_pointer = None;
       }
     )
+
   ) in
+
+  (* the mapping is dense by construction, no need to verify it *)
 
   dotted_prods
 
 
 let init_env grammar =
-  (* number of nonterminals + 1 for empty_nonterminal *)
-  let nonterm_count = Stringmap.cardinal grammar.nonterminals + 1 in
-  let term_count = Stringmap.cardinal grammar.terminals in
+  (* build indexed nonterminal map *)
+  let indexed_nonterms = compute_indexed_nonterms grammar.nonterminals in
+  let nonterm_count = Array.length indexed_nonterms in
 
-  reset_first_follow grammar.productions grammar.nonterminals term_count;
+  (* build indexed terminal map *)
+  let indexed_terms = compute_indexed_terms grammar.terminals in
+  let term_count = Array.length indexed_terms in
 
-  let indexed_nonterms = compute_indexed_nonterms grammar.nonterminals
-  and indexed_terms = compute_indexed_terms grammar.terminals
-  and indexed_prods, prods_by_lhs = compute_indexed_prods grammar.productions nonterm_count
-  in
+  (* build indexed production map *)
+  let indexed_prods, prods_by_lhs = compute_indexed_prods grammar.productions nonterm_count in
 
+  (* build dotted productions for each production *)
   let dotted_prods = compute_dotted_productions indexed_prods term_count in
 
+  (* make the env *)
   let env = {
     indexed_nonterms;
     indexed_terms;
@@ -124,6 +138,11 @@ let init_env grammar =
     dotted_prods;
     derivable = Derivability.initial_derivable_relation nonterm_count;
     cyclic_grammar = false;
+    item_sets = [];
+    start_state = None;
   } in
+
+  (* reset first/follow sets to 0 *)
+  reset_first_follow grammar.productions grammar.nonterminals term_count;
 
   env
