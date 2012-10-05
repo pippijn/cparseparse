@@ -4,6 +4,42 @@ open GrammarType
 open Merge
 
 
+let name_of_symbol = function
+  | Nonterminal (_, { nbase = { name } })
+  | Terminal (_, { tbase = { name }; alias = "" }) -> name
+  | Terminal (_, { alias }) -> alias
+
+
+(* symbol equality ignores tags *)
+let equal_symbol a b =
+  match a, b with
+  | Terminal (_, term_a), Terminal (_, term_b) ->
+      term_a == term_b
+  | Nonterminal (_, nonterm_a), Nonterminal (_, nonterm_b) ->
+      nonterm_a == nonterm_b
+  | _ ->
+      (* terminals never equal non-terminals *)
+      false
+
+
+let compare_symbol a b =
+  match a, b with
+  (* any state with no incoming arcs (start state) is first *)
+  | None, Some _ -> 1
+  | Some _, None -> -1
+  | None, None -> 0
+
+  (* terminals come before nonterminals *)
+  | Some (Nonterminal _), Some (Terminal _) -> -1
+  | Some (Terminal _), Some (Nonterminal _) -> 1
+
+  (* order by id within terms/nonterms *)
+  | Some (Terminal (_, term_a)), Some (Terminal (_, term_b)) ->
+      term_a.term_index - term_b.term_index
+  | Some (Nonterminal (_, nonterm_a)), Some (Nonterminal (_, nonterm_b)) ->
+      nonterm_a.nt_index - nonterm_b.nt_index
+
+
 let start_name = "__EarlyStartSymbol"
 
 
@@ -195,7 +231,7 @@ let collect_terminals decls types precs =
   terminals
 
 
-let collect_nonterminals nonterms =
+let collect_nonterminals nonterms term_count =
   (*Sexplib.Sexp.output_hum Pervasives.stdout (Stringmap.sexp_of_t Gramast.sexp_of_topform nonterms);*)
   (*print_newline ();*)
 
@@ -229,8 +265,8 @@ let collect_nonterminals nonterms =
             subsets;
 
             (* Each nonterminal needs its own first/follow sets. *)
-            first  = TerminalSet.empty ();
-            follow = TerminalSet.empty ();
+            first  = TerminalSet.create term_count;
+            follow = TerminalSet.create term_count;
           } in
 
           Stringmap.add name nonterminal nonterminals
@@ -316,6 +352,8 @@ let collect_production_rhs aliases terminals nonterminals is_synthesised rhs_lis
 
 
 let collect_productions aliases terminals nonterminals nonterms =
+  let term_count = Stringmap.cardinal terminals in
+
   Stringmap.fold (fun _ nterm productions ->
     match nterm with
     | TF_nonterm (name, _, _, prods, _) ->
@@ -326,7 +364,11 @@ let collect_productions aliases terminals nonterminals nonterms =
         List.fold_left (fun productions (ProdDecl (kind, rhs, action)) ->
           (* build a production *)
           let production =
-            { empty_production with left; action; first_set = TerminalSet.empty () }
+            { empty_production with
+              left;
+              action;
+              first_rhs = TerminalSet.create term_count
+            }
             (* deal with RHS elements *)
             |> collect_production_rhs aliases terminals nonterminals is_synthesised rhs
           in
@@ -348,15 +390,13 @@ let of_ast topforms =
 
   (* process all (non)terminal declarations first, so while we're 
    * looking at productions we can tell if one isn't declared *)
-  let terminals               = collect_terminals topforms.decls types precs
-  and verbatim, impl_verbatim = collect_verbatims topforms.verbatims
-  and nonterminals            = collect_nonterminals topforms.nonterms
-  in
+  let terminals               = collect_terminals topforms.decls types precs in
+  let verbatim, impl_verbatim = collect_verbatims topforms.verbatims in
+  let nonterminals            = collect_nonterminals topforms.nonterms (Stringmap.cardinal terminals) in
 
   (* process nonterminal bodies *)
-  let productions             = collect_productions aliases terminals nonterminals topforms.nonterms
-  and start_symbol            = Stringmap.find topforms.first_nonterm nonterminals
-  in
+  let productions             = collect_productions aliases terminals nonterminals topforms.nonterms in
+  let start_symbol            = Stringmap.find topforms.first_nonterm nonterminals in
 
   let grammar = { empty_grammar with
     nonterminals;

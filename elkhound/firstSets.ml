@@ -1,6 +1,6 @@
-let first_of_sequence derivable seq =
+let first_of_sequence derivable seq term_count =
   let open GrammarType in
-  let dest = TerminalSet.create 160 in
+  let dest = TerminalSet.create term_count in
 
   (* for each sequence member such that all
    * preceeding members can derive the empty string *)
@@ -38,8 +38,9 @@ let first_of_sequence derivable seq =
  *
  * I also don't "compute" First for terminals, since they are trivial
  * (First(x) = {x}). *)
-let compute_first derivable indexed_nonterms indexed_prods =
+let compute_first derivable indexed_nonterms indexed_prods indexed_terms =
   let open GrammarType in
+  let term_count = Array.length indexed_terms in
   let changed = ref true in
 
   while !changed do
@@ -50,19 +51,29 @@ let compute_first derivable indexed_nonterms indexed_prods =
       let lhs = prod.left in
 
       (* compute First(RHS-sequence) *)
-      let first_of_rhs = first_of_sequence derivable prod.right in
+      let first_of_rhs = first_of_sequence derivable prod.right term_count in
 
       (* add everything in First(RHS-sequence) to First(LHS) *)
       if TerminalSet.merge lhs.first first_of_rhs then
         changed := true
     ) indexed_prods
 
-  done
+  done;
+
+  if false then (
+    Array.iter (fun nonterm ->
+      Printf.printf "First(%s) = " nonterm.nbase.name;
+      PrintAnalysisEnv.print_terminal_set indexed_terms nonterm.first;
+      print_newline ();
+    ) indexed_nonterms
+  )
 
 
-let compute_dprod_first derivable dotted_prods indexed_prods =
+let compute_dprod_first derivable dotted_prods indexed_prods indexed_terms =
   let open GrammarType in
   let open AnalysisEnvType in
+  let term_count = Array.length indexed_terms in
+
   (* for each production *)
   Array.iter (fun prod ->
 
@@ -71,12 +82,25 @@ let compute_dprod_first derivable dotted_prods indexed_prods =
     for posn = 0 to rhs_length do
       let dprod = dotted_prods.(prod.prod_index).(posn) in
 
+      let right = ListUtil.nth_tl dprod.prod.right posn in
+
       (* compute its first *)
-      TerminalSet.clear dprod.first_set;
-      let first_of_rhs = first_of_sequence derivable dprod.prod.right in
+      let first_of_rhs = first_of_sequence derivable right term_count in
+      TerminalSet.assign dprod.first_set first_of_rhs;
 
       (* can it derive empty? *)
-      dprod.can_derive_empty <- Derivability.can_sequence_derive_empty derivable dprod.prod.right
+      dprod.can_derive_empty <- Derivability.can_sequence_derive_empty derivable right;
+
+      if false then (
+        PrintAnalysisEnv.print_dotted_production dprod;
+        print_string "; First(.) = ";
+        PrintAnalysisEnv.print_terminal_set indexed_terms dprod.first_set;
+
+        if dprod.can_derive_empty then
+          print_endline " - can derive empty"
+        else
+          print_endline " - can NOT derive empty"
+      )
     done
 
   ) indexed_prods

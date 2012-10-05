@@ -43,10 +43,15 @@ setup.ml: _oasis
 check: build
 	_build/elkhound/elkhound.native
 
+
+CALLGRIND = valgrind --tool=callgrind --dump-instr=yes --trace-jump=yes
+
 profile-elkhound: build
-	rm -f callgrind.out.*
-	valgrind --tool=callgrind _build/elkhound/elkhound.native
+	$(CALLGRIND) _build/elkhound/elkhound.native
+	rm -f callgrind.out
+	mv callgrind.out.* callgrind.out
 
 profile-ccparse: build
-	rm -f callgrind.out.*
-	valgrind --tool=callgrind _build/ccparse/ccparse.native testsuite/ccparse/profile.cc
+	$(CALLGRIND) _build/ccparse/ccparse.native testsuite/ccparse/profile.cc
+	rm -f callgrind.out
+	mv callgrind.out.* callgrind.out

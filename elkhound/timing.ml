@@ -1,8 +1,9 @@
-let time f x =
+let time desc f x =
   let start = Unix.gettimeofday () in
   let result = f x in
   let finish = Unix.gettimeofday () in
 
-  Printf.printf "took %f seconds\n" (finish -. start);
+  print_string "%%% ";
+  Printf.printf "%s took %f seconds\n" desc (finish -. start);
 
   result

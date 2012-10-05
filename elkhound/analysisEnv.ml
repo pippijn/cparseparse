@@ -1,7 +1,7 @@
 open GrammarType
 open AnalysisEnvType
-open LrItem
-open ItemSet
+
+let paranoid = false
 
 
 (* clear first/follow sets by intersecting them with 0 *)
@@ -15,7 +15,7 @@ let reset_first_follow prods nonterms term_count =
   ) nonterms;
 
   List.iter (fun prod ->
-    reset prod.first_set
+    reset prod.first_rhs
   ) prods
 
 
@@ -87,6 +87,14 @@ let compute_indexed_prods productions nonterm_count =
 
 
 let compute_dotted_productions indexed_prods term_count =
+  let next_id =
+    let next = ref 0 in
+    fun () ->
+      let id = !next in
+      incr next;
+      id
+  in
+
   let dotted_prods = Array.init (Array.length indexed_prods) (fun i ->
 
     let prod = indexed_prods.(i) in
@@ -95,12 +103,10 @@ let compute_dotted_productions indexed_prods term_count =
     (* one dottedproduction for every dot position, which is one
      * more than the # of RHS elements *)
     Array.init (rhs_length + 1) (fun dot ->
-      let dot_at_start = dot = 0 in
       let dot_at_end   = dot = rhs_length in
 
-      { prod; dot;
-        before_dot = (if dot_at_start then None else Some (List.nth prod.right (dot - 1)));
-        after_dot  = (if dot_at_end   then None else Some (List.nth prod.right  dot));
+      { prod; dot; dprod_id = next_id ();
+        after_dot  = (if dot_at_end then None else Some (List.nth prod.right dot));
         first_set  = TerminalSet.create term_count;
         can_derive_empty = false;
         back_pointer = None;
@@ -112,6 +118,57 @@ let compute_dotted_productions indexed_prods term_count =
   (* the mapping is dense by construction, no need to verify it *)
 
   dotted_prods
+
+
+let verify_nonshared indexed_nonterms indexed_prods dotted_prods =
+  (* check nonterminals with nonterminals *)
+  Array.iter (fun nonterm1 ->
+    Array.iter (fun nonterm2 ->
+      assert (nonterm1 == nonterm2 || nonterm1.first != nonterm2.first);
+    ) indexed_nonterms
+  ) indexed_nonterms;
+  (* check productions with productions *)
+  Array.iter (fun prod1 ->
+    Array.iter (fun prod2 ->
+      assert (prod1 == prod2 || prod1.first_rhs != prod2.first_rhs);
+    ) indexed_prods
+  ) indexed_prods;
+  (* check dotted productions with dotted productions *)
+  Array.iter (Array.iter (fun dprod1 ->
+    Array.iter (Array.iter (fun dprod2 ->
+      assert (dprod1 == dprod2 || dprod1.first_set != dprod2.first_set);
+    )) dotted_prods
+  )) dotted_prods;
+  (* check nonterminals with productions *)
+  Array.iter (fun nonterm ->
+    Array.iter (fun prod ->
+      assert (nonterm.first != prod.first_rhs);
+    ) indexed_prods
+  ) indexed_nonterms;
+  (* check productions with dottedproductions *)
+  Array.iter (fun prod ->
+    Array.iter (Array.iter (fun dprod ->
+      assert (prod.first_rhs != dprod.first_set);
+    )) dotted_prods
+  ) indexed_prods;
+  (* check nonterminals with dotted productions *)
+  Array.iter (fun nonterm ->
+    Array.iter (Array.iter (fun dprod ->
+      assert (nonterm.first != dprod.first_set);
+    )) dotted_prods
+  ) indexed_nonterms
+
+
+let verify_empty indexed_nonterms indexed_prods dotted_prods =
+  Array.iter (fun nonterm ->
+    assert (TerminalSet.count nonterm.first = 0)
+  ) indexed_nonterms;
+  Array.iter (fun prod ->
+    assert (TerminalSet.count prod.first_rhs = 0)
+  ) indexed_prods;
+  Array.iter (Array.iter (fun dprod ->
+    assert (TerminalSet.count dprod.first_set = 0)
+  )) dotted_prods
 
 
 let init_env grammar =
@@ -144,5 +201,13 @@ let init_env grammar =
 
   (* reset first/follow sets to 0 *)
   reset_first_follow grammar.productions grammar.nonterminals term_count;
+
+  if paranoid then (
+    (* verify that no objects share a terminal set *)
+    verify_nonshared indexed_nonterms indexed_prods dotted_prods;
+
+    (* verify that all terminal set contain no terminals *)
+    verify_empty indexed_nonterms indexed_prods dotted_prods;
+  );
 
   env

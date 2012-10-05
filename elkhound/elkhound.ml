@@ -15,7 +15,7 @@ let print_grammar grammar =
   print_newline ()
 
 
-let () =
+let main () =
   let basedir = "ccparse" in
 
   let grammars =
@@ -48,3 +48,10 @@ let () =
   (*PrintGrammar.print_productions grammar.productions;*)
   Gramanl.run_analyses grammar;
   (*print_grammar grammar*)
+
+  ()
+
+
+let () =
+  Printexc.record_backtrace true;
+  Printexc.print main ()

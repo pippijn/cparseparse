@@ -20,3 +20,7 @@ let is_dot_at_start item =
 
 let is_dot_at_end item =
   DottedProduction.is_dot_at_end item.dprod
+
+
+let symbol_after_dot item =
+  DottedProduction.symbol_after_dot item.dprod

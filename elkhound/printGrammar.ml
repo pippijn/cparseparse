@@ -1,27 +1,18 @@
 open GrammarType
 
-let print_terminal { tbase = { name } } =
-  print_string name
-
-let print_nonterminal { nbase = { name } } =
-  print_string name
-
-let print_symbol = function
+let print_symbol sym =
+  match sym with
   | Terminal ("", term) ->
-      print_terminal term
+      print_string (Grammar.name_of_symbol sym)
   | Terminal (tag, term) ->
       Printf.printf "%s:" tag;
-      print_terminal term
+      print_string (Grammar.name_of_symbol sym)
   | Nonterminal ("", nonterm) ->
-      print_nonterminal nonterm
+      print_string (Grammar.name_of_symbol sym)
   | Nonterminal (tag, nonterm) ->
       Printf.printf "%s:" tag;
-      print_nonterminal nonterm
+      print_string (Grammar.name_of_symbol sym)
 
 let print_production prod =
-  Printf.printf "%s ->" prod.left.nbase.name;
-  List.iter print_symbol prod.right;
-  print_newline ()
-
-
-let print_productions = List.iter print_production
+  Printf.printf "[%d] %s ->" prod.prod_index prod.left.nbase.name;
+  List.iter (fun sym -> print_string " "; print_symbol sym) prod.right

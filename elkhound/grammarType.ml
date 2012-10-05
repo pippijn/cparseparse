@@ -102,7 +102,7 @@ type production = {
   action 		: string; (* user-supplied reduction action code *)
 
   (* --- annotation --- *)
-  first_set 		: TerminalSet.t; (* First(RHS) *)
+  first_rhs 		: TerminalSet.t; (* First(RHS) *)
   mutable prod_index 	: int; (* unique production id *)
 } with sexp
 
@@ -191,7 +191,7 @@ let empty_production = {
             
   action     = "";
 
-  first_set  = TerminalSet.empty_set;
+  first_rhs  = TerminalSet.empty_set;
   prod_index = -1;
 }
 

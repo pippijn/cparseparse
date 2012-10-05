@@ -53,3 +53,10 @@ let fold_leftl_until f x l =
 
 let fold_left_many f x ll =
   List.fold_left (List.fold_left f) x ll
+
+
+let rec nth_tl l i =
+  if i = 0 then
+    l
+  else
+    nth_tl (List.tl l) (i - 1)

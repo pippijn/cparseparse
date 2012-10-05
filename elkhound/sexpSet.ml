@@ -1,7 +1,7 @@
 open Sexplib
 
 module type Convertible = sig
-  include Map.OrderedType
+  include BatSet.OrderedType
 
   val t_of_sexp : Sexp.t -> t
   val sexp_of_t : t -> Sexp.t
@@ -9,7 +9,7 @@ end
 
 module Make(T : Convertible) = struct
 
-  include Set.Make(T)
+  include BatSet.Make(T)
 
   let t_of_sexp sexp =
     let elements =
