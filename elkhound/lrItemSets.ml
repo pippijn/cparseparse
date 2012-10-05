@@ -1,12 +1,6 @@
 open BatPervasives
 open AnalysisEnvType
 
-module ItemSetStack = HashStack.Make(ItemSetTable)
-
-
-let trace_closure = false
-let trace_lrsets = false
-
 
 type env = {
   env : AnalysisEnvType.env;
@@ -68,7 +62,7 @@ let changed_items item_set =
 
 let production_closure env finished worklist item b prod =
   let open GrammarType in
-  if trace_closure then (
+  if Config.trace_closure then (
     print_string "    considering production ";
     PrintGrammar.print_production prod;
     print_newline ();
@@ -101,7 +95,7 @@ let production_closure env finished worklist item b prod =
    * for which 'prod' is not allowed to reduce when they are next *)
   TerminalSet.differentiate new_item_la prod.forbid;
 
-  if trace_closure then (
+  if Config.trace_closure then (
     print_string "      built item ";
     PrintAnalysisEnv.print_lr_item env { dprod = new_dp; lookahead = new_item_la };
     print_newline ();
@@ -126,7 +120,7 @@ let production_closure env finished worklist item b prod =
   match already with
   | Some already ->
       (* yes, it's already there *)
-      if trace_closure then (
+      if Config.trace_closure then (
         print_string "      looks similar to ";
         PrintAnalysisEnv.print_lr_item env already;
         print_newline ();
@@ -135,7 +129,7 @@ let production_closure env finished worklist item b prod =
       (* but the new item may have additional lookahead
        * components, so merge them with the old *)
       if TerminalSet.merge already.lookahead new_item_la then (
-        if trace_closure then (
+        if Config.trace_closure then (
           print_string "      (chg) merged it to make ";
           PrintAnalysisEnv.print_lr_item env already;
           print_newline ();
@@ -164,7 +158,7 @@ let production_closure env finished worklist item b prod =
         lookahead = new_item_la;
       } in
 
-      if trace_closure then (
+      if Config.trace_closure then (
         print_endline "      this dprod is new, queueing it to add";
       );
 
@@ -179,7 +173,7 @@ let single_item_closure env finished worklist item =
   (* in comments that follow, 'item' is broken down as
    *   A -> alpha . B beta, LA *)
 
-  if trace_closure then (
+  if Config.trace_closure then (
     print_string "%%% considering item ";
     PrintAnalysisEnv.print_lr_item env item;
     print_newline ();
@@ -189,13 +183,13 @@ let single_item_closure env finished worklist item =
   match LrItem.symbol_after_dot item with
   | None ->
       (* dot is at the end *)
-      if trace_closure then (
+      if Config.trace_closure then (
         print_endline "    dot is at the end"
       )
 
   | Some (Terminal _) ->
       (* symbol after the dot is a terminal *)
-      if trace_closure then (
+      if Config.trace_closure then (
         print_endline "    symbol after the dot is a terminal"
       )
 
@@ -211,7 +205,7 @@ let item_set_closure env item_set =
    * every 'dprod' not associated has dprod.back_pointer = None *)
   let worklist = Stack.create () in
 
-  if trace_closure then (
+  if Config.trace_closure then (
     print_string "%%% computing closure of ";
     PrintAnalysisEnv.print_item_set env.env item_set;
   );
@@ -256,7 +250,7 @@ let item_set_closure env item_set =
   (* we potentially added a bunch of things *)
   changed_items item_set;
 
-  if trace_closure then (
+  if Config.trace_closure then (
     print_string "%%% done with closure of ";
     PrintAnalysisEnv.print_item_set env.env item_set;
   )
@@ -329,7 +323,7 @@ let merge_or_create_state env item_set sym in_done_list already with_dot_moved =
        * considering their lookahead sets; so we have to merge the
        * computed lookaheads with those in 'already' *)
       if merge_lookaheads_into already with_dot_moved.kernel_items then (
-        if trace_lrsets then (
+        if Config.trace_lrsets then (
           Printf.printf "from state %d, found that the transition on %s yielded a state similar to %d, but with different lookahead\n"
             (int_of_state_id item_set.state_id)
             (Grammar.name_of_symbol sym)
@@ -387,7 +381,7 @@ let create_transition env item_set sym =
       true, ItemSetMap.Exceptionless.find with_dot_moved env.item_sets_done
   in
 
-  if trace_lrsets then (
+  if Config.trace_lrsets then (
     print_endline (if in_done_list then "from done list" else "from pending list");
   );
 
@@ -408,7 +402,7 @@ let process_item env item_set item =
       ()
 
   | Some sym ->
-      if trace_lrsets then (
+      if Config.trace_lrsets then (
         print_string "%%% considering item ";
         PrintAnalysisEnv.print_lr_item env.env item;
         print_newline ();
@@ -431,7 +425,7 @@ let process_item_set env =
    * the processing below, to properly handle self-loops *)
   env.item_sets_done <- ItemSetMap.add item_set item_set env.item_sets_done;
 
-  if trace_lrsets then (
+  if Config.trace_lrsets then (
     print_string "%%% ";
     Printf.printf "state %d, %d kernel items and %d nonkernel items\n"
       (int_of_state_id item_set.state_id)

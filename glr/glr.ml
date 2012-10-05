@@ -5,7 +5,6 @@
 open Useract         (* tSemanticValue *)
 open Parsetables     (* action/goto/etc. *)
 open Smutil          (* getSome, etc. *)
-open Lexerint
 
 
 (* Relative to C++ implementation, what is not done:
@@ -34,13 +33,13 @@ let use_mini_lr = true
 
 
 (* identifier for a symbol *)
-type tSymbolId = int
+type symbol_id = int
 
 
 (* link from one stack node to another *)
-type tSiblingLink = {
+type sibling_link = {
   (* stack node we're pointing at; == cNULL_STACK_NODE if none *)
-  mutable sib : tStackNode;
+  mutable sib : stack_node;
 
   (* semantic value on this link *)
   mutable sval : tSemanticValue;
@@ -52,20 +51,20 @@ type tSiblingLink = {
 
 (* node in the GLR graph-structured stack; all fields are
  * mutable because these are stored in a pool for explicit re-use *)
-and tStackNode = {
+and stack_node = {
   (* for access to parser context in a few unusual situations *)
-  glr : tGLR;
+  glr : glr;
 
   (* LR parser state when this node is at the top *)
-  mutable state : tStateId;
+  mutable state : state_id;
 
   (* pointers to adjacent (to the left) stack nodes *)
   (* possible TODO: put links into a pool so I can deallocate them *)
-  mutable leftSiblings : tSiblingLink list;
+  mutable leftSiblings : sibling_link list;
 
   (* logically first sibling in the sibling list; separated out
    * from 'leftSiblings' for performance reasons *)
-  mutable firstSib : tSiblingLink;
+  mutable firstSib : sibling_link;
 
   (* number of sibling links pointing at this node, plus the
    * number of worklists this node appears in *)
@@ -82,16 +81,16 @@ and tStackNode = {
 
 (* this is a path that has been queued for reduction;
  * all fields mutable to support pooling *)
-and tPath = {
+and path = {
   (* array of sibling links, i.e. the path; 0th element is
    * leftmost link *)
-  sibLinks : tSiblingLink array ref;
+  sibLinks : sibling_link array ref;
 
   (* corresponding array of symbol ids to interpret svals *)
-  symbols : tSymbolId array ref;
+  symbols : symbol_id array ref;
 
   (* rightmost state's id *)
-  mutable startStateId : tStateId;
+  mutable startStateId : state_id;
 
   (* production we're going to reduce with *)
   mutable prodIndex : int;
@@ -100,28 +99,28 @@ and tPath = {
   mutable startColumn : int;
 
   (* the leftmost stack node itself *)
-  mutable leftEdgeNode : tStackNode;
+  mutable leftEdgeNode : stack_node;
 
   (* next path in dequeueing order *)
-  mutable next : tPath option;
+  mutable next : path option;
 }
 
 (* priority queue of reduction paths *)
-and tReductionPathQueue = {
+and reduction_path_queue = {
   (* head of the list, first to dequeue *)
-  mutable top : tPath option;
+  mutable top : path option;
 
   (* pool of path objects *)
-  pathPool : tPath Objpool.t;
+  pathPool : path Objpool.t;
 
   (* need our own copy of the tables pointer *)
-  rpqTables : tParseTables;      (* name can't collide with tGLR.tables.. ! *)
+  rpqTables : tParseTables;      (* name can't collide with glr.tables.. ! *)
 }
 
 
 (* GLR parser object *)
 (* some mutable fields are for hack in 'makeGLR' *)
-and tGLR = {
+and glr = {
   (* user-specified actions *)
   userAct : tUserActions;
 
@@ -133,16 +132,16 @@ and tGLR = {
   toPass : tSemanticValue array;
 
   (* reduction queue and pool *)
-  pathQueue : tReductionPathQueue;
+  pathQueue : reduction_path_queue;
 
   (* set of topmost parser nodes *)
-  mutable topmostParsers : tStackNode Arraystack.t;
+  mutable topmostParsers : stack_node Arraystack.t;
 
   (* swapped with 'topmostParsers' periodically, for performance reasons *)
-  mutable prevTopmost : tStackNode Arraystack.t;
+  mutable prevTopmost : stack_node Arraystack.t;
 
   (* node allocation pool; shared with glrParse *)
-  mutable stackNodePool : tStackNode Objpool.t;
+  mutable stackNodePool : stack_node Objpool.t;
 
   (* when true, print some diagnosis of failed parses *)
   mutable noisyFailedParse : bool;
@@ -467,7 +466,7 @@ let makeGLR tablesIn actions =
    * So I prefer this local (if gross) hack to something that pollutes the
    * design itself.
    *
-   * In fact, I *did* use the 'option' approach for tSiblingLink.sib,
+   * In fact, I *did* use the 'option' approach for sibling_link.sib,
    * and it is indeed a pain.
    * UPDATE: Switched to using Obj.magic there too, for performance.
    *)
@@ -877,7 +876,7 @@ let rwlShiftTerminals tokenKindDesc lexer glr =
 
   (* grab current token since we'll need it and the access
    * isn't all that fast here in ML *)
-  let tokType = lexer.tokType in
+  let tokType = Lexerint.(lexer.tokType) in
 
   (* for token multi-yield.. *)
   let prev = ref None in
@@ -929,7 +928,7 @@ let rwlShiftTerminals tokenKindDesc lexer glr =
       if traceParse then
         Printf.printf "state %d, shift token %s, to state %d\n"
                        leftSibling.state
-                       (tokenKindDesc lexer.tokType)
+                       (tokenKindDesc Lexerint.(lexer.tokType))
                        !newState;
 
       (* already a parser in this state? *)
@@ -998,7 +997,7 @@ let nondeterministicParseToken tokenKindDesc lexer glr =
 
   (* seed the reduction worklist by analyzing the top nodes *)
   Arraystack.iter glr.topmostParsers (fun parsr ->
-    let tt = lexer.tokType in
+    let tt = Lexerint.(lexer.tokType) in
     let action = getActionEntry glr.tables parsr.state tt in
     let actions = rwlEnqueueReductions glr parsr action None(*sibLink*) in
     
@@ -1010,14 +1009,14 @@ let nondeterministicParseToken tokenKindDesc lexer glr =
   );
 
   (* drop into worklist processing loop *)
-  rwlProcessWorklist lexer.tokType glr;
+  rwlProcessWorklist Lexerint.(lexer.tokType) glr;
 
   (* do all shifts last *)
   rwlShiftTerminals tokenKindDesc lexer glr;
 
   (* error? *)
   if Arraystack.isEmpty glr.topmostParsers then (
-    printParseErrorMessage tokenKindDesc lexer.tokType glr !lastToDie;
+    printParseErrorMessage tokenKindDesc Lexerint.(lexer.tokType) glr !lastToDie;
     false
   ) else (
     true
@@ -1140,7 +1139,7 @@ let glrParseToken tokenKindDesc glr getToken lexer =
 
   (* goto label: getNextToken *)
   (* last token? *)
-  if lexer.tokType = 0 then
+  if Lexerint.(lexer.tokType) = 0 then
     raise End_of_file;       (* "break" *)
 
   (* get the next token *)
@@ -1151,7 +1150,7 @@ let rec lrParseToken tokenKindDesc glr lr getToken lexer =
   let parsr = ref (Arraystack.top glr.topmostParsers) in
   assert (!parsr.referenceCount = 1);
 
-  let tok = lexer.tokType in
+  let tok = Lexerint.(lexer.tokType) in
   let action = getActionEntry_noError glr.tables !parsr.state tok in
 
   if isReduceAction action then (
@@ -1232,7 +1231,7 @@ let rec lrParseToken tokenKindDesc glr lr getToken lexer =
 
       (* does the user want to keep it? *)
       if use_keep && not (glr.userAct.keepNontermValue lhsIndex sval) then (
-        printParseErrorMessage tokenKindDesc lexer.tokType glr newNode.state;
+        printParseErrorMessage tokenKindDesc Lexerint.(lexer.tokType) glr newNode.state;
         if accounting then (
           glr.detShift  <- glr.detShift  + lr.lrDetShift;
           glr.detReduce <- glr.detReduce + lr.lrDetReduce;
@@ -1285,7 +1284,7 @@ let rec lrParseToken tokenKindDesc glr lr getToken lexer =
     (* get next token *)
     (* "goto getNextToken;" *)
     (* last token? *)
-    if lexer.tokType = 0 then
+    if Lexerint.(lexer.tokType) = 0 then
       raise End_of_file;       (* "break" *)
 
     (* get the next token *)
@@ -1300,7 +1299,7 @@ let rec lrParseToken tokenKindDesc glr lr getToken lexer =
 let rec main_loop tokenKindDesc glr lr getToken lexer =
   if traceParse then (
     Printf.printf "---- processing token %s, %d active parsers ----\n"
-                   (tokenKindDesc lexer.tokType)
+                   (tokenKindDesc Lexerint.(lexer.tokType))
                    (Arraystack.length glr.topmostParsers);
     Printf.printf "Stack:%s\n" (stackSummary glr);
     flush stdout

@@ -82,24 +82,28 @@ let renumber_states_compare env a b =
   order
 
 
+(* The purpose of this function is to number the states (which have up
+ * to this point been numbered arbitrarily) in such a way that all
+ * states that have a given symbol on incoming arcs will be numbered
+ * consecutively.  This is part of the table compression schemes
+ * described in the Dencker et. al. paper (see module ParseTables). *)
 let renumber_states env states =
   (* sort them in the right order *)
   let states = List.rev (List.sort (renumber_states_compare env) states) in
 
   (* number them in that order *)
-  let states = List.rev (fst (
-    List.fold_left (fun (states, i) state ->
-      if i = 0 then
+  ignore (
+    List.fold_left (fun i state ->
+      if i = 0 then (
+        (* the first element should always be the start state *)
         assert (int_of_state_id state.state_id = 0);
+        assert (BatOption.get env.start_state == state);
+      );
 
-      let state = { state with state_id = state_id_of_int i } in
-      state :: states, i + 1
-    ) ([], 0) states
-  )) in
+      state.state_id <- state_id_of_int i;
 
-  List.iter (fun item_set ->
-    PrintAnalysisEnv.print_item_set env item_set;
-    print_newline ()
-  ) states;
+      i + 1
+    ) 0 states
+  );
 
   states

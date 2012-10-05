@@ -1,8 +1,6 @@
 open GrammarType
 open AnalysisEnvType
 
-let paranoid = false
-
 
 (* clear first/follow sets by intersecting them with 0 *)
 let reset_first_follow prods nonterms term_count =
@@ -195,14 +193,13 @@ let init_env grammar =
     dotted_prods;
     derivable = Derivability.initial_derivable_relation nonterm_count;
     cyclic_grammar = false;
-    item_sets = [];
     start_state = None;
   } in
 
   (* reset first/follow sets to 0 *)
   reset_first_follow grammar.productions grammar.nonterminals term_count;
 
-  if paranoid then (
+  if Config.paranoid then (
     (* verify that no objects share a terminal set *)
     verify_nonshared indexed_nonterms indexed_prods dotted_prods;
 

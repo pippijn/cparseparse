@@ -27,6 +27,10 @@ module Make(T : Hashtbl.S) = struct
     item
 
 
+  let mem stack item =
+    T.mem stack.table item
+
+
   let find stack item =
     T.find stack.table item
 

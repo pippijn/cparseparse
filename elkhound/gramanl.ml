@@ -1,3 +1,4 @@
+open BatPervasives
 open GrammarType
 open AnalysisEnvType
 
@@ -12,8 +13,19 @@ let compute_grammar_properties env grammar =
 
 
 let compute_lr_tables env =
-  let states = Timing.time "LR item sets" LrItemSets.construct_lr_item_sets env in
-  let states = Timing.time "renumbering states" (Renumbering.renumber_states env) states in
+  let tables =
+    Timing.time "LR item sets construction" LrItemSets.construct_lr_item_sets env
+    |> Timing.time "renumbering states" (Renumbering.renumber_states env)
+    |> Timing.time "BFS tree on transition graph" (BfsTree.compute_bfs_tree env)
+    |> Timing.time "parse table construction" (TableConstruction.compute_parse_tables env (*~allow_ambig:*)true)
+  in
+
+  (*
+  List.iter (fun item_set ->
+    PrintAnalysisEnv.print_item_set env item_set;
+    print_newline ()
+  ) states;
+  *)
 
   ()
 

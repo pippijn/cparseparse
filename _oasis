@@ -30,7 +30,7 @@ Executable ccparse
 Executable elkhound
         Path:                   elkhound
         BuildTools:             ocamlbuild
-        BuildDepends:           monad,sexplib,ulex,menhirLib,batteries
+        BuildDepends:           monad,sexplib,ulex,menhirLib,batteries,glr
         MainIs:                 elkhound.ml
         CSources:               ml_TerminalSet.c
         CCLib:                  -lstdc++

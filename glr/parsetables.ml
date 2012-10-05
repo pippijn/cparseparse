@@ -14,23 +14,23 @@
 
 
 (* for action entries; some places may still be called int *)
-type tActionEntry = int
+type action_entry = int
 
 (* identifier for a state in the finite automaton *)
-type tStateId = int
+type state_id = int
 let cSTATE_INVALID = -1
 
 (* entry in the goto table *)
-type tGotoEntry = int
+type goto_entry = int
 
 (* index for a terminal *)
-type tTermIndex = int
+type term_index = int
 
 (* index for a nonterminal *)
-type tNtIndex = int
+type nt_index = int
 
 (* index for a production *)
-type tProdIndex = int
+type prod_index = int
 
 (* ErrorBitsEntry goes here *)
 
@@ -58,15 +58,15 @@ type tParseTables = {
 
   (* action table, indexed by (state*actionCols + lookahead) *)
   actionCols : int;
-  actionTable : tActionEntry array;
+  actionTable : action_entry array;
 
   (* goto table, indexed by (state*gotoCols + nontermId) *)
   gotoCols : int;
-  gotoTable : tGotoEntry array;
+  gotoTable : goto_entry array;
 
   (* production info, indexed by production id *)
   prodInfo_rhsLen : int array;         (* this is 'unsigned char' array in C++ *)
-  prodInfo_lhsIndex : tNtIndex array;
+  prodInfo_lhsIndex : nt_index array;
 
   (* map state to symbol shifted to arrive at that state *)
   stateSymbol : tSymbolId array;
@@ -77,15 +77,15 @@ type tParseTables = {
    * actions, each interpreted the same way ordinary 'actionTable'
    * entries are *)
   ambigTableSize : int;                (* redudant in OCaml... *)
-  ambigTable : tActionEntry array;
+  ambigTable : action_entry array;
 
   (* total order on nonterminals; see elkhound/parsetables.h *)
-  nontermOrder : tNtIndex array;
+  nontermOrder : nt_index array;
 
   (* TODO: implement some of the table compression options? *)
 
   (* start state id (always 0) *)
-  startState : tStateId;
+  startState : state_id;
   
   (* index of last production to reduce *)
   finalProductionIndex : int;
@@ -141,6 +141,3 @@ let getProdInfo_lhsIndex tables rule =
 
 let getNontermOrdinal tables idx =
   tables.nontermOrder.(idx)
-
-
-(* EOF *)

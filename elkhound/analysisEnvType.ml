@@ -70,6 +70,7 @@ end
 module DottedProductionTable = BatHashtbl.Make(DottedProductionS)
 module DottedProductionMap = SexpMap.Make(DottedProductionS)
 module DottedProductionSet = SexpSet.Make(DottedProductionS)
+module DottedProductionStack = HashStack.Make(DottedProductionTable)
 
 
 module LrItemS = struct
@@ -93,6 +94,7 @@ end
 module LrItemTable = BatHashtbl.Make(LrItemS)
 module LrItemMap = SexpMap.Make(LrItemS)
 module LrItemSet = SexpSet.Make(LrItemS)
+module LrItemStack = HashStack.Make(LrItemTable)
 
 
 (************************************************************
@@ -142,7 +144,7 @@ type item_set = {
 
   (* numerical state id, should be unique among item sets
    * in a particular grammar's sets *)
-  state_id                      : state_id;
+  mutable state_id              : state_id;
 
   (* it's useful to have a BFS tree superimposed on the transition
    * graph; for example, it makes it easy to generate sample inputs
@@ -201,6 +203,7 @@ end
 module ItemSetTable = BatHashtbl.Make(ItemSetS)
 module ItemSetMap = SexpMap.Make(ItemSetS)
 module ItemSetSet = SexpSet.Make(ItemSetS)
+module ItemSetStack = HashStack.Make(ItemSetTable)
 
 
 (************************************************************
@@ -233,9 +236,6 @@ type env = {
   (* true if any nonterminal can derive itself (with no extra symbols
    * surrounding it) in 1 or more steps *)
   mutable cyclic_grammar        : bool;
-  
-  (* the LR parsing tables *)
-  mutable item_sets             : item_set list;
   
   (* distinguished start state; NOTE: much of the grammar analysis
    * code currently assumes (and checks) that state 0 is the start

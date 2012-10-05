@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 7e837a84e4375567cbf54141a06b69f7)
+# DO NOT EDIT (digest: 020ba78fbedf3163bb7b037e50fedfb0)
 # Library glr
 "glr": include
 # Executable ccparse
@@ -16,16 +16,19 @@
 "elkhound/libelkhound.a": oasis_executable_elkhound_cclib
 "elkhound/dllelkhound.so": oasis_executable_elkhound_cclib
 "elkhound/elkhound.native": use_libelkhound
+"elkhound/elkhound.native": use_glr
 "elkhound/elkhound.native": pkg_ulex
 "elkhound/elkhound.native": pkg_sexplib
 "elkhound/elkhound.native": pkg_monad
 "elkhound/elkhound.native": pkg_menhirLib
 "elkhound/elkhound.native": pkg_batteries
+<elkhound/*.ml{,i}>: use_glr
 <elkhound/*.ml{,i}>: pkg_ulex
 <elkhound/*.ml{,i}>: pkg_sexplib
 <elkhound/*.ml{,i}>: pkg_monad
 <elkhound/*.ml{,i}>: pkg_menhirLib
 <elkhound/*.ml{,i}>: pkg_batteries
+"elkhound/ml_TerminalSet.c": use_glr
 "elkhound/ml_TerminalSet.c": pkg_ulex
 "elkhound/ml_TerminalSet.c": pkg_sexplib
 "elkhound/ml_TerminalSet.c": pkg_monad

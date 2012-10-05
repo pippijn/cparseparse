@@ -23,6 +23,12 @@ let set_transition from_set sym to_set =
       from_set.nonterm_transition.(nonterm.nt_index) <- Some to_set
 
 
+let has_extending_shift item_set nonterm term =
+  ListUtil.fold_left_many (fun result item ->
+    result || LrItem.is_extending_shift item nonterm term
+  ) false [item_set.kernel_items; item_set.nonkernel_items]
+
+
 let possible_reductions item_set lookahead =
   let open GrammarType in
   List.fold_left (fun reductions item ->

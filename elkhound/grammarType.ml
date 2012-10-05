@@ -72,13 +72,14 @@ type nonterminal = {
 
   maximal 		: bool; (* if true, use maximal munch disambiguation *)
 
-  subsets 		: string list; (* preferred subsets (for scannerless) *)
+  subset_names 		: string list; (* preferred subsets (for scannerless) *)
 
   (* --- annotation --- *)
   first 		: TerminalSet.t; (* set of terminals that can be start of a string derived from 'this' *)
   follow 		: TerminalSet.t; (* set of terminals that can follow a string derived from 'this' *)
   mutable nt_index 	: int; (* nonterminal index in indexed_nonterminals for grammar analysis *)
   mutable cyclic 	: bool; (* true if this can derive itself in 1 or more steps *)
+  mutable subsets	: nonterminal list; (* resolved subsets *)
   mutable superset	: nonterminal option; (* inverse of 'subsets' *)
 } with sexp
 
@@ -172,13 +173,14 @@ let empty_nonterminal = {
 
   maximal  = false;
 
-  subsets  = [];
+  subset_names = [];
 
   first    = TerminalSet.empty_set;
   follow   = TerminalSet.empty_set;
   (* empty has an index of 0; all other nonterminals must have indices >= 1 *)
   nt_index = 0;
   cyclic   = false;
+  subsets  = [];
   superset = None;
 }
 
