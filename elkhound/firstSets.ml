@@ -18,8 +18,8 @@ let first_of_sequence derivable seq term_count =
         (* anything already in nonterm's First should be added to dest *)
         TerminalSet.unite dest nonterm.first;
 
-        (* if nt can't derive the empty string, then it blocks further
-         * consideration of right-hand side members *)
+        (* if nonterm can't derive the empty string, then it blocks
+         * further consideration of right-hand side members *)
         not (Derivability.can_derive_empty derivable nonterm)
   ) seq);
 
@@ -54,17 +54,28 @@ let compute_first derivable indexed_nonterms indexed_prods indexed_terms =
       let first_of_rhs = first_of_sequence derivable prod.right term_count in
 
       (* add everything in First(RHS-sequence) to First(LHS) *)
-      if TerminalSet.merge lhs.first first_of_rhs then
+      if TerminalSet.merge lhs.first first_of_rhs then (
+        if Config.trace_first then (
+          print_string "added ";
+          PrintAnalysisEnv.print_terminal_set indexed_terms first_of_rhs;
+          print_string " to ";
+          print_string lhs.nbase.name;
+          print_string " because of ";
+          PrintGrammar.print_production prod;
+          print_newline ();
+        );
         changed := true
+      )
     ) indexed_prods
 
   done;
 
-  if false then (
+  if Config.trace_first then (
     Array.iter (fun nonterm ->
-      Printf.printf "First(%s) = " nonterm.nbase.name;
-      PrintAnalysisEnv.print_terminal_set indexed_terms nonterm.first;
-      print_newline ();
+      if nonterm != empty_nonterminal then (
+        PrintAnalysisEnv.print_terminal_set ~name:nonterm.nbase.name indexed_terms nonterm.first;
+        print_newline ();
+      )
     ) indexed_nonterms
   )
 
@@ -91,10 +102,8 @@ let compute_dprod_first derivable dotted_prods indexed_prods indexed_terms =
       (* can it derive empty? *)
       dprod.can_derive_empty <- Derivability.can_sequence_derive_empty derivable right;
 
-      if false then (
-        PrintAnalysisEnv.print_dotted_production dprod;
-        print_string "; First(.) = ";
-        PrintAnalysisEnv.print_terminal_set indexed_terms dprod.first_set;
+      if Config.trace_first then (
+        PrintAnalysisEnv.print_dotted_production ~terms:indexed_terms dprod;
 
         if dprod.can_derive_empty then
           print_endline " - can derive empty"

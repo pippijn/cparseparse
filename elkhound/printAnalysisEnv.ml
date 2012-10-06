@@ -3,7 +3,37 @@ open GrammarType
 open AnalysisEnvType
 
 
-let print_dotted_production dprod =
+let print_terminal_set ?(abbreviate=false) ?(name=".") terms set =
+  let open GrammarType in
+  Printf.printf "[1;30mFirst(%s) = " name;
+  Printf.printf "%d {" (TerminalSet.count set);
+
+  if abbreviate then (
+    print_string " ..."
+  ) else (
+    let first = ref true in
+    Array.iter (fun term ->
+      if TerminalSet.is_set set term.term_index then (
+        if not !first then
+          print_string ",";
+        print_string " ";
+        first := false;
+
+        let name =
+          if term.alias <> "" then
+            term.alias
+          else
+            term.tbase.name
+        in
+        print_string name
+      )
+    ) terms
+  );
+  print_string " }";
+  print_string "[0m"
+
+
+let print_dotted_production ?terms dprod =
   print_string dprod.prod.left.nbase.name;
   print_string " ->";
   List.iteri (fun position rhs ->
@@ -22,42 +52,19 @@ let print_dotted_production dprod =
 
   if dprod.dot = List.length dprod.prod.right then
     (* dot is at end *)
-    print_string " ."
-
-
-let print_terminal_set ?(with_lookahead=true) terms set =
-  let open GrammarType in
-  Printf.printf "%d {" (TerminalSet.count set);
-
-  if with_lookahead then (
-    let first = ref true in
-    Array.iter (fun term ->
-      if TerminalSet.is_set set term.term_index then (
-        if not !first then
-          print_string ",";
-        print_string " ";
-        first := false;
-
-        let name =
-          if term.alias <> "" then
-            term.alias
-          else
-            term.tbase.name
-        in
-        print_string name
-      )
-    ) terms
-  ) else (
-    print_string " ..."
-  );
-  print_string " }"
+    print_string " .";
+  
+  match terms with
+  | Some terms ->
+      print_string "  ";
+      print_terminal_set terms dprod.first_set
+  | None -> ()
 
 
 let print_lr_item env item =
   print_dotted_production item.dprod;
-  print_string " [1;30mFirst(.) = ";
-  print_terminal_set env.indexed_terms item.lookahead;
-  print_string "[0m"
+  print_string "  ";
+  print_terminal_set env.indexed_terms item.lookahead
 
 
 let print_item_set env item_set =

@@ -23,18 +23,33 @@ let compute_indexed_nonterms nonterms =
   (* indexed.(0) is empty_nonterminal *)
   assert (empty_nonterminal.nt_index = 0);
 
-  let i =
-    Stringmap.fold (fun _ nonterm i ->
-      nonterm.nt_index <- i; (* map: symbol to index *)
-      indexed.(i) <- nonterm; (* map: index to symbol *)
-      i + 1
-    ) nonterms 1
-  in
+  Stringmap.iter (fun _ nonterm ->
+    (* the ids have already been assigned *)
+    let i = nonterm.nt_index in (* map: symbol to index *)
+    (* verify there are no duplicate indices *)
+    if indexed.(i) != empty_nonterminal then (
+      Printf.printf "%s has the same index (%d) as %s\n"
+        indexed.(i).nbase.name
+        i
+        nonterm.nbase.name
+    );
+    assert (indexed.(i) == empty_nonterminal);
+    indexed.(i) <- nonterm (* map: index to symbol *)
+  ) nonterms;
 
-  assert (i = Array.length indexed);
-  (* verify we filled the nt_index map *)
-  Array.iter (fun nonterm ->
-    assert (nonterm != empty_nonterminal || nonterm.nt_index = 0)
+  (* verify invariants *)
+  Array.iteri (fun nt_index nonterm ->
+    (* the mapping must be correct *)
+    assert (nonterm.nt_index = nt_index);
+    (* "empty" must be the first nonterminal *)
+    if nonterm.nt_index = 0 then
+      assert (nonterm == empty_nonterminal)
+    (* the synthesised start symbol must follow *)
+    else if nonterm.nt_index = 1 then
+      assert (nonterm.nbase.name == Grammar.start_name)
+    (* any other nonterminals must not be empty *)
+    else
+      assert (nonterm != empty_nonterminal)
   ) indexed;
 
   (* number of nonterminals + 1 for empty_nonterminal *)
@@ -66,18 +81,27 @@ let compute_indexed_prods productions nonterm_count =
   (* map: nonterminal -> productions with that nonterm on LHS *)
   let prods_by_lhs = Array.make nonterm_count [] in
 
-  let i =
-    (* fill in both maps *)
-    List.fold_left (fun i production ->
-      let nt_index = production.left.nt_index in
-      prods_by_lhs.(nt_index) <- production :: prods_by_lhs.(nt_index);
-      production.prod_index <- i;
-      indexed.(i) <- production;
-      i + 1
-    ) 0 productions
-  in
+  (* fill in both maps *)
+  BatList.iteri (fun i production ->
+    let nt_index = production.left.nt_index in
 
-  assert (i = Array.length indexed);
+    prods_by_lhs.(nt_index) <- production :: prods_by_lhs.(nt_index);
+
+    assert (indexed.(i) == empty_production);
+    production.prod_index <- i;
+    indexed.(i) <- production;
+  ) productions;
+
+  (* verify invariants *)
+  Array.iteri (fun nt_index prods ->
+    List.iter (fun prod ->
+      assert (prod.left.nt_index = nt_index);
+    ) prods
+  ) prods_by_lhs;
+  Array.iteri (fun prod_index prod ->
+    assert (prod.prod_index == prod_index);
+  ) indexed;
+
   (* verify we filled the prod_index map *)
   Array.iter (fun prod -> assert (prod != empty_production)) indexed;
 

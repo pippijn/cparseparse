@@ -4,10 +4,20 @@ open GrammarType
 open Merge
 
 
+let name_of_terminal { tbase = { name }; alias } =
+  if alias <> "" then
+    alias
+  else
+    name
+
+
+let name_of_nonterminal { nbase = { name } } =
+  name
+
+
 let name_of_symbol = function
-  | Nonterminal (_, { nbase = { name } })
-  | Terminal (_, { tbase = { name }; alias = "" }) -> name
-  | Terminal (_, { alias }) -> alias
+  | Nonterminal (_, nonterm) -> name_of_nonterminal nonterm
+  | Terminal (_, term) -> name_of_terminal term
 
 
 (* symbol equality ignores tags *)
@@ -25,13 +35,13 @@ let equal_symbol a b =
 let compare_symbol a b =
   match a, b with
   (* any state with no incoming arcs (start state) is first *)
-  | None, Some _ -> 1
-  | Some _, None -> -1
+  | None, Some _ -> -1
+  | Some _, None -> 1
   | None, None -> 0
 
   (* terminals come before nonterminals *)
-  | Some (Nonterminal _), Some (Terminal _) -> -1
-  | Some (Terminal _), Some (Nonterminal _) -> 1
+  | Some (Nonterminal _), Some (Terminal _) -> 1
+  | Some (Terminal _), Some (Nonterminal _) -> -1
 
   (* order by id within terms/nonterms *)
   | Some (Terminal (_, term_a)), Some (Terminal (_, term_b)) ->
@@ -59,7 +69,7 @@ let synthesise_start_rule topforms =
   in
 
   { topforms with
-    nonterms = Stringmap.add start_name start topforms.nonterms
+    nonterms = Stringmap.add start_name (start, 1) topforms.nonterms
   }
 
 
@@ -236,7 +246,7 @@ let collect_nonterminals nonterms term_count =
   (*print_newline ();*)
 
   let nonterminals =
-    Stringmap.fold (fun _ nterm nonterminals ->
+    Stringmap.fold (fun _ (nterm, nt_index) nonterminals ->
       match nterm with
       | TF_nonterm (name, semtype, funcs, prods, subsets) ->
           (* record subsets *)
@@ -267,6 +277,8 @@ let collect_nonterminals nonterms term_count =
             (* Each nonterminal needs its own first/follow sets. *)
             first  = TerminalSet.create term_count;
             follow = TerminalSet.create term_count;
+
+            nt_index;
           } in
 
           Stringmap.add name nonterminal nonterminals
@@ -327,7 +339,8 @@ let collect_production_rhs aliases terminals nonterminals is_synthesised rhs_lis
             { production with right = symbol :: production.right; prec }
 
       | RH_string (tag, str) ->
-          { production with right = Terminal (tag, find_terminal str) :: production.right }
+          let term = find_terminal str in
+          { production with right = Terminal (tag, term) :: production.right; prec = term.precedence }
 
       | RH_prec (tokName) ->
           let { precedence } = find_terminal tokName in
@@ -354,7 +367,7 @@ let collect_production_rhs aliases terminals nonterminals is_synthesised rhs_lis
 let collect_productions aliases terminals nonterminals nonterms =
   let term_count = Stringmap.cardinal terminals in
 
-  Stringmap.fold (fun _ nterm productions ->
+  Stringmap.fold (fun _ (nterm, _) productions ->
     match nterm with
     | TF_nonterm (name, _, _, prods, _) ->
         let left = Stringmap.find name nonterminals in
@@ -408,5 +421,11 @@ let of_ast topforms =
     verbatim;
     impl_verbatim;
   } |> collect_options topforms.options in
+
+  if Config.trace_merge then (
+    Printf.printf "%d terminals\n" (Stringmap.cardinal terminals);
+    Printf.printf "%d nonterminals\n" (Stringmap.cardinal nonterminals);
+    Printf.printf "%d productions\n" (List.length productions);
+  );
 
   grammar

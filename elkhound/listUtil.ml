@@ -29,7 +29,8 @@ let iterl_until f l =
 let fold_leftl f x l =
   snd (
     List.fold_left (fun (tail, x) head ->
-      List.tl tail, f x tail head
+      let tail = List.tl tail in
+      tail, f x tail head
     ) (l, x) l
   )
 
@@ -38,13 +39,14 @@ let fold_leftl_until f x l =
   let _, _, x =
 
     List.fold_left (fun (finished, tail, x) head ->
+      let tail = List.tl tail in
       let finished, x =
         if finished then
           (true, x)
         else
           f x tail head
       in
-      finished, List.tl tail, x
+      finished, tail, x
     ) (false, l, x) l
 
   in

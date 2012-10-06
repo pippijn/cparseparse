@@ -38,6 +38,16 @@ let add_derivable_i env left right =
    * derivability code detects a nonzero-length path. *)
   if left == right then (
     let left = env.indexed_nonterms.(left) in (* == right *)
+
+    if Config.trace_derivable then (
+      if not left.cyclic then (
+        print_string "%%% derivable: ";
+        Printf.printf "discovered that %s ->+ %s (i.e. is cyclic)\n"
+          left.nbase.name
+          left.nbase.name;
+      )
+    );
+
     left.cyclic <- true; (* => right.cyclic is also true *)
     env.cyclic_grammar <- true; (* for grammar as a whole *)
 
@@ -74,37 +84,60 @@ let add_derivable_nonterminal env left right_nonterm after_right_sym =
    * this to be true, every symbol that comes after nonterm
    * must be able to derive empty (we've already verified by
    * now that every symbol to the *left* can derive empty) *)
-  match after_right_sym with
-  | [] ->
-      (* right_sym was the last symbol *)
-      false
-  | _ ->
-      let rest_derive_empty =
-        ListUtil.iter_until (fun sym ->
-          match sym with
-          | Terminal _ ->
-              (* if it's a terminal, it can't derive empty *)
-              false
-          | Nonterminal (_, nonterm) ->
-              (* this symbol can't derive empty string (or, we don't
-               * yet know that it can), so we conclude that prod.left
-               * can't derive right_sym *)
-              not (can_derive_empty env.derivable nonterm)
-        ) after_right_sym
-      in
+  let rest_derive_empty =
+    List.fold_left (fun rest_derive_empty sym ->
+      (* if any symbol can't derive empty, then the sequence
+       * can't derive empty *)
+      rest_derive_empty &&
+        match sym with
+        | Terminal _ ->
+            (* if it's a terminal, it can't derive empty *)
+            if Config.trace_derivable then (
+              print_endline "terminal can't derive empty";
+            );
+            false
+        | Nonterminal (_, nonterm) ->
+            (* this symbol can't derive empty string (or, we don't
+             * yet know that it can), so we conclude that prod.left
+             * can't derive right_sym *)
+            if Config.trace_derivable then (
+              Printf.printf "nonterminal %s can derive empty?\n" nonterm.nbase.name;
+            );
+            can_derive_empty env.derivable nonterm
+    ) true after_right_sym
+  in
 
-      if rest_derive_empty then
-        (* we have discovered that prod.left can derive right_sym *)
-        let added = add_derivable env left right_nonterm in
-        assert added; (* above, we verified we didn't already know this *)
+  if Config.trace_derivable then (
+    Printf.printf "%s's rest can %sderive empty\n"
+      left.nbase.name
+      (if rest_derive_empty then "" else "NOT ");
+  );
 
-        true
-      else
-        false
+  if rest_derive_empty then (
+    (* we have discovered that prod.left can derive right_sym *)
+    let added = add_derivable env left right_nonterm in
+    assert added; (* above, we verified we didn't already know this *)
+
+    if Config.trace_derivable then (
+      print_string "%%% derivable: ";
+      Printf.printf "discovered (by production): %s ->* %s\n"
+        left.nbase.name
+        right_nonterm.nbase.name;
+    );
+
+    true
+  ) else (
+    false
+  )
 
 
-let add_derivable_relations env changed =
+let add_derivable_relations env changes =
   Array.iter (fun prod ->
+    if Config.trace_derivable then (
+      PrintGrammar.print_production prod;
+      print_newline ();
+    );
+
     match prod.right with
     | [] ->
         (* since I don't include 'empty' explicitly in my rules, I won't
@@ -115,37 +148,38 @@ let add_derivable_relations env changed =
     | right ->
         (* iterate over RHS symbols, seeing if the LHS can derive that
          * RHS symbol (by itself) *)
-        ignore (ListUtil.iterl_until (fun after_right_sym right_sym ->
-          match right_sym with
-          | Terminal _ ->
-              (* if prod.left derives a string containing a terminal,
-               * then it can't derive any nontermial alone (using this
-               * production, at least) -- empty is considered a nonterminal *)
-              false
+        ignore (ListUtil.fold_leftl (fun derives after_right_sym right_sym ->
+          derives &&
+            match right_sym with
+            | Terminal _ ->
+                (* if prod.left derives a string containing a terminal,
+                 * then it can't derive any nontermial alone (using this
+                 * production, at least) -- empty is considered a nonterminal *)
+                false
 
-          | Nonterminal (_, right_nonterm) ->
-              (* check if we already know that LHS derives this nonterm *)
-              if can_derive env.derivable prod.left right_nonterm then
-                (* we already know that prod.left derives right_sym,
-                 * so let's not check it again *)
-                ()
-              else if add_derivable_nonterminal env prod.left right_nonterm after_right_sym then
-                changed := true;
+            | Nonterminal (_, right_nonterm) ->
+                (* check if we already know that LHS derives this nonterm *)
+                if can_derive env.derivable prod.left right_nonterm then
+                  (* we already know that prod.left derives right_sym,
+                   * so let's not check it again *)
+                  ()
+                else if add_derivable_nonterminal env prod.left right_nonterm after_right_sym then
+                  incr changes;
 
-              (* ok, we've considered prod.left deriving right_sym.  now, we
-               * want to consider whether prod.left can derive any of the
-               * symbols that follow right_sym in this production.  for this
-               * to be true, right_sym itself must derive the empty string
-               *
-               * if it doesn't -- no point in further consideration of
-               * this production *)
-              not (can_derive_empty env.derivable right_nonterm)
-        ) right)
+                (* ok, we've considered prod.left deriving right_sym.  now, we
+                 * want to consider whether prod.left can derive any of the
+                 * symbols that follow right_sym in this production.  for this
+                 * to be true, right_sym itself must derive the empty string
+                 *
+                 * if it doesn't -- no point in further consideration of
+                 * this production *)
+                can_derive_empty env.derivable right_nonterm
+        ) true right)
 
   ) env.indexed_prods
 
 
-let compute_derivability_closure env changed =
+let compute_derivability_closure env changes =
   (* I'll do this by computing R + R^2 -- that is, I'll find all
    * paths of length 2 and add an edge between their endpoints.
    * I do this, rather than computing the entire closure now, since
@@ -160,13 +194,20 @@ let compute_derivability_closure env changed =
   for u = 1 to nonterm_count - 1 do
     (* for each edge (u,v) where u != v *)
     for v = 0 to nonterm_count - 1 do
-      if u <> v && not (can_derive_i env.derivable u v) then
+      if u <> v && can_derive_i env.derivable u v then
         (* for each edge (v,w) where v != w *)
         for w = 0 to nonterm_count - 1 do
-          if v <> w && not (can_derive_i env.derivable v w) then
+          if v <> w && can_derive_i env.derivable v w then
             (* add an edge (u,w), if there isn't one already *)
-            if add_derivable_i env u w then
-              changed := true
+            if add_derivable_i env u w then (
+              if Config.trace_derivable then (
+                print_string "%%% derivable: ";
+                Printf.printf "discovered (by closure step): %s ->* %s\n"
+                  env.indexed_nonterms.(u).nbase.name
+                  env.indexed_nonterms.(w).nbase.name;
+              );
+              incr changes
+            )
         done
     done
   done
@@ -174,21 +215,25 @@ let compute_derivability_closure env changed =
 
 let compute_derivability_relation env =
   (* start off with 1 so the loop is entered *)
-  let changed = ref true in
+  let changes = ref 1 in
 
   (* iterate: propagate 'true' bits across the derivability matrix
    * (i.e. compute transitive closure on the can_derive relation) *)
-  while !changed do
-    changed := false;
+  while !changes <> 0 do
+    changes := 0;
 
     (* first part: add new can_derive relations *)
-    add_derivable_relations env changed;
+    add_derivable_relations env changes;
+    let new_relations = !changes in
+    if Config.trace_derivable then
+      Printf.printf "%d new relations\n" new_relations;
 
     (* second part: compute closure over existing relations *)
-    compute_derivability_closure env changed;
+    compute_derivability_closure env changes;
+    if Config.trace_derivable then
+      Printf.printf "%d relations by closure\n" (!changes - new_relations);
 
   done;
 
-  ()
-
-
+  if Config.trace_derivable then
+    Bit2d.print env.derivable

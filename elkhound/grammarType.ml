@@ -16,20 +16,20 @@ open Sexplib.Conv
 module Stringmap = Stringmap.M
 
 type spec_func = {
-  params 		: string list;
-  code   		: string;
+  params                : string list;
+  code                  : string;
 } with sexp
 
 type symbol_base = {
   (* --- representation --- *)
-  name    		: string; (* symbol's name in grammar *)
-  semtype 		: string; (* OCaml type of semantic value *)
+  name                  : string; (* symbol's name in grammar *)
+  semtype               : string; (* OCaml type of semantic value *)
 
-  dup     		: spec_func option; (* code to duplicate a semantic value *)
-  del     		: spec_func option; (* code to clean up a semantic value *)
+  dup                   : spec_func option; (* code to duplicate a semantic value *)
+  del                   : spec_func option; (* code to clean up a semantic value *)
 
   (* --- annotation --- *)
-  mutable reachable 	: bool; (* true when symbol reachable from start symbol *)
+  mutable reachable     : bool; (* true when symbol reachable from start symbol *)
 } with sexp
 
 (* something that only appears on the right-hand side of
@@ -38,7 +38,7 @@ type symbol_base = {
  * for several different tokens to be classified into the same
  * terminal class (e.g. "foo" and "bar" are both identifiers) *)
 type terminal = {
-  tbase   		: symbol_base;
+  tbase                 : symbol_base;
 
   (* --- representation --- *)
   (* whereas 'name' is the canonical name for the terminal class,
@@ -46,41 +46,41 @@ type terminal = {
    * L2_EQUALEQUAL, the alias might be "=="; the alias should *not*
    * include actual double-quote characters
    * if the alias is "", there is no alias *)
-  alias         	: string;
+  alias                 : string;
   (* parsgen-time conflict resolution: if a shift/reduce conflict
    * occurs between a production and a symbol, both with specified
    * precedence (not 0), then the one with the numerically higher
    * precedence will be used *)
-  precedence 		: int;
+  precedence            : int;
   (* if, in the above scenario, the precedence values are the same,
    * then the associativity kind will be used to decide which to use *)
-  associativity		: Assoc.kind;
+  associativity         : Assoc.kind;
   (* code to reclassify a token type *)
-  classify 		: spec_func option;
+  classify              : spec_func option;
   (* terminal class index - this terminal's id; -1 means unassigned *)
-  term_index 		: int;
+  term_index            : int;
 } with sexp
 
 (* something that can appear on the left-hand side of a production
  * (or, empty_nonterminal, since we classify that as a nonterminal also) *)
 type nonterminal = {
-  nbase 		: symbol_base;
+  nbase                 : symbol_base;
 
   (* --- representation --- *)
-  merge 		: spec_func option; (* code to resolve ambiguities *)
-  keep 			: spec_func option; (* code to decide whether to keep a reduction *)
+  merge                 : spec_func option; (* code to resolve ambiguities *)
+  keep                  : spec_func option; (* code to decide whether to keep a reduction *)
 
-  maximal 		: bool; (* if true, use maximal munch disambiguation *)
+  maximal               : bool; (* if true, use maximal munch disambiguation *)
 
-  subset_names 		: string list; (* preferred subsets (for scannerless) *)
+  subset_names          : string list; (* preferred subsets (for scannerless) *)
 
   (* --- annotation --- *)
-  first 		: TerminalSet.t; (* set of terminals that can be start of a string derived from 'this' *)
-  follow 		: TerminalSet.t; (* set of terminals that can follow a string derived from 'this' *)
-  mutable nt_index 	: int; (* nonterminal index in indexed_nonterminals for grammar analysis *)
-  mutable cyclic 	: bool; (* true if this can derive itself in 1 or more steps *)
-  mutable subsets	: nonterminal list; (* resolved subsets *)
-  mutable superset	: nonterminal option; (* inverse of 'subsets' *)
+  first                 : TerminalSet.t; (* set of terminals that can be start of a string derived from 'this' *)
+  follow                : TerminalSet.t; (* set of terminals that can follow a string derived from 'this' *)
+  nt_index              : int; (* nonterminal index in indexed_nonterminals for grammar analysis *)
+  mutable cyclic        : bool; (* true if this can derive itself in 1 or more steps *)
+  mutable subsets       : nonterminal list; (* resolved subsets *)
+  mutable superset      : nonterminal option; (* inverse of 'subsets' *)
 } with sexp
 
 (* either a nonterminal or terminal symbol *)
@@ -95,46 +95,46 @@ type symbol =
 (* a rewrite rule *)
 type production = {
   (* --- representation --- *)
-  left 			: nonterminal; (* left hand side *)
-  right 		: symbol list; (* right hand side; terminals & nonterminals *)
-  prec 			: int; (* precedence level for disambiguation (0 for none specified) *)
-  forbid		: TerminalSet.t; (* forbidden next tokens *)
+  left                  : nonterminal; (* left hand side *)
+  right                 : symbol list; (* right hand side; terminals & nonterminals *)
+  prec                  : int; (* precedence level for disambiguation (0 for none specified) *)
+  forbid                : TerminalSet.t; (* forbidden next tokens *)
 
-  action 		: string; (* user-supplied reduction action code *)
+  action                : string; (* user-supplied reduction action code *)
 
   (* --- annotation --- *)
-  first_rhs 		: TerminalSet.t; (* First(RHS) *)
-  mutable prod_index 	: int; (* unique production id *)
+  first_rhs             : TerminalSet.t; (* First(RHS) *)
+  mutable prod_index    : int; (* unique production id *)
 } with sexp
 
 type grammar = {
   (* --- representation --- *)
-  nonterminals 		: nonterminal Stringmap.t;
-  terminals 		: terminal Stringmap.t;
-  aliases 		: string Stringmap.t;
-  productions 		: production list;
-  start_symbol 		: nonterminal;
+  nonterminals          : nonterminal Stringmap.t;
+  terminals             : terminal Stringmap.t;
+  aliases               : string Stringmap.t;
+  productions           : production list;
+  start_symbol          : nonterminal;
 
   (* sections of verbatim code emitted into the interface file, before 
    * the parser context class body *)
-  verbatim 		: string list;
+  verbatim              : string list;
   (* code emitted into the implementation file at the end *)
-  impl_verbatim 	: string list;
+  impl_verbatim         : string list;
 
   (* expected numbers of various anomalies; -1 means no
    * expectation has been supplied; this informtion is used
    * to control what is reported after grammar analysis *)
-  expectedSR 		: int; (* shift/reduce conflicts *)
-  expectedRR 		: int; (* reduce/reduce conflicts *)
-  expectedUNRNonterms 	: int; (* # unreachable nonterminals *)
-  expectedUNRTerms 	: int; (* # unreachable terminals *)
+  expectedSR            : int; (* shift/reduce conflicts *)
+  expectedRR            : int; (* reduce/reduce conflicts *)
+  expectedUNRNonterms   : int; (* # unreachable nonterminals *)
+  expectedUNRTerms      : int; (* # unreachable terminals *)
 
   (* when true, the default dup/del is what's expected for a
    * garbage-collected system: dup() is the identity function,
    * and del() is a no-op *)
-  useGCDefaults 	: bool;
+  useGCDefaults         : bool;
   (* when true, unspecified merge() functions abort the program *)
-  defaultMergeAborts 	: bool;
+  defaultMergeAborts    : bool;
 } with sexp
 
 

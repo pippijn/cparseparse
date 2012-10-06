@@ -1,6 +1,20 @@
 open AnalysisEnvType
 
 
+let name_of_symbol_opt = function
+  | Some sym -> Grammar.name_of_symbol sym
+  | None -> "None"
+
+
+let ordering_operator order =
+  if order < 0 then
+    "<"
+  else if order > 0 then
+    ">"
+  else
+    "="
+
+
 let compare_by_outgoing indexed transition_fn a b =
   fst (Array.fold_left (fun (order, t) _ ->
     let order =
@@ -49,34 +63,41 @@ let renumber_states_compare env a b =
    * arc symbols
    *)
 
-  (* first up: terminals *)
+  let (|<>) a b = if a <> 0 then a else Lazy.force b in
+
+  let arbitrary_order = a != b && order = 0 in
+
   let order =
-    if order <> 0 then
-      order
-    else
-      compare_by_outgoing env.indexed_terms (fun is t -> is.term_transition.(t)) a b
+    order
+    (* first up: terminals *)
+    |<> lazy (compare_by_outgoing env.indexed_terms (fun is t -> is.term_transition.(t)) a b)
+    (* next: nonterminals *)
+    |<> lazy (compare_by_outgoing env.indexed_nonterms (fun is t -> is.nonterm_transition.(t)) a b)
+    (* finally, order by possible reductions *)
+    |<> lazy (compare_by_reductions env.indexed_terms a b)
   in
 
-  (* next: nonterminals *)
-  let order =
-    if order <> 0 then
-      order
-    else
-      compare_by_outgoing env.indexed_nonterms (fun is t -> is.nonterm_transition.(t)) a b
-  in
-
-  (* finally, order by possible reductions *)
-  let order =
-    if order <> 0 then
-      order
-    else
-      compare_by_reductions env.indexed_terms a b
-  in
+  if false then (
+    if arbitrary_order then (
+      Printf.printf "%d[%s] %s %d[%s]\n"
+        (int_of_state_id a.state_id)
+        (name_of_symbol_opt a.state_symbol)
+        (ordering_operator order)
+        (int_of_state_id b.state_id)
+        (name_of_symbol_opt b.state_symbol);
+      PrintAnalysisEnv.print_item_set env a;
+      PrintAnalysisEnv.print_item_set env b;
+    );
+  );
 
   if a != b then (
     assert (order <> 0);
     if int_of_state_id a.state_id = 0 then
+      assert (order < 0);
+    if int_of_state_id b.state_id = 0 then
       assert (order > 0);
+  ) else (
+    assert (order = 0);
   );
 
   order
@@ -86,24 +107,26 @@ let renumber_states_compare env a b =
  * to this point been numbered arbitrarily) in such a way that all
  * states that have a given symbol on incoming arcs will be numbered
  * consecutively.  This is part of the table compression schemes
- * described in the Dencker et. al. paper (see module ParseTables). *)
+ * described in the Dencker et. al. paper (see module Parsetables). *)
 let renumber_states env states =
   (* sort them in the right order *)
-  let states = List.rev (List.sort (renumber_states_compare env) states) in
+  let states = List.sort (renumber_states_compare env) states in
 
   (* number them in that order *)
-  ignore (
-    List.fold_left (fun i state ->
-      if i = 0 then (
-        (* the first element should always be the start state *)
-        assert (int_of_state_id state.state_id = 0);
-        assert (BatOption.get env.start_state == state);
-      );
+  BatList.iteri (fun i state ->
+    if i = 0 then (
+      (* the first element should always be the start state *)
+      assert (int_of_state_id state.state_id = 0);
+      assert (BatOption.get env.start_state == state);
+    );
 
-      state.state_id <- state_id_of_int i;
+    state.state_id <- state_id_of_int i;
+  ) states;
 
-      i + 1
-    ) 0 states
+  if false then (
+    List.iter (fun state ->
+      PrintAnalysisEnv.print_item_set env state;
+    ) states;
   );
 
   states

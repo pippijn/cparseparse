@@ -45,7 +45,7 @@ let print matrix =
       if is_set matrix x y then
         print_string "1"
       else
-        print_string "0"
+        print_string "."
     done;
     print_endline "]"
   done

@@ -88,7 +88,17 @@ let production_closure env finished worklist item b prod =
 
   (* if beta ->* epsilon, add LA *)
   if beta.can_derive_empty then (
+    if Config.trace_closure then (
+      print_string "      beta: ";
+      PrintAnalysisEnv.print_dotted_production beta;
+      print_newline ();
+      print_endline "      beta can derive empty";
+    );
     TerminalSet.unite new_item_la item.lookahead;
+  ) else (
+    if Config.trace_closure then (
+      print_endline "      beta can NOT derive empty";
+    );
   );
 
   (* except we do not want to put terminals in the lookahead set

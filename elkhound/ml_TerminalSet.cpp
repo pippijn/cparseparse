@@ -6,7 +6,9 @@ extern "C" {
 #include <caml/mlvalues.h>
 }
 
-#define assert(cond) do { if (!(cond)) failwith ("Assertion failed: " #cond); } while (0)
+#define STR(V) STR_(V)
+#define STR_(V) #V
+#define assert(cond) do { if (!(cond)) failwith ("Assertion failed in " __FILE__ ":" STR(__LINE__) ": " #cond); } while (0)
 
 #include <cstdio>
 #include <vector>
@@ -74,6 +76,7 @@ ml_TerminalSet_is_set (value self, value bit_val)
 {
   bitset &set = *get_bitset (self);
   int bit = Int_val (bit_val);
+  //printf ("%d > %d / %d\n", set.size (), bit, word_size);
   assert (set.size () > bit / word_size);
   return Val_bool (set[bit / word_size] & 1 << (bit % word_size));
 }

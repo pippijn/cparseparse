@@ -42,12 +42,13 @@ let possible_reductions item_set lookahead =
       if TerminalSet.is_set prod.left.follow lookahead.term_index then
         prod :: reductions
       else (
-        if false then (
-          Printf.printf "state %d, not reducing by %s because %s is not in follow of %s\n"
-            (int_of_state_id item_set.state_id)
-            ((* TODO: *) "prod")
+        if Config.trace_reductions then (
+          Printf.printf "state %d, not reducing by "
+            (int_of_state_id item_set.state_id);
+          PrintGrammar.print_production prod;
+          Printf.printf " because %s is not in follow of %s\n"
             lookahead.tbase.name
-            prod.left.nbase.name
+            prod.left.nbase.name;
         );
         reductions
       )
@@ -55,14 +56,22 @@ let possible_reductions item_set lookahead =
     ) else if Config.use_LALR1 || Config.use_LR1 then (
       (* the item's lookahead must include 'lookahead' *)
       let prod = item.dprod.prod in
-      if TerminalSet.is_set item.lookahead lookahead.term_index then
+      if TerminalSet.is_set item.lookahead lookahead.term_index then (
+        if Config.trace_reductions then (
+          Printf.printf "state %d, reducing by "
+            (int_of_state_id item_set.state_id);
+          PrintGrammar.print_production prod;
+          Printf.printf " because %s is in lookahead\n"
+            lookahead.tbase.name;
+        );
         prod :: reductions
-      else (
-        if false then (
-          Printf.printf "state %d, not reducing by %s because %s is not in lookahead\n"
-            (int_of_state_id item_set.state_id)
-            ((* TODO: *) "prod")
-            lookahead.tbase.name
+      ) else (
+        if Config.trace_reductions then (
+          Printf.printf "state %d, not reducing by "
+            (int_of_state_id item_set.state_id);
+          PrintGrammar.print_production prod;
+          Printf.printf " because %s is not in lookahead\n"
+            lookahead.tbase.name;
         );
         reductions
       )
