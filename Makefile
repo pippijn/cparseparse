@@ -1,3 +1,6 @@
+elkhound/elkhound.native: setup.data
+	ocamlbuild $@ ccparse/ccparse.native
+
 # OASIS_START
 # DO NOT EDIT (digest: bc1e05bfc8b39b664f29dae8dbd3ebbb)
 
@@ -40,18 +43,20 @@ setup.data: setup.ml
 setup.ml: _oasis
 	oasis setup
 
-check: build
-	_build/elkhound/elkhound.native
+check: elkhound/elkhound.native
+	_build/elkhound/elkhound.native | sed -e 's/\[[^m]*m//g' > o.txt
 
 
-CALLGRIND = valgrind --tool=callgrind --dump-instr=yes --trace-jump=yes
+CALLGRIND = valgrind --tool=callgrind --dump-instr=yes --trace-jump=yes --instr-atstart=no
 
-profile-elkhound: build
+profile-elkhound: elkhound/elkhound.native
+	rm -f callgrind.out.*
 	$(CALLGRIND) _build/elkhound/elkhound.native
 	rm -f callgrind.out
 	mv callgrind.out.* callgrind.out
 
-profile-ccparse: build
+profile-ccparse: ccparse/ccparse.native
+	rm -f callgrind.out.*
 	$(CALLGRIND) _build/ccparse/ccparse.native testsuite/ccparse/profile.cc
 	rm -f callgrind.out
 	mv callgrind.out.* callgrind.out

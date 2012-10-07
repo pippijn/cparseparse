@@ -20,6 +20,8 @@ let compute_lr_tables env =
     |> Timing.time "parse table construction" (TableConstruction.compute_parse_tables env (*~allow_ambig:*)true)
   in
 
+  (*Timing.time "printing tables" (TablePrinting.print_tables (Pervasives.open_out "tables-out.ml")) tables;*)
+
   (*
   List.iter (fun item_set ->
     PrintAnalysisEnv.print_item_set env item_set;
@@ -27,7 +29,7 @@ let compute_lr_tables env =
   ) states;
   *)
 
-  ()
+  tables
 
 
 let run_analyses grammar =
@@ -35,8 +37,30 @@ let run_analyses grammar =
 
   compute_grammar_properties env grammar;
 
-  compute_lr_tables env;
+  let tables = compute_lr_tables env in
 
-  (*Bit2d.print env.derivable;*)
+  begin
+    let unr_nonterms =
+      Array.fold_left (fun count nonterm ->
+        if not nonterm.nbase.reachable then (
+          count + 1
+        ) else (
+          count
+        )
+      ) 0 env.indexed_nonterms
+    in
+    let unr_terms =
+      Array.fold_left (fun count term ->
+        if not term.tbase.reachable then (
+          count + 1
+        ) else (
+          count
+        )
+      ) 0 env.indexed_terms
+    in
 
-  ()
+    Warnings.report_unexpected unr_nonterms env.options.expectedUNRNonterms "unreachable nonterminals";
+    Warnings.report_unexpected unr_terms env.options.expectedUNRTerms "unreachable terminals";
+  end;
+
+  env, tables

@@ -495,7 +495,9 @@ let construct_lr_item_sets env =
     process_item_set env
   done;
 
-  Printf.printf "%d states\n" (ItemSetMap.cardinal env.item_sets_done);
+  if Config.trace_lrsets then (
+    Printf.printf "%d states\n" (ItemSetMap.cardinal env.item_sets_done);
+  );
 
   let states =
     ItemSetMap.fold (fun item_set _ ids -> item_set :: ids) env.item_sets_done []

@@ -60,7 +60,7 @@ type tParseTables = {
   actionCols : int;
   actionTable : action_entry array;
 
-  (* goto table, indexed by (state*gotoCols + nontermId) *)
+  (* goto table, indexed by (state*gotoCols + nonterm_id) *)
   gotoCols : int;
   gotoTable : goto_entry array;
 
@@ -76,7 +76,6 @@ type tParseTables = {
    * entry gives the # of actions, and is followed by that many
    * actions, each interpreted the same way ordinary 'actionTable'
    * entries are *)
-  ambigTableSize : int;                (* redudant in OCaml... *)
   ambigTable : action_entry array;
 
   (* total order on nonterminals; see elkhound/parsetables.h *)
@@ -93,42 +92,42 @@ type tParseTables = {
 
 
 (* -------------- ParseTables client access interface -------------- *)
-let getActionEntry tables state tok =
+let getActionEntry tables (state : state_id) (tok : term_index) =
   tables.actionTable.(state * tables.actionCols + tok)
 
-let getActionEntry_noError tables state tok =
+let getActionEntry_noError tables (state : state_id) (tok : term_index) =
   getActionEntry tables state tok
 
 
-let isShiftAction tables code =
+let isShiftAction tables (code : action_entry) =
   code > 0 && code <= tables.numStates
 
 (* needs tables for compression *)
-let decodeShift code shiftedTerminal =
+let decodeShift (code : action_entry) shiftedTerminal =
   code - 1
 
-let isReduceAction code =
+let isReduceAction (code : action_entry) =
   code < 0
 
 (* needs tables for compression *)
-let decodeReduce code inState =
+let decodeReduce (code : action_entry) (in_state : state_id) =
   -(code + 1)
 
-let isErrorAction (*tables*) code =
+let isErrorAction (*tables*) (code : action_entry) =
   code = 0
 
                        
 (* this returns an index into the ambigTable *)
 (* needs tables for compression *)
-let decodeAmbigAction tables code inState =
+let decodeAmbigAction tables (code : action_entry) (in_state : state_id) =
   code - 1 - tables.numStates
 
 
-let getGotoEntry tables stateId nontermId =
-  tables.gotoTable.(stateId * tables.gotoCols + nontermId)
+let getGotoEntry tables (state_id : state_id) (nonterm_id : nt_index) =
+  tables.gotoTable.(state_id * tables.gotoCols + nonterm_id)
 
 (* needs tables for compression *)
-let decodeGoto code shiftNonterminal =
+let decodeGoto (code : action_entry) shiftNonterminal =
   code
 
 

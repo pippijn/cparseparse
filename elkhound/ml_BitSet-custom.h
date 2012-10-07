@@ -1,7 +1,8 @@
 #define POOL_BITSETS 1
 
 #if POOL_BITSETS
-static std::vector<bitset> pool;
+#include <map>
+static std::map<int, std::vector<bitset>> pools;
 #endif
 
 
@@ -9,7 +10,7 @@ static inline void
 finalize_bitset (bitset *set)
 {
 #if POOL_BITSETS
-  pool.emplace_back (move (*set));
+  pools[set->size ()].emplace_back (move (*set));
 #endif
   set->~bitset ();
 }
@@ -101,6 +102,7 @@ make_bitset (int size)
   v = caml_alloc_custom (&bitset_custom_ops, sizeof (bitset), 0, 1);
 
 #if POOL_BITSETS
+  std::vector<bitset> &pool = pools[words];
   if (!pool.empty ())
     {
       new (Data_custom_val (v)) bitset (move (pool.back ()));
@@ -122,6 +124,7 @@ copy_bitset (bitset &other)
   v = caml_alloc_custom (&bitset_custom_ops, sizeof (bitset), 0, 1);
 
 #if POOL_BITSETS
+  std::vector<bitset> &pool = pools[other.size ()];
   if (!pool.empty ())
     {
       *new (Data_custom_val (v)) bitset (move (pool.back ())) = other;

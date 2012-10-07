@@ -34,7 +34,7 @@ type dotted_production = {
   mutable back_pointer          : lr_item option;
 
   (* unique identifier *)
-  dprod_id			: int;
+  dprod_id                      : int;
 }
 
 
@@ -242,6 +242,9 @@ type env = {
    * state, so if you want to do something different, that code might
    * need to be changed *)
   mutable start_state           : item_set option;
+
+  (* options from grammar *)
+  options                       : GrammarType.config;
 } with sexp
 
 

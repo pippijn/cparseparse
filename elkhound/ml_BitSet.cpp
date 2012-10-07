@@ -18,8 +18,8 @@ typedef std::vector<word> bitset;
 static size_t const word_size = sizeof (word);
 
 
-#include "ml_TerminalSet-custom.h"
-//#include "ml_TerminalSet-raw.h"
+#include "ml_BitSet-custom.h"
+//#include "ml_BitSet-raw.h"
 
 
 static inline size_t
@@ -37,21 +37,21 @@ __BEGIN_DECLS
 
 
 CAMLprim value
-ml_TerminalSet_create (value size)
+ml_BitSet_create (value size)
 {
   return make_bitset (Int_val (size));
 }
 
 
 CAMLprim value
-ml_TerminalSet_copy (value self)
+ml_BitSet_copy (value self)
 {
   return copy_bitset (*get_bitset (self));
 }
 
 
 CAMLprim value
-ml_TerminalSet_count (value self)
+ml_BitSet_count (value self)
 {
   int count = 0;
   for (word w : *get_bitset (self))
@@ -61,7 +61,7 @@ ml_TerminalSet_count (value self)
 
 
 CAMLprim value
-ml_TerminalSet_set (value self, value bit_val)
+ml_BitSet_set (value self, value bit_val)
 {
   bitset &set = *get_bitset (self);
   int bit = Int_val (bit_val);
@@ -72,18 +72,17 @@ ml_TerminalSet_set (value self, value bit_val)
 
 
 CAMLprim value
-ml_TerminalSet_is_set (value self, value bit_val)
+ml_BitSet_is_set (value self, value bit_val)
 {
   bitset &set = *get_bitset (self);
   int bit = Int_val (bit_val);
-  //printf ("%d > %d / %d\n", set.size (), bit, word_size);
   assert (set.size () > bit / word_size);
   return Val_bool (set[bit / word_size] & 1 << (bit % word_size));
 }
 
 
 CAMLprim value
-ml_TerminalSet_unite (value dest, value source)
+ml_BitSet_unite (value dest, value source)
 {
   bitset &dst = *get_bitset (dest);
   bitset &src = *get_bitset (source);
@@ -95,7 +94,7 @@ ml_TerminalSet_unite (value dest, value source)
 
 
 CAMLprim value
-ml_TerminalSet_differentiate (value dest, value source)
+ml_BitSet_differentiate (value dest, value source)
 {
   bitset &dst = *get_bitset (dest);
   bitset &src = *get_bitset (source);
@@ -107,7 +106,7 @@ ml_TerminalSet_differentiate (value dest, value source)
 
 
 CAMLprim value
-ml_TerminalSet_merge (value dest, value source)
+ml_BitSet_merge (value dest, value source)
 {
   bool changed = false;
   bitset &dst = *get_bitset (dest);
@@ -124,7 +123,7 @@ ml_TerminalSet_merge (value dest, value source)
 
 
 CAMLprim value
-ml_TerminalSet_clear (value self)
+ml_BitSet_clear (value self)
 {
   for (word &w : *get_bitset (self))
     w = 0;
@@ -133,7 +132,7 @@ ml_TerminalSet_clear (value self)
 
 
 CAMLprim value
-ml_TerminalSet_assign (value dest, value source)
+ml_BitSet_assign (value dest, value source)
 {
   bitset &dst = *get_bitset (dest);
   bitset &src = *get_bitset (source);

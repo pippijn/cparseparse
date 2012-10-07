@@ -481,6 +481,24 @@ let dispatch_mine = function
           ])
         end;
 
+      rule "Compile grammar to ML"
+        ~prods:[
+          "ccparse/gr/ccActions.mli";
+          "ccparse/gr/ccActions.ml";
+          "ccparse/gr/ccTables.mli";
+          "ccparse/gr/ccTables.ml";
+        ]
+        ~deps:[
+          "ccparse/gr/cc.gr";
+          "ccparse/gr/gnu.gr";
+          "ccparse/gr/kandr.gr";
+          "ccparse/tok/cc_tokens.ids";
+          "elkhound/elkhound.native";
+        ]
+        begin fun env build ->
+          Cmd(S[A(env "elkhound/elkhound.native"); A"ccparse/gr/cc.gr"])
+        end;
+
   | _ ->
       ()
 

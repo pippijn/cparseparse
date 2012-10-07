@@ -1077,7 +1077,7 @@ let nodeSummary node =
 
 
 let rec innerStackSummary printed node =
-  if List.exists ((=) node) !printed then (
+  if List.exists ((==) node) !printed then (
     (* already printed *)
     "(rep:" ^ nodeSummary node ^ ")"
 

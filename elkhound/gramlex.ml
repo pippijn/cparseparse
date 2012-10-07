@@ -86,6 +86,18 @@ let remove_quotes str =
   String.sub str 1 (String.length str - 2)
 
 
+let remove_braces str =
+  let startpos = String. index str '{' + 1 in
+  let endpos   = String.rindex str '}' in
+  String.sub str startpos (endpos - startpos)
+
+
+let remove_parens str =
+  let startpos = String. index str '(' + 1 in
+  let endpos   = String.rindex str ')' in
+  String.sub str startpos (endpos - startpos)
+
+
 let rec verbatim state = lexer
 | '{'		->
 		  state.brace_level <- state.brace_level + 1;
@@ -100,7 +112,7 @@ let rec verbatim state = lexer
 		    Buffer.clear state.code;
 		    state.automaton <- Normal;
 		    state.in_rhs <- false;
-		    TOK_LIT_CODE code
+		    TOK_LIT_CODE (remove_braces code)
 		  else
 		    verbatim state lexbuf
 
@@ -120,7 +132,7 @@ let rec typename state = lexer
 		    let code = String.copy (Buffer.contents state.code) in
 		    Buffer.clear state.code;
 		    state.automaton <- Normal;
-		    TOK_LIT_CODE (remove_quotes code)
+		    TOK_LIT_CODE (remove_parens code)
 		  else
 		    typename state lexbuf
 

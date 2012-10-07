@@ -10,6 +10,24 @@ type tSemanticValue = Obj.t
 let cNULL_SVAL = Obj.repr ()
 
 
+type tUserFunctions = {
+  reductionActionArray : (tSemanticValue array -> tSemanticValue) array;
+  duplicateTerminalValueArray : (tSemanticValue -> tSemanticValue) array;
+  duplicateNontermValueArray : (tSemanticValue -> tSemanticValue) array;
+  deallocateTerminalValueArray : (tSemanticValue -> unit) array;
+  deallocateNontermValueArray : (tSemanticValue -> unit) array;
+  mergeAlternativeParsesArray : (tSemanticValue -> tSemanticValue -> tSemanticValue) array;
+  keepNontermValueArray : (tSemanticValue -> bool) array;
+  reclassifyTokenArray : (tSemanticValue -> int) array;
+}
+
+let default_dup (sym : int) (sval : tSemanticValue) : tSemanticValue = sval
+let default_del (sym : int) (sval : tSemanticValue) : unit = ()
+let default_merge (sym : int) (left : tSemanticValue) (right : tSemanticValue) : tSemanticValue = failwith "merge"
+let default_keep (sym : int) (sval : tSemanticValue) : bool = true
+let default_classify (oldTokenType : int) (sval : tSemanticValue) : int = oldTokenType
+
+
 (* collection of actions for use during parsing *)
 (* again, see elkhound/useract.h for more info *)
 type tUserActions = {

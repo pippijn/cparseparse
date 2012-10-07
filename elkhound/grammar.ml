@@ -74,24 +74,24 @@ let synthesise_start_rule topforms =
 
 
 (* handle TF_option *)
-let collect_options options grammar =
-  List.fold_left (fun grammar -> function
+let collect_options options config =
+  List.fold_left (fun config -> function
     | TF_option      ("useGCDefaults",              (0 | 1 as value)) ->
-        { grammar with useGCDefaults              = value = 1 }
+        { config with useGCDefaults              = value = 1 }
     | TF_option      ("defaultMergeAborts",         (0 | 1 as value)) ->
-        { grammar with defaultMergeAborts         = value = 1 }
+        { config with defaultMergeAborts         = value = 1 }
 
     | TF_option ("shift_reduce_conflicts",   value) ->
-        { grammar with expectedSR          = value }
+        { config with expectedSR          = value }
     | TF_option ("reduce_reduce_conflicts",  value) ->
-        { grammar with expectedRR          = value }
+        { config with expectedRR          = value }
     | TF_option ("unreachable_nonterminals", value) ->
-        { grammar with expectedUNRNonterms = value }
+        { config with expectedUNRNonterms = value }
     | TF_option ("unreachable_terminals",    value) ->
-        { grammar with expectedUNRTerms    = value }
+        { config with expectedUNRTerms    = value }
 
     | _ -> failwith "merge failed"
-  ) grammar options
+  ) config options
 
 
 let collect_verbatims verbatims =
@@ -231,7 +231,8 @@ let collect_terminals decls types precs =
         let dummy_name = "__dummy_filler_token" ^ string_of_int i in
         let dummy = { empty_terminal with
           tbase = { empty_symbol_base with
-            name = dummy_name
+            name = dummy_name;
+            reachable = true;
           }
         } in
         Stringmap.add dummy_name dummy terminals
@@ -367,31 +368,37 @@ let collect_production_rhs aliases terminals nonterminals is_synthesised rhs_lis
 let collect_productions aliases terminals nonterminals nonterms =
   let term_count = Stringmap.cardinal terminals in
 
-  Stringmap.fold (fun _ (nterm, _) productions ->
-    match nterm with
-    | TF_nonterm (name, _, _, prods, _) ->
-        let left = Stringmap.find name nonterminals in
-        (* is this the special start symbol I inserted? *)
-        let is_synthesised = name = start_name in
+  let productions, last_prod_index =
+    Stringmap.fold (fun _ (nterm, _) (productions, next_prod_index) ->
+      match nterm with
+      | TF_nonterm (name, _, _, prods, _) ->
+          let left = Stringmap.find name nonterminals in
+          (* is this the special start symbol I inserted? *)
+          let is_synthesised = name = start_name in
 
-        List.fold_left (fun productions (ProdDecl (kind, rhs, action)) ->
-          (* build a production *)
-          let production =
-            { empty_production with
-              left;
-              action;
-              first_rhs = TerminalSet.create term_count
-            }
-            (* deal with RHS elements *)
-            |> collect_production_rhs aliases terminals nonterminals is_synthesised rhs
-          in
+          List.fold_left (fun (productions, next_prod_index) (ProdDecl (kind, rhs, action)) ->
+            (* build a production *)
+            let production =
+              { empty_production with
+                left;
+                action;
+                first_rhs = TerminalSet.create term_count;
+                prod_index = next_prod_index;
+              }
+              (* deal with RHS elements *)
+              |> collect_production_rhs aliases terminals nonterminals is_synthesised rhs
+            in
 
-          (* add production to grammar *)
-          production :: productions
-        ) productions prods
+            (* add production to grammar *)
+            production :: productions, next_prod_index + 1
+          ) (productions, next_prod_index) prods
 
-    | _ -> failwith "merge failed"
-  ) nonterms []
+      | _ -> failwith "merge failed"
+    ) nonterms ([], 0)
+  in
+
+  assert (last_prod_index = List.length productions);
+  productions
 
 
 let of_ast topforms =
@@ -411,7 +418,9 @@ let of_ast topforms =
   let productions             = collect_productions aliases terminals nonterminals topforms.nonterms in
   let start_symbol            = Stringmap.find topforms.first_nonterm nonterminals in
 
-  let grammar = { empty_grammar with
+  let config                  = collect_options topforms.options empty_config in
+
+  let grammar = {
     nonterminals;
     terminals;
     aliases;
@@ -420,7 +429,9 @@ let of_ast topforms =
 
     verbatim;
     impl_verbatim;
-  } |> collect_options topforms.options in
+
+    config;
+  } in
 
   if Config.trace_merge then (
     Printf.printf "%d terminals\n" (Stringmap.cardinal terminals);

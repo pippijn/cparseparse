@@ -32,7 +32,7 @@ Executable elkhound
         BuildTools:             ocamlbuild
         BuildDepends:           monad,sexplib,ulex,menhirLib,batteries,glr
         MainIs:                 elkhound.ml
-        CSources:               ml_TerminalSet.c
+        CSources:               ml_BitSet.c, ml_Valgrind.c
         CCLib:                  -lstdc++
         CompiledObject:         native
 

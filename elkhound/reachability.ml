@@ -28,4 +28,16 @@ let compute_reachable nonterms terms prods_by_lhs start =
 
   (* do a DFS on the grammar, marking things reachable as
    * they're encountered *)
-  compute_reachable_dfs prods_by_lhs start
+  compute_reachable_dfs prods_by_lhs start;
+
+  (* the empty and start symbol are reachable *)
+  assert (nonterms.(0) == empty_nonterminal);
+  assert (nonterms.(0).nbase.reachable = false);
+  nonterms.(0).nbase.reachable <- true;
+  assert (nonterms.(1).nbase.name == Grammar.start_name);
+  assert (nonterms.(1).nbase.reachable = false);
+  nonterms.(1).nbase.reachable <- true;
+
+  (* the EOF token is reachable *)
+  assert (terms.(0).tbase.reachable = false);
+  terms.(0).tbase.reachable <- true

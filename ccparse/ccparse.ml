@@ -100,8 +100,8 @@ let parse glr actions cin lexer =
 
 
 let elkmain () =
-  let tables = Cc.ccParseTables in
-  let actions = Cc.ccUserActions in
+  let tables = CcTables.parseTables in
+  let actions = CcActions.userActions in
 
   let actions =
     if !Options._ptree then
@@ -112,7 +112,7 @@ let elkmain () =
   let glr = Glr.makeGLR tables actions in
 
   List.iter (fun input ->
-    let cin = Unix.open_process_in (Printf.sprintf "gcc -xc++ -E -P %s" input) in
+    let cin = Unix.open_process_in ("gcc -xc++ -E -P " ^ input) in
 
     begin try
       let open Lexerint in
@@ -151,9 +151,8 @@ let () =
   };
 
   try
-    (*Printexc.record_backtrace true;*)
-    (*Printexc.print main ()*)
-    elkmain ()
+    Printexc.record_backtrace true;
+    Printexc.print elkmain ()
   with
   | ExitStatus status ->
       exit status

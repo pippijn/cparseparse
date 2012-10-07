@@ -46,7 +46,8 @@ let main () =
     Printast.print (Merge.to_ast topforms);
   let grammar = Grammar.of_ast topforms in
   (*PrintGrammar.print_productions grammar.productions;*)
-  Gramanl.run_analyses grammar;
+  let env, tables = Gramanl.run_analyses grammar in
+  Timing.time "writing ML code" (EmitCode.emit_ml "ccparse/gr/cc" env grammar) tables;
   (*print_grammar grammar*)
 
   ()

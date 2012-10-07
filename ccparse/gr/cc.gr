@@ -54,17 +54,13 @@
 // that later mutations all have the same effect as the original.
 
 
-// this makes it so that, by default, dup() is the identity function,
-// and del() is a no-op
-option useGCDefaults;
-
 // if I don't specify a merge(), and we want to merge(),
 // then abort
 option defaultMergeAborts;
 
 // expected statistics
-option shift_reduce_conflicts 62;
-option reduce_reduce_conflicts 70;
+option shift_reduce_conflicts 52;
+option reduce_reduce_conflicts 73;
 option unreachable_nonterminals 1;
 option unreachable_terminals 13;
 

@@ -1,6 +1,3 @@
-open Batteries_uni
-
-
 type t = {
   width  : int;
   height : int;

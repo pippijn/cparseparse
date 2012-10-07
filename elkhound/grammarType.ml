@@ -104,7 +104,24 @@ type production = {
 
   (* --- annotation --- *)
   first_rhs             : TerminalSet.t; (* First(RHS) *)
-  mutable prod_index    : int; (* unique production id *)
+  mutable prod_index            : int; (* unique production id *)
+} with sexp
+
+type config = {
+  (* expected numbers of various anomalies; -1 means no
+   * expectation has been supplied; this informtion is used
+   * to control what is reported after grammar analysis *)
+  expectedSR            : int; (* shift/reduce conflicts *)
+  expectedRR            : int; (* reduce/reduce conflicts *)
+  expectedUNRNonterms   : int; (* # unreachable nonterminals *)
+  expectedUNRTerms      : int; (* # unreachable terminals *)
+
+  (* when true, the default dup/del is what's expected for a
+   * garbage-collected system: dup() is the identity function,
+   * and del() is a no-op *)
+  useGCDefaults         : bool;
+  (* when true, unspecified merge() functions abort the program *)
+  defaultMergeAborts    : bool;
 } with sexp
 
 type grammar = {
@@ -121,20 +138,7 @@ type grammar = {
   (* code emitted into the implementation file at the end *)
   impl_verbatim         : string list;
 
-  (* expected numbers of various anomalies; -1 means no
-   * expectation has been supplied; this informtion is used
-   * to control what is reported after grammar analysis *)
-  expectedSR            : int; (* shift/reduce conflicts *)
-  expectedRR            : int; (* reduce/reduce conflicts *)
-  expectedUNRNonterms   : int; (* # unreachable nonterminals *)
-  expectedUNRTerms      : int; (* # unreachable terminals *)
-
-  (* when true, the default dup/del is what's expected for a
-   * garbage-collected system: dup() is the identity function,
-   * and del() is a no-op *)
-  useGCDefaults         : bool;
-  (* when true, unspecified merge() functions abort the program *)
-  defaultMergeAborts    : bool;
+  config                : config;
 } with sexp
 
 
@@ -198,6 +202,17 @@ let empty_production = {
 }
 
 
+let empty_config = {
+  expectedSR          = 0;
+  expectedRR          = 0;
+  expectedUNRNonterms = 0;
+  expectedUNRTerms    = 0;
+
+  useGCDefaults       = false;
+  defaultMergeAborts  = false;
+}
+
+
 let empty_grammar = {
   nonterminals        = Stringmap.empty;
   terminals           = Stringmap.empty;
@@ -208,11 +223,5 @@ let empty_grammar = {
   verbatim            = [];
   impl_verbatim       = [];
 
-  expectedSR          = 0;
-  expectedRR          = 0;
-  expectedUNRNonterms = 0;
-  expectedUNRTerms    = 0;
-
-  useGCDefaults       = false;
-  defaultMergeAborts  = false;
+  config              = empty_config;
 }

@@ -5,22 +5,34 @@ open AnalysisEnvType
  ************************************************************)
 
 
+let transition_for_term item_set term =
+  let open GrammarType in
+  item_set.term_transition.(term.term_index)
+
+let transition_for_nonterm item_set nonterm =
+  let open GrammarType in
+  item_set.nonterm_transition.(nonterm.nt_index)
+
 let transition item_set sym =
   let open GrammarType in
   match sym with
-  | Terminal (_, term) ->
-      item_set.term_transition.(term.term_index)
-  | Nonterminal (_, nonterm) ->
-      item_set.nonterm_transition.(nonterm.nt_index)
+  | Terminal (_, term) -> transition_for_term item_set term
+  | Nonterminal (_, nonterm) -> transition_for_nonterm item_set nonterm
 
+
+let set_transition_for_term from_set term to_set =
+  let open GrammarType in
+  from_set.term_transition.(term.term_index) <- Some to_set
+
+let set_transition_for_nonterm from_set nonterm to_set =
+  let open GrammarType in
+  from_set.nonterm_transition.(nonterm.nt_index) <- Some to_set
 
 let set_transition from_set sym to_set =
   let open GrammarType in
   match sym with
-  | Terminal (_, term) ->
-      from_set.term_transition.(term.term_index) <- Some to_set
-  | Nonterminal (_, nonterm) ->
-      from_set.nonterm_transition.(nonterm.nt_index) <- Some to_set
+  | Terminal (_, term) -> set_transition_for_term from_set term to_set
+  | Nonterminal (_, nonterm) -> set_transition_for_nonterm from_set nonterm to_set
 
 
 let has_extending_shift item_set nonterm term =

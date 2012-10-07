@@ -5,5 +5,6 @@ let time desc f x =
 
   print_string "%%% ";
   Printf.printf "%s took %f seconds\n" desc (finish -. start);
+  flush stdout;
 
   result
