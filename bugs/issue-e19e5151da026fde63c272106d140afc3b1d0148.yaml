@@ -1,0 +1,18 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: Make PEG parser pass the testsuite
+desc: Make sure the PEG parser consumes everything what is in the testsuite without errors.
+type: :task
+component: Parser
+release: 
+reporter: Wojciech Meyer <wojciech.meyer@gmail.com>
+status: :unstarted
+disposition: 
+creation_time: 2012-10-08 03:04:33.629827 Z
+references: []
+
+id: e19e5151da026fde63c272106d140afc3b1d0148
+log_events: 
+- - 2012-10-08 03:04:43.037773 Z
+  - Wojciech Meyer <wojciech.meyer@gmail.com>
+  - created
+  - Later we need to verify the parse tree
