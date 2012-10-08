@@ -1,4 +1,4 @@
-open Gramast
+open GrammarAst
 open Printf
 
 let print_termdecl = function

@@ -30,17 +30,15 @@ Executable ccparse
 Executable elkhound
         Path:                   elkhound
         BuildTools:             ocamlbuild
-        BuildDepends:           monad,sexplib,ulex,menhirLib,batteries,glr
+        BuildDepends:           monad,sexplib,ulex,menhirLib,batteries,glr,baselib
         MainIs:                 elkhound.ml
-        CSources:               ml_BitSet.c, ml_Valgrind.c
-        CCLib:                  -lstdc++
         CompiledObject:         native
 
 
 Library glr
         Path:                   glr
         BuildTools:             ocamlbuild
-#        BuildDepends:           sexplib,ulex
+        BuildDepends:           baselib
         Modules:                Arraystack,
                                 Glr,
                                 Lexerint,
@@ -51,3 +49,22 @@ Library glr
                                 Smutil,
                                 Useract
         CompiledObject:         native
+        NativeOpt:              -inline 0
+
+
+Library baselib
+        Path:                   baselib
+        BuildTools:             ocamlbuild
+        BuildDepends:           sexplib,batteries
+        Modules:                Bit2d,
+                                BitSet,
+                                HashStack,
+                                ListUtil,
+                                SexpMap,
+                                SexpSet,
+                                StringMap,
+                                StringSet,
+                                Timing,
+                                Valgrind
+        CSources:               ml_BitSet.c, ml_Valgrind.c
+        CCLib:                  -lstdc++

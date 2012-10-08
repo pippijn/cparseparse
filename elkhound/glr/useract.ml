@@ -21,10 +21,11 @@ type tUserFunctions = {
   reclassifyTokenArray : (tSemanticValue -> int) array;
 }
 
-let default_dup (sym : int) (sval : tSemanticValue) : tSemanticValue = sval
-let default_del (sym : int) (sval : tSemanticValue) : unit = ()
-let default_merge (sym : int) (left : tSemanticValue) (right : tSemanticValue) : tSemanticValue = failwith "merge"
-let default_keep (sym : int) (sval : tSemanticValue) : bool = true
+let default_dup   (sym : int) (sval : tSemanticValue) : tSemanticValue = sval
+let default_del   (sym : int) (sval : tSemanticValue) : unit = ()
+let default_merge (sym : int) (left : tSemanticValue) (right : tSemanticValue) : tSemanticValue =
+  Printf.printf "warning: no function to merge nonterminal %d\n" sym; left
+let default_keep  (sym : int) (sval : tSemanticValue) : bool = true
 let default_classify (oldTokenType : int) (sval : tSemanticValue) : int = oldTokenType
 
 

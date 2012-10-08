@@ -2,7 +2,7 @@ open AnalysisEnvType
 
 
 let name_of_symbol_opt = function
-  | Some sym -> Grammar.name_of_symbol sym
+  | Some sym -> GrammarUtil.name_of_symbol sym
   | None -> "None"
 
 
@@ -53,7 +53,7 @@ let renumber_states_compare env a b =
 
   (* order them first by their incoming arc symbol; this affects
    * the renumbering that the Code Reduction Scheme demands *)
-  let order = Grammar.compare_symbol a.state_symbol b.state_symbol in
+  let order = GrammarUtil.compare_symbol a.state_symbol b.state_symbol in
 
   (* from this point on, the CRS would be happy with an arbitrary
    * order, but I want the state numbering to be canonical so that

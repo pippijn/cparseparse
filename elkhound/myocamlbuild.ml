@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: 50cfd40d12a6bfabaffbf3db92f73bbf) *)
+(* DO NOT EDIT (digest: 380d5e6bea923988873f0eec223d5c62) *)
 module OASISGettext = struct
 # 21 "/tmp/buildd/oasis-0.2.0/src/oasis/OASISGettext.ml"
   
@@ -451,14 +451,21 @@ end
 open Ocamlbuild_plugin;;
 let package_default =
   {
-     MyOCamlbuildBase.lib_ocaml = [("glr/glr", ["glr"])];
-     lib_c = [("elkhound", "elkhound", [])];
+     MyOCamlbuildBase.lib_ocaml =
+       [("baselib/baselib", ["baselib"]); ("glr/glr", ["glr"])];
+     lib_c = [("baselib", "baselib", [])];
      flags =
        [
-          (["oasis_executable_elkhound_cclib"; "link"],
+          (["oasis_library_baselib_cclib"; "link"],
             [(OASISExpr.EBool true, S [A "-cclib"; A "-lstdc++"])]);
-          (["oasis_executable_elkhound_cclib"; "ocamlmklib"; "c"],
-            [(OASISExpr.EBool true, S [A "-lstdc++"])])
+          (["oasis_library_baselib_cclib"; "ocamlmklib"; "c"],
+            [(OASISExpr.EBool true, S [A "-lstdc++"])]);
+          (["oasis_library_glr_native"; "ocaml"; "link"; "native"],
+            [(OASISExpr.EBool true, S [A "-inline"; A "0"])]);
+          (["oasis_library_glr_native"; "ocaml"; "ocamldep"; "native"],
+            [(OASISExpr.EBool true, S [A "-inline"; A "0"])]);
+          (["oasis_library_glr_native"; "ocaml"; "compile"; "native"],
+            [(OASISExpr.EBool true, S [A "-inline"; A "0"])])
        ];
      }
   ;;
@@ -477,26 +484,62 @@ let dispatch_mine = function
             A"-O3";
             A"-ggdb3";
             A"-std=c++0x";
-            A"-I../elkhound";
+            A"-I../baselib";
           ])
         end;
 
-      rule "Compile grammar to ML"
+
+      let grammars = [
+        "ccparse/gr/c++1988.gr";
+        "ccparse/gr/c++2011.gr";
+        "ccparse/gr/kandr.gr";
+        "ccparse/gr/gnu.gr";
+      ] in
+
+      rule "Compile C++ grammar to ML"
         ~prods:[
           "ccparse/gr/ccActions.mli";
           "ccparse/gr/ccActions.ml";
+          "ccparse/gr/ccTables.dat";
           "ccparse/gr/ccTables.mli";
           "ccparse/gr/ccTables.ml";
         ]
-        ~deps:[
-          "ccparse/gr/cc.gr";
-          "ccparse/gr/gnu.gr";
-          "ccparse/gr/kandr.gr";
+        ~deps:(grammars @ [
           "ccparse/tok/cc_tokens.ids";
+          "elkhound/elkhound.native";
+        ])
+        begin fun env build ->
+          Cmd(S([A"elkhound/elkhound.native"] @ List.map (fun a -> A a) grammars))
+        end;
+
+
+      rule "Compile C++ grammar to ML (original elkhound)"
+        ~prods:[
+          "ccparse/gr/cc.mli";
+          "ccparse/gr/cc.ml";
+        ]
+        ~deps:(grammars @ [
+          "ccparse/tok/cc_tokens.ids";
+        ])
+        begin fun env build ->
+          Cmd(S([A"../../oink-stack/elkhound/elkhound"; A"-ocaml"] @ List.map (fun a -> A a) grammars))
+        end;
+
+
+      rule "Compile grammar to ML"
+        ~prods:[
+          "%Actions.mli";
+          "%Actions.ml";
+          "%Tables.dat";
+          "%Tables.mli";
+          "%Tables.ml";
+        ]
+        ~deps:[
+          "%.gr";
           "elkhound/elkhound.native";
         ]
         begin fun env build ->
-          Cmd(S[A(env "elkhound/elkhound.native"); A"ccparse/gr/cc.gr"])
+          Cmd(S[A"elkhound/elkhound.native"; A(env "%.gr")])
         end;
 
   | _ ->

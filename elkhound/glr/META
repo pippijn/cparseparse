@@ -1,7 +1,8 @@
 # OASIS_START
-# DO NOT EDIT (digest: 347a19b4df2d2f9f59213eb9a8c3e4e8)
+# DO NOT EDIT (digest: 0b8461588984ca35e49ac5175fed0762)
 version = "0.6"
 description = "Elkhound GLR Parser Generator"
+requires = "baselib"
 archive(byte) = "glr.cma"
 archive(native) = "glr.cmxa"
 exists_if = "glr.cmxa"

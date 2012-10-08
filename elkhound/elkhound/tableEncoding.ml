@@ -131,7 +131,7 @@ let set_goto_entry tables (state_id : state_id) (nonterm_id : nt_index) (goto : 
   tables.tables.gotoTable.(int_of_state_id state_id * tables.tables.gotoCols + nonterm_id) <- goto
 
 
-let set_state_symbol tables (state_id : state_id) (sym : tSymbolId) =
+let set_state_symbol tables (state_id : state_id) (sym : symbol_id) =
   if false then (
     Printf.printf "set_state_symbol %d %d\n" (int_of_state_id state_id) sym;
   );

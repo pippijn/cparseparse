@@ -2,7 +2,7 @@ open GrammarType
 
 
 let print_ast topforms =
-  let sexpr = Gramast.sexp_of_topforms topforms in
+  let sexpr = GrammarAst.sexp_of_topforms topforms in
 
   Sexplib.Sexp.output_hum stdout sexpr;
   print_newline ()
@@ -16,23 +16,21 @@ let print_grammar grammar =
 
 
 let main () =
-  let basedir = "ccparse" in
-
   let grammars =
     List.map (
       fun file ->
-        let ulexbuf = Ulexing.from_utf8_channel (open_in (basedir ^ "/" ^ file)) in
+        let ulexbuf = Ulexing.from_utf8_channel (open_in file) in
         let parse = MenhirLib.Convert.traditional2revised
           (fun t -> t)
           (fun _ -> Lexing.dummy_pos)
           (fun _ -> Lexing.dummy_pos)
-          Grampar.parse
+          GrammarParser.parse
         in
 
-        let state = Gramlex.default_state basedir ulexbuf in
+        let state = GrammarLexer.default_state ulexbuf in
 
-        file, parse (fun () -> Gramlex.token state)
-    ) ["gr/cc.gr"; "gr/gnu.gr"; "gr/kandr.gr"]
+        file, parse (fun () -> GrammarLexer.token state)
+    ) ["ccparse/gr/c++1988.gr"; "ccparse/gr/c++2011.gr"; "ccparse/gr/kandr.gr"; "ccparse/gr/gnu.gr"]
   in
 
   (*
@@ -42,13 +40,18 @@ let main () =
   *)
 
   let topforms = Merge.merge grammars in
-  if false then
-    Printast.print (Merge.to_ast topforms);
-  let grammar = Grammar.of_ast topforms in
-  (*PrintGrammar.print_productions grammar.productions;*)
-  let env, tables = Gramanl.run_analyses grammar in
-  Timing.time "writing ML code" (EmitCode.emit_ml "ccparse/gr/cc" env grammar) tables;
-  (*print_grammar grammar*)
+  if false then (
+    PrintAst.print (Merge.to_ast topforms);
+  );
+  let grammar = GrammarTreeParser.of_ast topforms in
+  if false then (
+    List.iter PrintGrammar.print_production grammar.productions;
+  );
+  let env, tables = GrammarAnalysis.run_analyses grammar in
+  EmitCode.emit_ml "ccparse/gr/cc" env grammar tables;
+  if false then (
+    print_grammar grammar;
+  );
 
   ()
 

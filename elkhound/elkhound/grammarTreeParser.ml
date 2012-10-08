@@ -1,53 +1,7 @@
 open Batteries_uni
-open Gramast
+open GrammarAst
 open GrammarType
 open Merge
-
-
-let name_of_terminal { tbase = { name }; alias } =
-  if alias <> "" then
-    alias
-  else
-    name
-
-
-let name_of_nonterminal { nbase = { name } } =
-  name
-
-
-let name_of_symbol = function
-  | Nonterminal (_, nonterm) -> name_of_nonterminal nonterm
-  | Terminal (_, term) -> name_of_terminal term
-
-
-(* symbol equality ignores tags *)
-let equal_symbol a b =
-  match a, b with
-  | Terminal (_, term_a), Terminal (_, term_b) ->
-      term_a == term_b
-  | Nonterminal (_, nonterm_a), Nonterminal (_, nonterm_b) ->
-      nonterm_a == nonterm_b
-  | _ ->
-      (* terminals never equal non-terminals *)
-      false
-
-
-let compare_symbol a b =
-  match a, b with
-  (* any state with no incoming arcs (start state) is first *)
-  | None, Some _ -> -1
-  | Some _, None -> 1
-  | None, None -> 0
-
-  (* terminals come before nonterminals *)
-  | Some (Nonterminal _), Some (Terminal _) -> 1
-  | Some (Terminal _), Some (Nonterminal _) -> -1
-
-  (* order by id within terms/nonterms *)
-  | Some (Terminal (_, term_a)), Some (Terminal (_, term_b)) ->
-      term_a.term_index - term_b.term_index
-  | Some (Nonterminal (_, nonterm_a)), Some (Nonterminal (_, nonterm_b)) ->
-      nonterm_a.nt_index - nonterm_b.nt_index
 
 
 let start_name = "__EarlyStartSymbol"
@@ -69,7 +23,7 @@ let synthesise_start_rule topforms =
   in
 
   { topforms with
-    nonterms = Stringmap.add start_name (start, 1) topforms.nonterms
+    nonterms = StringMap.add start_name (start, 1) topforms.nonterms
   }
 
 
@@ -108,20 +62,20 @@ let collect_verbatims verbatims =
 let collect_terminal_aliases decls =
   List.fold_left (fun aliases (TermDecl (_, name, alias)) ->
     if alias <> "" then
-      Stringmap.add alias name aliases
+      StringMap.add alias name aliases
     else
       aliases
-  ) Stringmap.empty decls
+  ) StringMap.empty decls
 
 
 (* type annotations *)
 let collect_terminal_types types =
   let types =
     List.fold_left (fun types (TermType (name, _, _) as termtype) ->
-      if Stringmap.mem name types then
+      if StringMap.mem name types then
         failwith "this token already has a type";
-      Stringmap.add name termtype types
-    ) Stringmap.empty types
+      StringMap.add name termtype types
+    ) StringMap.empty types
   in
 
   types
@@ -134,7 +88,7 @@ let collect_terminal_precs precs aliases =
       List.fold_left (fun precs token ->
         let token =
           try
-            Stringmap.find token aliases
+            StringMap.find token aliases
           with Not_found ->
             token
         in
@@ -143,11 +97,11 @@ let collect_terminal_precs precs aliases =
           (* 0 means precedence isn't specified *)
           failwith "you can't use 0 as a precedence level, because that value is used internally to mean something else";
 
-        if Stringmap.mem token precs then
+        if StringMap.mem token precs then
           failwith "this token already has a specified precedence";
-        Stringmap.add token termtype precs
+        StringMap.add token termtype precs
       ) precs tokens
-    ) Stringmap.empty precs
+    ) StringMap.empty precs
   in
 
   precs
@@ -171,13 +125,13 @@ let spec_func funcs name formal_count =
 let collect_terminals decls types precs =
   let max_code, terminals =
     List.fold_left (fun (max_code, terminals) (TermDecl (code, name, alias)) ->
-      if Stringmap.mem name terminals then
+      if StringMap.mem name terminals then
         failwith "token already declared";
 
       (* annotate with declared type *)
       let semtype, funcs =
         try
-          let (TermType (_, termtype, funcs)) = Stringmap.find name types in
+          let (TermType (_, termtype, funcs)) = StringMap.find name types in
           termtype, funcs
         with Not_found ->
           "", []
@@ -186,7 +140,7 @@ let collect_terminals decls types precs =
       (* apply precedence spec *)
       let associativity, precedence =
         try
-          let PrecSpec (kind, prec, _) = Stringmap.find name precs in
+          let PrecSpec (kind, prec, _) = StringMap.find name precs in
           kind, prec
         with Not_found ->
           Assoc.AK_NONASSOC, 0
@@ -211,8 +165,8 @@ let collect_terminals decls types precs =
 
       let max_code = max max_code code in
 
-      max_code, Stringmap.add name terminal terminals
-    ) (0, Stringmap.empty) decls
+      max_code, StringMap.add name terminal terminals
+    ) (0, StringMap.empty) decls
   in
 
   (* track what terminals have codes *)
@@ -235,7 +189,7 @@ let collect_terminals decls types precs =
             reachable = true;
           }
         } in
-        Stringmap.add dummy_name dummy terminals
+        StringMap.add dummy_name dummy terminals
     ) terminals (Enum.seq 1 ((+) 1) ((>=) max_code))
   in
 
@@ -243,16 +197,16 @@ let collect_terminals decls types precs =
 
 
 let collect_nonterminals nonterms term_count =
-  (*Sexplib.Sexp.output_hum Pervasives.stdout (Stringmap.sexp_of_t Gramast.sexp_of_topform nonterms);*)
+  (*Sexplib.Sexp.output_hum Pervasives.stdout (StringMap.sexp_of_t Gramast.sexp_of_topform nonterms);*)
   (*print_newline ();*)
 
   let nonterminals =
-    Stringmap.fold (fun _ (nterm, nt_index) nonterminals ->
+    StringMap.fold (fun _ (nterm, nt_index) nonterminals ->
       match nterm with
       | TF_nonterm (name, semtype, funcs, prods, subsets) ->
           (* record subsets *)
           List.iter (fun subset ->
-            if not (Stringmap.mem subset nonterms) then
+            if not (StringMap.mem subset nonterms) then
               failwith "subsets contains non-existent nonterminal"
             (* note that, since context-free language inclusion is
              * undecidable (Hopcroft/Ullman), we can't actually check that
@@ -282,13 +236,13 @@ let collect_nonterminals nonterms term_count =
             nt_index;
           } in
 
-          Stringmap.add name nonterminal nonterminals
+          StringMap.add name nonterminal nonterminals
 
       | _ -> failwith "merge failed"
-    ) nonterms Stringmap.empty
+    ) nonterms StringMap.empty
   in
 
-  assert (Stringmap.cardinal nonterminals = Stringmap.cardinal nonterms);
+  assert (StringMap.cardinal nonterminals = StringMap.cardinal nonterms);
 
   nonterminals
 
@@ -301,17 +255,26 @@ let add_forbid forbid tok =
 
 let collect_production_rhs aliases terminals nonterminals is_synthesised rhs_list production =
   let find_nonterminal name =
-    Stringmap.find name nonterminals
+    try
+      StringMap.find name nonterminals
+    with Not_found ->
+      failwith ("no symbol found named " ^ name)
   in
 
   let find_terminal name =
     let terminal =
       try
-        Stringmap.find name terminals
+        StringMap.find name terminals
       with Not_found ->
-        let name = Stringmap.find name aliases in
-        Stringmap.find name terminals
+        let name =
+          try
+            StringMap.find name aliases
+          with Not_found ->
+            failwith ("terminal \"" ^ name ^ "\" must be defined")
+        in
+        StringMap.find name terminals
     in
+
     if terminal.term_index = 0 && not is_synthesised then
       failwith "you cannot use the EOF token in your rules";
     terminal
@@ -326,14 +289,16 @@ let collect_production_rhs aliases terminals nonterminals is_synthesised rhs_lis
             production
           else
             let symbol, prec =
-              try
+              try (* look up terminal *)
                 let terminal = find_terminal name in
                 (* whenever we see a terminal, copy its precedence spec to
                  * the production; thus, the last symbol appearing in the
                  * production will be the one that gives the precedence *)
                 Terminal (tag, terminal), terminal.precedence
-              with Not_found ->
-                Nonterminal (tag, find_nonterminal name), production.prec
+              with Failure _ ->
+                let nonterminal = find_nonterminal name in
+                (* keep old precedence *)
+                Nonterminal (tag, nonterminal), production.prec
             in
 
             (* add it to the production *)
@@ -366,13 +331,13 @@ let collect_production_rhs aliases terminals nonterminals is_synthesised rhs_lis
 
 
 let collect_productions aliases terminals nonterminals nonterms =
-  let term_count = Stringmap.cardinal terminals in
+  let term_count = StringMap.cardinal terminals in
 
   let productions, last_prod_index =
-    Stringmap.fold (fun _ (nterm, _) (productions, next_prod_index) ->
+    StringMap.fold (fun _ (nterm, _) (productions, next_prod_index) ->
       match nterm with
       | TF_nonterm (name, _, _, prods, _) ->
-          let left = Stringmap.find name nonterminals in
+          let left = StringMap.find name nonterminals in
           (* is this the special start symbol I inserted? *)
           let is_synthesised = name = start_name in
 
@@ -412,11 +377,11 @@ let of_ast topforms =
    * looking at productions we can tell if one isn't declared *)
   let terminals               = collect_terminals topforms.decls types precs in
   let verbatim, impl_verbatim = collect_verbatims topforms.verbatims in
-  let nonterminals            = collect_nonterminals topforms.nonterms (Stringmap.cardinal terminals) in
+  let nonterminals            = collect_nonterminals topforms.nonterms (StringMap.cardinal terminals) in
 
   (* process nonterminal bodies *)
   let productions             = collect_productions aliases terminals nonterminals topforms.nonterms in
-  let start_symbol            = Stringmap.find topforms.first_nonterm nonterminals in
+  let start_symbol            = StringMap.find topforms.first_nonterm nonterminals in
 
   let config                  = collect_options topforms.options empty_config in
 
@@ -434,8 +399,8 @@ let of_ast topforms =
   } in
 
   if Config.trace_merge then (
-    Printf.printf "%d terminals\n" (Stringmap.cardinal terminals);
-    Printf.printf "%d nonterminals\n" (Stringmap.cardinal nonterminals);
+    Printf.printf "%d terminals\n" (StringMap.cardinal terminals);
+    Printf.printf "%d nonterminals\n" (StringMap.cardinal nonterminals);
     Printf.printf "%d productions\n" (List.length productions);
   );
 

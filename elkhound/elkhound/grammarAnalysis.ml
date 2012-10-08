@@ -14,20 +14,11 @@ let compute_grammar_properties env grammar =
 
 let compute_lr_tables env =
   let tables =
-    Timing.time "LR item sets construction" LrItemSets.construct_lr_item_sets env
-    |> Timing.time "renumbering states" (Renumbering.renumber_states env)
-    |> Timing.time "BFS tree on transition graph" (BfsTree.compute_bfs_tree env)
-    |> Timing.time "parse table construction" (TableConstruction.compute_parse_tables env (*~allow_ambig:*)true)
+    LrItemSets.construct_lr_item_sets env
+    |> Renumbering.renumber_states env
+    |> BfsTree.compute_bfs_tree env
+    |> TableConstruction.compute_parse_tables env (*~allow_ambig:*)true
   in
-
-  (*Timing.time "printing tables" (TablePrinting.print_tables (Pervasives.open_out "tables-out.ml")) tables;*)
-
-  (*
-  List.iter (fun item_set ->
-    PrintAnalysisEnv.print_item_set env item_set;
-    print_newline ()
-  ) states;
-  *)
 
   tables
 

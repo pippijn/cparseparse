@@ -276,7 +276,7 @@ let move_dot_no_closure nonterm_count term_count dotted_prods source symbol =
       (* dot is already at end *)
       | None -> kernel_items
       (* can't move dot *)
-      | Some sym when not (Grammar.equal_symbol sym symbol) -> kernel_items
+      | Some sym when not (GrammarUtil.equal_symbol sym symbol) -> kernel_items
 
       | Some _ ->
           let dot_moved = {
@@ -336,7 +336,7 @@ let merge_or_create_state env item_set sym in_done_list already with_dot_moved =
         if Config.trace_lrsets then (
           Printf.printf "from state %d, found that the transition on %s yielded a state similar to %d, but with different lookahead\n"
             (int_of_state_id item_set.state_id)
-            (Grammar.name_of_symbol sym)
+            (GrammarUtil.name_of_symbol sym)
             (int_of_state_id already.state_id)
         );
 
@@ -469,7 +469,7 @@ let construct_lr_item_sets env =
   begin
     let first_dp = DottedProduction.get env.env.dotted_prods env.env.indexed_prods.(0) 0 (* dot at left *) in
     assert (first_dp.prod == env.env.indexed_prods.(0));
-    assert (first_dp.prod.left.nbase.name == Grammar.start_name);
+    assert (first_dp.prod.left.nbase.name == GrammarTreeParser.start_name);
 
     let first_item = {
       dprod = first_dp;
@@ -495,8 +495,9 @@ let construct_lr_item_sets env =
     process_item_set env
   done;
 
-  if Config.trace_lrsets then (
-    Printf.printf "%d states\n" (ItemSetMap.cardinal env.item_sets_done);
+  if true || Config.trace_lrsets then (
+    print_string "%%% ";
+    Printf.printf "finished item set construction with %d states\n" (ItemSetMap.cardinal env.item_sets_done);
   );
 
   let states =
