@@ -17,10 +17,10 @@ open Smutil          (* getSome, etc. *)
 let traceParse  = false
 
 (* when true, keep some statistics useful for performance evaluation *)
-let accounting  = false
+let accounting  = true
 
 (* when true, we call the user's keep() functions *)
-let use_keep    = false
+let use_keep    = true
 
 (* when true, use the mini LR core *)
 let use_mini_lr = true
