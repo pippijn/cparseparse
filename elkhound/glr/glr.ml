@@ -521,9 +521,9 @@ let addTopmostParser glr parsr =
 
 (* ensure the array has at least the given index, growing its size
  * if necessary (by doubling) *)
-let ensureIndexDoubler arr idx null =
+let ensureIndexDoubler arr idx =
   while Array.length !arr < idx + 1 do
-    arr := Arraystack.growArray !arr (Array.length !arr * 2) null;
+    arr := Arraystack.growArray !arr (Array.length !arr * 2);
   done
 
 
@@ -531,15 +531,17 @@ let initPath path ssi pi rhsLen =
   path.startStateId <- ssi;
   path.prodIndex <- pi;
 
-  (* just use the 0th elements as the dummy 'null' value *)
-  ensureIndexDoubler path.sibLinks rhsLen !(path.sibLinks).(0);
-  ensureIndexDoubler path.symbols  rhsLen !(path.symbols ).(0)
+  ensureIndexDoubler path.sibLinks rhsLen;
+  ensureIndexDoubler path.symbols  rhsLen
 
 
 let newPath queue ssi pi rhsLen =
   let p = Objpool.alloc queue.pathPool in
   initPath p ssi pi rhsLen;
   p
+
+let deletePath queue p =
+  Objpool.dealloc queue.pathPool p
 
 
 let goesBefore queue p1 p2 =
@@ -651,8 +653,21 @@ and rwlRecursiveEnqueue glr
   )
 
 
-let deletePath queue p =
-  Objpool.dealloc queue.pathPool p
+let rwlEnqueueReduceAction glr parsr action mustUseLink =
+  let prodIndex = decodeReduce (*tables*) action parsr.state in
+
+  (* production info *)
+  let rhsLen = getProdInfo_rhsLen glr.tables prodIndex in
+  assert (rhsLen >= 0);       (* paranoia *)
+
+  (* make a prototype path; used to control recursion *)
+  let proto = newPath glr.pathQueue parsr.state prodIndex rhsLen in
+
+  (* kick off the recursion *)
+  rwlRecursiveEnqueue glr proto rhsLen parsr mustUseLink;
+
+  (* deallocate prototype *)
+  deletePath glr.pathQueue proto
 
 
 (* returns # of actions *)
@@ -663,20 +678,7 @@ let rec rwlEnqueueReductions glr parsr action mustUseLink =
     (* do nothing, only looking for reductions *)
     1
   ) else if isReduceAction (*tables*) action then (
-    let prodIndex = decodeReduce (*tables*) action parsr.state in
-
-    (* production info *)
-    let rhsLen = getProdInfo_rhsLen glr.tables prodIndex in
-    assert (rhsLen >= 0);       (* paranoia *)
-
-    (* make a prototype path; used to control recursion *)
-    let proto = newPath glr.pathQueue parsr.state prodIndex rhsLen in
-
-    (* kick off the recursion *)
-    rwlRecursiveEnqueue glr proto rhsLen parsr mustUseLink;
-
-    (* deallocate prototype *)
-    deletePath glr.pathQueue proto;
+    rwlEnqueueReduceAction glr parsr action mustUseLink;
 
     1
   ) else if isErrorAction (*tables*) action then (
@@ -832,7 +834,7 @@ let rwlProcessWorklist tokType glr =
 
     (* before calling user's code, duplicate svals *)
     for i = rhsLen - 1 downto 0 do
-      let sib = (!(path.sibLinks)).(i) in
+      let sib = !(path.sibLinks).(i) in
 
       (* put the sval in the array that will be passed to the user *)
       glr.toPass.(i) <- sib.sval;

@@ -3,8 +3,8 @@
 
 
 (* grow an array *)
-let growArray arr newLen null =
-  let newArr = Array.make newLen null in
+let growArray arr newLen =
+  let newArr = Array.make newLen (Obj.magic ()) in
 
   (* copy *)
   Array.blit
@@ -47,7 +47,7 @@ let pop rep =
 let push obj rep =
   if rep.len = Array.length rep.arr then
     (* need to expand the array *)
-    rep.arr <- growArray rep.arr (rep.len * 2) (Obj.magic ());
+    rep.arr <- growArray rep.arr (rep.len * 2);
 
   (* put new element into the array at the end *)
   rep.arr.(rep.len) <- obj;
