@@ -61,21 +61,18 @@ module DottedProductionS = struct
   let equal a b =
     a == b
 
+  let stats _ = failwith "Not supported"
+  let reset _ = failwith "Not supported"
+
   let sexp_of_t = sexp_of_dotted_production
   let t_of_sexp = dotted_production_of_sexp
 
 end
 
-module ExtendHashtblIntf(T : BatHashtbl.S) : Hashtbl.S = struct
-    include T
-    let stats _ = failwith "Not supported"
-    let reset _ = failwith "Not supported"
-end
-
-module DottedProductionTable = BatHashtbl.Make(DottedProductionS)
+module DottedProductionTable = Hashtbl.Make(DottedProductionS)
 module DottedProductionMap = SexpMap.Make(DottedProductionS)
 module DottedProductionSet = SexpSet.Make(DottedProductionS)
-module DottedProductionStack = HashStack.Make(ExtendHashtblIntf(DottedProductionTable))
+module DottedProductionStack = HashStack.Make(DottedProductionTable)
 
 
 module LrItemS = struct
@@ -91,15 +88,18 @@ module LrItemS = struct
   let equal a b =
     DottedProductionS.equal a.dprod b.dprod
 
+  let stats _ = failwith "Not supported"
+  let reset _ = failwith "Not supported"
+
   let sexp_of_t = sexp_of_lr_item
   let t_of_sexp = lr_item_of_sexp
 
 end
 
-module LrItemTable = BatHashtbl.Make(LrItemS)
+module LrItemTable = Hashtbl.Make(LrItemS)
 module LrItemMap = SexpMap.Make(LrItemS)
 module LrItemSet = SexpSet.Make(LrItemS)
-module LrItemStack = HashStack.Make(ExtendHashtblIntf(LrItemTable))
+module LrItemStack = HashStack.Make(LrItemTable)
 
 
 (************************************************************
@@ -200,15 +200,18 @@ module ItemSetS = struct
     else
       compare a b = 0
 
+  let stats _ = failwith "Not supported"
+  let reset _ = failwith "Not supported"
+
   let sexp_of_t = sexp_of_item_set
   let t_of_sexp = item_set_of_sexp
 
 end
 
-module ItemSetTable = BatHashtbl.Make(ItemSetS)
+module ItemSetTable = Hashtbl.Make(ItemSetS)
 module ItemSetMap = SexpMap.Make(ItemSetS)
 module ItemSetSet = SexpSet.Make(ItemSetS)
-module ItemSetStack = HashStack.Make(ExtendHashtblIntf(ItemSetTable))
+module ItemSetStack = HashStack.Make(ItemSetTable)
 
 
 (************************************************************
