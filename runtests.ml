@@ -43,4 +43,5 @@ let () =
       List.iter (fun line -> Printf.printf "-\t%s\n" line) expected;
     end
   in
+  (* Run the tests *)
   Array.iter run contents
