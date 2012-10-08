@@ -2,7 +2,6 @@
 (* GLR parser *)
 (* based on elkhound/glr.h and elkhound/glr.cc *)
 
-open Useract         (* tSemanticValue *)
 open Parsetables     (* action/goto/etc. *)
 open Smutil          (* getSome, etc. *)
 
@@ -42,7 +41,7 @@ type sibling_link = {
   mutable sib : stack_node;
 
   (* semantic value on this link *)
-  mutable sval : tSemanticValue;
+  mutable sval : SemanticValue.t;
 
   (* TODO: source location *)
 
@@ -122,14 +121,14 @@ and reduction_path_queue = {
 (* some mutable fields are for hack in 'makeGLR' *)
 and glr = {
   (* user-specified actions *)
-  userAct : tUserActions;
+  userAct : UserActions.t;
 
   (* parse tables from the grammar *)
   tables : tParseTables;
 
   (* treat this as a local variable of rwlProcessWorklist, included
    * here just to avoid unnecessary repeated allocation *)
-  toPass : tSemanticValue array;
+  toPass : SemanticValue.t array;
 
   (* reduction queue and pool *)
   pathQueue : reduction_path_queue;
@@ -158,7 +157,7 @@ and glr = {
 
 (* Mini-LR parser object *)
 type tLR = {
-  lrToPass : tSemanticValue array;
+  lrToPass : SemanticValue.t array;
 
   mutable lrDetShift : int;
   mutable lrDetReduce : int;
@@ -179,11 +178,37 @@ let maxStackNodesAllocd = ref 0
 
 
 (* ----------------- front ends to user code --------------- *)
+let reductionAction glr productionId svals =
+  let open UserActions in
+  glr.userAct.reductionAction productionId svals
+
+
+let mergeAlternativeParses glr lhsIndex left right =
+  let open UserActions in
+  glr.userAct.mergeAlternativeParses lhsIndex left right
+
+
+let keepNontermValue glr lhsIndex sval =
+  let open UserActions in
+  glr.userAct.keepNontermValue lhsIndex sval
+
+
 let symbolDescription sym user sval =
+  let open UserActions in
   if symIsTerm sym then
     user.terminalDescription (symAsTerm sym) sval
   else
     user.nonterminalDescription (symAsNonterm sym) sval
+
+
+let duplicateTerminalValue glr term sval =
+  let open UserActions in
+  glr.userAct.duplicateTerminalValue term sval
+
+
+let duplicateNontermValue glr nonterm sval =
+  let open UserActions in
+  glr.userAct.duplicateNontermValue nonterm sval
 
 
 let duplicateSemanticValue glr sym sval =
@@ -194,12 +219,13 @@ let duplicateSemanticValue glr sym sval =
    * check would even be safe *)
 
   if symIsTerm sym then
-    glr.userAct.duplicateTerminalValue (symAsTerm sym) sval
+    duplicateTerminalValue glr (symAsTerm sym) sval
   else
-    glr.userAct.duplicateNontermValue (symAsNonterm sym) sval
+    duplicateNontermValue glr (symAsNonterm sym) sval
 
 
 let deallocateSemanticValue sym user sval =
+  let open UserActions in
   assert (sym <> 0);
 
   if symIsTerm sym then
@@ -212,7 +238,7 @@ let deallocateSemanticValue sym user sval =
 (* NULL sibling link *)
 let cNULL_SIBLING_LINK = {
   sib = Obj.magic [];
-  sval = cNULL_SVAL;
+  sval = SemanticValue.null;
 }
 
 let makeSiblingLink sib sval = { sib; sval; }
@@ -234,7 +260,7 @@ let cNULL_STACK_NODE = {
 let emptyStackNode glr = {
   state          = cSTATE_INVALID;
   leftSiblings   = [];
-  firstSib       = makeSiblingLink cNULL_STACK_NODE cNULL_SVAL;
+  firstSib       = makeSiblingLink cNULL_STACK_NODE SemanticValue.null;
   referenceCount = 0;
   determinDepth  = 0;
   glr            = glr;
@@ -442,7 +468,7 @@ let makeGLR tablesIn actions =
   let glr = {
     userAct             = actions;
     tables              = tablesIn;
-    toPass              = Array.make cMAX_RHSLEN cNULL_SVAL;
+    toPass              = Array.make cMAX_RHSLEN SemanticValue.null;
     pathQueue           = makeReductionPathQueue tablesIn;
     topmostParsers      = Arraystack.make cNULL_STACK_NODE;
     prevTopmost         = Arraystack.make cNULL_STACK_NODE;
@@ -699,10 +725,6 @@ let dequeue queue =
   ret
 
 
-let doReductionAction glr productionId svals =
-  glr.userAct.reductionAction productionId svals
-
-
 let findTopmostParser glr state =
   (* always using the *not* USE_PARSER_INDEX case *)
   Arraystack.findOption (fun n -> n.state = state) glr.topmostParsers
@@ -735,7 +757,7 @@ let rwlShiftActive tokType glr leftSibling rightSibling lhsIndex sval =
         deallocateSemanticValue (getNodeSymbol rightSibling) glr.userAct sval;
       ) else (
         (* call user's merge code *)
-        sibLink.sval <- glr.userAct.mergeAlternativeParses lhsIndex sibLink.sval sval;
+        sibLink.sval <- mergeAlternativeParses glr lhsIndex sibLink.sval sval;
       );
 
       (* ok, done *)
@@ -842,10 +864,10 @@ let rwlProcessWorklist tokType glr =
     done;
 
     (* invoke user's reduction action (TREEBUILD) *)
-    let sval = doReductionAction glr path.prodIndex glr.toPass in
+    let sval = reductionAction glr path.prodIndex glr.toPass in
 
     (* did user want to keep? *)
-    if use_keep && not (glr.userAct.keepNontermValue lhsIndex sval) then (
+    if use_keep && not (keepNontermValue glr lhsIndex sval) then (
       (* cancelled; drop on floor *)
     ) else (
       (* shift the nonterminal, sval *)
@@ -956,7 +978,7 @@ let rwlShiftTerminals tokenKindDesc lexer glr =
         | Some prev ->
             (* the 'sval' we just grabbed has already been claimed by
              * 'prev.sval'; get a fresh one by duplicating the latter *)
-            glr.userAct.duplicateTerminalValue tokType prev.sval
+            duplicateTerminalValue glr tokType prev.sval
       in
 
       (* add sibling link now *)
@@ -1035,13 +1057,13 @@ let cleanupAfterParse glr treeTop =
     let last = Arraystack.top glr.topmostParsers in
 
     (* prepare to run final action *)
-    let arr = Array.make 2 cNULL_SVAL in
+    let arr = Array.make 2 SemanticValue.null in
     let nextToLast = (getUniqueLink last).sib in
     arr.(0) <- grabTopSval glr nextToLast;      (* sval we want *)
     arr.(1) <- grabTopSval glr last;            (* EOF's sval *)
 
     (* reduce *)
-    treeTop := doReductionAction glr glr.tables.finalProductionIndex arr;
+    treeTop := reductionAction glr glr.tables.finalProductionIndex arr;
 
     (* before pool goes away.. *)
     decParserList glr.topmostParsers;
@@ -1194,7 +1216,7 @@ let rec lrParseToken tokenKindDesc glr lr getToken lexer =
 
       (* call the user's action function (TREEBUILD) *)
       let sval =
-        glr.userAct.reductionAction prodIndex lr.lrToPass
+        reductionAction glr prodIndex lr.lrToPass
       in
 
       (* now, do an abbreviated 'glrShiftNonterminal' *)
@@ -1230,7 +1252,7 @@ let rec lrParseToken tokenKindDesc glr lr getToken lexer =
       assert (newNode.referenceCount = 1);
 
       (* does the user want to keep it? *)
-      if use_keep && not (glr.userAct.keepNontermValue lhsIndex sval) then (
+      if use_keep && not (keepNontermValue glr lhsIndex sval) then (
         printParseErrorMessage tokenKindDesc Lexerint.(lexer.tokType) glr newNode.state;
         if accounting then (
           glr.detShift  <- glr.detShift  + lr.lrDetShift;
@@ -1327,7 +1349,7 @@ let glrParse glr tokenKindDesc getToken lexer treeTop =
 
   (* array for passing semantic values in the mini lr core *)
   let lr = {
-    lrToPass    = Array.make cMAX_RHSLEN cNULL_SVAL;
+    lrToPass    = Array.make cMAX_RHSLEN SemanticValue.null;
     lrDetShift  = 0;
     lrDetReduce = 0;
   } in

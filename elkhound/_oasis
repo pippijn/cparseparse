@@ -35,6 +35,14 @@ Executable elkhound
         CompiledObject:         native
 
 
+Executable runtests
+        Path:                   .
+        BuildTools:             ocamlbuild
+        BuildDepends:           unix
+        MainIs:                 runtests.ml
+        CompiledObject:         native
+
+
 Library glr
         Path:                   glr
         BuildTools:             ocamlbuild
@@ -47,7 +55,7 @@ Library glr
                                 Ptreeact,
                                 Ptreenode,
                                 Smutil,
-                                Useract
+                                UserActions
         CompiledObject:         native
         NativeOpt:              -inline 0
 
@@ -68,3 +76,8 @@ Library baselib
                                 Valgrind
         CSources:               ml_BitSet.c, ml_Valgrind.c
         CCLib:                  -lstdc++
+
+
+Test runtests
+        TestTools:              runtests
+        Command:                _build/runtests

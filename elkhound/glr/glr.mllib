@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 09b10f5b60b66a194e286faade4f2b5a)
+# DO NOT EDIT (digest: ee14fca8d69b7b04fb8a73c221f678ff)
 Arraystack
 Glr
 Lexerint
@@ -8,5 +8,5 @@ Parsetables
 Ptreeact
 Ptreenode
 Smutil
-Useract
+UserActions
 # OASIS_STOP

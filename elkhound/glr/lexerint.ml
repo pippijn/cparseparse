@@ -1,6 +1,6 @@
 type t = {
   mutable tokType : int;
-  mutable sval : Useract.tSemanticValue;
+  mutable sval : SemanticValue.t;
 }
 
 type ('lexbuf, 'token) lexer = {

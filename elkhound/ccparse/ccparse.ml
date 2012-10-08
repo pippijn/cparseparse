@@ -49,8 +49,8 @@ let glrparse glr actions lexer getToken lexbuf =
   in
 
   let treeTop =
-    let tree = ref Useract.cNULL_SVAL in
-    let lex = { tokType = 0; sval = Useract.cNULL_SVAL } in
+    let tree = ref SemanticValue.null in
+    let lex = { tokType = 0; sval = SemanticValue.null } in
 
     if Glr.glrParse glr tokenKindDesc getToken lex tree then
       !tree

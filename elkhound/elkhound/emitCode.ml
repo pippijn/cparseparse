@@ -1,5 +1,9 @@
-open AnalysisEnvType
 open GrammarType
+
+(************************************************
+ * :: Output helpers
+ ************************************************)
+
 
 let output_newline out =
   output_string out "\n"
@@ -10,6 +14,23 @@ let output_endline out line =
 
 let output_int out i =
   output_string out (string_of_int i)
+
+
+let closing f x channels =
+  let r =
+    try
+      f x
+    with e ->
+      List.iter close_out channels;
+      raise e
+  in
+  List.iter close_out channels;
+  r
+
+
+(************************************************
+ * :: Semantic type helpers
+ ************************************************)
 
 
 let semtype sym =
@@ -28,6 +49,11 @@ let first_semtype semtype =
     semtype
 
 
+(************************************************
+ * :: Common output functions
+ ************************************************)
+
+
 let emit_ml_prologue out =
   (* prologue *)
   output_endline out "(* *** DO NOT EDIT BY HAND *** *)";
@@ -43,14 +69,97 @@ let emit_ml_user_code ?(braces=true) out code =
     output_string out ")"
 
 
-let emit_ml_descriptions out env grammar =
+(************************************************
+ * :: Tokens
+ ************************************************)
+
+
+let emit_ml_token_type out terms =
+  output_endline out "type t =";
+  Array.iter (fun term ->
+    output_string out "  | ";
+    output_string out term.tbase.name;
+    if term.tbase.semtype <> "" then (
+      output_string out " of ";
+      output_string out term.tbase.semtype;
+    );
+    output_newline out;
+  ) terms;
+  output_newline out
+
+
+let emit_ml_token_fn out name value terms =
+  Printf.fprintf out "let %s = function\n" name;
+  Array.iter (fun term ->
+    output_string out "  | ";
+    output_string out term.tbase.name;
+    if term.tbase.semtype <> "" then (
+      output_string out " _";
+    );
+    output_string out " -> ";
+    output_string out (value term);
+    output_newline out;
+  ) terms;
+  output_newline out
+
+
+let emit_ml_tokens out dcl terms =
+  emit_ml_prologue dcl;
+  emit_ml_prologue out;
+
+  (* emit token type declaration in both mli and ml *)
+  emit_ml_token_type dcl terms;
+  emit_ml_token_type out terms;
+
+  (* emit declarations for token functions *)
+  output_endline dcl "val name : t -> string";
+  output_endline dcl "val desc : t -> string";
+  output_endline dcl "val index : t -> int";
+  output_endline dcl "val sval : t -> int";
+
+  (* emit the token functions *)
+  emit_ml_token_fn out "name" (fun term ->
+    "\"" ^ term.tbase.name ^ "\""
+  ) terms;
+
+  emit_ml_token_fn out "desc" (fun term ->
+    if term.alias <> "" then
+      "\"" ^ term.alias ^ "\""
+    else
+      "\"" ^ term.tbase.name ^ "\""
+  ) terms;
+
+  emit_ml_token_fn out "index" (fun term ->
+    string_of_int term.term_index
+  ) terms;
+
+  (* this one is special, because it uses the token's data *)
+  output_endline out "let sval = function";
+  Array.iter (fun term ->
+    if term.tbase.semtype <> "" then (
+      output_string out "  | ";
+      output_string out term.tbase.name;
+      output_endline out " sval -> SemanticValue.repr sval";
+    )
+  ) terms;
+  output_endline out "  | tok -> failwith (\"token \" ^ name tok ^ \" has no declared type\")";
+
+  ()
+
+
+(************************************************
+ * :: User actions
+ ************************************************)
+
+
+let emit_ml_descriptions out terms nonterms =
   output_endline out "(* ------------------- description functions ------------------ *)";
 
   (* emit a map of terminal ids to their names *)
   output_endline out "let termNamesArray : string array = [|";
   Array.iteri (fun code term ->
     Printf.fprintf out "  \"%s\"; (* %d *)\n" term.tbase.name code;
-  ) env.indexed_terms;
+  ) terms;
   output_endline out "|]";
   output_newline out;
   output_newline out;
@@ -64,7 +173,7 @@ let emit_ml_descriptions out env grammar =
    *
    * ML: I could do something like this using Obj, but I'd rather
    * not abuse that interface unnecessarily. *)
-  output_endline out "let terminalDescription (termId : int) (sval : tSemanticValue) : string =";
+  output_endline out "let terminalDescription (termId : int) (sval : SemanticValue.t) : string =";
   output_endline out "  termNamesArray.(termId)";
   output_newline out;
   output_newline out;
@@ -73,13 +182,13 @@ let emit_ml_descriptions out env grammar =
   output_endline out "let nontermNamesArray : string array = [|";
   Array.iteri (fun code nonterm ->
     Printf.fprintf out "  \"%s\"; (* %d *)\n" nonterm.nbase.name code;
-  ) env.indexed_nonterms;
+  ) nonterms;
   output_endline out "|]";
   output_newline out;
   output_newline out;
 
   (* and a function to describe nonterminals also *)
-  output_endline out "let nonterminalDescription (nontermId : int) (sval : tSemanticValue) : string =";
+  output_endline out "let nonterminalDescription (nontermId : int) (sval : SemanticValue.t) : string =";
   output_endline out "  nontermNamesArray.(nontermId)";
   output_newline out;
   output_newline out;
@@ -96,7 +205,7 @@ let emit_ml_descriptions out env grammar =
   ()
 
 
-let emit_ml_actions out env grammar =
+let emit_ml_actions out prods =
   output_endline out "  (* ------------------- actions ------------------ *)";
   output_endline out "  reductionActionArray = [|";
   (* iterate over productions, emitting action function closures *)
@@ -111,7 +220,7 @@ let emit_ml_actions out env grammar =
     let output_binding tag index sym =
       output_string out "      let ";
       output_string out tag;
-      output_string out " = (Obj.obj svals.(";
+      output_string out " = (SemanticValue.obj svals.(";
       output_int out index;
       output_string out ") : ";
       output_string out (semtype sym);
@@ -154,10 +263,10 @@ let emit_ml_actions out env grammar =
       emit_ml_user_code out prod.action;
 
     output_newline out;
-    output_endline out "      in (Obj.repr __result));"; (* cast to tSemanticValue *)
+    output_endline out "      in (SemanticValue.repr __result));"; (* cast to SemanticValue.t *)
     output_newline out;
 
-  ) env.indexed_prods;
+  ) prods;
   output_endline out "  |];";
   output_newline out;
   output_newline out;
@@ -170,7 +279,7 @@ let emit_ml_spec_func out name semtype rettype func id =
   | Some { params; code } ->
       let real_rettype =
         if rettype = semtype then
-          "tSemanticValue"
+          "SemanticValue.t"
         else
           rettype
       in
@@ -179,7 +288,7 @@ let emit_ml_spec_func out name semtype rettype func id =
       List.iter (fun param ->
         output_string out " (_";
         output_string out param;
-        output_string out " : tSemanticValue)";
+        output_string out " : SemanticValue.t)";
       ) params;
       output_endline out " ->";
       List.iter (fun param ->
@@ -187,7 +296,7 @@ let emit_ml_spec_func out name semtype rettype func id =
         output_string out param;
         output_string out " : ";
         output_string out semtype;
-        output_string out " = Obj.obj (_";
+        output_string out " = SemanticValue.obj (_";
         output_string out param;
         output_endline out ") in"
       ) params;
@@ -197,7 +306,7 @@ let emit_ml_spec_func out name semtype rettype func id =
       emit_ml_user_code out code;
       output_endline out " in";
       if real_rettype <> rettype then
-        output_endline out "      Obj.repr __result);"
+        output_endline out "      SemanticValue.repr __result);"
       else
         output_endline out "      __result);"
 
@@ -209,7 +318,7 @@ let emit_ml_spec_func out name semtype rettype func id =
       output_endline out ";"
 
 
-let emit_ml_dup_del_merge out env grammar =
+let emit_ml_dup_del_merge out terms nonterms =
   output_endline out "  (* ------------------- dup/del/merge/keep nonterminals ------------------ *)";
 
   let emit sf_name a_name rettype base func syms =
@@ -228,14 +337,14 @@ let emit_ml_dup_del_merge out env grammar =
     emit sf_name a_name rettype
       (fun nonterm -> nonterm.nbase)
       func
-      env.indexed_nonterms
+      nonterms
   in
 
   let emit_term sf_name a_name rettype func =
     emit sf_name a_name rettype
       (fun term -> term.tbase)
       func
-      env.indexed_terms
+      terms
   in
 
   emit_nonterm "dup"   "duplicateNontermValue"  ""     (fun nonterm -> nonterm.nbase.dup);
@@ -250,10 +359,11 @@ let emit_ml_dup_del_merge out env grammar =
   ()
 
 
-let emit_ml_action_code out dcl env grammar tables =
-  emit_ml_prologue dcl;
+let emit_ml_action_code out dcl terms nonterms prods grammar tables =
+  let result_type = first_semtype nonterms.(2).nbase.semtype in
 
-  let result_type = first_semtype env.indexed_nonterms.(2).nbase.semtype in
+  emit_ml_prologue dcl;
+  emit_ml_prologue out;
 
   (* insert the stand-alone verbatim sections *)
   List.iter (fun code ->
@@ -261,11 +371,11 @@ let emit_ml_action_code out dcl env grammar tables =
   ) grammar.verbatim;
 
   (* all that goes into the interface is the name of the
-   * tUserActions object *)
-  output_endline dcl "val userActions : Useract.tUserActions";
+   * UserActions.t object *)
+  output_endline dcl "val userActions : UserActions.t";
 
-  emit_ml_prologue out;
-  output_endline out "open Useract (* tSemanticValue *)";
+  (* Open module so record field labels are visible *)
+  output_endline out "open UserActions";
   output_newline out;
   output_newline out;
 
@@ -274,7 +384,7 @@ let emit_ml_action_code out dcl env grammar tables =
     emit_ml_user_code ~braces:false out code
   ) grammar.verbatim;
 
-  emit_ml_descriptions out env grammar;
+  emit_ml_descriptions out terms nonterms;
 
   (* impl_verbatim sections *)
   output_endline out "(* ------------------- impl_verbatim sections ------------------ *)";
@@ -284,41 +394,41 @@ let emit_ml_action_code out dcl env grammar tables =
   output_newline out;
   output_newline out;
 
-  output_endline out "let userFunctions : tUserFunctions = {";
-  emit_ml_actions out env grammar;
-  emit_ml_dup_del_merge out env grammar;
+  output_endline out "let userFunctions : UserActions.functions = {";
+  emit_ml_actions out prods;
+  emit_ml_dup_del_merge out terms nonterms;
   output_endline out "}";
   output_newline out;
   output_newline out;
 
   (* main action function; uses the array emitted above *)
-  output_endline out "let reductionAction (productionId : int) (svals : tSemanticValue array) : tSemanticValue =";
+  output_endline out "let reductionAction (productionId : int) (svals : SemanticValue.t array) : SemanticValue.t =";
   output_endline out "  userFunctions.reductionActionArray.(productionId) svals";
 
   (* dup *)
-  output_endline out "let duplicateNontermValue (nontermId : int) (sval : tSemanticValue) : tSemanticValue =";
+  output_endline out "let duplicateNontermValue (nontermId : int) (sval : SemanticValue.t) : SemanticValue.t =";
   output_endline out "  userFunctions.duplicateNontermValueArray.(nontermId) sval";
-  output_endline out "let duplicateTerminalValue (termId : int) (sval : tSemanticValue) : tSemanticValue =";
+  output_endline out "let duplicateTerminalValue (termId : int) (sval : SemanticValue.t) : SemanticValue.t =";
   output_endline out "  userFunctions.duplicateTerminalValueArray.(termId) sval";
   (* del *)
-  output_endline out "let deallocateNontermValue (nontermId : int) (sval : tSemanticValue) : unit =";
+  output_endline out "let deallocateNontermValue (nontermId : int) (sval : SemanticValue.t) : unit =";
   output_endline out "  userFunctions.deallocateNontermValueArray.(nontermId) sval";
-  output_endline out "let deallocateTerminalValue (termId : int) (sval : tSemanticValue) : unit =";
+  output_endline out "let deallocateTerminalValue (termId : int) (sval : SemanticValue.t) : unit =";
   output_endline out "  userFunctions.deallocateTerminalValueArray.(termId) sval";
   (* merge *)
-  output_endline out "let mergeAlternativeParses (nontermId : int) (left : tSemanticValue) (right : tSemanticValue) : tSemanticValue =";
+  output_endline out "let mergeAlternativeParses (nontermId : int) (left : SemanticValue.t) (right : SemanticValue.t) : SemanticValue.t =";
   output_endline out "  userFunctions.mergeAlternativeParsesArray.(nontermId) left right";
   (* keep *)
-  output_endline out "let keepNontermValue (nontermId : int) (sval : tSemanticValue) : bool =";
+  output_endline out "let keepNontermValue (nontermId : int) (sval : SemanticValue.t) : bool =";
   output_endline out "  userFunctions.keepNontermValueArray.(nontermId) sval";
   (* classify *)
-  output_endline out "let reclassifyToken (oldTokenType : int) (sval : tSemanticValue) : int =";
+  output_endline out "let reclassifyToken (oldTokenType : int) (sval : SemanticValue.t) : int =";
   output_endline out "  userFunctions.reclassifyTokenArray.(oldTokenType) sval";
   output_newline out;
   output_newline out;
 
   (* wrap all the action stuff up as a record *)
-  output_endline out "let userActions : tUserActions = {";
+  output_endline out "let userActions : UserActions.t = {";
   output_endline out "  reductionAction;";
   output_endline out "  duplicateTerminalValue;";
   output_endline out "  duplicateNontermValue;";
@@ -335,6 +445,11 @@ let emit_ml_action_code out dcl env grammar tables =
   output_newline out
 
 
+(************************************************
+ * :: Parse tables
+ ************************************************)
+
+
 let emit_ml_tables out dcl dat tables =
   TablePrinting.dump_tables dat tables;
 
@@ -349,38 +464,32 @@ let emit_ml_tables out dcl dat tables =
   )
 
 
+(************************************************
+ * :: Main entry point
+ ************************************************)
+
 let emit_ml name env grammar tables =
-  begin
-    let dcl = open_out (name ^ "Actions.mli") in
-    let out = open_out (name ^ "Actions.ml") in
+  let open AnalysisEnvType in
+  let terms = env.indexed_terms in
+  let nonterms = env.indexed_nonterms in
+  let prods = env.indexed_prods in
 
-    begin try
-      emit_ml_action_code out dcl env grammar tables
-    with e ->
-      close_out out;
-      close_out dcl;
-      raise e;
-    end;
+  (* Tokens *)
+  let dcl = open_out (name ^ "Tokens.mli") in
+  let out = open_out (name ^ "Tokens.ml") in
+  closing (emit_ml_tokens out dcl) terms
+    [dcl; out];
 
-    close_out out;
-    close_out dcl;
-  end;
+  (* Actions *)
+  let dcl = open_out (name ^ "Actions.mli") in
+  let out = open_out (name ^ "Actions.ml") in
+  closing (emit_ml_action_code out dcl terms nonterms prods grammar) tables
+    [dcl; out];
 
-  begin
-    let dcl = open_out     (name ^ "Tables.mli") in
-    let out = open_out     (name ^ "Tables.ml") in
-    let dat = open_out_bin (name ^ "Tables.dat") in
+  (* Tables *)
+  let dcl = open_out     (name ^ "Tables.mli") in
+  let out = open_out     (name ^ "Tables.ml") in
+  let dat = open_out_bin (name ^ "Tables.dat") in
 
-    begin try
-      emit_ml_tables out dcl dat tables
-    with e ->
-      close_out dat;
-      close_out out;
-      close_out dcl;
-      raise e;
-    end;
-
-    close_out dat;
-    close_out out;
-    close_out dcl;
-  end;
+  closing (emit_ml_tables out dcl dat) tables
+    [dcl; out; dat];
