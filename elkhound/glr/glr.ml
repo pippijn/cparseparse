@@ -96,10 +96,10 @@ and 'result stack_node = {
 and 'result path = {
   (* array of sibling links, i.e. the path; 0th element is
    * leftmost link *)
-  sibLinks : 'result sibling_link array ref;
+  mutable sibLinks : 'result sibling_link array;
 
   (* corresponding array of symbol ids to interpret svals *)
-  symbols : symbol_id array ref;
+  mutable symbols : symbol_id array;
 
   (* rightmost state's id *)
   mutable startStateId : state_id;
@@ -417,8 +417,8 @@ let makePath () = {
   prodIndex    = -1;
   startColumn  = -1;
   leftEdgeNode = cNULL_STACK_NODE;
-  sibLinks     = ref (Array.make cINITIAL_RHSLEN_SIZE cNULL_SIBLING_LINK);
-  symbols      = ref (Array.make cINITIAL_RHSLEN_SIZE 0);
+  sibLinks     = Array.make cINITIAL_RHSLEN_SIZE cNULL_SIBLING_LINK;
+  symbols      = Array.make cINITIAL_RHSLEN_SIZE 0;
   next         = None;
 }
 
@@ -513,20 +513,19 @@ let addTopmostParser glr parsr =
 
 (* stackTraceString *)
 
-(* ensure the array has at least the given index, growing its size
- * if necessary (by doubling) *)
-let ensureIndexDoubler arr idx =
-  while Array.length !arr < idx + 1 do
-    arr := Arraystack.growArray !arr (Array.length !arr * 2);
-  done
-
-
 let initPath path ssi pi rhsLen =
   path.startStateId <- ssi;
   path.prodIndex <- pi;
 
-  ensureIndexDoubler path.sibLinks rhsLen;
-  ensureIndexDoubler path.symbols  rhsLen
+  (* ensure the array has at least the given index, growing its size
+   * if necessary (by doubling) *)
+  while Array.length path.sibLinks < rhsLen + 1 do
+    path.sibLinks <- Arraystack.growArray path.sibLinks (Array.length path.sibLinks * 2);
+  done;
+
+  while Array.length path.symbols < rhsLen + 1 do
+    path.symbols <- Arraystack.growArray path.symbols (Array.length path.symbols * 2);
+  done
 
 
 let newPath queue ssi pi rhsLen =
@@ -571,15 +570,15 @@ let insertPathCopy queue src leftEdge =
 
   (* copy path info *)
   Array.blit
-    !(src.sibLinks)       (* source array *)
+    src.sibLinks          (* source array *)
     0                     (* source start position *)
-    !(p.sibLinks)         (* dest array *)
+    p.sibLinks            (* dest array *)
     0                     (* dest start position *)
     rhsLen;               (* number of elements to copy *)
   Array.blit
-    !(src.symbols)        (* source array *)
+    src.symbols           (* source array *)
     0                     (* source start position *)
-    !(p.symbols)          (* dest array *)
+    p.symbols             (* dest array *)
     0                     (* dest start position *)
     rhsLen;               (* number of elements to copy *)
 
@@ -603,8 +602,8 @@ let insertPathCopy queue src leftEdge =
 
 (* same argument meanings as for 'rwlRecursiveEnqueue' *)
 let rec rwlCollectPathLink glr proto popsRemaining currentNode mustUseLink linkToAdd =
-  !(proto.sibLinks).(popsRemaining) <- linkToAdd;
-  !(proto.symbols ).(popsRemaining) <- getNodeSymbol currentNode;
+  proto.sibLinks.(popsRemaining) <- linkToAdd;
+  proto.symbols .(popsRemaining) <- getNodeSymbol currentNode;
 
   rwlRecursiveEnqueue glr proto popsRemaining linkToAdd.sib (
     match mustUseLink with
@@ -828,7 +827,7 @@ let rwlProcessWorklist tokType glr =
 
     (* before calling user's code, duplicate svals *)
     for i = rhsLen - 1 downto 0 do
-      let sib = !(path.sibLinks).(i) in
+      let sib = path.sibLinks.(i) in
 
       (* put the sval in the array that will be passed to the user *)
       glr.toPass.(i) <- sib.sval;
@@ -836,7 +835,7 @@ let rwlProcessWorklist tokType glr =
       (* source loc stuff *)
 
       (* ask user to duplicate, store that back in 'sib' *)
-      sib.sval <- duplicateSemanticValue glr.userAct !(path.symbols).(i) sib.sval;
+      sib.sval <- duplicateSemanticValue glr.userAct path.symbols.(i) sib.sval;
     done;
 
     (* invoke user's reduction action (TREEBUILD) *)
