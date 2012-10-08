@@ -139,7 +139,7 @@ begin
   let cINDENT_INC:int = 2 in
 
   (* for detecting cyclicity *)      
-  let path = Arraystack.make () in
+  let path = Arraystack.create () in
   
   (* turn this on to detect cyclicity; there is a performance penalty *)
   let checkForCycles: bool = true in
@@ -166,7 +166,7 @@ begin
         )
         else (
           (* no; add myself to the path *)
-          (Arraystack.push path self);
+          (Arraystack.push self path);
           false
         )
       )

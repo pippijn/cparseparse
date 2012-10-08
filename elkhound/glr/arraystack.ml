@@ -30,8 +30,7 @@ type 'a t = {
 
 let length { len } = len
 
-let isEmpty { len } = len = 0
-let isNotEmpty { len } = len > 0
+let is_empty { len } = len = 0
 
 
 (* get topmost element but don't change what is stored *)
@@ -45,7 +44,7 @@ let pop rep =
 
 
 (* add a new topmost element *)
-let push rep obj =
+let push obj rep =
   if rep.len = Array.length rep.arr then
     (* need to expand the array *)
     rep.arr <- growArray rep.arr (rep.len * 2) (Obj.magic ());
@@ -117,7 +116,7 @@ let swapWith rep obj =
 
 
 (* the stack must be given a dummy value for unused array slots *)
-let make () =
+let create () =
   { len = 0; arr = Array.make 16 (Obj.magic ()); }
 
 

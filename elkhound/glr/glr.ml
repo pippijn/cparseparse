@@ -442,8 +442,8 @@ let makeGLR tablesIn actions =
     tables              = tablesIn;
     toPass              = Array.make cMAX_RHSLEN SemanticValue.null;
     pathQueue           = makeReductionPathQueue tablesIn;
-    topmostParsers      = Arraystack.make ();
-    prevTopmost         = Arraystack.make ();
+    topmostParsers      = Arraystack.create ();
+    prevTopmost         = Arraystack.create ();
     stackNodePool       = Objpool.null ();
     noisyFailedParse    = true;
     globalNodeColumn    = 0;
@@ -513,7 +513,7 @@ let makeStackNode glr state =
 let addTopmostParser glr parsr =
   assert (checkLocalInvariants parsr);
 
-  Arraystack.push glr.topmostParsers parsr;
+  Arraystack.push parsr glr.topmostParsers;
   incRefCt parsr
 
 
@@ -871,9 +871,9 @@ let rwlShiftTerminals tokenKindDesc lexer glr =
   glr.globalNodeColumn <- glr.globalNodeColumn + 1;
 
   (* move all parsers from 'topmostParsers' to 'prevTopmost' *)
-  assert (Arraystack.isEmpty glr.prevTopmost);
+  assert (Arraystack.is_empty glr.prevTopmost);
   Arraystack.swapWith glr.prevTopmost glr.topmostParsers;
-  assert (Arraystack.isEmpty glr.topmostParsers);
+  assert (Arraystack.is_empty glr.topmostParsers);
 
   (* grab current token since we'll need it and the access
    * isn't all that fast here in ML *)
@@ -882,7 +882,7 @@ let rwlShiftTerminals tokenKindDesc lexer glr =
   (* for token multi-yield.. *)
   let prev = ref None in
 
-  while not (Arraystack.isEmpty glr.prevTopmost) do
+  while not (Arraystack.is_empty glr.prevTopmost) do
     (* take the node from 'prevTopmost'; the refcount transfers
      * from 'prevTopmost' to (local variable) 'leftSibling' *)
     let leftSibling = Arraystack.pop glr.prevTopmost in
@@ -1016,7 +1016,7 @@ let nondeterministicParseToken tokenKindDesc lexer glr =
   rwlShiftTerminals tokenKindDesc lexer glr;
 
   (* error? *)
-  if Arraystack.isEmpty glr.topmostParsers then (
+  if Arraystack.is_empty glr.topmostParsers then (
     printParseErrorMessage tokenKindDesc Lexerint.(lexer.tokType) glr !lastToDie;
     false
   ) else (
