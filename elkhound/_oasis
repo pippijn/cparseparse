@@ -51,13 +51,13 @@ Library glr
                                 Glr,
                                 Lexerint,
                                 Objpool,
-                                Parsetables,
-                                Ptreeact,
-                                Ptreenode,
+                                ParseTables,
+                                PtreeActions,
+                                PtreeNode,
                                 Smutil,
                                 UserActions
         CompiledObject:         native
-        NativeOpt:              -inline 0
+        NativeOpt:              -inline 999 -unsafe -noassert -nodynlink
 
 
 Library baselib

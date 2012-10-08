@@ -47,7 +47,7 @@ let symAsNonterm id = -id - 1
 
 
 (* collection of data needed for the online parsing algorithm *)
-type tParseTables = {
+type t = {
   (* grammar counts *)
   numTerms : int;
   numNonterms : int;

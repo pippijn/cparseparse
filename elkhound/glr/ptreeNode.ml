@@ -13,22 +13,22 @@ type tTreeCount = float
 
 (* a node in a parse tree *)
 (* (I tried making this a class, but OCaml kicked my ass instead) *)
-type tPTreeNode = {            
+type t = {            
   (* symbol at this node *)
   symbol: string;          
   
   (* list of ambiguous alternatives to this node *)
-  mutable merged: tPTreeNode option;
+  mutable merged: t option;
 
   (* array of children *)
-  mutable children: tPTreeNode option array;
+  mutable children: t option array;
 
   (* number of parse trees this node is root of *)
   mutable count: tTreeCount;
 }
 
 
-let makePTreeNode (sym:string) : tPTreeNode =
+let makePTreeNode (sym:string) : t =
 begin
   {
     symbol = sym;
@@ -48,41 +48,41 @@ end
 
 
 (* this was polymorphic at one point, then OCaml said "thou shalt not" *)
-let childFold (children: tPTreeNode option array) (init: int)
-              (f: tPTreeNode -> int -> int) : int =
+let childFold (children: t option array) (init: int)
+              (f: t -> int -> int) : int =
 begin
   (Array.fold_right (fun co v -> (f (getSome co) v)) children init);
 end
 
-let childIter (children: tPTreeNode option array)
-              (f: tPTreeNode -> unit) : unit =
+let childIter (children: t option array)
+              (f: t -> unit) : unit =
 begin
   (Array.iter (fun co -> (f (getSome co))) children);
 end
 
-let rec mergedFold (merged: tPTreeNode option) (init: int)
-               (f: tPTreeNode -> int -> int) : int =
+let rec mergedFold (merged: t option) (init: int)
+               (f: t -> int -> int) : int =
 begin
   match merged with
   | None -> init
   | Some(n) -> (mergedFold n.merged (f n init) f)
 end
 
-let mergedIter (self:tPTreeNode) (f: tPTreeNode -> unit) : unit =
+let mergedIter (self:t) (f: t -> unit) : unit =
 begin
   ignore (mergedFold (Some self) 0 (fun n (x:int) -> ((f n); x)))
 end
 
 
 (* just the length of the 'merged' list *)
-let countMergedList (self:tPTreeNode) : int =
+let countMergedList (self:t) : int =
 begin
   (mergedFold (Some self) 0 (fun _ v -> (v+1)))
 end
 
 
 (* count trees rooted here *)
-let rec countTrees (self:tPTreeNode) : tTreeCount =
+let rec countTrees (self:t) : tTreeCount =
 begin
   (* memoize *)
   if (self.count > 0.0) then (
@@ -112,19 +112,19 @@ end
 
 
 (* set number of children, i.e. size of 'children' array *)
-let setNumChildren (self:tPTreeNode) (i:int) : unit =
+let setNumChildren (self:t) (i:int) : unit =
 begin
   self.children <- (Array.make i None)
 end
 
 (* set a particular child *)
-let setChild (self:tPTreeNode) (i:int) (c:tPTreeNode) : unit =
+let setChild (self:t) (i:int) (c:t) : unit =
 begin
   self.children.(i) <- (Some c);
 end
 
 (* add an ambiguous alternative *)
-let addAlternative (self:tPTreeNode) (alt:tPTreeNode) : unit =
+let addAlternative (self:t) (alt:t) : unit =
 begin
   (* insert as 2nd element *)
   alt.merged <- self.merged;
@@ -133,7 +133,7 @@ end
 
 
 (* ----------- printTree (a little biotch) ------------ *)
-let printTree (self:tPTreeNode) (out:out_channel) (expand:bool) : unit =
+let printTree (self:t) (out:out_channel) (expand:bool) : unit =
 begin
   (* indentation per level *)
   let cINDENT_INC:int = 2 in
@@ -145,13 +145,13 @@ begin
   let checkForCycles: bool = true in
 
   (* methods cannot be recursive!  what's up with that?! *)
-  let rec innerPrint (self:tPTreeNode) (indentationOrig:int) : unit =
+  let rec innerPrint (self:t) (indentationOrig:int) : unit =
   begin
     let indentation: int ref = ref indentationOrig in
     let alts: int ref = ref 1 in
     let lhs: string ref = ref "" in
     let symbol: string = self.symbol in
-    let merged: tPTreeNode option = self.merged in
+    let merged: t option = self.merged in
       
     let cyclicSkip: bool = (
       if (checkForCycles) then (
@@ -195,7 +195,7 @@ begin
 
       (* iterate over interpretations *)
       let ct: int ref = ref 1 in
-      (mergedIter self (fun (node:tPTreeNode) -> (
+      (mergedIter self (fun (node:t) -> (
         if (!alts > 1) then (
           (indent out (!indentation - cINDENT_INC));
           (Printf.fprintf out "------------- ambiguous %s: %d of %d ------------\n"
@@ -205,7 +205,7 @@ begin
 
         (indent out !indentation);
 
-        let children: tPTreeNode option array = node.children in
+        let children: t option array = node.children in
         let numChildren:int = (Array.length children) in
 
         (Printf.fprintf out "%s" node.symbol);

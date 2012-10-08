@@ -4,17 +4,17 @@
 (* based on elkhound/ptreeact *)
 
 
-open Lexerint       (* tLexerInterface *)
-open Parsetables    (* tParseTables *)
-open Ptreenode      (* tPTreeNode *)
+open Lexerint
+open ParseTables
+open PtreeNode
 
 
-let inject : tPTreeNode -> SemanticValue.t = Obj.magic
-let project : SemanticValue.t -> tPTreeNode = Obj.magic
+let inject : PtreeNode.t -> SemanticValue.t = Obj.magic
+let project : SemanticValue.t -> PtreeNode.t = Obj.magic
 
 
 
-(* ------------------------ tParseTreeLexer ------------------------- *)
+(* ------------------------ parseTreeLexer ------------------------- *)
 (* wrap the lexer with one yielding parse tree leaf nodes *)
 let getToken actions underlying lex =
   let open UserActions in
@@ -26,7 +26,7 @@ let getToken actions underlying lex =
 
 
 (* ----------------------- parseTreeActions ------------------------ *)
-let makeParseTreeActions underlying tables : tPTreeNode UserActions.t =
+let makeParseTreeActions underlying tables : PtreeNode.t UserActions.t =
   UserActions.({
     (* action to perform upon performing a reduction *)
     reductionAction = (

@@ -1,5 +1,3 @@
-open Parsetables
-
 let print_table ?(cols=14) out table =
   Printf.fprintf out "[| (* %d elements *)" (Array.length table);
   Array.iteri (fun i value ->
@@ -15,7 +13,9 @@ let print_table ?(cols=14) out table =
 
 
 let print_tables out tables =
-  Printf.fprintf out "let parseTables = Parsetables.({\n";
+  let open ParseTables in
+
+  Printf.fprintf out "let parseTables = ParseTables.({\n";
   Printf.fprintf out "  numTerms = %d;\n" tables.numTerms;
   Printf.fprintf out "  numNonterms = %d;\n" tables.numNonterms;
   Printf.fprintf out "  numProds = %d;\n" tables.numProds;
@@ -57,5 +57,5 @@ let print_tables out tables =
   Printf.fprintf out "})\n"
 
 
-let dump_tables out (tables : tParseTables) =
+let dump_tables out (tables : ParseTables.t) =
   Marshal.to_channel out tables [Marshal.No_sharing]

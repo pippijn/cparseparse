@@ -96,7 +96,7 @@ let parse glr actions cin lexer =
 
   let getToken =
     if !Options._ptree then
-      Ptreeact.getToken actions getToken
+      PtreeActions.getToken actions getToken
     else
       getToken
   in
@@ -165,11 +165,11 @@ let elkmain () =
 
   if !Options._ptree then (
 
-    let actions = Ptreeact.makeParseTreeActions actions tables in
+    let actions = PtreeActions.makeParseTreeActions actions tables in
     let trees = parse_files actions tables in
     List.iter (fun tree ->
       if !Options._print then
-        Ptreenode.printTree tree stdout true
+        PtreeNode.printTree tree stdout true
     ) trees
 
   ) else if !Options._trivial then (

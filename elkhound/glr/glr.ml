@@ -2,7 +2,7 @@
 (* GLR parser *)
 (* based on elkhound/glr.h and elkhound/glr.cc *)
 
-open Parsetables     (* action/goto/etc. *)
+open ParseTables     (* action/goto/etc. *)
 open Smutil          (* getSome, etc. *)
 
 
@@ -121,7 +121,7 @@ and 'result reduction_path_queue = {
   pathPool : 'result path Objpool.t;
 
   (* need our own copy of the tables pointer *)
-  rpqTables : tParseTables;      (* name can't collide with glr.tables.. ! *)
+  rpqTables : ParseTables.t;      (* name can't collide with glr.tables.. ! *)
 }
 
 
@@ -132,7 +132,7 @@ and 'result glr = {
   userAct : 'result UserActions.t;
 
   (* parse tables from the grammar *)
-  tables : tParseTables;
+  tables : ParseTables.t;
 
   (* treat this as a local variable of rwlProcessWorklist, included
    * here just to avoid unnecessary repeated allocation *)
