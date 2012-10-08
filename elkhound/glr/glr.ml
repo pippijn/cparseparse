@@ -178,40 +178,32 @@ let maxStackNodesAllocd = ref 0
 
 
 (* ----------------- front ends to user code --------------- *)
-let reductionAction glr productionId svals =
+let reductionAction userAct productionId svals =
   let open UserActions in
-  glr.userAct.reductionAction productionId svals
+  userAct.reductionAction productionId svals
 
 
-let mergeAlternativeParses glr lhsIndex left right =
+let mergeAlternativeParses userAct lhsIndex left right =
   let open UserActions in
-  glr.userAct.mergeAlternativeParses lhsIndex left right
+  userAct.mergeAlternativeParses lhsIndex left right
 
 
-let keepNontermValue glr lhsIndex sval =
+let keepNontermValue userAct lhsIndex sval =
   let open UserActions in
-  glr.userAct.keepNontermValue lhsIndex sval
+  userAct.keepNontermValue lhsIndex sval
 
 
-let symbolDescription sym user sval =
+let duplicateTerminalValue userAct term sval =
   let open UserActions in
-  if symIsTerm sym then
-    user.terminalDescription (symAsTerm sym) sval
-  else
-    user.nonterminalDescription (symAsNonterm sym) sval
+  userAct.duplicateTerminalValue term sval
 
 
-let duplicateTerminalValue glr term sval =
+let duplicateNontermValue userAct nonterm sval =
   let open UserActions in
-  glr.userAct.duplicateTerminalValue term sval
+  userAct.duplicateNontermValue nonterm sval
 
 
-let duplicateNontermValue glr nonterm sval =
-  let open UserActions in
-  glr.userAct.duplicateNontermValue nonterm sval
-
-
-let duplicateSemanticValue glr sym sval =
+let duplicateSemanticValue userAct sym sval =
   assert (sym <> 0);
 
   (* the C++ implementation checks for NULL sval, but I don't think
@@ -219,19 +211,19 @@ let duplicateSemanticValue glr sym sval =
    * check would even be safe *)
 
   if symIsTerm sym then
-    duplicateTerminalValue glr (symAsTerm sym) sval
+    duplicateTerminalValue userAct (symAsTerm sym) sval
   else
-    duplicateNontermValue glr (symAsNonterm sym) sval
+    duplicateNontermValue userAct (symAsNonterm sym) sval
 
 
-let deallocateSemanticValue sym user sval =
+let deallocateSemanticValue userAct sym sval =
   let open UserActions in
   assert (sym <> 0);
 
   if symIsTerm sym then
-    user.deallocateTerminalValue (symAsTerm sym) sval
+    userAct.deallocateTerminalValue (symAsTerm sym) sval
   else
-    user.deallocateNontermValue (symAsNonterm sym) sval
+    userAct.deallocateNontermValue (symAsNonterm sym) sval
 
 
 (* --------------------- SiblingLink ----------------------- *)
@@ -313,10 +305,10 @@ and deinitStackNode node =
 
 and deallocSemanticValues node =
   if node.firstSib.sib != cNULL_STACK_NODE then
-    deallocateSemanticValue (getNodeSymbol node) node.glr.userAct node.firstSib.sval;
+    deallocateSemanticValue node.glr.userAct (getNodeSymbol node) node.firstSib.sval;
 
   List.iter (fun s ->
-    deallocateSemanticValue (getNodeSymbol node) node.glr.userAct s.sval;
+    deallocateSemanticValue node.glr.userAct (getNodeSymbol node) s.sval;
 
     (* this is implicit in the C++ version, due to Owner<> *)
     decRefCt s.sib
@@ -518,10 +510,10 @@ let makeGLR tablesIn actions =
 
 (* printConfig goes here *)
 
-let grabTopSval glr node =
+let grabTopSval userAct node =
   let sib = getUniqueLink node in
   let ret = sib.sval in
-  sib.sval <- duplicateSemanticValue glr (getNodeSymbol node) sib.sval;
+  sib.sval <- duplicateSemanticValue userAct (getNodeSymbol node) sib.sval;
 
   (* TRSACTION("dup'd " << ret << " for top sval, yielded " << sib->sval); *)
 
@@ -754,10 +746,10 @@ let rwlShiftActive tokType glr leftSibling rightSibling lhsIndex sval =
       if not (canMakeProgress tokType glr rightSibling) then (
         if traceParse then
           Printf.printf "avoided a merge by noticing the state was dead\n";
-        deallocateSemanticValue (getNodeSymbol rightSibling) glr.userAct sval;
+        deallocateSemanticValue glr.userAct (getNodeSymbol rightSibling) sval;
       ) else (
         (* call user's merge code *)
-        sibLink.sval <- mergeAlternativeParses glr lhsIndex sibLink.sval sval;
+        sibLink.sval <- mergeAlternativeParses glr.userAct lhsIndex sibLink.sval sval;
       );
 
       (* ok, done *)
@@ -860,14 +852,14 @@ let rwlProcessWorklist tokType glr =
       (* source loc stuff *)
 
       (* ask user to duplicate, store that back in 'sib' *)
-      sib.sval <- duplicateSemanticValue glr !(path.symbols).(i) sib.sval;
+      sib.sval <- duplicateSemanticValue glr.userAct !(path.symbols).(i) sib.sval;
     done;
 
     (* invoke user's reduction action (TREEBUILD) *)
-    let sval = reductionAction glr path.prodIndex glr.toPass in
+    let sval = reductionAction glr.userAct path.prodIndex glr.toPass in
 
     (* did user want to keep? *)
-    if use_keep && not (keepNontermValue glr lhsIndex sval) then (
+    if use_keep && not (keepNontermValue glr.userAct lhsIndex sval) then (
       (* cancelled; drop on floor *)
     ) else (
       (* shift the nonterminal, sval *)
@@ -978,7 +970,7 @@ let rwlShiftTerminals tokenKindDesc lexer glr =
         | Some prev ->
             (* the 'sval' we just grabbed has already been claimed by
              * 'prev.sval'; get a fresh one by duplicating the latter *)
-            duplicateTerminalValue glr tokType prev.sval
+            duplicateTerminalValue glr.userAct tokType prev.sval
       in
 
       (* add sibling link now *)
@@ -1045,30 +1037,30 @@ let nondeterministicParseToken tokenKindDesc lexer glr =
   )
 
 
-let cleanupAfterParse glr treeTop =
+let cleanupAfterParse glr =
   if traceParse then
     Printf.printf "Parse succeeded!\n";
 
   if not (Arraystack.length glr.topmostParsers = 1) then (
     Printf.printf "parsing finished with %d active parsers!\n"
                   (Arraystack.length glr.topmostParsers);
-    false
+    None
   ) else (
     let last = Arraystack.top glr.topmostParsers in
 
     (* prepare to run final action *)
     let arr = Array.make 2 SemanticValue.null in
     let nextToLast = (getUniqueLink last).sib in
-    arr.(0) <- grabTopSval glr nextToLast;      (* sval we want *)
-    arr.(1) <- grabTopSval glr last;            (* EOF's sval *)
+    arr.(0) <- grabTopSval glr.userAct nextToLast;      (* sval we want *)
+    arr.(1) <- grabTopSval glr.userAct last;            (* EOF's sval *)
 
     (* reduce *)
-    treeTop := reductionAction glr glr.tables.finalProductionIndex arr;
+    let treeTop = reductionAction glr.userAct glr.tables.finalProductionIndex arr in
 
     (* before pool goes away.. *)
     decParserList glr.topmostParsers;
 
-    true
+    Some treeTop
   )
 
 
@@ -1216,7 +1208,7 @@ let rec lrParseToken tokenKindDesc glr lr getToken lexer =
 
       (* call the user's action function (TREEBUILD) *)
       let sval =
-        reductionAction glr prodIndex lr.lrToPass
+        reductionAction glr.userAct prodIndex lr.lrToPass
       in
 
       (* now, do an abbreviated 'glrShiftNonterminal' *)
@@ -1252,7 +1244,7 @@ let rec lrParseToken tokenKindDesc glr lr getToken lexer =
       assert (newNode.referenceCount = 1);
 
       (* does the user want to keep it? *)
-      if use_keep && not (keepNontermValue glr lhsIndex sval) then (
+      if use_keep && not (keepNontermValue glr.userAct lhsIndex sval) then (
         printParseErrorMessage tokenKindDesc Lexerint.(lexer.tokType) glr newNode.state;
         if accounting then (
           glr.detShift  <- glr.detShift  + lr.lrDetShift;
@@ -1340,7 +1332,7 @@ let rec main_loop tokenKindDesc glr lr getToken lexer =
 
 (* buildParserIndex goes here *)
 
-let glrParse glr tokenKindDesc getToken lexer treeTop =
+let glrParse glr tokenKindDesc getToken lexer =
   glr.globalNodeColumn <- 0;
   begin
     let first = makeStackNode glr 0(*startState*) in
@@ -1357,11 +1349,13 @@ let glrParse glr tokenKindDesc getToken lexer treeTop =
   (* main parsing loop *)
   try
 
-    main_loop tokenKindDesc glr lr getToken (getToken lexer)
+    (* this loop never returns normally *)
+    Valgrind.Callgrind.instrumented
+      (main_loop tokenKindDesc glr lr getToken) (getToken lexer)
 
   with
   | Exit ->
-      false
+      None
 
   | End_of_file ->
       if accounting then (
@@ -1370,4 +1364,4 @@ let glrParse glr tokenKindDesc getToken lexer treeTop =
       );
 
       (* end of parse *)
-      cleanupAfterParse glr treeTop
+      cleanupAfterParse glr

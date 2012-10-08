@@ -48,14 +48,20 @@ let glrparse glr actions lexer getToken lexbuf =
       getToken
   in
 
-  let treeTop =
-    let tree = ref SemanticValue.null in
+  let tree =
     let lex = { tokType = 0; sval = SemanticValue.null } in
 
-    if Glr.glrParse glr tokenKindDesc getToken lex tree then
-      !tree
-    else
-      failwith ("parsing on line " ^ (string_of_int !(lexer.line)) ^ ", position " ^ (string_of_int (lexer.lexeme_start lexbuf)) ^ ": " ^ (lexer.lexeme lexbuf))
+    match Glr.glrParse glr tokenKindDesc getToken lex with
+    | Some tree ->
+        tree
+    | None ->
+        let msg =
+          Printf.sprintf "parsing on line %d, position %d: %s"
+            !(lexer.line)
+            (lexer.lexeme_start lexbuf)
+            (lexer.lexeme lexbuf)
+        in
+        failwith msg
   in
 
   (* print accounting statistics from glr.ml *)
@@ -72,7 +78,7 @@ let glrparse glr actions lexer getToken lexbuf =
   end;
 
   if ptree && print then
-    let t = Ptreeact.project treeTop in
+    let t = Ptreeact.project tree in
     Ptreenode.printTree t stdout true
 
 
