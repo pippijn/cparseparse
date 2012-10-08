@@ -71,10 +71,10 @@ let glrparse glr actions lexer getToken lexbuf =
     Printf.printf "stack nodes: num=%d max=%d\n"
       !Glr.numStackNodesAllocd
       !Glr.maxStackNodesAllocd;
-    Printf.printf "detShift:     %d\n" glr.detShift;
-    Printf.printf "detReduce:    %d\n" glr.detReduce;
-    Printf.printf "nondetShift:  %d\n" glr.nondetShift;
-    Printf.printf "nondetReduce: %d\n" glr.nondetReduce;
+    Printf.printf "detShift:     %d\n" glr.stats.detShift;
+    Printf.printf "detReduce:    %d\n" glr.stats.detReduce;
+    Printf.printf "nondetShift:  %d\n" glr.stats.nondetShift;
+    Printf.printf "nondetReduce: %d\n" glr.stats.nondetReduce;
   end;
 
   if ptree && print then
