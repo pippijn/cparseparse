@@ -8,5 +8,7 @@ components:
   name: Parser
 - !ditz.rubyforge.org,2008-03-06/component 
   name: Infrastructure
+- !ditz.rubyforge.org,2008-03-06/component 
+  name: Parser generator
 releases: []
 
