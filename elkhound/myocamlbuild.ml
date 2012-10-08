@@ -535,6 +535,8 @@ let dispatch_mine = function
           "ccparse/gr/ccTables.dat";
           "ccparse/gr/ccTables.mli";
           "ccparse/gr/ccTables.ml";
+          "ccparse/gr/ccTokens.mli";
+          "ccparse/gr/ccTokens.ml";
         ]
         ~deps:(grammars @ [
           "ccparse/tok/cc_tokens.ids";
@@ -565,6 +567,8 @@ let dispatch_mine = function
           "%Tables.dat";
           "%Tables.mli";
           "%Tables.ml";
+          "%Tokens.mli";
+          "%Tokens.ml";
         ]
         ~deps:[
           "%.gr";
