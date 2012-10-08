@@ -1,0 +1,53 @@
+OASISFormat:                    0.2
+OCamlVersion:                   >= 3.12
+Name:                           elkhound
+Version:                        0.6
+Synopsis:                       Elkhound GLR Parser Generator
+Authors:                        Pippijn van Steenhoven
+License:                        GPL
+LicenseFile:                    COPYING
+Plugins:                        META (0.2),
+                                StdFiles (0.2),
+                                DevFiles (0.2)
+XStdFilesAUTHORS:               false
+XStdFilesINSTALLFilename:       INSTALL
+XStdFilesREADME:                false
+
+SourceRepository head
+        Type:                   git
+        Location:               git://git.xinutec.org/devel/elkhound.git
+        Browser:                http://xinutec.org/git/devel/elkhound.git
+
+
+Executable ccparse
+        Path:                   ccparse
+        BuildTools:             ocamlbuild
+        BuildDepends:           glr,ulex,unix
+        MainIs:                 ccparse.ml
+        CompiledObject:         native
+
+
+Executable elkhound
+        Path:                   elkhound
+        BuildTools:             ocamlbuild
+        BuildDepends:           monad,sexplib,ulex,menhirLib,batteries,glr
+        MainIs:                 elkhound.ml
+        CSources:               ml_BitSet.c, ml_Valgrind.c
+        CCLib:                  -lstdc++
+        CompiledObject:         native
+
+
+Library glr
+        Path:                   glr
+        BuildTools:             ocamlbuild
+#        BuildDepends:           sexplib,ulex
+        Modules:                Arraystack,
+                                Glr,
+                                Lexerint,
+                                Objpool,
+                                Parsetables,
+                                Ptreeact,
+                                Ptreenode,
+                                Smutil,
+                                Useract
+        CompiledObject:         native

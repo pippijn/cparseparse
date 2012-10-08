@@ -1,0 +1,911 @@
+// gnu.gr            see license.txt for copyright and terms of use
+// extension to cc.gr for GNU C/C++ language extensions
+
+// NOTE: Though the name of this module is "gnu.gr", in fact we also
+// put our C99 support here.  For the moment, it isn't worth it to
+// split out C99 from GNU, because our usage model is that either you
+// want to parse ANSI C++, or you want to parse whatever gcc/g++
+// accepts.  The "gnu" extensions (try to) provide the latter.  (Also,
+// there are a few extensions like "long long" that are provided by
+// both, so the split wouldn't be 100% clean.)
+//
+// 9/27/04: The current concept is that gnu.gr contains the syntactic
+// extensions included in the modern, extended C++ language,
+// especially as used on linux.  It does *not* include old K&R syntax,
+// which will be put in kandr.gr.
+//
+// Specifically, the extensions found in this file are:
+//   - gcc statement expression: "({ ... })"
+//   - gcc compound literals: "(struct Foo){ ... }"
+//   - gcc misc: __FUNCTION__, __alignof__, etc.
+//   - gcc dangling labels: "{ ... foo: }"
+//   - gcc typeof
+//   - gcc C++ min and max operators ">?" and "<?"
+//   - gcc asm with register constraints, etc.
+//   - gcc asm labels: "int foo asm("myfoo") = 2"
+//   - C99 designated initializers: "... = { .x=..., .y=... }"
+//     including gcc range extension: "[ 1 ... 3 ] = ..."
+//   - C99 restrict keyword
+//   - C99 qualifiers in array brackets: "[const ...]"
+//   - gcc __attribute__
+//   - gcc bug: typedef names + type modifiers: "u32 long"
+//   - gcc computed gotos
+//   - gcc/C99 complex/imaginary
+
+
+// expected statistics
+option shift_reduce_conflicts 97;
+option reduce_reduce_conflicts 125;
+
+
+terminals {
+  precedence {
+    // see note at end regarding implementation of __attribute__
+    prec  190 "__attribute__" "restrict";
+
+    // the experimentation I did in in/gnu/g0019.cc suggests that
+    // these operators have the same prec/assoc as "<" and ">"
+    //left   80 "<?" ">?";
+  }
+}
+
+
+// ----------- gcc statement expression -----------
+// http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Statement-Exprs.html
+nonterm('primaryexpression) PrimaryExpression {
+  -> "(" cs:CompoundStatement ")"
+       { unimplemented 538 }
+}
+
+
+// ----------- gcc compound literals -----------
+// http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Compound-Literals.html
+// (notation for literal struct values)
+// e.g.:
+//   struct Foo { int x; int y; } myfoo;
+//   myfoo = (struct Foo) { 4, 5 };        <-- here
+// which would assign x=4 and y=5 in 'myfoo'
+nonterm('primaryexpression) PrimaryExpression {
+  -> "(" t:TypeId ")" i:CompoundInitializer
+       { unimplemented 539 }
+}
+
+
+// ----------- gcc misc -----------
+// http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Function-Names.html
+nonterm('preprocstring) PreprocString {
+  // slightly subtle: ordinary strings are yielded *with quotes*,
+  // whereas these special guys are not quoted; also note that
+  // yielding of these token codes depends on lang.gccFuncBehavior
+  -> TOK___FUNCTION__                       { unimplemented 540 }
+  -> TOK___PRETTY_FUNCTION__                { unimplemented 541 }
+}
+
+// dmandelin@mozilla.com
+// These are like function calls; they should have the same nonterminal
+nonterm('postfixexpression) PostfixExpression {
+  // GNU extension; dsw: Since the argument is an expression, I know
+  // of no way to handle this other than putting it into the grammar
+  // directly.
+  -> "__builtin_constant_p" e:ParenthesizedExpression
+       { unimplemented 542 }
+
+  // http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Alignment.html
+  -> "__alignof__" "(" t:TypeId ")"
+       { unimplemented 543 }
+  -> "__alignof__" "(" e:Expression ")"
+       { unimplemented 544 }
+
+  // quarl 2006-07-12
+  //    Handle __offsetof__ (gcc-3.4), __builtin_offsetof (gcc-4.x)
+  -> "__builtin_offsetof" "(" t:TypeId "," n:NamesAfterDot ")"
+       // { unimplemented 545 }
+       { unimplemented 546 }
+
+  -> "__offsetof__" "(" e:Expression ")"
+       { unimplemented 547 }
+
+  -> "__builtin_va_arg" "(" e:Expression "," t:TypeId ")"
+       { unimplemented 551 }
+}
+
+// dmandelin@mozilla.com  bug 416051
+// Represents something that can appear as arg2 of the builtin offsetof
+// operator in gcc. This will be used to make an expression of the form
+//    ((A*) NULL)->a.b
+// so we construct the right-hand part of that expression here, and let
+// the context fill in the cast and NULL in the offsetof action.
+nonterm('namesafterdot) NamesAfterDot {
+  -> n:NameAfterDot
+       { unimplemented 553 }
+  -> n:NamesAfterDot "." n2:NameAfterDot
+       { unimplemented 554 }
+  -> n:NamesAfterDot "[" e:Expression "]"
+       { unimplemented 555 }
+}
+
+// dsw: had to break this out for location recording reasons
+nonterm('parenthesizedexpression) ParenthesizedExpression {
+  -> "(" e:Expression ")"
+       { unimplemented 556 }
+}
+
+
+// http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Conditionals.html
+nonterm('conditionalexpression) ConditionalExpression {
+  -> cond:BinaryExpression "?" /*th:Expression*/ ":" el:AssignmentExpression
+       { unimplemented 557 }
+}
+
+
+// http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Nested-Functions.html
+nonterm('statement) Statement {
+  -> f:FunctionDefinition
+       { unimplemented 558 }
+  // quarl 2006-06-15
+  //    nested K&R functions; unimplemented for now but I guess we just need
+  //    to do the same as above?  see in/gnu/k0010.c
+  -> k:KandRFunctionDefinition
+       { unimplemented 559 }
+}
+
+
+// http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Template-Instantiation.html
+nonterm('explicitinstantiation) ExplicitInstantiation {
+  // here's one for things like (in/gnu/g0002.cc)
+  //   extern template class allocator<char>;
+  -> "extern" "template" d:BlockDeclaration
+       { unimplemented 560 }
+}
+
+
+// http://gcc.gnu.org/onlinedocs/gcc-3.4.1/gcc/Case-Ranges.html
+nonterm('statement) Statement {
+  -> "case" e:ConstantExpression "..." e2:ConstantExpression ":" s:Statement
+       { unimplemented 561 }
+}
+
+
+// ----------- gcc dangling labels -----------
+// gcc allows a compound statement to end with a label, whereas the C
+// and C++ grammars require a statement after every label; I can't
+// find any place in the gcc docs that specifically addresses this
+// extension; linux uses it heavily
+//
+// 10/17/04: It seems that gcc-3, even in C mode, rejects labels at
+// the end of compound blocks.  Therefore I suspect the tolerance in
+// gcc-2 was unintentional.  Oh well, Elsa allows it in all gcc modes..
+
+nonterm('compoundstatement) CompoundStatement {
+  // special case for a block that ends in a label; Warning: no don't
+  // do this by making a label, case and/or default form not contain
+  // the statement that follows; It wouldn't work in this case:
+  //   if (0) gronk: printf("hello\n");
+  // The then branch would only contain the gronk label, whereas, at
+  // least in gcc, it also includes the printf() call.
+  -> seq:CompoundStmtHelper lesl:LabeledEmptyStatementList "}"
+       { unimplemented 562 }
+}
+
+// a sequence of labels with no statement following, not even a skip
+nonterm('labeledemptystatementlist) LabeledEmptyStatementList {
+  -> n:LabelAndColon s:LabeledEmptyStatementListOpt
+       { unimplemented 563 }
+  -> "case" e:ConstantExpression ":" s:LabeledEmptyStatementListOpt
+       { unimplemented 564 }
+  -> "case" e:ConstantExpression "..." e2:ConstantExpression ":" s:LabeledEmptyStatementListOpt
+       { unimplemented 565 }
+  -> "default" ":" s:LabeledEmptyStatementListOpt
+       { unimplemented 566 }
+}
+
+nonterm('labeledemptystatementlistopt) LabeledEmptyStatementListOpt {
+  -> empty
+       { unimplemented 567 }
+  -> s:LabeledEmptyStatementList
+       { unimplemented 568 }
+}
+
+
+// ----------- gcc typeof -----------
+// http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Typeof.html
+
+
+nonterm('declspecifier) DeclSpecifier {
+  // TS_typeof: triggered by TypeTypeSpecifier
+  -> te:TypeofTypeSpecifier m2:UberModifierSeqOpt
+       { unimplemented 569 }
+
+  -> m1:UberModifierSeq te:TypeofTypeSpecifier m2:UberModifierSeqOpt
+       { unimplemented 570 }
+}
+
+
+nonterm('typespecifier) TypeSpecifier {
+  // TS_typeof
+  -> te:TypeofTypeSpecifier cv2:UberCVQualifierSeqOpt
+       { unimplemented 571 }
+
+  -> cv1:UberCVQualifierSeq te:TypeofTypeSpecifier cv2:UberCVQualifierSeqOpt
+       { unimplemented 572 }
+}
+
+
+// this production isolates the ambiguity to within itself, rather
+// than letting it pollute upwards into TypeSpecifier
+nonterm('typeoftypespecifier) TypeofTypeSpecifier {
+  // ambiguous:
+  //   typeof(x)
+  // could either be type of an expression 'x', or
+  // type (of a type) called 'x'
+  fun merge(l,r) { unimplemented 573 }
+
+  -> e:TypeofExpr       { unimplemented 574 }
+  -> t:TypeofType       { unimplemented 575 }
+}
+
+
+// gnu extension
+nonterm('typeofexpr) TypeofExpr {
+  -> "__typeof__" "(" e:Expression ")"
+       { unimplemented 576 }
+}
+
+// gnu extension
+nonterm('typeoftype) TypeofType {
+  -> "__typeof__" "(" t:TypeId ")"
+       { unimplemented 577 }
+}
+
+
+// ----------- gcc C++ min and max operators -----------
+// http://gcc.gnu.org/onlinedocs/gcc-3.1/gcc/Min-and-Max.html
+nonterm('binexp_mid) BinExp_mid {
+  -> left:BinExp_mid "<?" right:BinExp_high
+       { unimplemented 578 }
+  -> left:BinExp_mid ">?" right:BinExp_high
+       { unimplemented 579 }
+}
+
+// it turns out gcc lets users overload them too (in/gnu/k0004.cc)
+nonterm('operator) Operator {
+  -> "<?"    { unimplemented 580 }
+  -> ">?"    { unimplemented 581 }
+}
+
+
+// ----------- gcc asm -----------
+// http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Extended-Asm.html
+
+//  nonterm VolatileOpt {
+//    -> empty
+//         { unimplemented 582 }
+//    -> "volatile"
+//         { unimplemented 583 }
+//  }
+
+
+// dsw: FIX: add returning semantic value
+nonterm('bracketedwordopt) BracketedWordOpt {
+  -> empty ;
+  -> "[" id:Identifier "]" ;
+}
+
+
+// dsw: FIX: add returning semantic value
+nonterm('parenthesizedexpressionopt) ParenthesizedExpressionOpt {
+  -> empty ;
+  ->  "(" e:Expression ")" ;
+}
+
+
+// dsw: FIX: add returning semantic value
+nonterm('opconstraint) OpConstraint {
+  -> name:BracketedWordOpt constr:StringLiteral e:ParenthesizedExpressionOpt ;
+}
+
+
+// dsw: FIX: add returning semantic value
+nonterm('opconstraintlist) OpConstraintList {
+  -> empty ;
+  -> oc:OpConstraint ;
+  -> oc:OpConstraint "," ocl:OpConstraintList ;
+}
+
+
+// dsw: FIX: add returning semantic value
+// note: technically you can only have up to 3, but I allow 0 or more
+nonterm('opconstraints) OpConstraints {
+  -> empty;
+  -> NonemptyOpConstraints;
+}
+nonterm('nonemptyopconstraints) NonemptyOpConstraints {
+  -> ocs:OpConstraints ":" ocl:OpConstraintList ;
+  -> ocs:OpConstraints "::" ocl:OpConstraintList ;
+}
+
+
+// dsw: FIX: add returning rest of semantic value
+nonterm('asmdefinition) AsmDefinition {
+  // 7/31/04: For some time we have allowed "volatile" after "asm", as
+  // is documented here:
+  //   http://gcc.gnu.org/onlinedocs/gcc-3.1/gcc/Extended-Asm.html
+  // Recently we found some code that used "const" after "asm".  What
+  // is that?  Where is it documented?
+
+  // NOTE: CVQualifierSeqOpt is simply discarded here
+  -> "asm" q:CVQualifierSeq "(" s:StringLiteral ")" ";"
+       { unimplemented 584 }
+
+  // I write two rules, exposing the optionality of CVQualifierSeq at
+  // this level instead of pushing it down into CVQualifierSeqOpt, to
+  // avoid an S/R conflict.
+  -> "asm" q:CVQualifierSeq "(" s:StringLiteral ocs:NonemptyOpConstraints ")" ";"
+       { unimplemented 585 }
+  -> "asm" "(" s:StringLiteral ocs:NonemptyOpConstraints ")" ";"
+       { unimplemented 586 }
+}
+
+
+// ----------- gcc asm labels -----------
+// http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Asm-Labels.html
+nonterm('declarator) Declarator {
+  // Asm Labels after declarators; see in/gnu/asm01.c
+  -> d:DirectDeclarator "asm" "(" StringLiteral ")"
+       { unimplemented 587 }
+
+  // asm label + attributes ...
+  -> d:DirectDeclarator "asm" "(" StringLiteral ")" /*DROPPED*/AttributeSpecifierList
+       { unimplemented 588 }
+}
+
+
+// ----------- C99 designated initializers -----------
+// Designated Initializers
+nonterm('initializerclause) InitializerClause {
+  // obsolescent form
+  // http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Designated-Inits.html
+  -> d:Identifier ":" init:SimpleInitializerClause
+    { unimplemented 589 }
+  // C99 official form; C99 standard section 6.7.8
+  -> dl:DesignatorList "=" init:SimpleInitializerClause
+    { unimplemented 590 }
+  // dsw: another form I run into
+  -> dl:DesignatorList init:SimpleInitializerClause
+    { unimplemented 591 }
+}
+
+nonterm('designatorlist) DesignatorList {
+  -> d:Designator
+    { unimplemented 592 }
+  -> d:Designator dl:DesignatorList
+    { unimplemented 593 }
+}
+
+nonterm('designator) Designator {
+  -> "." id:Identifier
+    { unimplemented 594 }
+  -> "[" idx_expr:ConstantExpression "]"
+    { unimplemented 595 }
+  // range designator "[ 1 ... 3 ] =".  This is a gcc-ism:
+  // http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Designated-Inits.html
+  -> "[" idx_expr:ConstantExpression "..." idx_expr2:ConstantExpression "]"
+    { unimplemented 596 }
+}
+
+
+// ----------- C99 restrict keyword -----------
+nonterm('cvqualifier) CVQualifier {
+  -> "restrict"              { unimplemented 597 }
+}
+
+nonterm('ubermodifier) UberModifier {
+  -> "restrict"              { unimplemented 598 }
+}
+
+nonterm('ubercvqualifier) UberCVQualifier {
+  -> "restrict"              { unimplemented 599 }
+}
+
+
+// ----------- C99 qualifiers in array brackets -----------
+nonterm('directdeclarator) DirectDeclarator {
+  // array with qualifier in the brackets; see the version for
+  // DirectAbstractDeclarator for comments
+  -> d:DirectDeclarator "[" q:CVQualifierSeq "]"
+    { unimplemented 600 }
+}
+
+nonterm('directabstractdeclarator) DirectAbstractDeclarator {
+  // array with qualifier in the brackets
+  -> d:DirectAbstractDeclaratorOpt "[" q:CVQualifierSeq "]"
+    { unimplemented 601 }
+}
+
+
+// ----------- gcc2 bug: "u32 long" ----------
+// gcc-2.x allows one to combine typedefs and type keywords in a
+// single type specifier (e.g. in/gnu/dC0014.c); this is a bug, and is
+// fixed in gcc-3.x, but the linux kernel uses it so Elsa parses it (to
+// a limited degree)
+nonterm('declspecifier) DeclSpecifier {
+  -> n:PQTypeName BuggyGccTypeModifier/*ignored*/ m2:UberModifierSeqOpt
+     { unimplemented 602 }
+
+  -> m1:UberModifierSeq n:PQTypeName BuggyGccTypeModifier/*ignored*/ m2:UberModifierSeqOpt
+     { unimplemented 603 }
+}
+
+// these are the only ones that could be meaningfully combined with
+// an existing typedef, I think
+nonterm('buggygcctypemodifier) BuggyGccTypeModifier {
+  -> "long";
+  -> "short";
+  -> "signed";
+  -> "unsigned";
+
+  // make it a sequence...
+  -> "long"       BuggyGccTypeModifier;
+  -> "short"      BuggyGccTypeModifier;
+  -> "signed"     BuggyGccTypeModifier;
+  -> "unsigned"   BuggyGccTypeModifier;
+}
+
+
+// ------------ gcc computed goto ----------
+// http://gcc.gnu.org/onlinedocs/gcc-3.1/gcc/Labels-as-Values.html
+nonterm('unaryexpression) UnaryExpression {
+  -> "&&" n:Identifier
+       { unimplemented 604 }
+}
+
+nonterm('statement) Statement {
+  -> "goto" "*" e:Expression ";"
+       { unimplemented 605 }
+}
+
+
+// ----------- gcc/C99 complex/imaginary ----------
+// http://gcc.gnu.org/onlinedocs/gcc-3.1/gcc/Complex.html
+// C99 6.2.5p11, 6.7.2, Annex G
+nonterm('ubertypekeyword) UberTypeKeyword {
+  -> "_Complex"      { unimplemented 606 }
+  -> "_Imaginary"    { unimplemented 607 }
+}
+
+// The gcc manual says the syntax is "__real__" Expression, but I'll
+// take a conservative approach for now and only allow primary
+// expressions, thus avoiding the need to specify precedence of these
+// keywords.
+//
+// I've chosen to create E_fieldAcc AST nodes because they are similar,
+// in that these are component accesses.
+nonterm('primaryexpression) PrimaryExpression {
+  -> "__real__" e:PrimaryExpression
+     { unimplemented 608 }
+  -> "__imag__" e:PrimaryExpression
+     { unimplemented 609 }
+}
+
+
+// ----------- gcc __attribute__ -----------
+// This nonterminal gives me a good place to solve the ambiguity
+// between associating the attrs with the label and associating
+// them with the next declaration.
+nonterm('labelandcolon) LabelAndColon {
+  -> n:Identifier ":" /*DROPPED*/AttributeSpecifierList     precedence(TOK_PREFER_REDUCE)
+       { unimplemented 610 }
+}
+
+// tglek: Commenting this out so I can attach attributes to classes below
+// // attributes between classkeys and their names
+// nonterm ClassKey {
+//   // *not* AttributeSpecifierList; this context is naturally repeating
+//   -> k:ClassKey / *DROPPED* /AttributeSpecifier       { unimplemented 611 }
+//}
+
+
+nonterm('elaboratedtypespecifier) ElaboratedTypeSpecifier {
+  -> k:ClassKey /*DROPPED*/AttributeSpecifier n:PQTypeName    { unimplemented 612 }
+}
+
+nonterm('classspecifier) ClassSpecifier {
+  -> k:ClassKey s:AttributeSpecifierList n:ClassHeadNameOpt b:BaseClauseOpt "{" memb:MemberDeclarationSeqOpt "}"
+    { unimplemented 613 }
+}
+
+// attributes after "enum"
+nonterm('elaboratedtypespecifier) ElaboratedTypeSpecifier {
+  -> "enum" /*DROPPED*/AttributeSpecifierList n:PQTypeName
+       { unimplemented 614 }
+}
+
+nonterm('enumspecifier) EnumSpecifier {
+  -> "enum" /*DROPPED*/AttributeSpecifierList "{" list:EnumeratorListOpt "}"
+       { unimplemented 615 }
+
+  // Adding this adds one S/R conflict... it was 3 until I changed
+  // Identifier to PQTypeName.  I think cc.gr should similarly use
+  // PQName instead of Identifier, and catch qualifiers in tcheck...
+  -> "enum" /*DROPPED*/AttributeSpecifierList n:PQTypeName "{" list:EnumeratorListOpt "}"
+       { unimplemented 616 }
+}
+
+
+// As can be seen in the note at the end of this file, allowing
+// attributes in these two nonterminals is responsible for the
+// majority of the tolerance for them.  However, as UberModifiers are
+// an 'enum', this is also why retaining attributes in the AST is a
+// bit challenging: right here, there is nothing of substance to
+// attach them to!
+//
+// To fix this, one would probably have to find all occurrences of
+// UberModifier and UberCVQualifier, and add an alternative that goes
+// "... attr(one!) attrs-or-others-seq-opt ...", like below where I
+// use CVQualAttrSeqOpt.
+//
+// If all you care about is retaining one specific attribute that has
+// no arguments, you could get by with a new UberModifier flag and
+// associated DeclFlag.
+nonterm('ubermodifier) UberModifier {
+  -> AttributeSpecifier      { unimplemented 617 }
+}
+
+nonterm('ubercvqualifier) UberCVQualifier {
+  -> AttributeSpecifier      { unimplemented 618 }
+}
+
+
+// attribute after the "," in a sequence of declarators
+nonterm('initdeclaratorlist) InitDeclaratorList {
+  -> d:InitDeclarator "," /*DROPPED*/AttributeSpecifierList list:InitDeclaratorList
+       { unimplemented 619 }
+}
+
+
+// cv-qualifiers mixed with __attribute__ arbitrarily
+nonterm('cvqualattrseqopt) CVQualAttrSeqOpt {
+  -> empty                             { unimplemented 620 }
+  -> s:CVQualAttrSeq                   { unimplemented 621 }
+}
+
+nonterm('cvqualattrseq) CVQualAttrSeq {
+  -> q:CVQualAttr                      { unimplemented 622 }
+  -> q:CVQualAttr s:CVQualAttrSeq      { unimplemented 623 }
+}
+
+nonterm('cvqualattr) CVQualAttr {
+  -> q:CVQualifier                     { unimplemented 624 }
+  -> AttributeSpecifier                { unimplemented 625 }
+}
+
+
+nonterm('declarator) Declarator {
+  // "*", then some cv, then *one* __attribute__, which causes the
+  // parser to commit to this production, then cv+attr seq
+  -> "*" cv:CVQualifierSeqOpt /*DROPPED*/AttributeSpecifier cv2:CVQualAttrSeqOpt d:Declarator
+       { unimplemented 626 }
+
+  // perhaps attributes should be allowed after "&" and "C::*"?
+
+  // this is slightly more tolerant than gcc is, since it allows
+  // attributes just inside the ")" of a D_grouping, whereas gcc
+  // doesn't
+  -> d:DirectDeclarator attr:AttributeSpecifierList
+       { unimplemented 627 }
+}
+
+
+nonterm('directdeclarator) DirectDeclarator {
+  -> "(" attr:AttributeSpecifierList d:Declarator ")"
+       { unimplemented 628 }
+}
+
+
+nonterm('abstractdeclarator) AbstractDeclarator {
+  -> "*" cv:CVQualifierSeqOpt attrspec:AttributeSpecifier cv2:CVQualAttrSeqOpt d:AbstractDeclaratorOpt
+       { unimplemented 629 }
+
+  -> d:DirectAbstractDeclarator attr:AttributeSpecifierList
+       { unimplemented 630 }
+}
+
+nonterm('directabstractdeclarator) DirectAbstractDeclarator {
+  -> "(" /*DROPPED*/AttributeSpecifierList d:AbstractDeclarator ")"
+       { unimplemented 631 }
+}
+
+// dsw: attributes after bitfields; from the kernel:
+// UCHAR8 SampleResolution:2 __attribute__ ((packed));
+//
+// sm: the reason this wasn't handled by my catch-all Declarator
+// case above is that the bitfield syntax doesn't explicitly refer
+// to the Declarator nonterminal
+nonterm('memberdeclarator) MemberDeclarator {
+  -> n:IdentifierOpt ":" e:ConstantExpression /*DROPPED*/AttributeSpecifierList    // bitfield
+       // this body is an exact copy of the cc.gr one without attributes
+       { unimplemented 632 }
+}
+
+// dsw: from Taras Glek, tglek at mozilla dot com
+nonterm('cdtormodifier) CDtorModifier {
+ -> /*DROPPED*/AttributeSpecifier      { unimplemented 633 }
+}
+
+// 2007-09-15: This is in the gcc-4.2.1 headers.
+nonterm('namespacedefinition) NamespaceDefinition {
+  -> "namespace" n:IdentifierOpt /*DROPPED*/AttributeSpecifierList "{" unit:TranslationUnit "}"
+       { unimplemented 634 }
+}
+
+
+// -- attributes themselves --
+// http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Attribute-Syntax.html
+
+// "A word (which may be an identifier such as unused, or a reserved
+// word such as const)."
+nonterm('attributeword) AttributeWord {
+  // non-keyword name
+  -> n:TOK_NAME         { unimplemented 635 }
+
+  // keywords
+  -> "asm"              { unimplemented 636 }
+  -> "auto"             { unimplemented 637 }
+  -> "break"            { unimplemented 638 }
+  -> "bool"             { unimplemented 639 }
+  -> "case"             { unimplemented 640 }
+  -> "catch"            { unimplemented 641 }
+  -> "cdecl"            { unimplemented 642 }
+  -> "char"             { unimplemented 643 }
+  -> "class"            { unimplemented 644 }
+  -> "const"            { unimplemented 645 }
+  -> "const_cast"       { unimplemented 646 }
+  -> "continue"         { unimplemented 647 }
+  -> "default"          { unimplemented 648 }
+  -> "delete"           { unimplemented 649 }
+  -> "do"               { unimplemented 650 }
+  -> "double"           { unimplemented 651 }
+  -> "dynamic_cast"     { unimplemented 652 }
+  -> "else"             { unimplemented 653 }
+  -> "enum"             { unimplemented 654 }
+  -> "explicit"         { unimplemented 655 }
+  -> "export"           { unimplemented 656 }
+  -> "extern"           { unimplemented 657 }
+  -> "false"            { unimplemented 658 }
+  -> "float"            { unimplemented 659 }
+  -> "for"              { unimplemented 660 }
+  -> "friend"           { unimplemented 661 }
+  -> "goto"             { unimplemented 662 }
+  -> "if"               { unimplemented 663 }
+  -> "inline"           { unimplemented 664 }
+  -> "int"              { unimplemented 665 }
+  -> "long"             { unimplemented 666 }
+  -> "mutable"          { unimplemented 667 }
+  -> "namespace"        { unimplemented 668 }
+  -> "new"              { unimplemented 669 }
+  -> "operator"         { unimplemented 670 }
+  -> "pascal"           { unimplemented 671 }
+  -> "private"          { unimplemented 672 }
+  -> "protected"        { unimplemented 673 }
+  -> "public"           { unimplemented 674 }
+  -> "register"         { unimplemented 675 }
+  -> "reinterpret_cast" { unimplemented 676 }
+  -> "return"           { unimplemented 677 }
+  -> "short"            { unimplemented 678 }
+  -> "signed"           { unimplemented 679 }
+  -> "sizeof"           { unimplemented 680 }
+  -> "static"           { unimplemented 681 }
+  -> "static_cast"      { unimplemented 682 }
+  -> "struct"           { unimplemented 683 }
+  -> "switch"           { unimplemented 684 }
+  -> "template"         { unimplemented 685 }
+  -> "this"             { unimplemented 686 }
+  -> "throw"            { unimplemented 687 }
+  -> "true"             { unimplemented 688 }
+  -> "try"              { unimplemented 689 }
+  -> "typedef"          { unimplemented 690 }
+  -> "typeid"           { unimplemented 691 }
+  -> "typename"         { unimplemented 692 }
+  -> "union"            { unimplemented 693 }
+  -> "unsigned"         { unimplemented 694 }
+  -> "using"            { unimplemented 695 }
+  -> "virtual"          { unimplemented 696 }
+  -> "void"             { unimplemented 697 }
+  -> "volatile"         { unimplemented 698 }
+  -> "wchar_t"          { unimplemented 699 }
+  -> "while"            { unimplemented 700 }
+
+  // don't know if I need to allow these; gcc 2.95.3 doesn't like them
+  //  // GNU extensions
+  //  TOK___ATTRIBUTE__,       "__attribute__",             :    n
+  //  TOK___FUNCTION__,        "__FUNCTION__",              :    n
+  //  TOK___LABEL__,           "__label__",                 :    n
+  //  TOK___PRETTY_FUNCTION__, "__PRETTY_FUNCTION__",       :    n
+  //  TOK___TYPEOF__,          "__typeof__",                :    n
+}
+
+nonterm('commasepexpressionlistopt) CommaSepExpressionListOpt {
+  -> empty                 { unimplemented 701 }
+  -> el:ExpressionList     { unimplemented 702 }
+}
+
+nonterm('attributeparameters) AttributeParameters {
+//    -> id:Identifier "," exprs:CommaSepExpressionListOpt ;
+  // NOTE: the below includes the above, except that the first
+  // expression, if an identifier, should not be typechecked as an
+  // E_variable, since it need not match a declared name; first it
+  // should be checked against known attribute parameters (maybe?).
+  -> exprs:CommaSepExpressionListOpt    { unimplemented 703 }
+}
+
+nonterm('attribute) Attribute {
+  -> empty
+     { unimplemented 704 }
+
+  -> w:AttributeWord
+     { unimplemented 705 }
+
+  -> w:AttributeWord "(" ap:AttributeParameters ")"
+     { unimplemented 706 }
+}
+
+nonterm('attributelist) AttributeList {
+  -> at:Attribute
+     { unimplemented 707 }
+
+  -> at:Attribute "," ap:AttributeList
+     { unimplemented 708 }
+}
+
+nonterm('attributespecifier) AttributeSpecifier {
+  -> "__attribute__" "(" "(" ap:AttributeList ")" ")"
+     { unimplemented 709 }
+}
+
+nonterm('attributespecifierlist) AttributeSpecifierList {
+  -> s:AttributeSpecifier
+     { unimplemented 710 }
+
+  -> s:AttributeSpecifier sl:AttributeSpecifierList
+     { unimplemented 711 }
+}
+
+// quarl 2006-06-14
+//    'using namespace N __attribute__(__strong__)'
+//    see in/gnu/k0009.cc or
+//    /usr/include/c++/3.4/i486-linux-gnu/bits/c++config.h
+
+nonterm('namespacedecl) NamespaceDecl {
+  -> "using" "namespace" n:IdExpression AttributeSpecifierList ";"
+       { unimplemented 712 }
+}
+
+
+/*
+  2005-08-13: I have now added retention of attributes in some
+  places.  All places where it is still *not* retained are now
+  marked with "DROPPED".  My plan is to incrementally retain
+  more of the attributes as the need arises.
+
+  Implementation of __attribute__ (sm, 8/21/04).
+
+  NOTE: The current implementation drops all __attribute__s on the
+  floor after parsing them!  That is not ideal.  However, as
+  attributes can go in places that don't have ready access to (say) a
+  Type or a Declarator to attach them to, retaining them in the AST
+  isn't a trivial change.
+
+  The spec at
+  http://gcc.gnu.org/onlinedocs/gcc-3.1/gcc/Attribute-Syntax.html does
+  a reasonably good job of documenting where __attribute__ can go and
+  what it means.  There are a number of things unclear about that
+  description, so I explored a bit with gcc-2 and gcc-2.
+  in/gnu/attr02.c contains a variety of syntax that gcc-3 accepts;
+  gcc-2 accepts most of it.
+
+  Based on this exploration, I decided to put attributes in a number
+  of places in cc.gr (via this gnu.gr extension grammar), listed
+  below.  In some cases I also determined (manually) the set of
+  contexts in which the modified construct would appear, so I could
+  better predict the effect of the modifications.
+
+    * right after ":" in labeled statement (did this with LabelAndColon)
+
+    * after ClassKey and "enum" where they occur
+
+    * UberModifer
+        - in DeclSpecifier
+          - in SimpleDeclaration
+            - in ForInitStatement
+            - in BlockDeclaration
+              - as a Statement
+              - as a TopForm
+              - in an ExplicitInstantiation
+          - in FunctionDefinition
+          - in MemberDeclaration
+          - in TemplateDeclaration, after the "template <...>"
+
+    * UberCVQualifier
+        - in TypeSpecifier
+          - in ParameterDeclaration
+          - in Condition
+          - in NewTypeId      ------------+   below here are places attr would
+            - in E_new                    |   be allowed, even though I don't
+          - in TypeId                     V   really want it to ...
+            - in E_keywordCast
+            - in E_typeidType
+            - in E_sizeofType
+            - in E_new
+            - in E_cast
+            - in TemplateTypeParameter default type
+            - in TemplateArgument (TA_type)
+            - in throw() cause
+          - in ConversionTypeId
+          - in HandlerParameter
+
+    * after "," in InitDeclaratorList's 2nd clause
+        - gets attr at outermost declarator level for 2nd or later declarator
+
+    * after "*" in (Abstract)Declarator
+    * after "(" in Direct(Abstract)Declarator D_grouping
+    / after "C::*" in (Abstract)Declarator
+    / after "&" in (Abstract)Declarator
+
+    * likewise for AbstractDeclarator
+
+      every place that (Abstract)Declarator occurs, other than in its recursive
+      structure, add an alternative with attrs after the Declarator
+    ~   - in fact, generalize that to let the "Asm Labels" go there too
+    *   - better: in Declarator after the Direct(Abstract)Declarator
+
+  The two "/" above means I didn't end up putting them after the C++
+  type constructors, since I doubt I'll need them there.
+
+  I found it useful to keep track, while I was modifying the grammar, of
+  the conflict totals.  This table shows the effect on conflicts of my
+  changes:
+
+    conflicts at various stages                               S/R   R/R
+    -------------------------------------------------------   ---------
+    starting                                                  142   104
+
+    removed attrs after ClassSpecifier in ElaboratedOrSpec    140   104
+
+    removed attrs between "*" and cv in Declarator            139   104
+    added attrs after cv in Declarator                        140   104
+    added cvattrseqopt after attr (one!) in Declarator        140   104
+
+    removed attrs between "*" and cv in AbstractDeclarator    138   104
+    removed attrs after DAD in AbstractDeclarator             138   104
+    added attrs after cv in AbstractDeclarator                140   111
+    added cvattrseqopt after attr (one!) in ADeclarator       140   104
+    added attrs after DAD in AbstractDeclarator               140   104
+
+    added attrs after class/enum in ElaboratedTypeSpecifier   140   104
+    for class, added to ClassKey instead                      140   104
+
+    added attrs after "enum" in EnumSpecifier                 141   104
+
+    removed attrspec from SimpleDeclaration (printk thing)     75   104
+
+    added attr to UberModifier                                 75   176
+
+    removed attr after labeled statements                      75   110
+
+    added attr to UberCVQualifier                              84   114
+
+    added attr after "," in InitDeclarator                     84   114
+
+    added attr after ":" in LabeledEmptyStatementList          84   116
+
+    removed attr after ":" in LabeledEmptyStatementList        84   114
+
+    created LabelAndColon in cc.gr                             81   108
+    added attrs after LabelAndColon                            83   108
+    added attrs after LabelAndColon with high precedence       82   108
+    added LabelAndColon to the LabeledEmptyStatementList       82   108
+
+*/
+
+
+// EOF

@@ -1,0 +1,47 @@
+# OASIS_START
+# DO NOT EDIT (digest: a3e1f8b5678b38cb853dcd30f505b0ad)
+# Library glr
+"glr": include
+# Executable ccparse
+"ccparse/ccparse.native": use_glr
+"ccparse/ccparse.native": pkg_unix
+"ccparse/ccparse.native": pkg_ulex
+<ccparse/*.ml{,i}>: use_glr
+<ccparse/*.ml{,i}>: pkg_unix
+<ccparse/*.ml{,i}>: pkg_ulex
+# Executable elkhound
+"elkhound/elkhound.native": oasis_executable_elkhound_cclib
+"elkhound/libelkhound.lib": oasis_executable_elkhound_cclib
+"elkhound/dllelkhound.dll": oasis_executable_elkhound_cclib
+"elkhound/libelkhound.a": oasis_executable_elkhound_cclib
+"elkhound/dllelkhound.so": oasis_executable_elkhound_cclib
+"elkhound/elkhound.native": use_libelkhound
+"elkhound/elkhound.native": use_glr
+"elkhound/elkhound.native": pkg_ulex
+"elkhound/elkhound.native": pkg_sexplib
+"elkhound/elkhound.native": pkg_monad
+"elkhound/elkhound.native": pkg_menhirLib
+"elkhound/elkhound.native": pkg_batteries
+<elkhound/*.ml{,i}>: use_glr
+<elkhound/*.ml{,i}>: pkg_ulex
+<elkhound/*.ml{,i}>: pkg_sexplib
+<elkhound/*.ml{,i}>: pkg_monad
+<elkhound/*.ml{,i}>: pkg_menhirLib
+<elkhound/*.ml{,i}>: pkg_batteries
+"elkhound/ml_BitSet.c": use_glr
+"elkhound/ml_BitSet.c": pkg_ulex
+"elkhound/ml_BitSet.c": pkg_sexplib
+"elkhound/ml_BitSet.c": pkg_monad
+"elkhound/ml_BitSet.c": pkg_menhirLib
+"elkhound/ml_BitSet.c": pkg_batteries
+"elkhound/ml_Valgrind.c": use_glr
+"elkhound/ml_Valgrind.c": pkg_ulex
+"elkhound/ml_Valgrind.c": pkg_sexplib
+"elkhound/ml_Valgrind.c": pkg_monad
+"elkhound/ml_Valgrind.c": pkg_menhirLib
+"elkhound/ml_Valgrind.c": pkg_batteries
+# OASIS_STOP
+
+true: debug
+true: use_menhir
+true: annot

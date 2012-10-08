@@ -1,0 +1,2 @@
+<*.ml>: syntax_camlp4o, pkg_sexplib.syntax
+"grampar.ml": -syntax_camlp4o
