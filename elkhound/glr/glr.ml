@@ -3,7 +3,12 @@
 (* based on elkhound/glr.h and elkhound/glr.cc *)
 
 open ParseTables     (* action/goto/etc. *)
-open Smutil          (* getSome, etc. *)
+
+
+(* some random utilities I think should be built in to the language *)
+let getSome = function
+  | None -> failwith "getSome applied to None"
+  | Some v -> v
 
 
 (* Relative to C++ implementation, what is not done:
@@ -307,7 +312,7 @@ and deallocSemanticValues node =
 
 let initStackNode node st =
   node.state <- st;
-  assert (isEmpty node.leftSiblings);
+  assert (node.leftSiblings == []);
   assert (node.firstSib.sib == cNULL_STACK_NODE);
   node.referenceCount <- 0;
   node.determinDepth <- 1;
@@ -324,11 +329,11 @@ let hasZeroSiblings node =
 
 
 let hasOneSibling node =
-  node.firstSib.sib != cNULL_STACK_NODE && isEmpty node.leftSiblings
+  node.firstSib.sib != cNULL_STACK_NODE && node.leftSiblings == []
 
 
 let hasMultipleSiblings node =
-  not (isEmpty node.leftSiblings)
+  node.leftSiblings != []
 
 
 let addFirstSiblingLink_noRefCt node leftSib sval =
@@ -579,14 +584,14 @@ let insertPathCopy queue src leftEdge =
     rhsLen;               (* number of elements to copy *)
 
   (* find proper place to insert new path *)
-  if not (isSome queue.top) || goesBefore queue p (getSome queue.top) then (
+  if queue.top == None || goesBefore queue p (getSome queue.top) then (
     (* prepend *)
     p.next <- queue.top;
     queue.top <- Some p;
   ) else (
     (* search *)
     let prev = ref (getSome queue.top) in
-    while (isSome !prev.next) && not (goesBefore queue p (getSome !prev.next)) do
+    while (!prev.next != None) && not (goesBefore queue p (getSome !prev.next)) do
       prev := getSome !prev.next;
     done;
 
@@ -688,7 +693,7 @@ let rec rwlEnqueueReductions glr parsr action mustUseLink =
 
 
 let queueIsNotEmpty queue =
-  isSome queue.top
+  queue.top != None
 
 
 let dequeue queue =
@@ -844,7 +849,7 @@ let rwlProcessWorklist tokType glr =
       (* shift the nonterminal, sval *)
       let newLink = rwlShiftNonterminal tokType glr path.leftEdgeNode lhsIndex sval in
 
-      if isSome newLink then
+      if newLink != None then
         (* for each 'finished' parser, enqueue actions enabled by the new link *)
         Arraystack.iter (fun parsr ->
           let action = getActionEntry glr.tables parsr.state tokType in
@@ -1077,7 +1082,7 @@ let rec innerStackSummary printed node =
       (* no siblings *)
       nodeSummary node
 
-    ) else if (isEmpty node.leftSiblings) then (
+    ) else if node.leftSiblings == [] then (
       (* one sibling *)
       nodeSummary node ^ "-" ^
       innerStackSummary printed node.firstSib.sib

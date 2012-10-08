@@ -54,7 +54,6 @@ Library glr
                                 ParseTables,
                                 PtreeActions,
                                 PtreeNode,
-                                Smutil,
                                 UserActions
         CompiledObject:         native
 #        NativeOpt:              -inline 999 -unsafe -noassert -nodynlink
