@@ -29,7 +29,111 @@ let default_classify (oldTokenType : int) (sval : SemanticValue.t) : int = oldTo
 (* package of functions; the user will create an instance of this
  * record, and the parser will carry it along to invoke the various
  * action functions *)
-type t = {
+module type S = sig
+  (* user-supplied reduction actions
+   *  - production 'id' is being used to reduce
+   *  - 'svals' contains an array of semantic values yielded by the RHS
+   *    symbols, such that the 0th element is the leftmost RHS element;
+   *    the pointers in the array are owner pointers (the array ptr itself
+   *    is a serf)
+   *  - 'loc' is the location of the left edge of the parse subtree
+   *  - this fn returns the semantic value for the reduction; this return
+   *    value is an owner pointer *)
+  val reductionAction :
+    (*context?*)
+    int ->                     (* production being used to reduce *)
+    SemanticValue.t array ->   (* array of svals for RHS symbols *)
+    (*loc?*)
+    SemanticValue.t            (* sval for the reduction *)
+
+  (* duplication of semantic values:
+   *  - the given 'sval' is about to be passed to a reduction action
+   *    function.  the user must return a value to be stored in place
+   *    of the old one, in case it is needed to pass to another action
+   *    function in case of local ambiguity; 'sval' is a serf
+   *  - the return value will be yielded (if necessary) to the next
+   *    consumer action function, and is an owner ptr
+   *  - some possible strategies:
+   *    - return NULL, in which case it is probably an error for the
+   *      value to be passed to another action (i.e. the grammar needs
+   *      to be LALR(1) near this semantic value); in this case, 'del'
+   *      will not be called on the NULL value
+   *    - increment a reference count and return 'sval'
+   *    - do nothing, and rely on some higher-level allocation scheme
+   *      such as full GC, or regions *)
+  val duplicateTerminalValue :
+    (*context?*)
+    int ->                     (* terminal id *)
+    SemanticValue.t ->         (* sval being yielded *)
+    SemanticValue.t            (* sval to yield next time *)
+  val duplicateNontermValue :
+    (*context?*)
+    int ->                     (* nonterminal id *)
+    SemanticValue.t ->         (* sval being yielded *)
+    SemanticValue.t            (* sval to yield next time *)
+
+  (* a semantic value didn't get passed to an action function, either
+   * because it was never used at all (e.g. a semantic value for a
+   * punctuator token, which the user can simply ignore), or because we
+   * duplicated it in anticipation of a possible local ambiguity, but
+   * then that parse turned out not to happen, so we're cancelling
+   * the dup now; 'sval' is an owner pointer *)
+  val deallocateTerminalValue :
+    (*context?*)
+    int ->                     (* terminal id *)
+    SemanticValue.t ->         (* sval being dropped *)
+    unit
+  val deallocateNontermValue :
+    (*context?*)
+    int ->                     (* nonterminal id *)
+    SemanticValue.t ->         (* sval being dropped *)
+    unit
+
+  (* this is called when there are two interpretations for the same
+   * sequence of ground terminals, culminating in two different reductions
+   * deriving the same left-hand-side nonterminal (identified by 'ntIndex');
+   * it should return a value to be used in the place where they conflict'
+   * both 'left' and 'right' are owner pointers, and the return value
+   * is also an owner pointer
+   *
+   * NOTE: the 'left' value is always the node which came first, and
+   * might even have been yielded to another reduction already
+   * (depending on the grammar), whereas the 'right' value is always a
+   * node which was just created, and has definitely *not* been
+   * yielded to anything (this fact is critical to solving the general
+   * yield-then-merge problem) *)
+  val mergeAlternativeParses :
+    int ->                     (* nonterminal with two derivations *)
+    SemanticValue.t ->         (* sval from derivation 1 *)
+    SemanticValue.t ->         (* sval from derivation 2 *)
+    SemanticValue.t            (* merged sval *)
+
+  (* after every reduction, the semantic value is passed to this function,
+   * which returns 'false' if the reduction should be cancelled; if it
+   * does return false, then 'sval' is an owner pointer (the parser engine
+   * will drop the value on the floor) *)
+  val keepNontermValue :
+    int ->                     (* reduced nonterm id *)
+    SemanticValue.t ->         (* sval that 'reductionAction' yielded *)
+    bool                       (* if false, drop the sval on the floor *)
+
+  (* TODO: reclassification goes here *)
+
+  (* descriptions of symbols with their semantic values; this is useful
+   * for the ACTION_TRACE function of the parser *)
+  val terminalDescription : int -> SemanticValue.t -> string
+  val nonterminalDescription : int -> SemanticValue.t -> string
+
+  (* get static names for all of the symbols *)
+  val terminalName : int -> string
+  val nonterminalName : int -> string
+end
+
+
+(* package of functions; the user will create an instance of this
+ * record, and the parser will carry it along to invoke the various
+ * action functions *)
+type 'result t = {
   (* user-supplied reduction actions
    *  - production 'id' is being used to reduce
    *  - 'svals' contains an array of semantic values yielded by the RHS

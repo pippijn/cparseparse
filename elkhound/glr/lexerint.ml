@@ -1,6 +1,16 @@
+module type TokenInfo = sig
+  type t
+
+  val name : t -> string
+  val desc : t -> string
+  val index : t -> int
+  val sval : t -> SemanticValue.t
+end
+
+
 type t = {
   mutable tokType : int;
-  mutable sval : SemanticValue.t;
+  mutable tokSval : SemanticValue.t;
 }
 
 type ('lexbuf, 'token) lexer = {

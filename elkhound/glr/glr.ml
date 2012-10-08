@@ -44,9 +44,9 @@ type statistics = {
 
 
 (* link from one stack node to another *)
-type sibling_link = {
+type 'result sibling_link = {
   (* stack node we're pointing at; == cNULL_STACK_NODE if none *)
-  mutable sib : stack_node;
+  mutable sib : 'result stack_node;
 
   (* semantic value on this link *)
   mutable sval : SemanticValue.t;
@@ -58,20 +58,20 @@ type sibling_link = {
 
 (* node in the GLR graph-structured stack; all fields are
  * mutable because these are stored in a pool for explicit re-use *)
-and stack_node = {
+and 'result stack_node = {
   (* for access to parser context in a few unusual situations *)
-  glr : glr;
+  glr : 'result glr;
 
   (* LR parser state when this node is at the top *)
   mutable state : state_id;
 
   (* pointers to adjacent (to the left) stack nodes *)
   (* possible TODO: put links into a pool so I can deallocate them *)
-  mutable leftSiblings : sibling_link list;
+  mutable leftSiblings : 'result sibling_link list;
 
   (* logically first sibling in the sibling list; separated out
    * from 'leftSiblings' for performance reasons *)
-  mutable firstSib : sibling_link;
+  mutable firstSib : 'result sibling_link;
 
   (* number of sibling links pointing at this node, plus the
    * number of worklists this node appears in *)
@@ -88,10 +88,10 @@ and stack_node = {
 
 (* this is a path that has been queued for reduction;
  * all fields mutable to support pooling *)
-and path = {
+and 'result path = {
   (* array of sibling links, i.e. the path; 0th element is
    * leftmost link *)
-  sibLinks : sibling_link array ref;
+  sibLinks : 'result sibling_link array ref;
 
   (* corresponding array of symbol ids to interpret svals *)
   symbols : symbol_id array ref;
@@ -106,19 +106,19 @@ and path = {
   mutable startColumn : int;
 
   (* the leftmost stack node itself *)
-  mutable leftEdgeNode : stack_node;
+  mutable leftEdgeNode : 'result stack_node;
 
   (* next path in dequeueing order *)
-  mutable next : path option;
+  mutable next : 'result path option;
 }
 
 (* priority queue of reduction paths *)
-and reduction_path_queue = {
+and 'result reduction_path_queue = {
   (* head of the list, first to dequeue *)
-  mutable top : path option;
+  mutable top : 'result path option;
 
   (* pool of path objects *)
-  pathPool : path Objpool.t;
+  pathPool : 'result path Objpool.t;
 
   (* need our own copy of the tables pointer *)
   rpqTables : tParseTables;      (* name can't collide with glr.tables.. ! *)
@@ -127,9 +127,9 @@ and reduction_path_queue = {
 
 (* GLR parser object *)
 (* some mutable fields are for hack in 'makeGLR' *)
-and glr = {
+and 'result glr = {
   (* user-specified actions *)
-  userAct : UserActions.t;
+  userAct : 'result UserActions.t;
 
   (* parse tables from the grammar *)
   tables : tParseTables;
@@ -139,16 +139,16 @@ and glr = {
   toPass : SemanticValue.t array;
 
   (* reduction queue and pool *)
-  pathQueue : reduction_path_queue;
+  pathQueue : 'result reduction_path_queue;
 
   (* set of topmost parser nodes *)
-  topmostParsers : stack_node Arraystack.t;
+  topmostParsers : 'result stack_node Arraystack.t;
 
   (* swapped with 'topmostParsers' periodically, for performance reasons *)
-  prevTopmost : stack_node Arraystack.t;
+  prevTopmost : 'result stack_node Arraystack.t;
 
   (* node allocation pool; shared with glrParse *)
-  mutable stackNodePool : stack_node Objpool.t;
+  mutable stackNodePool : 'result stack_node Objpool.t;
 
   (* when true, print some diagnosis of failed parses *)
   noisyFailedParse : bool;
@@ -867,17 +867,13 @@ let rwlProcessWorklist tokType glr =
   done
 
 
-let rwlShiftTerminals tokenKindDesc lexer glr =
+let rwlShiftTerminals tokenKindDesc tokType tokSval glr =
   glr.globalNodeColumn <- glr.globalNodeColumn + 1;
 
   (* move all parsers from 'topmostParsers' to 'prevTopmost' *)
   assert (Arraystack.is_empty glr.prevTopmost);
   Arraystack.swapWith glr.prevTopmost glr.topmostParsers;
   assert (Arraystack.is_empty glr.topmostParsers);
-
-  (* grab current token since we'll need it and the access
-   * isn't all that fast here in ML *)
-  let tokType = Lexerint.(lexer.tokType) in
 
   (* for token multi-yield.. *)
   let prev = ref None in
@@ -929,7 +925,7 @@ let rwlShiftTerminals tokenKindDesc lexer glr =
       if traceParse then
         Printf.printf "state %d, shift token %s, to state %d\n"
                        leftSibling.state
-                       (tokenKindDesc Lexerint.(lexer.tokType))
+                       (tokenKindDesc tokType)
                        !newState;
 
       (* already a parser in this state? *)
@@ -952,7 +948,7 @@ let rwlShiftTerminals tokenKindDesc lexer glr =
         match !prev with
         | None ->
             (* usual case *)
-            Lexerint.(lexer.sval)
+            tokSval
 
         | Some prev ->
             (* the 'sval' we just grabbed has already been claimed by
@@ -993,13 +989,12 @@ let printParseErrorMessage tokenKindDesc tokType glr lastToDie =
   end
 
 
-let nondeterministicParseToken tokenKindDesc lexer glr =
+let nondeterministicParseToken tokenKindDesc tokType tokSval glr =
   let lastToDie = ref cSTATE_INVALID in
 
   (* seed the reduction worklist by analyzing the top nodes *)
   Arraystack.iter (fun parsr ->
-    let tt = Lexerint.(lexer.tokType) in
-    let action = getActionEntry glr.tables parsr.state tt in
+    let action = getActionEntry glr.tables parsr.state tokType in
     let actions = rwlEnqueueReductions glr parsr action None(*sibLink*) in
     
     if actions = 0 then (
@@ -1010,21 +1005,21 @@ let nondeterministicParseToken tokenKindDesc lexer glr =
   ) glr.topmostParsers;
 
   (* drop into worklist processing loop *)
-  rwlProcessWorklist Lexerint.(lexer.tokType) glr;
+  rwlProcessWorklist tokType glr;
 
   (* do all shifts last *)
-  rwlShiftTerminals tokenKindDesc lexer glr;
+  rwlShiftTerminals tokenKindDesc tokType tokSval glr;
 
   (* error? *)
   if Arraystack.is_empty glr.topmostParsers then (
-    printParseErrorMessage tokenKindDesc Lexerint.(lexer.tokType) glr !lastToDie;
+    printParseErrorMessage tokenKindDesc tokType glr !lastToDie;
     false
   ) else (
     true
   )
 
 
-let cleanupAfterParse glr =
+let cleanupAfterParse (glr : 'result glr) : 'result option =
   if traceParse then
     Printf.printf "Parse succeeded!\n";
 
@@ -1042,7 +1037,7 @@ let cleanupAfterParse glr =
     arr.(1) <- grabTopSval glr.userAct last;            (* EOF's sval *)
 
     (* reduce *)
-    let treeTop = reductionAction glr.userAct glr.tables.finalProductionIndex arr in
+    let treeTop = SemanticValue.obj (reductionAction glr.userAct glr.tables.finalProductionIndex arr) in
 
     (* before pool goes away.. *)
     Arraystack.iter decRefCt glr.topmostParsers;
@@ -1134,25 +1129,34 @@ let stackSummary glr =
 
 
 (* pulled out so I can use this block of statements in several places *)
-let glrParseToken tokenKindDesc glr getToken lexer =
-  if not (nondeterministicParseToken tokenKindDesc lexer glr) then
+let glrParseToken tokenKindDesc glr getToken token =
+  let open Lexerint in
+
+  (* grab current token since we'll need it and the access
+   * isn't all that fast here in ML *)
+  let { tokType; tokSval } = token in
+
+  if not (nondeterministicParseToken tokenKindDesc tokType tokSval glr) then
     raise Exit;              (* "return false" *)
 
   (* goto label: getNextToken *)
   (* last token? *)
-  if Lexerint.(lexer.tokType) = 0 then
+  if tokType = 0 then
     raise End_of_file;       (* "break" *)
 
   (* get the next token *)
-  getToken lexer
+  getToken token
 
 
-let rec lrParseToken tokenKindDesc glr lr getToken lexer =
+let rec lrParseToken tokenKindDesc glr lr getToken token =
+  let open Lexerint in
+
   let parsr = ref (Arraystack.top glr.topmostParsers) in
   assert (!parsr.referenceCount = 1);
 
-  let tok = Lexerint.(lexer.tokType) in
-  let action = getActionEntry_noError glr.tables !parsr.state tok in
+  let { tokType; tokSval } = token in
+
+  let action = getActionEntry_noError glr.tables !parsr.state tokType in
 
   if isReduceAction action then (
     if accounting then
@@ -1234,7 +1238,7 @@ let rec lrParseToken tokenKindDesc glr lr getToken lexer =
 
       (* does the user want to keep it? *)
       if use_keep && not (keepNontermValue glr.userAct lhsIndex sval) then (
-        printParseErrorMessage tokenKindDesc Lexerint.(lexer.tokType) glr newNode.state;
+        printParseErrorMessage tokenKindDesc tokType glr newNode.state;
         if accounting then (
           glr.stats.detShift  <- glr.stats.detShift  + lr.lrDetShift;
           glr.stats.detReduce <- glr.stats.detReduce + lr.lrDetReduce;
@@ -1246,11 +1250,11 @@ let rec lrParseToken tokenKindDesc glr lr getToken lexer =
       (* we have not shifted a token, so again try to use
        * the deterministic core *)
       (* "goto tryDeterministic;" *)
-      lrParseToken tokenKindDesc glr lr getToken lexer
+      lrParseToken tokenKindDesc glr lr getToken token
 
     ) else (
       (* deterministic depth insufficient: use GLR *)
-      glrParseToken tokenKindDesc glr getToken lexer
+      glrParseToken tokenKindDesc glr getToken token
     )
 
   ) else if isShiftAction glr.tables action then (
@@ -1258,12 +1262,12 @@ let rec lrParseToken tokenKindDesc glr lr getToken lexer =
       lr.lrDetShift <- lr.lrDetShift + 1;
 
     (* can shift unambiguously *)
-    let newState = decodeShift action tok in
+    let newState = decodeShift action tokType in
 
     if traceParse then (
       Printf.printf "state %d, (unambig) shift token %d, to state %d\n"
                     !parsr.state
-                    tok
+                    tokType
                     newState;
       flush stdout;
     );
@@ -1274,7 +1278,7 @@ let rec lrParseToken tokenKindDesc glr lr getToken lexer =
       makeStackNode glr newState
     in
 
-    addFirstSiblingLink_noRefCt rightSibling !parsr Lexerint.(lexer.sval);
+    addFirstSiblingLink_noRefCt rightSibling !parsr tokSval;
 
     (* replace 'parsr' with 'rightSibling' *)
     Arraystack.setElt glr.topmostParsers 0 rightSibling;
@@ -1287,22 +1291,25 @@ let rec lrParseToken tokenKindDesc glr lr getToken lexer =
     (* get next token *)
     (* "goto getNextToken;" *)
     (* last token? *)
-    if Lexerint.(lexer.tokType) = 0 then
+    if tokType = 0 then
       raise End_of_file;       (* "break" *)
 
     (* get the next token *)
-    lrParseToken tokenKindDesc glr lr getToken (getToken lexer)
+    lrParseToken tokenKindDesc glr lr getToken (getToken token)
 
   ) else (
     (* error or ambig; not deterministic *)
-    glrParseToken tokenKindDesc glr getToken lexer
+    glrParseToken tokenKindDesc glr getToken token
   )
 
 
-let rec main_loop tokenKindDesc glr lr getToken lexer =
+let rec main_loop tokenKindDesc glr lr getToken token =
   if traceParse then (
+    let open Lexerint in
+    let tokType = token.tokType in
+
     Printf.printf "---- processing token %s, %d active parsers ----\n"
-                   (tokenKindDesc Lexerint.(lexer.tokType))
+                   (tokenKindDesc tokType)
                    (Arraystack.length glr.topmostParsers);
     Printf.printf "Stack:%s\n" (stackSummary glr);
     flush stdout
@@ -1313,15 +1320,15 @@ let rec main_loop tokenKindDesc glr lr getToken lexer =
   (* see elkhound/glr.cc for more details *)
   if use_mini_lr && Arraystack.length glr.topmostParsers = 1 then 
     (* try deterministic parsing *)
-    main_loop tokenKindDesc glr lr getToken (lrParseToken tokenKindDesc glr lr getToken lexer)
+    main_loop tokenKindDesc glr lr getToken (lrParseToken tokenKindDesc glr lr getToken token)
   else
     (* mini lr core disabled, use full GLR *)
-    main_loop tokenKindDesc glr lr getToken (glrParseToken tokenKindDesc glr getToken lexer)
+    main_loop tokenKindDesc glr lr getToken (glrParseToken tokenKindDesc glr getToken token)
 
 
 (* buildParserIndex goes here *)
 
-let glrParse glr tokenKindDesc getToken lexer =
+let glrParse glr tokenKindDesc getToken token =
   glr.globalNodeColumn <- 0;
   begin
     let first = makeStackNode glr 0(*startState*) in
@@ -1340,7 +1347,7 @@ let glrParse glr tokenKindDesc getToken lexer =
 
     (* this loop never returns normally *)
     Valgrind.Callgrind.instrumented
-      (main_loop tokenKindDesc glr lr getToken) (getToken lexer)
+      (main_loop tokenKindDesc glr lr getToken) (getToken token)
 
   with
   | Exit ->

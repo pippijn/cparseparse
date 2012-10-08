@@ -19,14 +19,14 @@ let project : SemanticValue.t -> tPTreeNode = Obj.magic
 let getToken actions underlying lex =
   let open UserActions in
   (* get next token *)
-  underlying lex;
+  let lex = underlying lex in
   (* my sval is a tree leaf *)
-  lex.sval <- inject (makePTreeNode (actions.terminalName lex.tokType));
+  lex.tokSval <- inject (makePTreeNode (actions.terminalName lex.tokType));
   lex
 
 
 (* ----------------------- parseTreeActions ------------------------ *)
-let makeParseTreeActions underlying tables =
+let makeParseTreeActions underlying tables : tPTreeNode UserActions.t =
   UserActions.({
     (* action to perform upon performing a reduction *)
     reductionAction = (

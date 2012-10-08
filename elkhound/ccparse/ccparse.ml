@@ -35,21 +35,11 @@ let tokenKindDesc kind =
   Cc_tokens.token_desc (Obj.magic kind)
 
 
-let glrparse glr actions lexer getToken lexbuf =
+let glrparse glr lexer getToken lexbuf =
   let open Lexerint in
 
-  let ptree = !Options._ptree in
-  let print = !Options._print in
-
-  let getToken =
-    if ptree then
-      Ptreeact.getToken actions getToken
-    else
-      getToken
-  in
-
   let tree =
-    let lex = { tokType = 0; sval = SemanticValue.null } in
+    let lex = { tokType = 0; tokSval = SemanticValue.null } in
 
     match Glr.glrParse glr tokenKindDesc getToken lex with
     | Some tree ->
@@ -77,14 +67,12 @@ let glrparse glr actions lexer getToken lexbuf =
     Printf.printf "nondetReduce: %d\n" glr.stats.nondetReduce;
   end;
 
-  if ptree && print then
-    let t = Ptreeact.project tree in
-    Ptreenode.printTree t stdout true
+  tree
 
 
 let rec tokenise token lexbuf =
   if token lexbuf = Cc_tokens.TOK_EOF then
-    ()
+    raise (ExitStatus 0)
   else
     tokenise token lexbuf
 
@@ -99,60 +87,88 @@ let parse glr actions cin lexer =
     lex
   in
 
+  let getToken =
+    if !Options._ptree then
+      Ptreeact.getToken actions getToken
+    else
+      getToken
+  in
+
   if !Options._tokens then
     tokenise lexer.token lexbuf
   else
-    glrparse glr actions lexer getToken lexbuf
+    glrparse glr lexer getToken lexbuf
 
 
-let tables, actions =
-  (*
-  if true then
-    Cc.ccParseTables, Cc.ccUserActions
+let parse_utf8 glr actions cin =
+  let open Lexerint in
+  parse glr actions cin {
+    from_channel = Lexing.from_channel;
+    lexeme = Lexing.lexeme;
+    lexeme_start = Lexing.lexeme_start;
+
+    token = Lexer.token;
+    line = Lexer.line;
+  }
+
+
+let parse_ascii glr actions cin =
+  let open Lexerint in
+  parse glr actions cin {
+    from_channel = Ulexing.from_utf8_channel;
+    lexeme = Ulexing.utf8_lexeme;
+    lexeme_start = Ulexing.lexeme_start;
+
+    token = Ulexer.token;
+    line = Ulexer.line;
+  }
+
+
+let parse_channel glr actions cin =
+  if !Options._utf8 then
+    parse_utf8 glr actions cin
   else
-  *)
-    CcTables.parseTables, CcActions.userActions
+    parse_ascii glr actions cin
 
-let elkmain () =
-  let actions =
-    if !Options._ptree then
-      Ptreeact.makeParseTreeActions actions tables
-    else
-      actions
-  in
-  let glr = Glr.makeGLR tables actions in
 
-  List.iter (fun input ->
-    let cin = Unix.open_process_in ("gcc -I /usr/include/qt4 -xc++ -E -P " ^ input) in
+let parse_file glr actions input =
+  let cin = Unix.open_process_in ("gcc -I /usr/include/qt4 -xc++ -E -P " ^ input) in
 
-    begin try
-      let open Lexerint in
-      if !Options._utf8 then
-        parse glr actions cin {
-          from_channel = Lexing.from_channel;
-          lexeme = Lexing.lexeme;
-          lexeme_start = Lexing.lexeme_start;
-
-          token = Lexer.token;
-          line = Lexer.line;
-        }
-      else
-        parse glr actions cin {
-          from_channel = Ulexing.from_utf8_channel;
-          lexeme = Ulexing.utf8_lexeme;
-          lexeme_start = Ulexing.lexeme_start;
-
-          token = Ulexer.token;
-          line = Ulexer.line;
-        }
+  let tree =
+    try
+      parse_channel glr actions cin
     with
     | e ->
         handle_return (Unix.close_process_in cin);
         raise e
-    end;
-    handle_return (Unix.close_process_in cin)
+  in
+  handle_return (Unix.close_process_in cin);
+  tree
 
-  ) !inputs
+
+let parse_files actions tables =
+  let glr = Glr.makeGLR tables actions in
+
+  List.map (parse_file glr actions) !inputs
+
+
+let elkmain () =
+  let actions = CcActions.userActions in
+  let tables  = CcTables.parseTables in
+
+  if !Options._ptree then (
+
+    let actions = Ptreeact.makeParseTreeActions actions tables in
+    let trees = parse_files actions tables in
+    List.iter (fun tree ->
+      if !Options._print then
+        Ptreenode.printTree tree stdout true
+    ) trees
+
+  ) else (
+    (* unit list list *)
+    List.iter (List.iter (fun () -> ())) (parse_files actions tables)
+  )
 
 
 let () =
