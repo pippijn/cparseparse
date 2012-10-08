@@ -1,4 +1,3 @@
-# -*- conf -*-
 OASISFormat:                    0.2
 OCamlVersion:                   >= 3.12
 Name:                           elkhound
