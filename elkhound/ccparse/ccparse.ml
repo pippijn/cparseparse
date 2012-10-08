@@ -35,17 +35,13 @@ let handle_return = function
       raise (ExitStatus 1)
 
 
-let tokenKindDesc kind =
-  Cc_tokens.token_desc (Obj.magic kind)
-
-
 let glrparse glr getToken =
   let open Lexerint in
 
   let tree =
     let lex = { tokType = 0; tokSval = SemanticValue.null } in
 
-    match Glr.glrParse glr tokenKindDesc getToken lex with
+    match Glr.glrParse glr getToken lex with
     | Some tree ->
         tree
     | None ->
@@ -70,10 +66,13 @@ let glrparse glr getToken =
 
 let rec tokenise tokens token lexbuf =
   let next = token lexbuf in
-  if next == Cc_tokens.TOK_EOF then
+  if next == Cc_tokens.TOK_EOF then (
+    Printf.printf "%d tokens\n" (List.length tokens);
+    flush stdout;
     List.rev (next :: tokens)
-  else
+  ) else (
     tokenise (next :: tokens) token lexbuf
+  )
 
 
 let parse glr actions cin lexer =
@@ -83,7 +82,7 @@ let parse glr actions cin lexer =
 
   let getToken =
     if !Options._pp then
-      let tokens = ref (tokenise [] lexer.token lexbuf) in
+      let tokens = ref (Timing.time "tokenisation" (tokenise [] lexer.token) lexbuf) in
       fun lex ->
         lex.tokType <- Cc_tokens.token_index (List.hd !tokens);
         tokens := List.tl !tokens;
@@ -104,7 +103,7 @@ let parse glr actions cin lexer =
   if !Options._tokens then
     raise Exit;
 
-  glrparse glr getToken
+  Timing.time "parsing" (glrparse glr) getToken
 
 
 let parse_utf8 glr actions cin =
@@ -153,8 +152,12 @@ let parse_file glr actions input =
   tree
 
 
+let tokenKindDesc kind =
+  Cc_tokens.token_desc (Obj.magic kind)
+
+
 let parse_files actions tables inputs =
-  let glr = Glr.makeGLR tables actions in
+  let glr = Glr.makeGLR actions tables tokenKindDesc in
 
   List.map (parse_file glr actions) inputs
 

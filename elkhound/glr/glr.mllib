@@ -1,12 +1,12 @@
 # OASIS_START
-# DO NOT EDIT (digest: 560dfd2520debb4952600b65af90be69)
+# DO NOT EDIT (digest: 0e4cf910037124119d7576c27dc7f62e)
 Arraystack
 Glr
 Lexerint
 Objpool
 ParseTables
+ParseTablesType
 PtreeActions
 PtreeNode
-Smutil
 UserActions
 # OASIS_STOP

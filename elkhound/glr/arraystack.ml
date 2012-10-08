@@ -4,18 +4,12 @@
 
 (* grow an array *)
 let growArray arr newLen =
-  let newArr = Array.make newLen (Obj.magic ()) in
-
-  (* copy *)
-  Array.blit
-    arr                   (* source array *)
-    0                     (* source start position *)
-    newArr                (* dest array *)
-    0                     (* dest start position *)
-    (Array.length arr);   (* number of elements to copy *)
-
-  (* return new array *)
-  newArr
+  Array.init newLen (fun i ->
+    if i < Array.length arr then
+      arr.(i)
+    else
+      Obj.magic ()
+  )
 
 
 type 'a t = {
@@ -55,12 +49,12 @@ let push obj rep =
 
 
 (* get arbitrary element *)
-let elt { arr } i =
+let nth { arr } i =
   arr.(i)
 
 
 (* set arbitrary element *)
-let setElt { arr } i v =
+let set { arr } i v =
   arr.(i) <- v
 
 
@@ -73,7 +67,6 @@ let iter f rep =
 
 (* search and return the element index, or -1 for not found *)
 let findIndex f rep =
-  (* ug.. must use tail recursion just so I can break early... *)
   let index = ref (-1) in
   begin
     try
@@ -85,26 +78,34 @@ let findIndex f rep =
       done
     with Exit -> ()
   end;
-
   !index
 
 
 (* search and return the element, or None *)
-let findOption f rep =
+let find f rep =
   let idx = findIndex f rep in
   if idx < 0 then
     None                 (* not found *)
   else
     Some rep.arr.(idx)   (* found *)
-
-
-(* search *)
-let contains f rep =
-  findIndex f rep >= 0
+  (* XXX: inlined does not seem to be worth it
+  let ret = ref None in
+  begin
+    try
+      for i = 0 to rep.len - 1 do
+        if f rep.arr.(i) then (
+          ret := Some rep.arr.(i);
+          raise Exit
+        )
+      done
+    with Exit -> ()
+  end;
+  !ret
+  *)
 
 
 (* swap contents with another array stack *)
-let swapWith rep obj =
+let swap rep obj =
   let tmpLen = rep.len in
   let tmpArr = rep.arr in
 
@@ -118,6 +119,3 @@ let swapWith rep obj =
 (* the stack must be given a dummy value for unused array slots *)
 let create () =
   { len = 0; arr = Array.make 16 (Obj.magic ()); }
-
-
-(* EOF *)

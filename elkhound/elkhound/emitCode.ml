@@ -445,11 +445,11 @@ let emit_ml_tables out dcl dat tables =
   TablePrinting.dump_tables dat tables;
 
   emit_ml_prologue dcl;
-  output_endline dcl "val parseTables : ParseTables.t";
+  output_endline dcl "val parseTables : ParseTablesType.t";
 
   emit_ml_prologue out;
   if true then (
-    output_endline out "let parseTables : ParseTables.t = Marshal.from_channel (open_in_bin \"_build/ccparse/gr/ccTables.dat\")";
+    output_endline out "let parseTables : ParseTablesType.t = Marshal.from_channel (open_in_bin \"_build/ccparse/gr/ccTables.dat\")";
   ) else (
     TablePrinting.print_tables out tables
   )

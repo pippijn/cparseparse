@@ -52,12 +52,13 @@ Library glr
                                 Lexerint,
                                 Objpool,
                                 ParseTables,
+                                ParseTablesType,
                                 PtreeActions,
                                 PtreeNode,
                                 UserActions
         CompiledObject:         native
-#        NativeOpt:              -inline 999 -unsafe -noassert -nodynlink
-        NativeOpt:              -inline 0
+        NativeOpt:              -inline 999 -unsafe -noassert -nodynlink
+#        NativeOpt:              -inline 0
 
 
 Library baselib

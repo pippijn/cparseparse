@@ -1,8 +1,8 @@
-open ParseTables
+open ParseTablesType
 open AnalysisEnvType
 
 type temp = {
-  tables : ParseTables.t;
+  tables : ParseTablesType.t;
   ambig_table : int Stack.t;
 }
 

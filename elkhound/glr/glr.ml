@@ -1,11 +1,9 @@
-(* glr.ml *)
 (* GLR parser *)
-(* based on elkhound/glr.h and elkhound/glr.cc *)
 
-open ParseTables     (* action/goto/etc. *)
+open ParseTablesType
 
 
-(* some random utilities I think should be built in to the language *)
+(* some random utilities *)
 let getSome = function
   | None -> failwith "getSome applied to None"
   | Some v -> v
@@ -34,10 +32,6 @@ let use_mini_lr = true
 (* NOTE: in some cases, more detailed comments can be found in
  * elkhound/glr.h, as these data structures mirror the ones
  * defined there *)
-
-
-(* identifier for a symbol *)
-type symbol_id = int
 
 
 type statistics = {
@@ -126,7 +120,7 @@ and 'result reduction_path_queue = {
   pathPool : 'result path Objpool.t;
 
   (* need our own copy of the tables pointer *)
-  rpqTables : ParseTables.t;      (* name can't collide with glr.tables.. ! *)
+  rpqTables : ParseTablesType.t;      (* name can't collide with glr.tables.. ! *)
 }
 
 
@@ -137,7 +131,10 @@ and 'result glr = {
   userAct : 'result UserActions.t;
 
   (* parse tables from the grammar *)
-  tables : ParseTables.t;
+  tables : ParseTablesType.t;
+
+  (* token kind to string for error messages *)
+  tokenKindDesc : term_index -> string;
 
   (* treat this as a local variable of rwlProcessWorklist, included
    * here just to avoid unnecessary repeated allocation *)
@@ -220,20 +217,20 @@ let duplicateSemanticValue userAct sym sval =
    * that can be here in the ML version, and I'm not convinced the
    * check would even be safe *)
 
-  if symIsTerm sym then
-    duplicateTerminalValue userAct (symAsTerm sym) sval
+  if ParseTables.symIsTerm sym then
+    duplicateTerminalValue userAct (ParseTables.symAsTerm sym) sval
   else
-    duplicateNontermValue userAct (symAsNonterm sym) sval
+    duplicateNontermValue userAct (ParseTables.symAsNonterm sym) sval
 
 
 let deallocateSemanticValue userAct sym sval =
   let open UserActions in
   assert (sym <> 0);
 
-  if symIsTerm sym then
-    userAct.deallocateTerminalValue (symAsTerm sym) sval
+  if ParseTables.symIsTerm sym then
+    userAct.deallocateTerminalValue (ParseTables.symAsTerm sym) sval
   else
-    userAct.deallocateNontermValue (symAsNonterm sym) sval
+    userAct.deallocateNontermValue (ParseTables.symAsNonterm sym) sval
 
 
 (* --------------------- SiblingLink ----------------------- *)
@@ -423,19 +420,20 @@ let makePath () = {
 }
 
 
-let makeReductionPathQueue tablesIn = {
+let makeReductionPathQueue tables = {
   top = None;
   pathPool = Objpool.make makePath;
-  rpqTables = tablesIn;
+  rpqTables = tables;
 }
 
 
-let makeGLR tablesIn actions =
+let makeGLR userAct tables tokenKindDesc =
   let glr = {
-    userAct             = actions;
-    tables              = tablesIn;
+    userAct;
+    tables;
+    tokenKindDesc;
     toPass              = Array.make cMAX_RHSLEN SemanticValue.null;
-    pathQueue           = makeReductionPathQueue tablesIn;
+    pathQueue           = makeReductionPathQueue tables;
     topmostParsers      = Arraystack.create ();
     prevTopmost         = Arraystack.create ();
     stackNodePool       = Objpool.null ();
@@ -470,7 +468,7 @@ let makeGLR tablesIn actions =
   if use_mini_lr then
     (* check that none of the productions exceed cMAX_RHSLEN *)
     for i = 0 to glr.tables.numProds - 1 do
-      let len = getProdInfo_rhsLen glr.tables i in
+      let len = ParseTables.getProdInfo_rhsLen glr.tables i in
 
       if len > cMAX_RHSLEN then (
         (* I miss token concatenation...*)
@@ -484,16 +482,9 @@ let makeGLR tablesIn actions =
   glr
 
 
-(* printConfig goes here *)
-
-let grabTopSval userAct node =
-  let sib = getUniqueLink node in
-  let ret = sib.sval in
-  sib.sval <- duplicateSemanticValue userAct (getNodeSymbol node) sib.sval;
-
-  (* TRSACTION("dup'd " << ret << " for top sval, yielded " << sib->sval); *)
-
-  ret
+(**********************************************************
+ * :: RWL algorithm
+ **********************************************************)
 
 
 (* macro in C++ version *)
@@ -546,19 +537,19 @@ let goesBefore queue p1 p2 =
     false
   ) else (
     (* equal start columns, compare nonterm ids *)
-    let p1NtIndex = getProdInfo_lhsIndex queue.rpqTables p1.prodIndex in
-    let p2NtIndex = getProdInfo_lhsIndex queue.rpqTables p2.prodIndex in
+    let p1NtIndex = ParseTables.getProdInfo_lhsIndex queue.rpqTables p1.prodIndex in
+    let p2NtIndex = ParseTables.getProdInfo_lhsIndex queue.rpqTables p2.prodIndex in
 
     (* check nonterm order *)
-    let ord1 = getNontermOrdinal queue.rpqTables p1NtIndex in
-    let ord2 = getNontermOrdinal queue.rpqTables p2NtIndex in
+    let ord1 = ParseTables.getNontermOrdinal queue.rpqTables p1NtIndex in
+    let ord2 = ParseTables.getNontermOrdinal queue.rpqTables p2NtIndex in
 
     ord1 < ord2
   )
 
 
 let insertPathCopy queue src leftEdge =
-  let rhsLen = getProdInfo_rhsLen queue.rpqTables src.prodIndex in
+  let rhsLen = ParseTables.getProdInfo_rhsLen queue.rpqTables src.prodIndex in
 
   (* make a new node *)
   let p = Objpool.alloc queue.pathPool in
@@ -647,10 +638,10 @@ and rwlRecursiveEnqueue glr
 
 
 let rwlEnqueueReduceAction glr parsr action mustUseLink =
-  let prodIndex = decodeReduce (*tables*) action parsr.state in
+  let prodIndex = ParseTables.decodeReduce (*tables*) action parsr.state in
 
   (* production info *)
-  let rhsLen = getProdInfo_rhsLen glr.tables prodIndex in
+  let rhsLen = ParseTables.getProdInfo_rhsLen glr.tables prodIndex in
   assert (rhsLen >= 0);       (* paranoia *)
 
   (* make a prototype path; used to control recursion *)
@@ -667,19 +658,19 @@ let rwlEnqueueReduceAction glr parsr action mustUseLink =
 let rec rwlEnqueueReductions glr parsr action mustUseLink =
   assert (checkLocalInvariants parsr);
 
-  if isShiftAction glr.tables action then (
+  if ParseTables.isShiftAction glr.tables action then (
     (* do nothing, only looking for reductions *)
     1
-  ) else if isReduceAction (*tables*) action then (
+  ) else if ParseTables.isReduceAction (*tables*) action then (
     rwlEnqueueReduceAction glr parsr action mustUseLink;
 
     1
-  ) else if isErrorAction (*tables*) action then (
+  ) else if ParseTables.isErrorAction (*tables*) action then (
     (* parser just dies *)
     0
   ) else (
     (* ambiguous; check for reductions in list of actions *)
-    let firstEntry = decodeAmbigAction glr.tables action parsr.state in
+    let firstEntry = ParseTables.decodeAmbigAction glr.tables action parsr.state in
     let numEntries = glr.tables.ambigTable.(firstEntry) in
 
     for i = 1 to numEntries do
@@ -703,19 +694,18 @@ let dequeue queue =
 
 let findTopmostParser glr state =
   (* always using the *not* USE_PARSER_INDEX case *)
-  Arraystack.findOption (fun n -> n.state = state) glr.topmostParsers
+  Arraystack.find (fun n -> n.state = state) glr.topmostParsers
 
 
-let canMakeProgress tokType glr parsr =
-  let entry = getActionEntry glr.tables parsr.state tokType in
+let canMakeProgress glr tokType parsr =
+  let entry = ParseTables.getActionEntry glr.tables parsr.state tokType in
 
-  isShiftAction glr.tables entry
-    || isReduceAction (*tables*) entry
-    || not (isErrorAction (*tables*) entry)
+  ParseTables.isShiftAction glr.tables entry
+    || ParseTables.isReduceAction (*tables*) entry
+    || not (ParseTables.isErrorAction (*tables*) entry)
 
 
-(* ------------------------ RWL algorithm ------------------------- *)
-let rwlShiftActive tokType glr leftSibling rightSibling lhsIndex sval =
+let rwlShiftActive glr tokType leftSibling rightSibling lhsIndex sval =
   match (getLinkTo rightSibling leftSibling) with
   | Some sibLink ->
       (* we already have a sibling link, don't need a new one *)
@@ -727,7 +717,7 @@ let rwlShiftActive tokType glr leftSibling rightSibling lhsIndex sval =
        *)
 
       (* dead tree optimization *)
-      if not (canMakeProgress tokType glr rightSibling) then (
+      if not (canMakeProgress glr tokType rightSibling) then (
         if traceParse then
           Printf.printf "avoided a merge by noticing the state was dead\n";
         deallocateSemanticValue glr.userAct (getNodeSymbol rightSibling) sval;
@@ -768,7 +758,7 @@ let rwlShiftActive tokType glr leftSibling rightSibling lhsIndex sval =
       Some sibLink
 
 
-let rwlShiftNew tokType glr leftSibling rightSiblingState sval =
+let rwlShiftNew glr tokType leftSibling rightSiblingState sval =
   (* not already active parser in this state, so make one *)
   let rightSibling = makeStackNode glr rightSiblingState in
 
@@ -779,17 +769,17 @@ let rwlShiftNew tokType glr leftSibling rightSiblingState sval =
   addTopmostParser glr rightSibling;
 
   (* enqueue this new parser's reductions *)
-  let action = getActionEntry glr.tables rightSibling.state tokType in
+  let action = ParseTables.getActionEntry glr.tables rightSibling.state tokType in
   ignore (rwlEnqueueReductions glr rightSibling action None(*siblink*));
 
   (* caller doesn't need to do anything more *)
   None
 
 
-let rwlShiftNonterminal tokType glr leftSibling lhsIndex sval =
+let rwlShiftNonterminal glr tokType leftSibling lhsIndex sval =
   (* consult goto table to find where to go upon "shifting" the nonterminal *)
   let rightSiblingState =
-    decodeGoto (getGotoEntry glr.tables leftSibling.state lhsIndex) lhsIndex
+    ParseTables.getGoto glr.tables leftSibling.state lhsIndex
   in
 
   if traceParse then
@@ -798,20 +788,20 @@ let rwlShiftNonterminal tokType glr leftSibling lhsIndex sval =
   (* is there already an active parser with this state? *)
   match findTopmostParser glr rightSiblingState with
   | Some rightSibling ->
-      rwlShiftActive tokType glr leftSibling rightSibling lhsIndex sval
+      rwlShiftActive glr tokType leftSibling rightSibling lhsIndex sval
 
   | None ->
-      rwlShiftNew tokType glr leftSibling rightSiblingState sval
+      rwlShiftNew glr tokType leftSibling rightSiblingState sval
 
 
-let rwlProcessWorklist tokType glr =
+let rwlProcessWorklist glr tokType =
   while (queueIsNotEmpty glr.pathQueue) do
     (* process enabled reductions in priority order *)
     let path = dequeue glr.pathQueue in
 
     (* production info *)
-    let rhsLen   = getProdInfo_rhsLen   glr.tables path.prodIndex in
-    let lhsIndex = getProdInfo_lhsIndex glr.tables path.prodIndex in
+    let rhsLen   = ParseTables.getProdInfo_rhsLen   glr.tables path.prodIndex in
+    let lhsIndex = ParseTables.getProdInfo_lhsIndex glr.tables path.prodIndex in
 
     if traceParse then
       Printf.printf "state %d, reducing by production %d (rhsLen=%d), back to state %d\n"
@@ -846,12 +836,12 @@ let rwlProcessWorklist tokType glr =
       (* cancelled; drop on floor *)
     ) else (
       (* shift the nonterminal, sval *)
-      let newLink = rwlShiftNonterminal tokType glr path.leftEdgeNode lhsIndex sval in
+      let newLink = rwlShiftNonterminal glr tokType path.leftEdgeNode lhsIndex sval in
 
       if newLink != None then
         (* for each 'finished' parser, enqueue actions enabled by the new link *)
         Arraystack.iter (fun parsr ->
-          let action = getActionEntry glr.tables parsr.state tokType in
+          let action = ParseTables.getActionEntry glr.tables parsr.state tokType in
           ignore (rwlEnqueueReductions glr parsr action newLink)
         ) glr.topmostParsers
     );
@@ -862,12 +852,44 @@ let rwlProcessWorklist tokType glr =
   done
 
 
-let rwlShiftTerminals tokenKindDesc tokType tokSval glr =
+let rwlFindShift tables tokType action state =
+  (* consult action table, looking for shifts *)
+  if ParseTables.isShiftAction tables action then (
+    (* unambiguous shift *)
+    ParseTables.decodeShift (*tables*) action tokType
+  ) else if ParseTables.isReduceAction (*tables*) action
+         || ParseTables.isErrorAction (*tables*) action then (
+    (* unambiguous reduction or error *)
+    cSTATE_INVALID
+  ) else (
+    (* nondeterministic *)
+    let firstEntry = ParseTables.decodeAmbigAction tables action state in
+    let numEntries = tables.ambigTable.(firstEntry) in
+
+    let newState = ref cSTATE_INVALID in
+    let i = ref 1 in
+    while !i <> numEntries do
+      let action = tables.ambigTable.(firstEntry + !i) in
+      incr i;
+      if ParseTables.isShiftAction tables action then (
+        (* a shift was among the conflicted actions *)
+        newState := ParseTables.decodeShift (*tables*) action tokType;
+
+        (* "break" *)
+        i := numEntries
+      )
+    done;
+
+    !newState
+  )
+
+
+let rwlShiftTerminals glr tokType tokSval =
   glr.globalNodeColumn <- glr.globalNodeColumn + 1;
 
   (* move all parsers from 'topmostParsers' to 'prevTopmost' *)
   assert (Arraystack.is_empty glr.prevTopmost);
-  Arraystack.swapWith glr.prevTopmost glr.topmostParsers;
+  Arraystack.swap glr.prevTopmost glr.topmostParsers;
   assert (Arraystack.is_empty glr.topmostParsers);
 
   (* for token multi-yield.. *)
@@ -878,40 +900,15 @@ let rwlShiftTerminals tokenKindDesc tokType tokSval glr =
      * from 'prevTopmost' to (local variable) 'leftSibling' *)
     let leftSibling = Arraystack.pop glr.prevTopmost in
     assert (leftSibling.referenceCount >= 1);   (* for the local *)
+    let state = leftSibling.state in
 
     (* can this parser shift? *)
-    let action = getActionEntry glr.tables leftSibling.state tokType in
+    let action = ParseTables.getActionEntry glr.tables state tokType in
 
     (* if we find a shift, this will be set to something valid *)
-    let newState = ref cSTATE_INVALID in
+    let newState = rwlFindShift glr.tables tokType action state in
 
-    (* consult action table, looking for shifts *)
-    if isShiftAction glr.tables action then (
-      (* unambiguous shift *)
-      newState := (decodeShift (*tables*) action tokType);
-    ) else if isReduceAction (*tables*) action
-           || isErrorAction (*tables*) action then (
-      (* unambiguous reduction or error *)
-    ) else (
-      (* nondeterministic *)
-      let firstEntry = decodeAmbigAction glr.tables action leftSibling.state in
-      let numEntries = glr.tables.ambigTable.(firstEntry) in
-
-      let i = ref 1 in
-      while !i <> numEntries do
-        let action = glr.tables.ambigTable.(firstEntry + !i) in
-        incr i;
-        if isShiftAction glr.tables action then (
-          (* a shift was among the conflicted actions *)
-          newState := decodeShift (*tables*) action tokType;
-
-          (* "break" *)
-          i := numEntries
-        )
-      done
-    );
-
-    if !newState <> cSTATE_INVALID then (
+    if newState <> cSTATE_INVALID then (
       (* found a shift *)
 
       if accounting then
@@ -919,19 +916,19 @@ let rwlShiftTerminals tokenKindDesc tokType tokSval glr =
 
       if traceParse then
         Printf.printf "state %d, shift token %s, to state %d\n"
-                       leftSibling.state
-                       (tokenKindDesc tokType)
-                       !newState;
+                       state
+                       (glr.tokenKindDesc tokType)
+                       newState;
 
       (* already a parser in this state? *)
       let rightSibling =
-        match findTopmostParser glr !newState with
+        match findTopmostParser glr newState with
         | Some rs ->
             (* use existing *)
             rs
         | None ->
             (* must make a new stack node *)
-            let rs = makeStackNode glr !newState in
+            let rs = makeStackNode glr newState in
             (* add it to active parsers *)
             addTopmostParser glr rs;
             (* use new *)
@@ -963,16 +960,20 @@ let rwlShiftTerminals tokenKindDesc tokType tokSval glr =
   done
 
 
-let printParseErrorMessage tokenKindDesc tokType glr lastToDie =
+(**********************************************************
+ * :: Non-deterministic parser core
+ **********************************************************)
+
+let printParseErrorMessage glr tokType lastToDie =
   if not glr.noisyFailedParse then
     ()
   else begin
-    if not (lastToDie = cSTATE_INVALID) then (
+    if lastToDie <> cSTATE_INVALID then (
       Printf.printf "In state %d, I expected one of these tokens:\n" lastToDie;
       for i = 0 to glr.tables.numTerms - 1 do
-        let act = getActionEntry glr.tables lastToDie i in
-        if not (isErrorAction (*tables*) act) then
-          Printf.printf "  [%d] %s\n" i (tokenKindDesc i);
+        let act = ParseTables.getActionEntry glr.tables lastToDie i in
+        if not (ParseTables.isErrorAction (*tables*) act) then
+          Printf.printf "  [%d] %s\n" i (glr.tokenKindDesc i);
       done
     ) else (
       Printf.printf "(expected-token info not available due to nondeterministic mode\n"
@@ -980,16 +981,16 @@ let printParseErrorMessage tokenKindDesc tokType glr lastToDie =
 
     Printf.printf (*loc*) "Parse error (state %d) at %s\n"
                   lastToDie
-                  (tokenKindDesc tokType);
+                  (glr.tokenKindDesc tokType);
   end
 
 
-let nondeterministicParseToken tokenKindDesc tokType tokSval glr =
+let nondeterministicParseToken glr tokType tokSval =
   let lastToDie = ref cSTATE_INVALID in
 
   (* seed the reduction worklist by analyzing the top nodes *)
   Arraystack.iter (fun parsr ->
-    let action = getActionEntry glr.tables parsr.state tokType in
+    let action = ParseTables.getActionEntry glr.tables parsr.state tokType in
     let actions = rwlEnqueueReductions glr parsr action None(*sibLink*) in
     
     if actions = 0 then (
@@ -1000,68 +1001,200 @@ let nondeterministicParseToken tokenKindDesc tokType tokSval glr =
   ) glr.topmostParsers;
 
   (* drop into worklist processing loop *)
-  rwlProcessWorklist tokType glr;
+  rwlProcessWorklist glr tokType;
 
   (* do all shifts last *)
-  rwlShiftTerminals tokenKindDesc tokType tokSval glr;
+  rwlShiftTerminals glr tokType tokSval;
 
   (* error? *)
   if Arraystack.is_empty glr.topmostParsers then (
-    printParseErrorMessage tokenKindDesc tokType glr !lastToDie;
+    printParseErrorMessage glr tokType !lastToDie;
     false
   ) else (
     true
   )
 
 
-let cleanupAfterParse (glr : 'result glr) : 'result option =
-  if traceParse then
-    Printf.printf "Parse succeeded!\n";
+(* pulled out so I can use this block of statements in several places *)
+let glrParseToken glr getToken token =
+  let open Lexerint in
 
-  if not (Arraystack.length glr.topmostParsers = 1) then (
-    Printf.printf "parsing finished with %d active parsers!\n"
-                  (Arraystack.length glr.topmostParsers);
-    None
+  (* grab current token since we'll need it and the access
+   * isn't all that fast here in ML *)
+  let { tokType; tokSval } = token in
+
+  if not (nondeterministicParseToken glr tokType tokSval) then
+    raise Exit;              (* "return false" *)
+
+  (* goto label: getNextToken *)
+  (* last token? *)
+  if tokType = 0 then
+    raise End_of_file;       (* "break" *)
+
+  (* get the next token *)
+  getToken token
+
+
+(**********************************************************
+ * :: Mini-LR core
+ **********************************************************)
+
+let rec lrParseToken glr lr getToken token =
+  let parsr = ref (Arraystack.top glr.topmostParsers) in
+  assert (!parsr.referenceCount = 1);
+
+  let tokType = Lexerint.(token.tokType) in
+
+  let action = ParseTables.getActionEntry_noError glr.tables !parsr.state tokType in
+
+  if ParseTables.isReduceAction action then (
+    (* can reduce unambiguously *)
+    let prodIndex = ParseTables.decodeReduce action !parsr.state in
+    if accounting then
+      lr.lrDetReduce <- lr.lrDetReduce + 1;
+
+    let rhsLen = ParseTables.getProdInfo_rhsLen glr.tables prodIndex in
+
+    if rhsLen <= !parsr.determinDepth then (
+      let lhsIndex = ParseTables.getProdInfo_lhsIndex glr.tables prodIndex in
+
+      let startStateId = !parsr.state in
+
+      assert (rhsLen <= cMAX_RHSLEN);
+
+      (* loop for arbitrary rhsLen *)
+      for i = rhsLen - 1 downto 0 do
+        (* grab the (only) sibling of 'parsr' *)
+        let sib = !parsr.firstSib in
+
+        (* store its semantic value in the 'toPass' array *)
+        lr.lrToPass.(i) <- sib.sval;
+
+        (* pop 'parsr' and move to next one *)
+        Objpool.dealloc glr.stackNodePool !parsr;
+        let prev = !parsr in
+        parsr := sib.sib;
+
+        assert (!parsr.referenceCount = 1);
+        assert (prev.referenceCount = 1);
+
+        (* adjust a couple things about 'prev' reflecting
+         * that it has been deallocated *)
+        if accounting then (
+          decr numStackNodesAllocd;
+        );
+        prev.firstSib.sib <- cNULL_STACK_NODE;
+
+        assert (!parsr.referenceCount = 1);
+      done;
+
+      (* call the user's action function (TREEBUILD) *)
+      let sval =
+        reductionAction glr.userAct prodIndex lr.lrToPass
+      in
+
+      (* now, do an abbreviated 'glrShiftNonterminal' *)
+      let newState =
+        ParseTables.getGoto glr.tables !parsr.state lhsIndex
+      in
+
+      if traceParse then (
+        Printf.printf "state %d, (unambig) reduce by %d (len=%d), back to %d then out to %d\n"
+                      startStateId
+                      prodIndex
+                      rhsLen
+                      !parsr.state
+                      newState;
+        flush stdout;
+      );
+
+      (* the sole reference is the 'parsr' variable *)
+      assert (!parsr.referenceCount = 1);
+
+      (* push new state *)
+      let newNode =
+        makeStackNode glr newState
+      in
+
+      addFirstSiblingLink_noRefCt newNode !parsr sval;
+
+      assert (!parsr.referenceCount = 1);
+
+      (* replace old topmost parser with 'newNode' *)
+      assert (Arraystack.length glr.topmostParsers = 1);
+      Arraystack.set glr.topmostParsers 0 newNode;
+      incRefCt newNode;
+      assert (newNode.referenceCount = 1);
+
+      (* does the user want to keep it? *)
+      if use_keep && not (keepNontermValue glr.userAct lhsIndex sval) then (
+        printParseErrorMessage glr Lexerint.(token.tokType) newNode.state;
+        if accounting then (
+          glr.stats.detShift  <- glr.stats.detShift  + lr.lrDetShift;
+          glr.stats.detReduce <- glr.stats.detReduce + lr.lrDetReduce;
+        );
+
+        raise Exit               (* "return false" *)
+      );
+
+      (* we have not shifted a token, so again try to use
+       * the deterministic core *)
+      (* "goto tryDeterministic;" *)
+      lrParseToken glr lr getToken token
+    ) else (
+      (* deterministic depth insufficient: use GLR *)
+      glrParseToken glr getToken token
+    )
+
+  ) else if ParseTables.isShiftAction glr.tables action then (
+    (* can shift unambiguously *)
+    let newState = ParseTables.decodeShift action tokType in
+    if accounting then
+      lr.lrDetShift <- lr.lrDetShift + 1;
+
+    if traceParse then (
+      Printf.printf "state %d, (unambig) shift token %d, to state %d\n"
+                    !parsr.state
+                    tokType
+                    newState;
+      flush stdout;
+    );
+
+    glr.globalNodeColumn <- glr.globalNodeColumn + 1;
+
+    let rightSibling =
+      makeStackNode glr newState
+    in
+
+    addFirstSiblingLink_noRefCt rightSibling !parsr Lexerint.(token.tokSval);
+
+    (* replace 'parsr' with 'rightSibling' *)
+    assert (Arraystack.length glr.topmostParsers = 1);
+    Arraystack.set glr.topmostParsers 0 rightSibling;
+
+    assert (!parsr.referenceCount = 1);
+    assert (rightSibling.referenceCount = 0);
+
+    rightSibling.referenceCount <- 1;
+
+    (* get next token *)
+    (* "goto getNextToken;" *)
+    (* last token? *)
+    if tokType = 0 then
+      raise End_of_file;       (* "break" *)
+
+    (* get the next token *)
+    lrParseToken glr lr getToken (getToken token)
+
   ) else (
-    let last = Arraystack.top glr.topmostParsers in
-
-    (* prepare to run final action *)
-    let arr = Array.make 2 SemanticValue.null in
-    let nextToLast = (getUniqueLink last).sib in
-    arr.(0) <- grabTopSval glr.userAct nextToLast;      (* sval we want *)
-    arr.(1) <- grabTopSval glr.userAct last;            (* EOF's sval *)
-
-    (* reduce *)
-    let treeTop = SemanticValue.obj (reductionAction glr.userAct glr.tables.finalProductionIndex arr) in
-
-    (* before pool goes away.. *)
-    Arraystack.iter decRefCt glr.topmostParsers;
-
-    Some treeTop
+    (* error or ambig; not deterministic *)
+    glrParseToken glr getToken token
   )
 
 
-let pullFromTopmostParsers glr parsr =
-  let last = Arraystack.length glr.topmostParsers - 1 in
-
-  let i = ref 0 in
-  while !i <> last do
-    if Arraystack.elt glr.topmostParsers !i = parsr then (
-      (* remove by swapping *)
-      if !i < last then
-        Arraystack.setElt glr.topmostParsers !i (Arraystack.elt glr.topmostParsers last);
-      ignore (Arraystack.pop glr.topmostParsers);   (* removes a reference *)
-      decRefCt parsr;                    (* so decrement *)
-      i := last
-    ) else (
-      incr i
-    )
-  done
-
-
-(* dumpGSS goes here *)
-(* dumpGSSEdge goes here *)
-
+(**********************************************************
+ * :: Debugging and tracing
+ **********************************************************)
 
 let nodeSummary node =
   Printf.sprintf "%d[%d]" node.state node.referenceCount
@@ -1112,7 +1245,7 @@ let stackSummary glr =
       (* done *)
       acc
     else
-      let n = Arraystack.elt glr.topmostParsers i in
+      let n = Arraystack.nth glr.topmostParsers i in
       let summary = Printf.sprintf "%s (%d: %s)"
         acc i (innerStackSummary printed n)
       in
@@ -1123,210 +1256,75 @@ let stackSummary glr =
   loop "" 0
 
 
-(* pulled out so I can use this block of statements in several places *)
-let glrParseToken tokenKindDesc glr getToken token =
-  let open Lexerint in
+(**********************************************************
+ * :: Main parser loop
+ **********************************************************)
 
-  (* grab current token since we'll need it and the access
-   * isn't all that fast here in ML *)
-  let { tokType; tokSval } = token in
-
-  if not (nondeterministicParseToken tokenKindDesc tokType tokSval glr) then
-    raise Exit;              (* "return false" *)
-
-  (* goto label: getNextToken *)
-  (* last token? *)
-  if tokType = 0 then
-    raise End_of_file;       (* "break" *)
-
-  (* get the next token *)
-  getToken token
-
-
-let rec lrParseToken tokenKindDesc glr lr getToken token =
-  let open Lexerint in
-
-  let parsr = ref (Arraystack.top glr.topmostParsers) in
-  assert (!parsr.referenceCount = 1);
-
-  let { tokType; tokSval } = token in
-
-  let action = getActionEntry_noError glr.tables !parsr.state tokType in
-
-  if isReduceAction action then (
-    if accounting then
-      lr.lrDetReduce <- lr.lrDetReduce + 1;
-
-    let prodIndex = decodeReduce action !parsr.state in
-    let rhsLen = getProdInfo_rhsLen glr.tables prodIndex in
-
-    if rhsLen <= !parsr.determinDepth then (
-      (* can reduce unambiguously *)
-      let lhsIndex = getProdInfo_lhsIndex glr.tables prodIndex in
-
-      let startStateId = !parsr.state in
-
-      assert (rhsLen <= cMAX_RHSLEN);
-
-      (* loop for arbitrary rhsLen *)
-      for i = rhsLen - 1 downto 0 do
-        (* grab the (only) sibling of 'parsr' *)
-        let sib = !parsr.firstSib in
-
-        (* store its semantic value in the 'toPass' array *)
-        lr.lrToPass.(i) <- sib.sval;
-
-        (* pop 'parsr' and move to next one *)
-        Objpool.dealloc glr.stackNodePool !parsr;
-        let prev = !parsr in
-        parsr := sib.sib;
-
-        assert (!parsr.referenceCount = 1);
-        assert (prev.referenceCount = 1);
-
-        (* adjust a couple things about 'prev' reflecting
-         * that it has been deallocated *)
-        if accounting then (
-          decr numStackNodesAllocd;
-        );
-        prev.firstSib.sib <- cNULL_STACK_NODE;
-
-        assert (!parsr.referenceCount = 1);
-      done;
-
-      (* call the user's action function (TREEBUILD) *)
-      let sval =
-        reductionAction glr.userAct prodIndex lr.lrToPass
-      in
-
-      (* now, do an abbreviated 'glrShiftNonterminal' *)
-      let newState =
-        decodeGoto (getGotoEntry glr.tables !parsr.state lhsIndex) lhsIndex
-      in
-
-      if traceParse then (
-        Printf.printf "state %d, (unambig) reduce by %d (len=%d), back to %d then out to %d\n"
-                      startStateId
-                      prodIndex
-                      rhsLen
-                      !parsr.state
-                      newState;
-        flush stdout;
-      );
-
-      (* the sole reference is the 'parsr' variable *)
-      assert (!parsr.referenceCount = 1);
-
-      (* push new state *)
-      let newNode =
-        makeStackNode glr newState
-      in
-
-      addFirstSiblingLink_noRefCt newNode !parsr sval;
-
-      assert (!parsr.referenceCount = 1);
-
-      (* replace old topmost parser with 'newNode' *)
-      Arraystack.setElt glr.topmostParsers 0 newNode;
-      incRefCt newNode;
-      assert (newNode.referenceCount = 1);
-
-      (* does the user want to keep it? *)
-      if use_keep && not (keepNontermValue glr.userAct lhsIndex sval) then (
-        printParseErrorMessage tokenKindDesc tokType glr newNode.state;
-        if accounting then (
-          glr.stats.detShift  <- glr.stats.detShift  + lr.lrDetShift;
-          glr.stats.detReduce <- glr.stats.detReduce + lr.lrDetReduce;
-        );
-
-        raise Exit               (* "return false" *)
-      );
-
-      (* we have not shifted a token, so again try to use
-       * the deterministic core *)
-      (* "goto tryDeterministic;" *)
-      lrParseToken tokenKindDesc glr lr getToken token
-
-    ) else (
-      (* deterministic depth insufficient: use GLR *)
-      glrParseToken tokenKindDesc glr getToken token
-    )
-
-  ) else if isShiftAction glr.tables action then (
-    if accounting then
-      lr.lrDetShift <- lr.lrDetShift + 1;
-
-    (* can shift unambiguously *)
-    let newState = decodeShift action tokType in
-
-    if traceParse then (
-      Printf.printf "state %d, (unambig) shift token %d, to state %d\n"
-                    !parsr.state
-                    tokType
-                    newState;
-      flush stdout;
-    );
-
-    glr.globalNodeColumn <- glr.globalNodeColumn + 1;
-
-    let rightSibling =
-      makeStackNode glr newState
-    in
-
-    addFirstSiblingLink_noRefCt rightSibling !parsr tokSval;
-
-    (* replace 'parsr' with 'rightSibling' *)
-    Arraystack.setElt glr.topmostParsers 0 rightSibling;
-
-    assert (!parsr.referenceCount = 1);
-    assert (rightSibling.referenceCount = 0);
-
-    rightSibling.referenceCount <- 1;
-
-    (* get next token *)
-    (* "goto getNextToken;" *)
-    (* last token? *)
-    if tokType = 0 then
-      raise End_of_file;       (* "break" *)
-
-    (* get the next token *)
-    lrParseToken tokenKindDesc glr lr getToken (getToken token)
-
-  ) else (
-    (* error or ambig; not deterministic *)
-    glrParseToken tokenKindDesc glr getToken token
-  )
-
-
-let rec main_loop tokenKindDesc glr lr getToken token =
+let rec main_loop glr lr getToken token =
   if traceParse then (
     let open Lexerint in
     let tokType = token.tokType in
 
     Printf.printf "---- processing token %s, %d active parsers ----\n"
-                   (tokenKindDesc tokType)
+                   (glr.tokenKindDesc tokType)
                    (Arraystack.length glr.topmostParsers);
     Printf.printf "Stack:%s\n" (stackSummary glr);
     flush stdout
   );
 
-  (* ------------ glr parser ------------ *)
-  (* --------- mini-lr parser ------- *)
-  (* see elkhound/glr.cc for more details *)
   if use_mini_lr && Arraystack.length glr.topmostParsers = 1 then 
     (* try deterministic parsing *)
-    main_loop tokenKindDesc glr lr getToken (lrParseToken tokenKindDesc glr lr getToken token)
+    main_loop glr lr getToken (lrParseToken glr lr getToken token)
   else
     (* mini lr core disabled, use full GLR *)
-    main_loop tokenKindDesc glr lr getToken (glrParseToken tokenKindDesc glr getToken token)
+    main_loop glr lr getToken (glrParseToken glr getToken token)
 
 
-(* buildParserIndex goes here *)
+(**********************************************************
+ * :: Entry and exit of GLR parser
+ **********************************************************)
 
-let glrParse glr tokenKindDesc getToken token =
+let grabTopSval userAct node =
+  let sib = getUniqueLink node in
+  let ret = sib.sval in
+  sib.sval <- duplicateSemanticValue userAct (getNodeSymbol node) sib.sval;
+
+  (* TRSACTION("dup'd " << ret << " for top sval, yielded " << sib->sval); *)
+
+  ret
+
+
+let cleanupAfterParse (glr : 'result glr) : 'result option =
+  if traceParse then
+    Printf.printf "Parse succeeded!\n";
+
+  if not (Arraystack.length glr.topmostParsers = 1) then (
+    Printf.printf "parsing finished with %d active parsers!\n"
+                  (Arraystack.length glr.topmostParsers);
+    None
+  ) else (
+    let last = Arraystack.top glr.topmostParsers in
+
+    (* prepare to run final action *)
+    let arr = Array.make 2 SemanticValue.null in
+    let nextToLast = (getUniqueLink last).sib in
+    arr.(0) <- grabTopSval glr.userAct nextToLast;      (* sval we want *)
+    arr.(1) <- grabTopSval glr.userAct last;            (* EOF's sval *)
+
+    (* reduce *)
+    let treeTop = SemanticValue.obj (reductionAction glr.userAct glr.tables.finalProductionIndex arr) in
+
+    (* before pool goes away.. *)
+    Arraystack.iter decRefCt glr.topmostParsers;
+
+    Some treeTop
+  )
+
+
+let glrParse (glr : 'result glr) getToken token : 'result option =
   glr.globalNodeColumn <- 0;
   begin
-    let first = makeStackNode glr 0(*startState*) in
+    let first = makeStackNode glr glr.tables.startState in
     addTopmostParser glr first;
   end;
 
@@ -1342,7 +1340,7 @@ let glrParse glr tokenKindDesc getToken token =
 
     (* this loop never returns normally *)
     Valgrind.Callgrind.instrumented
-      (main_loop tokenKindDesc glr lr getToken) (getToken token)
+      (main_loop glr lr getToken) (getToken token)
 
   with
   | Exit ->
