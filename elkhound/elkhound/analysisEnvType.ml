@@ -50,7 +50,6 @@ and lr_item = {
 
 
 module DottedProductionS = struct
-
   type t = dotted_production
 
   let hash a =
@@ -67,10 +66,16 @@ module DottedProductionS = struct
 
 end
 
+module ExtendHashtblIntf(T : BatHashtbl.S) : Hashtbl.S = struct
+    include T
+    let stats _ = failwith "Not supported"
+    let reset _ = failwith "Not supported"
+end
+
 module DottedProductionTable = BatHashtbl.Make(DottedProductionS)
 module DottedProductionMap = SexpMap.Make(DottedProductionS)
 module DottedProductionSet = SexpSet.Make(DottedProductionS)
-module DottedProductionStack = HashStack.Make(DottedProductionTable)
+module DottedProductionStack = HashStack.Make(ExtendHashtblIntf(DottedProductionTable))
 
 
 module LrItemS = struct
@@ -94,7 +99,7 @@ end
 module LrItemTable = BatHashtbl.Make(LrItemS)
 module LrItemMap = SexpMap.Make(LrItemS)
 module LrItemSet = SexpSet.Make(LrItemS)
-module LrItemStack = HashStack.Make(LrItemTable)
+module LrItemStack = HashStack.Make(ExtendHashtblIntf(LrItemTable))
 
 
 (************************************************************
@@ -203,7 +208,7 @@ end
 module ItemSetTable = BatHashtbl.Make(ItemSetS)
 module ItemSetMap = SexpMap.Make(ItemSetS)
 module ItemSetSet = SexpSet.Make(ItemSetS)
-module ItemSetStack = HashStack.Make(ItemSetTable)
+module ItemSetStack = HashStack.Make(ExtendHashtblIntf(ItemSetTable))
 
 
 (************************************************************
@@ -223,20 +228,20 @@ type env = {
    * this array maps each nonterminal to the list of productions with
    * that nonterminal on the LHS *)
   prods_by_lhs                  : GrammarType.production list array;
-  
+
   (* map of production x dot_position -> dotted_production;
    * each element of the 'dotted_prods' array is a pointer to an
    * array of dotted_production objects *)
   dotted_prods                  : dotted_production array array;
-  
+
   (* if entry i,j is true, then nonterminal i can derive nonterminal j
    * (this is a graph, represented (for now) as an adjacency matrix) *)
   derivable                     : Bit2d.t;
-  
+
   (* true if any nonterminal can derive itself (with no extra symbols
    * surrounding it) in 1 or more steps *)
   mutable cyclic_grammar        : bool;
-  
+
   (* distinguished start state; NOTE: much of the grammar analysis
    * code currently assumes (and checks) that state 0 is the start
    * state, so if you want to do something different, that code might
