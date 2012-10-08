@@ -3,3 +3,5 @@ _build
 /html
 /*.native
 /cc.*
+/wip
+/config.mk
