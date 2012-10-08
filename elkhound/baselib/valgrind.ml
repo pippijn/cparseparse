@@ -6,15 +6,21 @@ module Callgrind = struct
   external start_instrumentation : unit -> unit = "ml_Valgrind_Callgrind_start_instrumentation"
   external stop_instrumentation : unit -> unit = "ml_Valgrind_Callgrind_stop_instrumentation"
 
+  let instrumentation_level = ref 0
+
   let instrumented f x =
-    start_instrumentation ();
+    if !instrumentation_level = 0 then
+      start_instrumentation ();
+    incr instrumentation_level;
     let r, e =
       try
         Some (f x), None
       with e ->
         None, Some e
     in
-    stop_instrumentation ();
+    decr instrumentation_level;
+    if !instrumentation_level = 0 then
+      stop_instrumentation ();
     match r, e with
     | Some r, None -> r
     | None, Some e -> raise e
