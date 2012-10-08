@@ -57,7 +57,8 @@ Library glr
                                 Smutil,
                                 UserActions
         CompiledObject:         native
-        NativeOpt:              -inline 999 -unsafe -noassert -nodynlink
+#        NativeOpt:              -inline 999 -unsafe -noassert -nodynlink
+        NativeOpt:              -inline 0
 
 
 Library baselib

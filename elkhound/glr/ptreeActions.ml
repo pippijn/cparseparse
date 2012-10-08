@@ -16,7 +16,7 @@ let getToken actions underlying lex =
   (* get next token *)
   let lex = underlying lex in
   (* my sval is a tree leaf *)
-  lex.Lexerint.tokSval <- inject (PtreeNode.makePTreeNode (actions.terminalName lex.Lexerint.tokType));
+  lex.Lexerint.tokSval <- inject (PtreeNode.make_leaf (actions.terminalName lex.Lexerint.tokType));
   lex
 
 
@@ -29,17 +29,16 @@ let makeParseTreeActions underlying tables : PtreeNode.t UserActions.t =
         (* production info *)
         let rhsLen = ParseTables.getProdInfo_rhsLen tables prodId in
         let lhsIndex = ParseTables.getProdInfo_lhsIndex tables prodId in
+
+        let name = underlying.nonterminalName lhsIndex in
         
         (* make a tree node, initially with no children *)
-        let ret = PtreeNode.makePTreeNode (underlying.nonterminalName lhsIndex) in
+        let ret =
+          PtreeNode.make name rhsLen (fun i ->
+            project svals.(i)
+          )
+        in
 
-        (* add the children *)
-        PtreeNode.setNumChildren ret rhsLen;
-        for i = 0 to rhsLen - 1 do
-          let child = project svals.(i) in
-          PtreeNode.setChild ret i child;
-        done;
-        
         inject ret
     );
       

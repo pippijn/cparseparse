@@ -153,34 +153,34 @@ let parse_file glr actions input =
   tree
 
 
-let parse_files actions tables =
+let parse_files actions tables inputs =
   let glr = Glr.makeGLR tables actions in
 
-  List.map (parse_file glr actions) !inputs
+  List.map (parse_file glr actions) inputs
 
 
-let elkmain () =
+let elkmain inputs =
   let actions = CcActions.userActions in
   let tables  = CcTables.parseTables in
 
   if !Options._ptree then (
 
     let actions = PtreeActions.makeParseTreeActions actions tables in
-    let trees = parse_files actions tables in
+    let trees = parse_files actions tables inputs in
     List.iter (fun tree ->
       if !Options._print then
-        PtreeNode.printTree tree stdout true
+        PtreeNode.print_tree tree stdout true
     ) trees
 
   ) else if !Options._trivial then (
 
     let actions = UserActions.make_trivial actions in
-    List.iter (fun () -> ()) (parse_files actions tables)
+    List.iter (fun () -> ()) (parse_files actions tables inputs)
 
   ) else (
 
     (* unit list list *)
-    List.iter (List.iter (fun () -> ())) (parse_files actions tables)
+    List.iter (List.iter (fun () -> ())) (parse_files actions tables inputs)
 
   )
 
@@ -193,7 +193,7 @@ let () =
 
   try
     Printexc.record_backtrace true;
-    Printexc.print elkmain ()
+    Printexc.print elkmain !inputs
   with
   | ExitStatus status ->
       exit status

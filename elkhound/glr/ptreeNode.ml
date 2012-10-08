@@ -3,252 +3,208 @@
 (* based on elkhound/ptreenode *)
 
 
-open Smutil          (* getSome, etc. *)
-open Arraystack      (* tArrayStack *)
-
-
 (* for storing parse tree counts *)
-type tTreeCount = float
+type tree_count = int
 
 
 (* a node in a parse tree *)
-(* (I tried making this a class, but OCaml kicked my ass instead) *)
 type t = {            
   (* symbol at this node *)
-  symbol: string;          
+  symbol : string;          
   
-  (* list of ambiguous alternatives to this node *)
-  mutable merged: t option;
-
   (* array of children *)
-  mutable children: t option array;
+  children : t array;
+
+  (* list of ambiguous alternatives to this node *)
+  mutable merged : t option;
 
   (* number of parse trees this node is root of *)
-  mutable count: tTreeCount;
+  mutable count : tree_count;
 }
 
 
-let makePTreeNode (sym:string) : t =
-begin
+let make_leaf sym =
   {
     symbol = sym;
     merged = None;
-    children = (Array.make 0 None);
-    count = 0.0;
+    children = [||];
+    count = 0;
   }
-end
+
+let make sym child_count child_fun =
+  {
+    symbol = sym;
+    merged = None;
+    children = Array.init child_count child_fun;
+    count = 0;
+  }
 
 
-let indent (out:out_channel) (n:int) : unit =
-begin
-  for i=0 to n-1 do
-    (output_char out ' ');
-  done;
-end
+let indent out n =
+  for i = 0 to n - 1 do
+    output_char out ' '
+  done
 
 
-(* this was polymorphic at one point, then OCaml said "thou shalt not" *)
-let childFold (children: t option array) (init: int)
-              (f: t -> int -> int) : int =
-begin
-  (Array.fold_right (fun co v -> (f (getSome co) v)) children init);
-end
-
-let childIter (children: t option array)
-              (f: t -> unit) : unit =
-begin
-  (Array.iter (fun co -> (f (getSome co))) children);
-end
-
-let rec mergedFold (merged: t option) (init: int)
-               (f: t -> int -> int) : int =
-begin
+let rec merged_fold f init merged =
   match merged with
   | None -> init
-  | Some(n) -> (mergedFold n.merged (f n init) f)
-end
-
-let mergedIter (self:t) (f: t -> unit) : unit =
-begin
-  ignore (mergedFold (Some self) 0 (fun n (x:int) -> ((f n); x)))
-end
+  | Some n -> merged_fold f (f init n) n.merged
 
 
 (* just the length of the 'merged' list *)
-let countMergedList (self:t) : int =
-begin
-  (mergedFold (Some self) 0 (fun _ v -> (v+1)))
-end
+let countMergedList self =
+  merged_fold (fun v _ -> v + 1) 0 (Some self)
 
 
 (* count trees rooted here *)
-let rec countTrees (self:t) : tTreeCount =
-begin
-  (* memoize *)
-  if (self.count > 0.0) then (
+let rec countTrees self =
+  (* memoise *)
+  if self.count > 0 then (
     self.count
-  )
+  ) else (
+    (* sum over alternatives, product over children
+     * (look at me, functional programming boy)
+     * never mind, I am obviously not functional programming boy *)
 
-  else (
-    (* sum over alternatives, product over children *)
-    (* (look at me, functional programming boy) *)
-    (* never mind, I am obviously not functional programming boy *)
-
-    (* sum over children here *)
-    let ct: float ref = ref 1.0 in
-    (childIter self.children (fun c -> (
-      ct := !ct *. (countTrees c);
-    )));
+    (* product over children here *)
+    let ct =
+      Array.fold_left (fun ct c ->
+        ct * countTrees c
+      ) 1 self.children
+    in
 
     (* alternatives? *)
-    if (isSome self.merged) then (
-      (* add them too, recursively *)
-      ct := !ct +. (countTrees (getSome self.merged));
-    );
+    let ct =
+      match self.merged with
+      | Some merged ->
+          (* add them too, recursively *)
+          ct + countTrees merged
+      | None ->
+          ct
+    in
 
-    !ct
+    self.count <- ct;
+
+    ct
   )
-end
 
-
-(* set number of children, i.e. size of 'children' array *)
-let setNumChildren (self:t) (i:int) : unit =
-begin
-  self.children <- (Array.make i None)
-end
-
-(* set a particular child *)
-let setChild (self:t) (i:int) (c:t) : unit =
-begin
-  self.children.(i) <- (Some c);
-end
 
 (* add an ambiguous alternative *)
-let addAlternative (self:t) (alt:t) : unit =
-begin
+let addAlternative self alt =
   (* insert as 2nd element *)
   alt.merged <- self.merged;
-  self.merged <- (Some alt);
-end
+  self.merged <- Some alt
 
 
-(* ----------- printTree (a little biotch) ------------ *)
-let printTree (self:t) (out:out_channel) (expand:bool) : unit =
-begin
-  (* indentation per level *)
-  let cINDENT_INC:int = 2 in
+(* indentation per level *)
+let indent_inc = 2
 
+(* turn this on to detect cyclicity; there is a performance penalty *)
+let checkForCycles = true
+
+
+let cyclicSkip self indentation out path =
+  if checkForCycles then (
+    (* does 'self' appear in 'path'? *)
+    let idx = Arraystack.findIndex ((==) self) path in
+    if idx >= 0 then (
+      (* yes; print a cyclicity reference *)
+      indent out indentation;
+      Printf.fprintf out "[CYCLIC: refers to %d hops up]\n"
+                          (Arraystack.length path - idx + 1);
+      true   (* return *)
+    ) else (
+      (* no; add myself to the path *)
+      Arraystack.push self path;
+      false
+    )
+  ) else (
+    false
+  )
+
+
+let print_merged self indentation symbol =
+  (* this is an ambiguity node *)
+  let alts = countMergedList self in
+
+  (* get nonterm from first; should all be same *)
+  let lhs =
+    try
+      (* extract first word *)
+      let firstSpace = String.index symbol ' ' in
+      String.sub symbol 0 firstSpace
+    with
+    | Not_found ->
+        symbol    (* no spaces, use whole thing *)
+  in
+
+  indentation + indent_inc, lhs, alts
+
+
+let print_alt self indentation out expand alts lhs ct node =
+  if alts > 1 then (
+    indent out (indentation - indent_inc);
+    Printf.fprintf out "------------- ambiguous %s: %d of %d ------------\n"
+                        lhs ct alts
+  );
+
+  indent out indentation;
+
+  let children = node.children in
+  let numChildren = Array.length children in
+
+  Printf.fprintf out "%s" node.symbol;
+
+  if expand then (
+    (* symbol is just LHS, write out RHS names after "->" *)
+    if numChildren > 0 then (
+      Printf.fprintf out " ->";
+      Array.iter (fun c ->
+        Printf.fprintf out " %s" c.symbol
+      ) node.children
+    )
+  );
+
+  Printf.fprintf out "\n"
+
+
+let print_tree self out expand =
   (* for detecting cyclicity *)      
   let path = Arraystack.create () in
   
-  (* turn this on to detect cyclicity; there is a performance penalty *)
-  let checkForCycles: bool = true in
-
-  (* methods cannot be recursive!  what's up with that?! *)
-  let rec innerPrint (self:t) (indentationOrig:int) : unit =
-  begin
-    let indentation: int ref = ref indentationOrig in
-    let alts: int ref = ref 1 in
-    let lhs: string ref = ref "" in
-    let symbol: string = self.symbol in
-    let merged: t option = self.merged in
-      
-    let cyclicSkip: bool = (
-      if (checkForCycles) then (
-        (* does 'self' appear in 'path'? *)
-        let idx:int = (Arraystack.findIndex (fun p -> p == self) path) in
-        if (idx >= 0) then (
-          (* yes; print a cyclicity reference *)
-          (indent out !indentation);
-          (Printf.fprintf out "[CYCLIC: refers to %d hops up]\n"
-                              ((Arraystack.length path) - idx + 1));
-          true   (* return *)
-        )
-        else (
-          (* no; add myself to the path *)
-          (Arraystack.push self path);
-          false
-        )
-      )
-      else (
-        false
-      )
-    ) in
-
-    if (not cyclicSkip) then (
-      if (isSome merged) then (
-        (* this is an ambiguity node *)
-        alts := (countMergedList self);
-
-        (* get nonterm from first; should all be same *)
-        try
-          (* extract first word *)
-          let firstSpace:int = (String.index symbol ' ') in
-          lhs := (String.sub symbol 0 firstSpace);
-        with
-        | Not_found -> (
-            lhs := symbol    (* no spaces, use whole thing *)
-          );
-
-        indentation := !indentation + cINDENT_INC;
-      );
+  let rec innerPrint self indentation =
+    if not (cyclicSkip self indentation out path) then (
+      let indentation, lhs, alts =
+        match self.merged with
+        | Some _ ->
+            print_merged self indentation self.symbol
+        | None ->
+            indentation, "", 1
+      in
 
       (* iterate over interpretations *)
-      let ct: int ref = ref 1 in
-      (mergedIter self (fun (node:t) -> (
-        if (!alts > 1) then (
-          (indent out (!indentation - cINDENT_INC));
-          (Printf.fprintf out "------------- ambiguous %s: %d of %d ------------\n"
-                              !lhs !ct !alts);
-          (flush out);
-        );
-
-        (indent out !indentation);
-
-        let children: t option array = node.children in
-        let numChildren:int = (Array.length children) in
-
-        (Printf.fprintf out "%s" node.symbol);
-
-        if (expand) then (
-          (* symbol is just LHS, write out RHS names after "->" *)
-          if (numChildren > 0) then (
-            (Printf.fprintf out " ->");
-            (childIter node.children (fun c ->
-              (Printf.fprintf out " %s" c.symbol)
-            ));
-          );
-        );
-
-        (Printf.fprintf out "\n");
-        (flush out);
+      ignore (merged_fold (fun ct node ->
+        print_alt self indentation out expand alts lhs ct node;
 
         (* iterate over children and print them *)
-        (childIter node.children (fun c ->
-          (innerPrint c (!indentation + cINDENT_INC))
-        ));
+        Array.iter (fun c ->
+          innerPrint c (indentation + indent_inc)
+        ) node.children;
 
-        (incr ct);
-      )));
+        ct + 1
+      ) 1 (Some self));
 
-      if (isSome merged) then (
+      if alts > 1 then (
         (* close up ambiguity display *)
-        indentation := !indentation - cINDENT_INC;
-        (indent out !indentation);
-        (Printf.fprintf out "----------- end of ambiguous %s -----------\n"
-                            !lhs);
-        (flush out);
+        indent out (indentation - indent_inc);
+        Printf.fprintf out "----------- end of ambiguous %s -----------\n" lhs
       );
       
-      if (checkForCycles) then (
+      if checkForCycles then
         (* remove myself from the path *)
-        (ignore (Arraystack.pop path));
-      );
+        ignore (Arraystack.pop path)
     );
-  end in
+  in
 
-  (innerPrint self 0(*indentation*))
-end
-
-
-(* EOF *)
+  innerPrint self 0(*indentation*)
