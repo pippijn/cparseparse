@@ -82,7 +82,7 @@ let parse glr actions cin lexer =
 
   let getToken =
     if !Options._pp then
-      let tokens = ref (Timing.time "tokenisation" (tokenise [] lexer.token) lexbuf) in
+      let tokens = ref (tokenise [] lexer.token lexbuf) in
       fun lex ->
         lex.tokType <- Cc_tokens.token_index (List.hd !tokens);
         tokens := List.tl !tokens;
@@ -103,7 +103,7 @@ let parse glr actions cin lexer =
   if !Options._tokens then
     raise Exit;
 
-  Timing.time "parsing" (glrparse glr) getToken
+  glrparse glr getToken
 
 
 let parse_utf8 glr actions cin =
