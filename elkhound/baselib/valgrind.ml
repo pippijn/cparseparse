@@ -5,6 +5,12 @@ module Callgrind = struct
   external toggle_collect : unit -> unit = "ml_Valgrind_Callgrind_toggle_collect"
   external start_instrumentation : unit -> unit = "ml_Valgrind_Callgrind_start_instrumentation"
   external stop_instrumentation : unit -> unit = "ml_Valgrind_Callgrind_stop_instrumentation"
+
+  let instrumented f x =
+    start_instrumentation ();
+    let r = f x in
+    stop_instrumentation ();
+    r
 end
 
 module Memcheck = struct
