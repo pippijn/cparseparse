@@ -1,4 +1,5 @@
 _build
+/.ditz-config
 /html
 /*.native
 /cc.*
