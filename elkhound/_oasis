@@ -1,4 +1,4 @@
-OASISFormat:                    0.2
+OASISFormat:                    0.3
 OCamlVersion:                   >= 3.12
 Name:                           elkhound
 Version:                        0.6
@@ -6,9 +6,9 @@ Synopsis:                       Elkhound GLR Parser Generator
 Authors:                        Pippijn van Steenhoven
 License:                        GPL
 LicenseFile:                    COPYING
-Plugins:                        META (0.2),
-                                StdFiles (0.2),
-                                DevFiles (0.2)
+Plugins:                        META (0.3),
+                                StdFiles (0.3),
+                                DevFiles (0.3)
 XStdFilesAUTHORS:               false
 XStdFilesINSTALLFilename:       INSTALL
 XStdFilesREADME:                false
