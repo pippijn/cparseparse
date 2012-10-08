@@ -1,0 +1,12 @@
+--- !ditz.rubyforge.org,2008-03-06/project 
+name: cxxparse
+version: "0.5"
+components: 
+- !ditz.rubyforge.org,2008-03-06/component 
+  name: cxxparse
+- !ditz.rubyforge.org,2008-03-06/component 
+  name: Parser
+- !ditz.rubyforge.org,2008-03-06/component 
+  name: Infrastructure
+releases: []
+
