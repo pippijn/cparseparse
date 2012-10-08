@@ -4,6 +4,7 @@ module Options = struct
   let _ptree = ref false
   let _print = ref false
   let _utf8 = ref false
+  let _pp = ref false
   let _tokens = ref false
   let _trivial = ref false
 end
@@ -13,6 +14,7 @@ let () =
     "-ptree",	Set Options._ptree,	       " build parse tree";
     "-print",	Set Options._print,	       " print tree";
     "-utf8",	Set Options._utf8,	       " assume source file is in UTF-8 encoding";
+    "-pp",	Set Options._pp,	       " fully tokenise before parsing";
     "-tokens",	Set Options._tokens,	       " tokenise only; do not parse";
     "-trivial",	Set Options._trivial,	       " use trivial user actions";
   ]) (fun input -> inputs := input :: !inputs) "Usage: cxxparse [option...] <file...>")
@@ -74,27 +76,22 @@ let rec tokenise tokens token lexbuf =
     tokenise (next :: tokens) token lexbuf
 
 
-let rec tokenise_only token lexbuf =
-  if token lexbuf = Cc_tokens.TOK_EOF then
-    raise (ExitStatus 0)
-  else
-    tokenise_only token lexbuf
-
-
 let parse glr actions cin lexer =
   let open Lexerint in
 
   let lexbuf = lexer.from_channel cin in
-  let tokens = ref (tokenise [] lexer.token lexbuf) in
 
-  if false then (
-    Printf.printf "%d tokens\n" (List.length !tokens);
-  );
-
-  let getToken lex =
-    lex.tokType <- Cc_tokens.token_index (List.hd !tokens);
-    tokens := List.tl !tokens;
-    lex
+  let getToken =
+    if !Options._pp then
+      let tokens = ref (tokenise [] lexer.token lexbuf) in
+      fun lex ->
+        lex.tokType <- Cc_tokens.token_index (List.hd !tokens);
+        tokens := List.tl !tokens;
+        lex
+    else
+      fun lex ->
+        lex.tokType <- Cc_tokens.token_index (lexer.token lexbuf);
+        lex
   in
 
   let getToken =
@@ -105,9 +102,9 @@ let parse glr actions cin lexer =
   in
 
   if !Options._tokens then
-    tokenise_only lexer.token lexbuf
-  else
-    glrparse glr getToken
+    raise Exit;
+
+  glrparse glr getToken
 
 
 let parse_utf8 glr actions cin =
