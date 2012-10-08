@@ -1,6 +1,6 @@
 type t
 
-val repr : 'a -> t
-val obj : t -> 'a
+external repr : 'a -> t = "%identity"
+external obj : t -> 'a = "%identity"
 
 val null : t

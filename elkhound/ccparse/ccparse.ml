@@ -5,6 +5,7 @@ module Options = struct
   let _print = ref false
   let _utf8 = ref false
   let _tokens = ref false
+  let _trivial = ref false
 end
 
 let () =
@@ -13,6 +14,7 @@ let () =
     "-print",	Set Options._print,	       " print tree";
     "-utf8",	Set Options._utf8,	       " assume source file is in UTF-8 encoding";
     "-tokens",	Set Options._tokens,	       " tokenise only; do not parse";
+    "-trivial",	Set Options._trivial,	       " use trivial user actions";
   ]) (fun input -> inputs := input :: !inputs) "Usage: cxxparse [option...] <file...>")
 
 
@@ -35,7 +37,7 @@ let tokenKindDesc kind =
   Cc_tokens.token_desc (Obj.magic kind)
 
 
-let glrparse glr lexer getToken lexbuf =
+let glrparse glr getToken =
   let open Lexerint in
 
   let tree =
@@ -45,13 +47,7 @@ let glrparse glr lexer getToken lexbuf =
     | Some tree ->
         tree
     | None ->
-        let msg =
-          Printf.sprintf "parsing on line %d, position %d: %s"
-            !(lexer.line)
-            (lexer.lexeme_start lexbuf)
-            (lexer.lexeme lexbuf)
-        in
-        failwith msg
+        failwith "parse error"
   in
 
   (* print accounting statistics from glr.ml *)
@@ -70,20 +66,34 @@ let glrparse glr lexer getToken lexbuf =
   tree
 
 
-let rec tokenise token lexbuf =
+let rec tokenise tokens token lexbuf =
+  let next = token lexbuf in
+  if next == Cc_tokens.TOK_EOF then
+    List.rev (next :: tokens)
+  else
+    tokenise (next :: tokens) token lexbuf
+
+
+let rec tokenise_only token lexbuf =
   if token lexbuf = Cc_tokens.TOK_EOF then
     raise (ExitStatus 0)
   else
-    tokenise token lexbuf
+    tokenise_only token lexbuf
 
 
 let parse glr actions cin lexer =
   let open Lexerint in
 
   let lexbuf = lexer.from_channel cin in
+  let tokens = ref (tokenise [] lexer.token lexbuf) in
+
+  if false then (
+    Printf.printf "%d tokens\n" (List.length !tokens);
+  );
 
   let getToken lex =
-    lex.tokType <- Cc_tokens.token_index (lexer.token lexbuf);
+    lex.tokType <- Cc_tokens.token_index (List.hd !tokens);
+    tokens := List.tl !tokens;
     lex
   in
 
@@ -95,9 +105,9 @@ let parse glr actions cin lexer =
   in
 
   if !Options._tokens then
-    tokenise lexer.token lexbuf
+    tokenise_only lexer.token lexbuf
   else
-    glrparse glr lexer getToken lexbuf
+    glrparse glr getToken
 
 
 let parse_utf8 glr actions cin =
@@ -165,9 +175,16 @@ let elkmain () =
         Ptreenode.printTree tree stdout true
     ) trees
 
+  ) else if !Options._trivial then (
+
+    let actions = UserActions.make_trivial actions in
+    List.iter (fun () -> ()) (parse_files actions tables)
+
   ) else (
+
     (* unit list list *)
     List.iter (List.iter (fun () -> ())) (parse_files actions tables)
+
   )
 
 

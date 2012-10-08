@@ -7,9 +7,9 @@
  *    to be owner pointers, but only in the sense that del() will be
  *    called.  It's up to the user to decide if del() actually does
  *    anything. *)
-type t = Obj.t
+type t
 
-let repr = Obj.repr
-let obj = Obj.obj
+external repr : 'a -> t = "%identity"
+external obj : t -> 'a = "%identity"
 
 let null = repr ()

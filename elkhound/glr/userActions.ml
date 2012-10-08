@@ -232,3 +232,19 @@ type 'result t = {
   terminalName : int -> string;
   nonterminalName : int -> string;
 }
+
+
+let make_trivial (underlying : 'a t) : unit t = {
+  reductionAction = (fun _ _ -> SemanticValue.null);
+  duplicateTerminalValue = (fun _ a -> a);
+  duplicateNontermValue = (fun _ a -> a);
+  deallocateTerminalValue = (fun _ _ -> ());
+  deallocateNontermValue = (fun _ _ -> ());
+  mergeAlternativeParses = (fun _ l r -> l);
+  keepNontermValue = (fun _ _ -> true);
+
+  terminalDescription = underlying.terminalDescription;
+  nonterminalDescription = underlying.nonterminalDescription;
+  terminalName = underlying.terminalName;
+  nonterminalName = underlying.nonterminalName;
+}
