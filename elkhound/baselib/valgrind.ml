@@ -8,9 +8,17 @@ module Callgrind = struct
 
   let instrumented f x =
     start_instrumentation ();
-    let r = f x in
+    let r, e =
+      try
+        Some (f x), None
+      with e ->
+        None, Some e
+    in
     stop_instrumentation ();
-    r
+    match r, e with
+    | Some r, None -> r
+    | None, Some e -> raise e
+    | _ -> failwith "impossible"
 end
 
 module Memcheck = struct
