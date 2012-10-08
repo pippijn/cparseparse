@@ -1,0 +1,8 @@
+TOK_CONSTEXPR,		"constexpr",			:    n  p
+TOK_NOEXCEPT,		"noexcept",			:    n  p
+TOK_DECLTYPE,		"decltype",			:    n  p
+TOK_ALIGNOF,		"alignof",			:    n  p
+TOK_NULLPTR,		"nullptr",			:    n  p
+TOK_STATIC_ASSERT,	"static_assert",		:    n  p
+TOK_CHAR16_t,		"char16_t",			:    n  p
+TOK_CHAR32_t,		"char32_t",			:    n  p
