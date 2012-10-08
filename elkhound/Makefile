@@ -1,4 +1,10 @@
-default: elkhound/elkhound.native ccparse/ccparse.native
+TARGETS =				\
+	elkhound/elkhound.native	\
+	ccparse/ccparse.native		\
+	runtests.native
+
+default: setup.data
+	ocamlbuild $(TARGETS)
 
 %.native: setup.data
 	ocamlbuild $@
@@ -45,6 +51,9 @@ setup.data: setup.ml
 setup.ml: _oasis
 	oasis setup
 
+check: default
+	_build/runtests.native
+
 check-elkhound: elkhound/elkhound.native
 	_build/elkhound/elkhound.native | sed -e 's/\[[^m]*m//g' > o.txt
 
@@ -52,7 +61,7 @@ check-ccparse: ccparse/ccparse.native
 	_build/ccparse/ccparse.native -ptree testsuite/c++11.ii
 
 
-CALLGRIND = valgrind --tool=callgrind --dump-instr=yes --trace-jump=yes #--instr-atstart=no
+CALLGRIND = valgrind --tool=callgrind --dump-instr=yes --trace-jump=yes --instr-atstart=no
 
 profile-elkhound: elkhound/elkhound.native
 	rm -f callgrind.out.*
