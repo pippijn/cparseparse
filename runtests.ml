@@ -20,6 +20,7 @@ let execute cmd =
 
 let () =
   let contents = Sys.readdir "testsuite" in
+  (* Compare the tests lexograpicaly *)
   Array.sort String.compare contents;
   let run full_dir =
     let file nm = Printf.sprintf "testsuite/%s/%s" full_dir nm in
