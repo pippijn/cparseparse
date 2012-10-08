@@ -1186,3 +1186,6 @@ new_line ::= <New_line>
         (* the new-line character *)
         "\n"
 </New_line>;
+
+(* vim: tw=0
+ *)

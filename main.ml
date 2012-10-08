@@ -66,7 +66,8 @@ let parse glr actions cin =
 
     if ptree then
       let t = Ptreeact.project treeTop in
-      Ptreenode.printTree t stdout true
+      (*Ptreenode.printTree t stdout true*)
+      ()
 
 
 let elkmain () =
