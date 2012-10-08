@@ -1,0 +1,18 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: Design lousy AST for cxx
+desc: We need to be able to have initial AST before the symbol resolution that does not require to build the symbol table during parsing.
+type: :task
+component: Parser
+release: 
+reporter: Wojciech Meyer <wojciech.meyer@gmail.com>
+status: :unstarted
+disposition: 
+creation_time: 2012-10-08 03:06:15.497799 Z
+references: []
+
+id: 86aac22a14818cad336dce0ecee15dcaffe28bc3
+log_events: 
+- - 2012-10-08 03:06:43.889769 Z
+  - Wojciech Meyer <wojciech.meyer@gmail.com>
+  - created
+  - Later step would be to develop the full cxx ast for entry to type checking
