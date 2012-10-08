@@ -139,8 +139,7 @@ begin
   let cINDENT_INC:int = 2 in
 
   (* for detecting cyclicity *)      
-  let dummyNode: tPTreeNode = ((Obj.magic []) : tPTreeNode) in
-  let path = (Arraystack.make dummyNode) in
+  let path = Arraystack.make () in
   
   (* turn this on to detect cyclicity; there is a performance penalty *)
   let checkForCycles: bool = true in

@@ -17,10 +17,10 @@ open Smutil          (* getSome, etc. *)
 let traceParse  = false
 
 (* when true, keep some statistics useful for performance evaluation *)
-let accounting  = true
+let accounting  = false
 
 (* when true, we call the user's keep() functions *)
-let use_keep    = true
+let use_keep    = false
 
 (* when true, use the mini LR core *)
 let use_mini_lr = true
@@ -33,6 +33,14 @@ let use_mini_lr = true
 
 (* identifier for a symbol *)
 type symbol_id = int
+
+
+type statistics = {
+  mutable detShift : int;
+  mutable detReduce : int;
+  mutable nondetShift : int;
+  mutable nondetReduce : int;
+}
 
 
 (* link from one stack node to another *)
@@ -149,10 +157,7 @@ and glr = {
   mutable globalNodeColumn : int;
 
   (* parser action statistics *)
-  mutable detShift : int;
-  mutable detReduce : int;
-  mutable nondetShift : int;
-  mutable nondetReduce : int;
+  stats : statistics;
 }
 
 (* Mini-LR parser object *)
@@ -294,12 +299,6 @@ and deinitStackNode node =
 
   if accounting then (
     decr numStackNodesAllocd;
-    (*
-      (Printf.printf "(...) deinit stack node: num=%d max=%d\n"
-                     !numStackNodesAllocd
-                     !maxStackNodesAllocd);
-      (flush stdout);
-    *)
   )
 
 
@@ -328,12 +327,6 @@ let initStackNode node st =
     incr numStackNodesAllocd;
     if !numStackNodesAllocd > !maxStackNodesAllocd then
       maxStackNodesAllocd := !numStackNodesAllocd;
-    (*
-      (Printf.printf "(!!!) init stack node: num=%d max=%d\n"
-                     !numStackNodesAllocd
-                     !maxStackNodesAllocd);
-      (flush stdout);
-    *)
   )
 
 
@@ -424,19 +417,6 @@ let checkLocalInvariants node =
   computeDeterminDepth node = node.determinDepth
 
 
-(* ----------------------- stack node list ops ---------------------- *)
-let decParserList lst =
-  Arraystack.iter lst decRefCt
-
-
-let incParserList lst =
-  Arraystack.iter lst incRefCt
-
-
-let parserListContains lst n =
-  Arraystack.contains ((==) n) lst
-
-
 (* ----------------------------- GLR --------------------------------- *)
 let makePath () = {
   startStateId = cSTATE_INVALID;
@@ -462,15 +442,17 @@ let makeGLR tablesIn actions =
     tables              = tablesIn;
     toPass              = Array.make cMAX_RHSLEN SemanticValue.null;
     pathQueue           = makeReductionPathQueue tablesIn;
-    topmostParsers      = Arraystack.make cNULL_STACK_NODE;
-    prevTopmost         = Arraystack.make cNULL_STACK_NODE;
+    topmostParsers      = Arraystack.make ();
+    prevTopmost         = Arraystack.make ();
     stackNodePool       = Objpool.null ();
     noisyFailedParse    = true;
     globalNodeColumn    = 0;
-    detShift            = 0;
-    detReduce           = 0;
-    nondetShift         = 0;
-    nondetReduce        = 0
+    stats = {
+      detShift          = 0;
+      detReduce         = 0;
+      nondetShift       = 0;
+      nondetReduce      = 0;
+    };
   } in
 
   (* finish nasty hack: I've got a bootstrapping problem where I can't
@@ -537,14 +519,21 @@ let addTopmostParser glr parsr =
 
 (* stackTraceString *)
 
+(* ensure the array has at least the given index, growing its size
+ * if necessary (by doubling) *)
+let ensureIndexDoubler arr idx null =
+  while Array.length !arr < idx + 1 do
+    arr := Arraystack.growArray !arr (Array.length !arr * 2) null;
+  done
+
 
 let initPath path ssi pi rhsLen =
   path.startStateId <- ssi;
   path.prodIndex <- pi;
 
   (* just use the 0th elements as the dummy 'null' value *)
-  Arraystack.ensureIndexDoubler path.sibLinks rhsLen !(path.sibLinks).(0);
-  Arraystack.ensureIndexDoubler path.symbols  rhsLen !(path.symbols ).(0)
+  ensureIndexDoubler path.sibLinks rhsLen !(path.sibLinks).(0);
+  ensureIndexDoubler path.symbols  rhsLen !(path.symbols ).(0)
 
 
 let newPath queue ssi pi rhsLen =
@@ -768,14 +757,13 @@ let rwlShiftActive tokType glr leftSibling rightSibling lhsIndex sval =
 
         while !changes do
           changes := false;
-          Arraystack.iter glr.topmostParsers
-            (fun parsr ->
-              let newDepth = computeDeterminDepth parsr in
-              if newDepth <> parsr.determinDepth then (
-                changes := true;
-                parsr.determinDepth <- newDepth;
-              )
-            );
+          Arraystack.iter (fun parsr ->
+            let newDepth = computeDeterminDepth parsr in
+            if newDepth <> parsr.determinDepth then (
+              changes := true;
+              parsr.determinDepth <- newDepth;
+            )
+          ) glr.topmostParsers;
           incr iters;
           assert (!iters < 1000);     (* protect against infinite loop *)
         done
@@ -838,7 +826,7 @@ let rwlProcessWorklist tokType glr =
                      path.leftEdgeNode.state;
 
     if accounting then
-      glr.nondetReduce <- glr.nondetReduce + 1;
+      glr.stats.nondetReduce <- glr.stats.nondetReduce + 1;
 
     (* leftEdge *)
 
@@ -867,11 +855,10 @@ let rwlProcessWorklist tokType glr =
 
       if isSome newLink then
         (* for each 'finished' parser, enqueue actions enabled by the new link *)
-        Arraystack.iter glr.topmostParsers
-          (fun parsr ->
-            let action = getActionEntry glr.tables parsr.state tokType in
-            ignore (rwlEnqueueReductions glr parsr action newLink)
-          )
+        Arraystack.iter (fun parsr ->
+          let action = getActionEntry glr.tables parsr.state tokType in
+          ignore (rwlEnqueueReductions glr parsr action newLink)
+        ) glr.topmostParsers
     );
 
     (* we dequeued it above, and are now done with it, so recycle
@@ -937,7 +924,7 @@ let rwlShiftTerminals tokenKindDesc lexer glr =
       (* found a shift *)
 
       if accounting then
-        glr.nondetShift <- glr.nondetShift + 1;
+        glr.stats.nondetShift <- glr.stats.nondetShift + 1;
 
       if traceParse then
         Printf.printf "state %d, shift token %s, to state %d\n"
@@ -1010,7 +997,7 @@ let nondeterministicParseToken tokenKindDesc lexer glr =
   let lastToDie = ref cSTATE_INVALID in
 
   (* seed the reduction worklist by analyzing the top nodes *)
-  Arraystack.iter glr.topmostParsers (fun parsr ->
+  Arraystack.iter (fun parsr ->
     let tt = Lexerint.(lexer.tokType) in
     let action = getActionEntry glr.tables parsr.state tt in
     let actions = rwlEnqueueReductions glr parsr action None(*sibLink*) in
@@ -1020,7 +1007,7 @@ let nondeterministicParseToken tokenKindDesc lexer glr =
         Printf.printf "parser in state %d died\n" parsr.state;
       lastToDie := parsr.state
     )
-  );
+  ) glr.topmostParsers;
 
   (* drop into worklist processing loop *)
   rwlProcessWorklist Lexerint.(lexer.tokType) glr;
@@ -1058,7 +1045,7 @@ let cleanupAfterParse glr =
     let treeTop = reductionAction glr.userAct glr.tables.finalProductionIndex arr in
 
     (* before pool goes away.. *)
-    decParserList glr.topmostParsers;
+    Arraystack.iter decRefCt glr.topmostParsers;
 
     Some treeTop
   )
@@ -1200,7 +1187,9 @@ let rec lrParseToken tokenKindDesc glr lr getToken lexer =
 
         (* adjust a couple things about 'prev' reflecting
          * that it has been deallocated *)
-        decr numStackNodesAllocd;
+        if accounting then (
+          decr numStackNodesAllocd;
+        );
         prev.firstSib.sib <- cNULL_STACK_NODE;
 
         assert (!parsr.referenceCount = 1);
@@ -1247,8 +1236,8 @@ let rec lrParseToken tokenKindDesc glr lr getToken lexer =
       if use_keep && not (keepNontermValue glr.userAct lhsIndex sval) then (
         printParseErrorMessage tokenKindDesc Lexerint.(lexer.tokType) glr newNode.state;
         if accounting then (
-          glr.detShift  <- glr.detShift  + lr.lrDetShift;
-          glr.detReduce <- glr.detReduce + lr.lrDetReduce;
+          glr.stats.detShift  <- glr.stats.detShift  + lr.lrDetShift;
+          glr.stats.detReduce <- glr.stats.detReduce + lr.lrDetReduce;
         );
 
         raise Exit               (* "return false" *)
@@ -1359,8 +1348,8 @@ let glrParse glr tokenKindDesc getToken lexer =
 
   | End_of_file ->
       if accounting then (
-        glr.detShift  <- glr.detShift  + lr.lrDetShift;
-        glr.detReduce <- glr.detReduce + lr.lrDetReduce;
+        glr.stats.detShift  <- glr.stats.detShift  + lr.lrDetShift;
+        glr.stats.detReduce <- glr.stats.detReduce + lr.lrDetReduce;
       );
 
       (* end of parse *)

@@ -18,17 +18,7 @@ let growArray arr newLen null =
   newArr
 
 
-(* ensure the array has at least the given index, growing its size
- * if necessary (by doubling) *)
-let ensureIndexDoubler arr idx null =
-  while Array.length !arr < idx + 1 do
-    arr := growArray !arr (Array.length !arr * 2) null;
-  done
-
-
 type 'a t = {
-  null : 'a;
-
   (* number of (non-null) elements in the array *)
   mutable len : int;
 
@@ -58,7 +48,7 @@ let pop rep =
 let push rep obj =
   if rep.len = Array.length rep.arr then
     (* need to expand the array *)
-    rep.arr <- growArray rep.arr (rep.len * 2) rep.null;
+    rep.arr <- growArray rep.arr (rep.len * 2) (Obj.magic ());
 
   (* put new element into the array at the end *)
   rep.arr.(rep.len) <- obj;
@@ -76,7 +66,7 @@ let setElt { arr } i v =
 
 
 (* iterate *)
-let iter rep f =
+let iter f rep =
   for i = 0 to rep.len - 1 do
     f rep.arr.(i)
   done
@@ -127,8 +117,8 @@ let swapWith rep obj =
 
 
 (* the stack must be given a dummy value for unused array slots *)
-let make null =
-  { null; len = 0; arr = Array.make 16 null; }
+let make () =
+  { len = 0; arr = Array.make 16 (Obj.magic ()); }
 
 
 (* EOF *)
