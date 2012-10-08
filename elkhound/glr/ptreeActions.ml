@@ -4,11 +4,6 @@
 (* based on elkhound/ptreeact *)
 
 
-open Lexerint
-open ParseTables
-open PtreeNode
-
-
 let inject : PtreeNode.t -> SemanticValue.t = Obj.magic
 let project : SemanticValue.t -> PtreeNode.t = Obj.magic
 
@@ -21,7 +16,7 @@ let getToken actions underlying lex =
   (* get next token *)
   let lex = underlying lex in
   (* my sval is a tree leaf *)
-  lex.tokSval <- inject (makePTreeNode (actions.terminalName lex.tokType));
+  lex.Lexerint.tokSval <- inject (PtreeNode.makePTreeNode (actions.terminalName lex.Lexerint.tokType));
   lex
 
 
@@ -32,17 +27,17 @@ let makeParseTreeActions underlying tables : PtreeNode.t UserActions.t =
     reductionAction = (
       fun prodId svals ->
         (* production info *)
-        let rhsLen = getProdInfo_rhsLen tables prodId in
-        let lhsIndex = getProdInfo_lhsIndex tables prodId in
+        let rhsLen = ParseTables.getProdInfo_rhsLen tables prodId in
+        let lhsIndex = ParseTables.getProdInfo_lhsIndex tables prodId in
         
         (* make a tree node, initially with no children *)
-        let ret = makePTreeNode (underlying.nonterminalName lhsIndex) in
+        let ret = PtreeNode.makePTreeNode (underlying.nonterminalName lhsIndex) in
 
         (* add the children *)
-        setNumChildren ret rhsLen;
+        PtreeNode.setNumChildren ret rhsLen;
         for i = 0 to rhsLen - 1 do
           let child = project svals.(i) in
-          setChild ret i child;
+          PtreeNode.setChild ret i child;
         done;
         
         inject ret
@@ -62,7 +57,7 @@ let makeParseTreeActions underlying tables : PtreeNode.t UserActions.t =
         let l = project left in
         let r = project right in
         
-        addAlternative l r;
+        PtreeNode.addAlternative l r;
         inject l
     );
 
