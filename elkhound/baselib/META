@@ -1,0 +1,10 @@
+# OASIS_START
+# DO NOT EDIT (digest: 5db76626bd9f78642edd28255f379d25)
+version = "0.6"
+description = "Elkhound GLR Parser Generator"
+requires = "sexplib batteries"
+archive(byte) = "baselib.cma"
+archive(native) = "baselib.cmxa"
+exists_if = "baselib.cma"
+# OASIS_STOP
+
