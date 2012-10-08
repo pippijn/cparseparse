@@ -1,0 +1,2 @@
+//+ -ptree
+int main () { }
