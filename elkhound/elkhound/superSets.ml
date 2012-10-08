@@ -7,7 +7,7 @@ let compute_supersets indexed_nonterms nonterms =
     super.subsets <-
       List.map (fun sub ->
         (* we validated the existence of all subsets, already *)
-        Stringmap.find sub nonterms
+        StringMap.find sub nonterms
       ) super.subset_names
   ) indexed_nonterms;
 

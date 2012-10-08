@@ -19,6 +19,15 @@ let semtype sym =
     sym.semtype
 
 
+let first_semtype semtype =
+  if semtype = "" then
+    failwith "first nonterminal needs defined type"
+  else if semtype.[0] = '\'' then
+    failwith "first nonterminal cannot be polymorphic"
+  else
+    semtype
+
+
 let emit_ml_prologue out =
   (* prologue *)
   output_endline out "(* *** DO NOT EDIT BY HAND *** *)";
@@ -244,6 +253,8 @@ let emit_ml_dup_del_merge out env grammar =
 let emit_ml_action_code out dcl env grammar tables =
   emit_ml_prologue dcl;
 
+  let result_type = first_semtype env.indexed_nonterms.(2).nbase.semtype in
+
   (* insert the stand-alone verbatim sections *)
   List.iter (fun code ->
     emit_ml_user_code ~braces:false dcl code
@@ -324,12 +335,18 @@ let emit_ml_action_code out dcl env grammar tables =
   output_newline out
 
 
-let emit_ml_tables out dcl tables =
+let emit_ml_tables out dcl dat tables =
+  TablePrinting.dump_tables dat tables;
+
   emit_ml_prologue dcl;
   output_endline dcl "val parseTables : Parsetables.tParseTables";
 
   emit_ml_prologue out;
-  TablePrinting.print_tables out tables
+  if true then (
+    output_endline out "let parseTables : Parsetables.tParseTables = Marshal.from_channel (open_in_bin \"_build/ccparse/gr/ccTables.dat\")";
+  ) else (
+    TablePrinting.print_tables out tables
+  )
 
 
 let emit_ml name env grammar tables =
@@ -350,17 +367,20 @@ let emit_ml name env grammar tables =
   end;
 
   begin
-    let dcl = open_out (name ^ "Tables.mli") in
-    let out = open_out (name ^ "Tables.ml") in
+    let dcl = open_out     (name ^ "Tables.mli") in
+    let out = open_out     (name ^ "Tables.ml") in
+    let dat = open_out_bin (name ^ "Tables.dat") in
 
     begin try
-      emit_ml_tables out dcl tables
+      emit_ml_tables out dcl dat tables
     with e ->
+      close_out dat;
       close_out out;
       close_out dcl;
       raise e;
     end;
 
+    close_out dat;
     close_out out;
     close_out dcl;
   end;

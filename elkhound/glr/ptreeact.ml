@@ -25,10 +25,8 @@ let getToken actions underlying lex =
 
 
 (* ----------------------- parseTreeActions ------------------------ *)
-let makeParseTreeActions (underlying: tUserActions) (tables: tParseTables) 
-  : tUserActions =
-begin
-  let actions:tUserActions = {
+let makeParseTreeActions underlying tables =
+  {
     (* action to perform upon performing a reduction *)
     reductionAction = (
       fun (prodId:int) (svals: tSemanticValue array) -> (
@@ -74,10 +72,4 @@ begin
     nonterminalDescription = (fun id _ -> (underlying.nonterminalName id));
     terminalName = (fun id -> (underlying.terminalName id));
     nonterminalName = (fun id -> (underlying.nonterminalName id));
-  } in
-  
-  actions
-end
-
-
-(* EOF *)
+  }

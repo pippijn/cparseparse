@@ -13,7 +13,7 @@
  *)
 
 open Sexplib.Conv
-module Stringmap = Stringmap.M
+module StringMap = StringMap.M
 
 type spec_func = {
   params                : string list;
@@ -126,9 +126,9 @@ type config = {
 
 type grammar = {
   (* --- representation --- *)
-  nonterminals          : nonterminal Stringmap.t;
-  terminals             : terminal Stringmap.t;
-  aliases               : string Stringmap.t;
+  nonterminals          : nonterminal StringMap.t;
+  terminals             : terminal StringMap.t;
+  aliases               : string StringMap.t;
   productions           : production list;
   start_symbol          : nonterminal;
 
@@ -214,9 +214,9 @@ let empty_config = {
 
 
 let empty_grammar = {
-  nonterminals        = Stringmap.empty;
-  terminals           = Stringmap.empty;
-  aliases             = Stringmap.empty;
+  nonterminals        = StringMap.empty;
+  terminals           = StringMap.empty;
+  aliases             = StringMap.empty;
   productions         = [];
   start_symbol        = empty_nonterminal;
                      

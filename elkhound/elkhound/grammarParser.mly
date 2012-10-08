@@ -1,5 +1,5 @@
 %{
-  open Gramast
+  open GrammarAst
 %}
 
 %token EOF
@@ -39,7 +39,7 @@
 
 /* ===================== productions ======================= */
 
-%start <Gramast.topform list> parse
+%start <GrammarAst.topform list> parse
 %%
 
 /* The actions in this file simply build an Abstract Syntax Tree (AST)

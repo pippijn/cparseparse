@@ -85,16 +85,19 @@ let iter rep f =
 (* search and return the element index, or -1 for not found *)
 let findIndex f rep =
   (* ug.. must use tail recursion just so I can break early... *)
-  let rec loop i =
-    if i > rep.len - 1 then
-      -1                 (* not found *)
-    else if f rep.arr.(i) then
-      i                  (* found *)
-    else
-      loop (i + 1)       (* keep looking *)
-  in
+  let index = ref (-1) in
+  begin
+    try
+      for i = 0 to rep.len - 1 do
+        if f rep.arr.(i) then (
+          index := i;
+          raise Exit
+        )
+      done
+    with Exit -> ()
+  end;
 
-  loop 0
+  !index
 
 
 (* search and return the element, or None *)

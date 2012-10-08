@@ -7,7 +7,7 @@ let reset_first_follow prods nonterms term_count =
   let open GrammarType in
   let reset set = TerminalSet.clear set in
 
-  Stringmap.iter (fun _ nonterm ->
+  StringMap.iter (fun _ nonterm ->
     reset nonterm.first;
     reset nonterm.follow;
   ) nonterms;
@@ -18,12 +18,12 @@ let reset_first_follow prods nonterms term_count =
 
 
 let compute_indexed_nonterms nonterms =
-  let indexed = Array.make (Stringmap.cardinal nonterms + 1) empty_nonterminal in
+  let indexed = Array.make (StringMap.cardinal nonterms + 1) empty_nonterminal in
 
   (* indexed.(0) is empty_nonterminal *)
   assert (empty_nonterminal.nt_index = 0);
 
-  Stringmap.iter (fun _ nonterm ->
+  StringMap.iter (fun _ nonterm ->
     (* the ids have already been assigned *)
     let i = nonterm.nt_index in (* map: symbol to index *)
     (* verify there are no duplicate indices *)
@@ -46,22 +46,22 @@ let compute_indexed_nonterms nonterms =
       assert (nonterm == empty_nonterminal)
     (* the synthesised start symbol must follow *)
     else if nonterm.nt_index = 1 then
-      assert (nonterm.nbase.name == Grammar.start_name)
+      assert (nonterm.nbase.name == GrammarTreeParser.start_name)
     (* any other nonterminals must not be empty *)
     else
       assert (nonterm != empty_nonterminal)
   ) indexed;
 
   (* number of nonterminals + 1 for empty_nonterminal *)
-  assert (Array.length indexed = Stringmap.cardinal nonterms + 1);
+  assert (Array.length indexed = StringMap.cardinal nonterms + 1);
 
   indexed
 
 
 let compute_indexed_terms terms =
-  let indexed = Array.make (Stringmap.cardinal terms) empty_terminal in
+  let indexed = Array.make (StringMap.cardinal terms) empty_terminal in
 
-  Stringmap.iter (fun _ term ->
+  StringMap.iter (fun _ term ->
     (* the ids have already been assigned *)
     let i = term.term_index in (* map: symbol to index *)
     indexed.(i) <- term (* map: index to symbol *)
@@ -70,7 +70,7 @@ let compute_indexed_terms terms =
   (* verify we filled the term_index map *)
   Array.iter (fun term -> assert (term != empty_terminal)) indexed;
 
-  assert (Array.length indexed = Stringmap.cardinal terms);
+  assert (Array.length indexed = StringMap.cardinal terms);
 
   indexed
 

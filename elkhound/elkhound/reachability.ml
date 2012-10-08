@@ -34,7 +34,7 @@ let compute_reachable nonterms terms prods_by_lhs start =
   assert (nonterms.(0) == empty_nonterminal);
   assert (nonterms.(0).nbase.reachable = false);
   nonterms.(0).nbase.reachable <- true;
-  assert (nonterms.(1).nbase.name == Grammar.start_name);
+  assert (nonterms.(1).nbase.name == GrammarTreeParser.start_name);
   assert (nonterms.(1).nbase.reachable = false);
   nonterms.(1).nbase.reachable <- true;
 

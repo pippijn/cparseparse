@@ -135,16 +135,16 @@ and glr = {
   pathQueue : reduction_path_queue;
 
   (* set of topmost parser nodes *)
-  mutable topmostParsers : stack_node Arraystack.t;
+  topmostParsers : stack_node Arraystack.t;
 
   (* swapped with 'topmostParsers' periodically, for performance reasons *)
-  mutable prevTopmost : stack_node Arraystack.t;
+  prevTopmost : stack_node Arraystack.t;
 
   (* node allocation pool; shared with glrParse *)
   mutable stackNodePool : stack_node Objpool.t;
 
   (* when true, print some diagnosis of failed parses *)
-  mutable noisyFailedParse : bool;
+  noisyFailedParse : bool;
 
   (* current token number *)
   mutable globalNodeColumn : int;
@@ -1319,7 +1319,6 @@ let rec main_loop tokenKindDesc glr lr getToken lexer =
 (* buildParserIndex goes here *)
 
 let glrParse glr tokenKindDesc getToken lexer treeTop =
-
   glr.globalNodeColumn <- 0;
   begin
     let first = makeStackNode glr 0(*startState*) in

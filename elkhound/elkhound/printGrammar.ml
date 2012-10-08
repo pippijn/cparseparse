@@ -3,15 +3,15 @@ open GrammarType
 let print_symbol ?(out=stdout) sym =
   match sym with
   | Terminal ("", term) ->
-      output_string out (Grammar.name_of_symbol sym)
+      output_string out (GrammarUtil.name_of_symbol sym)
   | Terminal (tag, term) ->
       Printf.fprintf out "%s:" tag;
-      output_string out (Grammar.name_of_symbol sym)
+      output_string out (GrammarUtil.name_of_symbol sym)
   | Nonterminal ("", nonterm) ->
-      output_string out (Grammar.name_of_symbol sym)
+      output_string out (GrammarUtil.name_of_symbol sym)
   | Nonterminal (tag, nonterm) ->
       Printf.fprintf out "%s:" tag;
-      output_string out (Grammar.name_of_symbol sym)
+      output_string out (GrammarUtil.name_of_symbol sym)
 
 
 let print_production ?(out=stdout) prod =

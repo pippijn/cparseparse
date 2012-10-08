@@ -1,5 +1,5 @@
 open Batteries_uni
-open Grampar
+open GrammarParser
 
 type automaton =
   | Normal
@@ -7,7 +7,6 @@ type automaton =
   | Typename
 
 type state = {
-  basedir : string;
   code : Buffer.t;
   mutable stack : Ulexing.lexbuf list;
   mutable automaton : automaton;
@@ -15,8 +14,7 @@ type state = {
   mutable in_rhs : bool;
 }
 
-let default_state basedir lexbuf = {
-  basedir = basedir;
+let default_state lexbuf = {
   code = Buffer.create 16;
   stack = [lexbuf];
   automaton = Normal;
@@ -154,12 +152,13 @@ let rec normal state = lexer
 | "context_class"						-> state.automaton <- Verbatim; TOK_CONTEXT_CLASS
 | "impl_verbatim"						-> state.automaton <- Verbatim; TOK_IMPL_VERBATIM
 | "verbatim"							-> state.automaton <- Verbatim; TOK_VERBATIM
-| "nonterm"							-> state.automaton <- Typename; TOK_NONTERM
+| "nonterm("							-> state.automaton <- Typename; state.brace_level <- 1; Buffer.add_char state.code '('; TOK_NONTERM
+| "nonterm"							-> TOK_NONTERM
 | "token"							-> state.automaton <- Typename; TOK_TOKEN
 | "fun"								-> state.in_rhs <- true; TOK_FUN
 | "include" ws* "(" ws* '"' ([^ '"']+) '"' ws* ")" ->
     let lexeme = Ulexing.utf8_lexeme lexbuf in
-    let file = state.basedir ^ "/" ^ (include_file lexeme) in
+    let file = include_file lexeme in
     let nextbuf = Ulexing.from_utf8_channel (Pervasives.open_in file) in
     state.stack <- nextbuf :: state.stack;
     normal state nextbuf

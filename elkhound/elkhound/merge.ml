@@ -1,11 +1,11 @@
 open Sexplib.Conv
-open Gramast
-module Stringmap = Stringmap.M
-module Stringset = Stringset.M
+open GrammarAst
+module StringMap = StringMap.M
+module StringSet = StringSet.M
 
 
 let accumulators =
-  List.fold_left (fun set elt -> Stringset.add elt set) Stringset.empty [
+  List.fold_left (fun set elt -> StringSet.add elt set) StringSet.empty [
     "shift_reduce_conflicts";
     "reduce_reduce_conflicts";
     "unreachable_nonterminals";
@@ -23,7 +23,7 @@ type topforms = {
   precs : precspec list;
 
   first_nonterm : string;
-  nonterms : (topform * int) Stringmap.t;
+  nonterms : (topform * int) StringMap.t;
 } with sexp
 
 
@@ -36,7 +36,7 @@ let empty_topforms = {
   precs = [];
 
   first_nonterm = "";
-  nonterms = Stringmap.empty;
+  nonterms = StringMap.empty;
 }
 
 
@@ -144,7 +144,7 @@ let merge grammars =
         | TF_verbatim _ ->
             { topforms with verbatims = topform :: topforms.verbatims }, next_nt_index
 
-        | TF_option (name, value) when Stringset.mem name accumulators ->
+        | TF_option (name, value) when StringSet.mem name accumulators ->
             (* Sum up values for some options. *)
             let found, options =
               List.fold_left (fun (found, options) -> function
@@ -183,7 +183,7 @@ let merge grammars =
             let topform, nt_index, next_nt_index =
               try
                 (* Find an existing non-terminal. *)
-                match Stringmap.find name topforms.nonterms with
+                match StringMap.find name topforms.nonterms with
 
                 | TF_nonterm (_, osemtype, ofuncs, oprods, osubsets), nt_index ->
                     if nsemtype <> osemtype then
@@ -211,7 +211,7 @@ let merge grammars =
             in
 
             { topforms with
-              nonterms = Stringmap.add name (topform, nt_index) topforms.nonterms;
+              nonterms = StringMap.add name (topform, nt_index) topforms.nonterms;
               first_nonterm;
             }, next_nt_index
 
@@ -221,11 +221,11 @@ let merge grammars =
 
   (* nt_index starts with 2, because 0 is empty and 1 is
    * the synthesised entry point *)
-  assert (last_nt_index = Stringmap.cardinal topforms.nonterms + 2);
+  assert (last_nt_index = StringMap.cardinal topforms.nonterms + 2);
 
   (* verify that we didn't assign the same index twice *)
-  Stringmap.iter (fun _ (a, a_index) ->
-    Stringmap.iter (fun _ (b, b_index) ->
+  StringMap.iter (fun _ (a, a_index) ->
+    StringMap.iter (fun _ (b, b_index) ->
       if a != b && a_index = b_index then (
         Printf.printf "%s has the same index (%d) as %s\n"
           (nonterm_name a)
@@ -243,4 +243,4 @@ let to_ast topforms = []
   @ topforms.options
   @ topforms.verbatims
   @ [TF_terminals (topforms.decls, topforms.types, topforms.precs)]
-  @ fst (List.split (snd (List.split (Stringmap.bindings topforms.nonterms))))
+  @ fst (List.split (snd (List.split (StringMap.bindings topforms.nonterms))))

@@ -39,7 +39,7 @@ type prod_index = int
 (*   N+1:  terminal N *)
 (*   0:    no symbol *)
 (*   -N-1: nonterminal N *)
-type tSymbolId = int
+type symbol_id = int
 let symIsTerm    id =  id > 0
 let symAsTerm    id =  id - 1      (* why not TermIndex? don't know *)
 let symIsNonterm id =  id < 0
@@ -69,7 +69,7 @@ type tParseTables = {
   prodInfo_lhsIndex : nt_index array;
 
   (* map state to symbol shifted to arrive at that state *)
-  stateSymbol : tSymbolId array;
+  stateSymbol : symbol_id array;
 
   (* ambiguous actions: one big list, for allocation purposes; then
    * the actions encode indices into this table; the first indexed
