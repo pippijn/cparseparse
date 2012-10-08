@@ -233,28 +233,17 @@ let deallocateSemanticValue userAct sym sval =
 
 (* --------------------- SiblingLink ----------------------- *)
 (* NULL sibling link *)
-let cNULL_SIBLING_LINK = {
-  sib = Obj.magic [];
-  sval = SemanticValue.null;
-}
+let cNULL_SIBLING_LINK : 'result sibling_link = Obj.magic ()
 
 let makeSiblingLink sib sval = { sib; sval; }
 
 
 (* --------------------- StackNode -------------------------- *)
 (* NULL stack node *)
-let cNULL_STACK_NODE = {
-  state          = cSTATE_INVALID;
-  leftSiblings   = [];
-  firstSib       = (Obj.magic []);
-  referenceCount = 0;
-  determinDepth  = 0;
-  glr            = (Obj.magic []);
-  column         = 0;
-}
+let cNULL_STACK_NODE : 'result stack_node = Obj.magic ()
 
 
-let emptyStackNode glr = {
+let make_stack_node glr = {
   state          = cSTATE_INVALID;
   leftSiblings   = [];
   firstSib       = makeSiblingLink cNULL_STACK_NODE SemanticValue.null;
@@ -471,7 +460,7 @@ let makeGLR tablesIn actions =
    * UPDATE: Switched to using Obj.magic there too, for performance.
    *)
 
-  glr.stackNodePool <- Objpool.make (fun () -> emptyStackNode glr);
+  glr.stackNodePool <- Objpool.make (fun () -> make_stack_node glr);
 
   if use_mini_lr then
     (* check that none of the productions exceed cMAX_RHSLEN *)
