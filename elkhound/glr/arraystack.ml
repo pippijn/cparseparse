@@ -22,7 +22,7 @@ type 'a t = {
   (* number of (non-null) elements in the array *)
   mutable len : int;
 
-  (* the array; its length may be greater than 'poolLength', to
+  (* the array; its length may be greater than 'len', to
    * accomodate adding more elements without resizing the array *)
   mutable arr : 'a array;
 }
