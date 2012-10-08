@@ -110,24 +110,24 @@ let parse glr actions cin lexer =
 let parse_utf8 glr actions cin =
   let open Lexerint in
   parse glr actions cin {
-    from_channel = Lexing.from_channel;
-    lexeme = Lexing.lexeme;
-    lexeme_start = Lexing.lexeme_start;
-
-    token = Lexer.token;
-    line = Lexer.line;
-  }
-
-
-let parse_ascii glr actions cin =
-  let open Lexerint in
-  parse glr actions cin {
     from_channel = Ulexing.from_utf8_channel;
     lexeme = Ulexing.utf8_lexeme;
     lexeme_start = Ulexing.lexeme_start;
 
     token = Ulexer.token;
     line = Ulexer.line;
+  }
+
+
+let parse_ascii glr actions cin =
+  let open Lexerint in
+  parse glr actions cin {
+    from_channel = Lexing.from_channel;
+    lexeme = Lexing.lexeme;
+    lexeme_start = Lexing.lexeme_start;
+
+    token = Lexer.token;
+    line = Lexer.line;
   }
 
 

@@ -70,5 +70,5 @@ profile-elkhound: elkhound/elkhound.native
 
 profile-ccparse: ccparse/ccparse.native
 	rm -f callgrind.out.*
-	$(CALLGRIND) _build/ccparse/ccparse.native testsuite/ccparse/profile.cc
+	$(CALLGRIND) _build/ccparse/ccparse.native -pp -utf8 testsuite/ccparse/profile.cc
 	mv callgrind.out.* callgrind.out.1
