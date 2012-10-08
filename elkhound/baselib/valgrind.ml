@@ -5,6 +5,20 @@ module Callgrind = struct
   external toggle_collect : unit -> unit = "ml_Valgrind_Callgrind_toggle_collect"
   external start_instrumentation : unit -> unit = "ml_Valgrind_Callgrind_start_instrumentation"
   external stop_instrumentation : unit -> unit = "ml_Valgrind_Callgrind_stop_instrumentation"
+
+  let instrumented f x =
+    start_instrumentation ();
+    let r, e =
+      try
+        Some (f x), None
+      with e ->
+        None, Some e
+    in
+    stop_instrumentation ();
+    match r, e with
+    | Some r, None -> r
+    | None, Some e -> raise e
+    | _ -> failwith "impossible"
 end
 
 module Memcheck = struct

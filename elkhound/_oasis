@@ -15,8 +15,8 @@ XStdFilesREADME:                false
 
 SourceRepository head
         Type:                   git
-        Location:               git://git.xinutec.org/devel/elkhound.git
-        Browser:                http://xinutec.org/git/devel/elkhound.git
+        Location:               git://git.xinutec.org/lang/cxxparse.git
+        Browser:                http://xinutec.org/git/lang/cxxparse.git
 
 
 Executable ccparse
