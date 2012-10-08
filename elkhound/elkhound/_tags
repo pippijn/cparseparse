@@ -1,2 +1,7 @@
-<*.ml>: syntax_camlp4o, pkg_sexplib.syntax
-"grammarParser.ml": -syntax_camlp4o
+# sexplib
+"analysisEnvType.ml": syntax_camlp4o, pkg_sexplib.syntax
+"grammarType.ml": syntax_camlp4o, pkg_sexplib.syntax
+"assoc.ml": syntax_camlp4o, pkg_sexplib.syntax
+"grammarAst.ml": syntax_camlp4o, pkg_sexplib.syntax
+"merge.ml": syntax_camlp4o, pkg_sexplib.syntax
+"grammarLexer.ml": syntax_camlp4o, pkg_ulex.syntax
