@@ -12,7 +12,7 @@
 let execute cmd =
   let ic = Unix.open_process_in cmd and lst = ref [] in
   try while true do lst := input_line ic :: !lst done; assert false
-  with End_of_file -> close_in ic; List.rev !lst
+  with End_of_file -> ignore (Unix.close_process_in ic); List.rev !lst
 
 (* +=====~~~-------------------------------------------------------~~~=====+ *)
 (* |                             Execute tests                             | *)
