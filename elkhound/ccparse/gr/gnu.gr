@@ -52,7 +52,7 @@ terminals {
 
 // ----------- gcc statement expression -----------
 // http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Statement-Exprs.html
-nonterm('primaryexpression) PrimaryExpression {
+nonterm('tPrimaryExpression) PrimaryExpression {
   -> "(" cs:CompoundStatement ")"
        { unimplemented 538 }
 }
@@ -65,7 +65,7 @@ nonterm('primaryexpression) PrimaryExpression {
 //   struct Foo { int x; int y; } myfoo;
 //   myfoo = (struct Foo) { 4, 5 };        <-- here
 // which would assign x=4 and y=5 in 'myfoo'
-nonterm('primaryexpression) PrimaryExpression {
+nonterm('tPrimaryExpression) PrimaryExpression {
   -> "(" t:TypeId ")" i:CompoundInitializer
        { unimplemented 539 }
 }
@@ -73,7 +73,7 @@ nonterm('primaryexpression) PrimaryExpression {
 
 // ----------- gcc misc -----------
 // http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Function-Names.html
-nonterm('preprocstring) PreprocString {
+nonterm('tPreprocString) PreprocString {
   // slightly subtle: ordinary strings are yielded *with quotes*,
   // whereas these special guys are not quoted; also note that
   // yielding of these token codes depends on lang.gccFuncBehavior
@@ -83,7 +83,7 @@ nonterm('preprocstring) PreprocString {
 
 // dmandelin@mozilla.com
 // These are like function calls; they should have the same nonterminal
-nonterm('postfixexpression) PostfixExpression {
+nonterm('tPostfixExpression) PostfixExpression {
   // GNU extension; dsw: Since the argument is an expression, I know
   // of no way to handle this other than putting it into the grammar
   // directly.
@@ -115,7 +115,7 @@ nonterm('postfixexpression) PostfixExpression {
 //    ((A*) NULL)->a.b
 // so we construct the right-hand part of that expression here, and let
 // the context fill in the cast and NULL in the offsetof action.
-nonterm('namesafterdot) NamesAfterDot {
+nonterm('tNamesAfterDot) NamesAfterDot {
   -> n:NameAfterDot
        { unimplemented 553 }
   -> n:NamesAfterDot "." n2:NameAfterDot
@@ -125,21 +125,21 @@ nonterm('namesafterdot) NamesAfterDot {
 }
 
 // dsw: had to break this out for location recording reasons
-nonterm('parenthesizedexpression) ParenthesizedExpression {
+nonterm('tParenthesizedExpression) ParenthesizedExpression {
   -> "(" e:Expression ")"
        { unimplemented 556 }
 }
 
 
 // http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Conditionals.html
-nonterm('conditionalexpression) ConditionalExpression {
+nonterm('tConditionalExpression) ConditionalExpression {
   -> cond:BinaryExpression "?" /*th:Expression*/ ":" el:AssignmentExpression
        { unimplemented 557 }
 }
 
 
 // http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Nested-Functions.html
-nonterm('statement) Statement {
+nonterm('tStatement) Statement {
   -> f:FunctionDefinition
        { unimplemented 558 }
   // quarl 2006-06-15
@@ -151,7 +151,7 @@ nonterm('statement) Statement {
 
 
 // http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Template-Instantiation.html
-nonterm('explicitinstantiation) ExplicitInstantiation {
+nonterm('tExplicitInstantiation) ExplicitInstantiation {
   // here's one for things like (in/gnu/g0002.cc)
   //   extern template class allocator<char>;
   -> "extern" "template" d:BlockDeclaration
@@ -160,7 +160,7 @@ nonterm('explicitinstantiation) ExplicitInstantiation {
 
 
 // http://gcc.gnu.org/onlinedocs/gcc-3.4.1/gcc/Case-Ranges.html
-nonterm('statement) Statement {
+nonterm('tStatement) Statement {
   -> "case" e:ConstantExpression "..." e2:ConstantExpression ":" s:Statement
        { unimplemented 561 }
 }
@@ -176,7 +176,7 @@ nonterm('statement) Statement {
 // the end of compound blocks.  Therefore I suspect the tolerance in
 // gcc-2 was unintentional.  Oh well, Elsa allows it in all gcc modes..
 
-nonterm('compoundstatement) CompoundStatement {
+nonterm('tCompoundStatement) CompoundStatement {
   // special case for a block that ends in a label; Warning: no don't
   // do this by making a label, case and/or default form not contain
   // the statement that follows; It wouldn't work in this case:
@@ -188,7 +188,7 @@ nonterm('compoundstatement) CompoundStatement {
 }
 
 // a sequence of labels with no statement following, not even a skip
-nonterm('labeledemptystatementlist) LabeledEmptyStatementList {
+nonterm('tLabeledEmptyStatementList) LabeledEmptyStatementList {
   -> n:LabelAndColon s:LabeledEmptyStatementListOpt
        { unimplemented 563 }
   -> "case" e:ConstantExpression ":" s:LabeledEmptyStatementListOpt
@@ -199,7 +199,7 @@ nonterm('labeledemptystatementlist) LabeledEmptyStatementList {
        { unimplemented 566 }
 }
 
-nonterm('labeledemptystatementlistopt) LabeledEmptyStatementListOpt {
+nonterm('tLabeledEmptyStatementListOpt) LabeledEmptyStatementListOpt {
   -> empty
        { unimplemented 567 }
   -> s:LabeledEmptyStatementList
@@ -211,7 +211,7 @@ nonterm('labeledemptystatementlistopt) LabeledEmptyStatementListOpt {
 // http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Typeof.html
 
 
-nonterm('declspecifier) DeclSpecifier {
+nonterm('tDeclSpecifier) DeclSpecifier {
   // TS_typeof: triggered by TypeTypeSpecifier
   -> te:TypeofTypeSpecifier m2:UberModifierSeqOpt
        { unimplemented 569 }
@@ -221,7 +221,7 @@ nonterm('declspecifier) DeclSpecifier {
 }
 
 
-nonterm('typespecifier) TypeSpecifier {
+nonterm('tTypeSpecifier) TypeSpecifier {
   // TS_typeof
   -> te:TypeofTypeSpecifier cv2:UberCVQualifierSeqOpt
        { unimplemented 571 }
@@ -233,7 +233,7 @@ nonterm('typespecifier) TypeSpecifier {
 
 // this production isolates the ambiguity to within itself, rather
 // than letting it pollute upwards into TypeSpecifier
-nonterm('typeoftypespecifier) TypeofTypeSpecifier {
+nonterm('tTypeofTypeSpecifier) TypeofTypeSpecifier {
   // ambiguous:
   //   typeof(x)
   // could either be type of an expression 'x', or
@@ -246,13 +246,13 @@ nonterm('typeoftypespecifier) TypeofTypeSpecifier {
 
 
 // gnu extension
-nonterm('typeofexpr) TypeofExpr {
+nonterm('tTypeofExpr) TypeofExpr {
   -> "__typeof__" "(" e:Expression ")"
        { unimplemented 576 }
 }
 
 // gnu extension
-nonterm('typeoftype) TypeofType {
+nonterm('tTypeofType) TypeofType {
   -> "__typeof__" "(" t:TypeId ")"
        { unimplemented 577 }
 }
@@ -260,7 +260,7 @@ nonterm('typeoftype) TypeofType {
 
 // ----------- gcc C++ min and max operators -----------
 // http://gcc.gnu.org/onlinedocs/gcc-3.1/gcc/Min-and-Max.html
-nonterm('binexp_mid) BinExp_mid {
+nonterm('tBinExp_mid) BinExp_mid {
   -> left:BinExp_mid "<?" right:BinExp_high
        { unimplemented 578 }
   -> left:BinExp_mid ">?" right:BinExp_high
@@ -268,7 +268,7 @@ nonterm('binexp_mid) BinExp_mid {
 }
 
 // it turns out gcc lets users overload them too (in/gnu/k0004.cc)
-nonterm('operator) Operator {
+nonterm('tOperator) Operator {
   -> "<?"    { unimplemented 580 }
   -> ">?"    { unimplemented 581 }
 }
@@ -277,7 +277,7 @@ nonterm('operator) Operator {
 // ----------- gcc asm -----------
 // http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Extended-Asm.html
 
-//  nonterm VolatileOpt {
+//  nonterm('tVolatileOpt) VolatileOpt {
 //    -> empty
 //         { unimplemented 582 }
 //    -> "volatile"
@@ -286,27 +286,27 @@ nonterm('operator) Operator {
 
 
 // dsw: FIX: add returning semantic value
-nonterm('bracketedwordopt) BracketedWordOpt {
+nonterm('tBracketedWordOpt) BracketedWordOpt {
   -> empty ;
   -> "[" id:Identifier "]" ;
 }
 
 
 // dsw: FIX: add returning semantic value
-nonterm('parenthesizedexpressionopt) ParenthesizedExpressionOpt {
+nonterm('tParenthesizedExpressionOpt) ParenthesizedExpressionOpt {
   -> empty ;
   ->  "(" e:Expression ")" ;
 }
 
 
 // dsw: FIX: add returning semantic value
-nonterm('opconstraint) OpConstraint {
+nonterm('tOpConstraint) OpConstraint {
   -> name:BracketedWordOpt constr:StringLiteral e:ParenthesizedExpressionOpt ;
 }
 
 
 // dsw: FIX: add returning semantic value
-nonterm('opconstraintlist) OpConstraintList {
+nonterm('tOpConstraintList) OpConstraintList {
   -> empty ;
   -> oc:OpConstraint ;
   -> oc:OpConstraint "," ocl:OpConstraintList ;
@@ -315,18 +315,18 @@ nonterm('opconstraintlist) OpConstraintList {
 
 // dsw: FIX: add returning semantic value
 // note: technically you can only have up to 3, but I allow 0 or more
-nonterm('opconstraints) OpConstraints {
+nonterm('tOpConstraints) OpConstraints {
   -> empty;
   -> NonemptyOpConstraints;
 }
-nonterm('nonemptyopconstraints) NonemptyOpConstraints {
+nonterm('tNonemptyOpConstraints) NonemptyOpConstraints {
   -> ocs:OpConstraints ":" ocl:OpConstraintList ;
   -> ocs:OpConstraints "::" ocl:OpConstraintList ;
 }
 
 
 // dsw: FIX: add returning rest of semantic value
-nonterm('asmdefinition) AsmDefinition {
+nonterm('tAsmDefinition) AsmDefinition {
   // 7/31/04: For some time we have allowed "volatile" after "asm", as
   // is documented here:
   //   http://gcc.gnu.org/onlinedocs/gcc-3.1/gcc/Extended-Asm.html
@@ -349,7 +349,7 @@ nonterm('asmdefinition) AsmDefinition {
 
 // ----------- gcc asm labels -----------
 // http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Asm-Labels.html
-nonterm('declarator) Declarator {
+nonterm('tDeclarator) Declarator {
   // Asm Labels after declarators; see in/gnu/asm01.c
   -> d:DirectDeclarator "asm" "(" StringLiteral ")"
        { unimplemented 587 }
@@ -362,7 +362,7 @@ nonterm('declarator) Declarator {
 
 // ----------- C99 designated initializers -----------
 // Designated Initializers
-nonterm('initializerclause) InitializerClause {
+nonterm('tInitializerClause) InitializerClause {
   // obsolescent form
   // http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Designated-Inits.html
   -> d:Identifier ":" init:SimpleInitializerClause
@@ -375,14 +375,14 @@ nonterm('initializerclause) InitializerClause {
     { unimplemented 591 }
 }
 
-nonterm('designatorlist) DesignatorList {
+nonterm('tDesignatorList) DesignatorList {
   -> d:Designator
     { unimplemented 592 }
   -> d:Designator dl:DesignatorList
     { unimplemented 593 }
 }
 
-nonterm('designator) Designator {
+nonterm('tDesignator) Designator {
   -> "." id:Identifier
     { unimplemented 594 }
   -> "[" idx_expr:ConstantExpression "]"
@@ -395,28 +395,28 @@ nonterm('designator) Designator {
 
 
 // ----------- C99 restrict keyword -----------
-nonterm('cvqualifier) CVQualifier {
+nonterm('tCVQualifier) CVQualifier {
   -> "restrict"              { unimplemented 597 }
 }
 
-nonterm('ubermodifier) UberModifier {
+nonterm('tUberModifier) UberModifier {
   -> "restrict"              { unimplemented 598 }
 }
 
-nonterm('ubercvqualifier) UberCVQualifier {
+nonterm('tUberCVQualifier) UberCVQualifier {
   -> "restrict"              { unimplemented 599 }
 }
 
 
 // ----------- C99 qualifiers in array brackets -----------
-nonterm('directdeclarator) DirectDeclarator {
+nonterm('tDirectDeclarator) DirectDeclarator {
   // array with qualifier in the brackets; see the version for
   // DirectAbstractDeclarator for comments
   -> d:DirectDeclarator "[" q:CVQualifierSeq "]"
     { unimplemented 600 }
 }
 
-nonterm('directabstractdeclarator) DirectAbstractDeclarator {
+nonterm('tDirectAbstractDeclarator) DirectAbstractDeclarator {
   // array with qualifier in the brackets
   -> d:DirectAbstractDeclaratorOpt "[" q:CVQualifierSeq "]"
     { unimplemented 601 }
@@ -428,7 +428,7 @@ nonterm('directabstractdeclarator) DirectAbstractDeclarator {
 // single type specifier (e.g. in/gnu/dC0014.c); this is a bug, and is
 // fixed in gcc-3.x, but the linux kernel uses it so Elsa parses it (to
 // a limited degree)
-nonterm('declspecifier) DeclSpecifier {
+nonterm('tDeclSpecifier) DeclSpecifier {
   -> n:PQTypeName BuggyGccTypeModifier/*ignored*/ m2:UberModifierSeqOpt
      { unimplemented 602 }
 
@@ -438,7 +438,7 @@ nonterm('declspecifier) DeclSpecifier {
 
 // these are the only ones that could be meaningfully combined with
 // an existing typedef, I think
-nonterm('buggygcctypemodifier) BuggyGccTypeModifier {
+nonterm('tBuggyGccTypeModifier) BuggyGccTypeModifier {
   -> "long";
   -> "short";
   -> "signed";
@@ -454,12 +454,12 @@ nonterm('buggygcctypemodifier) BuggyGccTypeModifier {
 
 // ------------ gcc computed goto ----------
 // http://gcc.gnu.org/onlinedocs/gcc-3.1/gcc/Labels-as-Values.html
-nonterm('unaryexpression) UnaryExpression {
+nonterm('tUnaryExpression) UnaryExpression {
   -> "&&" n:Identifier
        { unimplemented 604 }
 }
 
-nonterm('statement) Statement {
+nonterm('tStatement) Statement {
   -> "goto" "*" e:Expression ";"
        { unimplemented 605 }
 }
@@ -468,7 +468,7 @@ nonterm('statement) Statement {
 // ----------- gcc/C99 complex/imaginary ----------
 // http://gcc.gnu.org/onlinedocs/gcc-3.1/gcc/Complex.html
 // C99 6.2.5p11, 6.7.2, Annex G
-nonterm('ubertypekeyword) UberTypeKeyword {
+nonterm('tUberTypeKeyword) UberTypeKeyword {
   -> "_Complex"      { unimplemented 606 }
   -> "_Imaginary"    { unimplemented 607 }
 }
@@ -480,7 +480,7 @@ nonterm('ubertypekeyword) UberTypeKeyword {
 //
 // I've chosen to create E_fieldAcc AST nodes because they are similar,
 // in that these are component accesses.
-nonterm('primaryexpression) PrimaryExpression {
+nonterm('tPrimaryExpression) PrimaryExpression {
   -> "__real__" e:PrimaryExpression
      { unimplemented 608 }
   -> "__imag__" e:PrimaryExpression
@@ -492,35 +492,35 @@ nonterm('primaryexpression) PrimaryExpression {
 // This nonterminal gives me a good place to solve the ambiguity
 // between associating the attrs with the label and associating
 // them with the next declaration.
-nonterm('labelandcolon) LabelAndColon {
+nonterm('tLabelAndColon) LabelAndColon {
   -> n:Identifier ":" /*DROPPED*/AttributeSpecifierList     precedence(TOK_PREFER_REDUCE)
        { unimplemented 610 }
 }
 
 // tglek: Commenting this out so I can attach attributes to classes below
 // // attributes between classkeys and their names
-// nonterm ClassKey {
+// nonterm('tClassKey) ClassKey {
 //   // *not* AttributeSpecifierList; this context is naturally repeating
 //   -> k:ClassKey / *DROPPED* /AttributeSpecifier       { unimplemented 611 }
 //}
 
 
-nonterm('elaboratedtypespecifier) ElaboratedTypeSpecifier {
+nonterm('tElaboratedTypeSpecifier) ElaboratedTypeSpecifier {
   -> k:ClassKey /*DROPPED*/AttributeSpecifier n:PQTypeName    { unimplemented 612 }
 }
 
-nonterm('classspecifier) ClassSpecifier {
+nonterm('tClassSpecifier) ClassSpecifier {
   -> k:ClassKey s:AttributeSpecifierList n:ClassHeadNameOpt b:BaseClauseOpt "{" memb:MemberDeclarationSeqOpt "}"
     { unimplemented 613 }
 }
 
 // attributes after "enum"
-nonterm('elaboratedtypespecifier) ElaboratedTypeSpecifier {
+nonterm('tElaboratedTypeSpecifier) ElaboratedTypeSpecifier {
   -> "enum" /*DROPPED*/AttributeSpecifierList n:PQTypeName
        { unimplemented 614 }
 }
 
-nonterm('enumspecifier) EnumSpecifier {
+nonterm('tEnumSpecifier) EnumSpecifier {
   -> "enum" /*DROPPED*/AttributeSpecifierList "{" list:EnumeratorListOpt "}"
        { unimplemented 615 }
 
@@ -547,40 +547,40 @@ nonterm('enumspecifier) EnumSpecifier {
 // If all you care about is retaining one specific attribute that has
 // no arguments, you could get by with a new UberModifier flag and
 // associated DeclFlag.
-nonterm('ubermodifier) UberModifier {
+nonterm('tUberModifier) UberModifier {
   -> AttributeSpecifier      { unimplemented 617 }
 }
 
-nonterm('ubercvqualifier) UberCVQualifier {
+nonterm('tUberCVQualifier) UberCVQualifier {
   -> AttributeSpecifier      { unimplemented 618 }
 }
 
 
 // attribute after the "," in a sequence of declarators
-nonterm('initdeclaratorlist) InitDeclaratorList {
+nonterm('tInitDeclaratorList) InitDeclaratorList {
   -> d:InitDeclarator "," /*DROPPED*/AttributeSpecifierList list:InitDeclaratorList
        { unimplemented 619 }
 }
 
 
 // cv-qualifiers mixed with __attribute__ arbitrarily
-nonterm('cvqualattrseqopt) CVQualAttrSeqOpt {
+nonterm('tCVQualAttrSeqOpt) CVQualAttrSeqOpt {
   -> empty                             { unimplemented 620 }
   -> s:CVQualAttrSeq                   { unimplemented 621 }
 }
 
-nonterm('cvqualattrseq) CVQualAttrSeq {
+nonterm('tCVQualAttrSeq) CVQualAttrSeq {
   -> q:CVQualAttr                      { unimplemented 622 }
   -> q:CVQualAttr s:CVQualAttrSeq      { unimplemented 623 }
 }
 
-nonterm('cvqualattr) CVQualAttr {
+nonterm('tCVQualAttr) CVQualAttr {
   -> q:CVQualifier                     { unimplemented 624 }
   -> AttributeSpecifier                { unimplemented 625 }
 }
 
 
-nonterm('declarator) Declarator {
+nonterm('tDeclarator) Declarator {
   // "*", then some cv, then *one* __attribute__, which causes the
   // parser to commit to this production, then cv+attr seq
   -> "*" cv:CVQualifierSeqOpt /*DROPPED*/AttributeSpecifier cv2:CVQualAttrSeqOpt d:Declarator
@@ -596,13 +596,13 @@ nonterm('declarator) Declarator {
 }
 
 
-nonterm('directdeclarator) DirectDeclarator {
+nonterm('tDirectDeclarator) DirectDeclarator {
   -> "(" attr:AttributeSpecifierList d:Declarator ")"
        { unimplemented 628 }
 }
 
 
-nonterm('abstractdeclarator) AbstractDeclarator {
+nonterm('tAbstractDeclarator) AbstractDeclarator {
   -> "*" cv:CVQualifierSeqOpt attrspec:AttributeSpecifier cv2:CVQualAttrSeqOpt d:AbstractDeclaratorOpt
        { unimplemented 629 }
 
@@ -610,7 +610,7 @@ nonterm('abstractdeclarator) AbstractDeclarator {
        { unimplemented 630 }
 }
 
-nonterm('directabstractdeclarator) DirectAbstractDeclarator {
+nonterm('tDirectAbstractDeclarator) DirectAbstractDeclarator {
   -> "(" /*DROPPED*/AttributeSpecifierList d:AbstractDeclarator ")"
        { unimplemented 631 }
 }
@@ -621,19 +621,19 @@ nonterm('directabstractdeclarator) DirectAbstractDeclarator {
 // sm: the reason this wasn't handled by my catch-all Declarator
 // case above is that the bitfield syntax doesn't explicitly refer
 // to the Declarator nonterminal
-nonterm('memberdeclarator) MemberDeclarator {
+nonterm('tMemberDeclarator) MemberDeclarator {
   -> n:IdentifierOpt ":" e:ConstantExpression /*DROPPED*/AttributeSpecifierList    // bitfield
        // this body is an exact copy of the cc.gr one without attributes
        { unimplemented 632 }
 }
 
 // dsw: from Taras Glek, tglek at mozilla dot com
-nonterm('cdtormodifier) CDtorModifier {
+nonterm('tCDtorModifier) CDtorModifier {
  -> /*DROPPED*/AttributeSpecifier      { unimplemented 633 }
 }
 
 // 2007-09-15: This is in the gcc-4.2.1 headers.
-nonterm('namespacedefinition) NamespaceDefinition {
+nonterm('tNamespaceDefinition) NamespaceDefinition {
   -> "namespace" n:IdentifierOpt /*DROPPED*/AttributeSpecifierList "{" unit:TranslationUnit "}"
        { unimplemented 634 }
 }
@@ -644,7 +644,7 @@ nonterm('namespacedefinition) NamespaceDefinition {
 
 // "A word (which may be an identifier such as unused, or a reserved
 // word such as const)."
-nonterm('attributeword) AttributeWord {
+nonterm('tAttributeWord) AttributeWord {
   // non-keyword name
   -> n:TOK_NAME         { unimplemented 635 }
 
@@ -724,12 +724,12 @@ nonterm('attributeword) AttributeWord {
   //  TOK___TYPEOF__,          "__typeof__",                :    n
 }
 
-nonterm('commasepexpressionlistopt) CommaSepExpressionListOpt {
+nonterm('tCommaSepExpressionListOpt) CommaSepExpressionListOpt {
   -> empty                 { unimplemented 701 }
   -> el:ExpressionList     { unimplemented 702 }
 }
 
-nonterm('attributeparameters) AttributeParameters {
+nonterm('tAttributeParameters) AttributeParameters {
 //    -> id:Identifier "," exprs:CommaSepExpressionListOpt ;
   // NOTE: the below includes the above, except that the first
   // expression, if an identifier, should not be typechecked as an
@@ -738,7 +738,7 @@ nonterm('attributeparameters) AttributeParameters {
   -> exprs:CommaSepExpressionListOpt    { unimplemented 703 }
 }
 
-nonterm('attribute) Attribute {
+nonterm('tAttribute) Attribute {
   -> empty
      { unimplemented 704 }
 
@@ -749,7 +749,7 @@ nonterm('attribute) Attribute {
      { unimplemented 706 }
 }
 
-nonterm('attributelist) AttributeList {
+nonterm('tAttributeList) AttributeList {
   -> at:Attribute
      { unimplemented 707 }
 
@@ -757,12 +757,12 @@ nonterm('attributelist) AttributeList {
      { unimplemented 708 }
 }
 
-nonterm('attributespecifier) AttributeSpecifier {
+nonterm('tAttributeSpecifier) AttributeSpecifier {
   -> "__attribute__" "(" "(" ap:AttributeList ")" ")"
      { unimplemented 709 }
 }
 
-nonterm('attributespecifierlist) AttributeSpecifierList {
+nonterm('tAttributeSpecifierList) AttributeSpecifierList {
   -> s:AttributeSpecifier
      { unimplemented 710 }
 
@@ -775,7 +775,7 @@ nonterm('attributespecifierlist) AttributeSpecifierList {
 //    see in/gnu/k0009.cc or
 //    /usr/include/c++/3.4/i486-linux-gnu/bits/c++config.h
 
-nonterm('namespacedecl) NamespaceDecl {
+nonterm('tNamespaceDecl) NamespaceDecl {
   -> "using" "namespace" n:IdExpression AttributeSpecifierList ";"
        { unimplemented 712 }
 }

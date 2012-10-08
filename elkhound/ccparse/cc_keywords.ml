@@ -87,6 +87,7 @@ let keywords = List.fold_left (fun map (kw, tok) -> Stringmap.add kw tok map) St
   "__extension__",       TOK___EXTENSION__;
 
   (* C++11 *)
+  "noexcept",            TOK_NOEXCEPT;
   "constexpr",           TOK_CONSTEXPR;
   "decltype",            TOK_DECLTYPE;
   "__decltype",          TOK_DECLTYPE;

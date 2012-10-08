@@ -1,0 +1,69 @@
+// expected statistics
+option shift_reduce_conflicts 3;
+option reduce_reduce_conflicts 0;
+
+
+// decltype
+nonterm('tDeclSpecifier) DeclSpecifier {
+  -> te:DecltypeTypeSpecifier m2:UberModifierSeqOpt;
+  -> m1:UberModifierSeq te:DecltypeTypeSpecifier m2:UberModifierSeqOpt;
+}
+
+
+nonterm('tTypeSpecifier) TypeSpecifier {
+  -> te:DecltypeTypeSpecifier cv2:UberCVQualifierSeqOpt;
+  -> cv1:UberCVQualifierSeq te:DecltypeTypeSpecifier cv2:UberCVQualifierSeqOpt;
+}
+
+
+nonterm('tDecltypeTypeSpecifier) DecltypeTypeSpecifier {
+  fun merge(l,r) { unimplemented 0 }
+
+  -> e:DecltypeExpr;
+  -> t:DecltypeType;
+}
+
+
+nonterm('tDecltypeExpr) DecltypeExpr {
+  -> "decltype" "(" e:Expression ")";
+       
+}
+
+nonterm('tDecltypeType) DecltypeType {
+  -> "decltype" "(" t:TypeId ")";
+}
+
+
+// nullptr
+nonterm('tLiteral) Literal {
+  -> "nullptr";
+}
+
+// new character types
+nonterm('tUberTypeKeyword) UberTypeKeyword {
+  -> "char16_t"      { unimplemented 248 }
+  -> "char32_t"      { unimplemented 248 }
+}
+
+// constexpr
+nonterm('tUberModifier) UberModifier {
+  -> "constexpr"     { unimplemented 248 }
+}
+
+// noexcept
+nonterm('tUnaryExpression) UnaryExpression {
+  -> e:NoexceptExpression;
+}
+
+nonterm('tNoexceptExpression) NoexceptExpression {
+  -> "noexcept" "(" e:ParenthesizedExpression ")";
+}
+
+nonterm('tExceptionSpecificationOpt) ExceptionSpecificationOpt {
+  -> s:NoexceptSpecification;
+}
+
+nonterm('tNoexceptSpecification) NoexceptSpecification {
+  -> "noexcept";
+  -> "noexcept" "(" e:ConstantExpression ")";
+}

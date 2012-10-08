@@ -22,7 +22,7 @@ let handle_return = function
   | Unix.WEXITED 0 ->
       ()
   | Unix.WEXITED status ->
-      raise (ExitStatus status)
+      Printf.printf "child exited with status %d\n" status;
   | Unix.WSIGNALED signum ->
       Printf.printf "child was killed by signal %d\n" signum;
       raise (ExitStatus 1)
@@ -99,10 +99,15 @@ let parse glr actions cin lexer =
     glrparse glr actions lexer getToken lexbuf
 
 
-let elkmain () =
-  let tables = CcTables.parseTables in
-  let actions = CcActions.userActions in
+let tables, actions =
+  (*
+  if true then
+    Cc.ccParseTables, Cc.ccUserActions
+  else
+  *)
+    CcTables.parseTables, CcActions.userActions
 
+let elkmain () =
   let actions =
     if !Options._ptree then
       Ptreeact.makeParseTreeActions actions tables
@@ -112,7 +117,7 @@ let elkmain () =
   let glr = Glr.makeGLR tables actions in
 
   List.iter (fun input ->
-    let cin = Unix.open_process_in ("gcc -xc++ -E -P " ^ input) in
+    let cin = Unix.open_process_in ("gcc -I /usr/include/qt4 -xc++ -E -P " ^ input) in
 
     begin try
       let open Lexerint in
