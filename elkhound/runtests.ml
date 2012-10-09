@@ -39,11 +39,15 @@ let run (pass, fail) full_dir =
         ""
     in
 
+    let start = Unix.gettimeofday () in
+
     (* Parse the file *)
-    let cmd = Printf.sprintf "_build/ccparse/ccparse %s %s 2>&1" opts (file "test.cc") in
+    let cmd = Printf.sprintf "_build/ccparse/ccparse.native %s %s 2>&1" opts (file "test.cc") in
     let stream = Unix.open_process_in cmd in
     let produced = slurp stream in
     ignore (Unix.close_process_in stream);
+
+    let finish = Unix.gettimeofday () in
 
     (* Read the expected output *)
     let stream = open_in (file "test.ref") in
@@ -51,15 +55,21 @@ let run (pass, fail) full_dir =
     close_in stream;
 
     (* Compare produced and expected outputs *)
-    if produced = expected then (
-      Printf.printf "[PASS] %s\n" full_dir;
-      (pass + 1, fail)
-    ) else (
-      Printf.printf "[FAIL] %s\n" full_dir;
-      List.iter (fun line -> Printf.printf "+\t%s\n" line) produced;
-      List.iter (fun line -> Printf.printf "-\t%s\n" line) expected;
-      (pass, fail + 1)
-    )
+    let result =
+      let time = finish -. start in
+      if produced = expected then (
+        Printf.printf "[PASS] %s (%fs)\n" full_dir time;
+        (pass + 1, fail)
+      ) else (
+        Printf.printf "[FAIL] %s (%fs)\n" full_dir time;
+        List.iter (fun line -> Printf.printf "+\t%s\n" line) produced;
+        List.iter (fun line -> Printf.printf "-\t%s\n" line) expected;
+        (pass, fail + 1)
+      )
+    in
+
+    flush stdout;
+    result
   else
     (pass, fail)
 
