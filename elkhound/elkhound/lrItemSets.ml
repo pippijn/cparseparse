@@ -352,7 +352,7 @@ let merge_or_create_state env item_set sym in_done_list already with_dot_moved =
 
           (* but we're not: move it back to the 'pending' list *)
           env.item_sets_done <- ItemSetMap.remove already env.item_sets_done;
-          ItemSetStack.push env.item_sets_pending already;
+          ItemSetStack.push already env.item_sets_pending;
         )
       );
 
@@ -367,7 +367,7 @@ let merge_or_create_state env item_set sym in_done_list already with_dot_moved =
       item_set_closure env with_dot_moved;
 
       (* then add it to 'pending' *)
-      ItemSetStack.push env.item_sets_pending with_dot_moved;
+      ItemSetStack.push with_dot_moved env.item_sets_pending;
 
       with_dot_moved
 
@@ -487,7 +487,7 @@ let construct_lr_item_sets env =
     item_set_closure env item_set;
 
     (* this makes the initial pending item_set *)
-    ItemSetStack.push env.item_sets_pending item_set
+    ItemSetStack.push item_set env.item_sets_pending
   end;
 
   (* for each pending item set *)

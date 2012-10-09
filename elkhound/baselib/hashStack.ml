@@ -15,24 +15,24 @@ module Make(T : Hashtbl.S) = struct
     stack.stack = []
 
 
-  let push stack item =
-    T.add stack.table item item;
-    stack.stack <- item :: stack.stack
+  let push key ?(value=key) stack =
+    T.add stack.table key value;
+    stack.stack <- key :: stack.stack
 
 
   let pop stack =
-    let item = List.hd stack.stack in
+    let key = List.hd stack.stack in
     stack.stack <- List.tl stack.stack;
-    T.remove stack.table item;
-    item
+    T.remove stack.table key;
+    key
 
 
-  let mem stack item =
-    T.mem stack.table item
+  let mem stack key =
+    T.mem stack.table key
 
 
-  let find stack item =
-    T.find stack.table item
+  let find stack key =
+    T.find stack.table key
 
 
 end
