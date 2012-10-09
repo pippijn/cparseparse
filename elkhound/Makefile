@@ -1,14 +1,3 @@
-TARGETS =				\
-	elkhound/elkhound.native	\
-	ccparse/ccparse.native		\
-	runtests.native
-
-default: setup.data
-	ocamlbuild $(TARGETS)
-
-%.native: setup.data
-	ocamlbuild $@
-
 # OASIS_START
 # DO NOT EDIT (digest: bc1e05bfc8b39b664f29dae8dbd3ebbb)
 
@@ -47,6 +36,17 @@ setup.data:
 .PHONY: build doc test all install uninstall reinstall clean distclean configure
 
 # OASIS_STOP
+TARGETS =				\
+	elkhound/elkhound.native	\
+	ccparse/ccparse.native		\
+	runtests.native
+
+default: setup.data
+	ocamlbuild $(TARGETS)
+
+%.native: setup.data
+	ocamlbuild $@
+
 setup.data: setup.ml
 setup.ml: _oasis
 	oasis setup
