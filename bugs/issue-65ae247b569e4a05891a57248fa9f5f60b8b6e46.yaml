@@ -1,0 +1,18 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: Integrate and try deriving-ocsigen
+desc: Dump lousy C0 ast from deriving
+type: :task
+component: cxxparse
+release: 
+reporter: Wojciech Meyer <wojciech.meyer@gmail.com>
+status: :unstarted
+disposition: 
+creation_time: 2012-10-09 03:26:45.005844 Z
+references: []
+
+id: 65ae247b569e4a05891a57248fa9f5f60b8b6e46
+log_events: 
+- - 2012-10-09 03:26:48.369792 Z
+  - Wojciech Meyer <wojciech.meyer@gmail.com>
+  - created
+  - ""

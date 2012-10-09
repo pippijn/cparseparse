@@ -1,0 +1,18 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: Pretty printer for C0 AST
+desc: We want C0 to be able to prett print the lousy ast. We will use either Format module or Pprint (hosted on my server)
+type: :task
+component: cxxparse
+release: 
+reporter: Wojciech Meyer <wojciech.meyer@gmail.com>
+status: :unstarted
+disposition: 
+creation_time: 2012-10-09 03:25:53.389852 Z
+references: []
+
+id: 374354e79a0d385f5e26ce91ceb139cfd7378244
+log_events: 
+- - 2012-10-09 03:25:55.701796 Z
+  - Wojciech Meyer <wojciech.meyer@gmail.com>
+  - created
+  - ""

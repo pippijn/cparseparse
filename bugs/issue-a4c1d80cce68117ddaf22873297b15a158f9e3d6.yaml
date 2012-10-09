@@ -1,0 +1,18 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: Integrate C0 lousy AST with the Elkhound GLR parser
+desc: We need to try to produce the parsing result from glr parser
+type: :task
+component: cxxparse
+release: 
+reporter: Wojciech Meyer <wojciech.meyer@gmail.com>
+status: :unstarted
+disposition: 
+creation_time: 2012-10-09 03:24:37.357845 Z
+references: []
+
+id: a4c1d80cce68117ddaf22873297b15a158f9e3d6
+log_events: 
+- - 2012-10-09 03:24:39.445789 Z
+  - Wojciech Meyer <wojciech.meyer@gmail.com>
+  - created
+  - ""
