@@ -6,14 +6,14 @@ open AnalysisEnvType
 let print_terminal_set ?(abbreviate=false) ?(name=".") terms set =
   let open GrammarType in
   Printf.printf "[1;30mFirst(%s) = " name;
-  Printf.printf "%d {" (TerminalSet.count set);
+  Printf.printf "%d {" (TerminalSet.cardinal set);
 
   if abbreviate then (
     print_string " ..."
   ) else (
     let first = ref true in
     Array.iter (fun term ->
-      if TerminalSet.is_set set term.term_index then (
+      if TerminalSet.mem set term.term_index then (
         if not !first then
           print_string ",";
         print_string " ";

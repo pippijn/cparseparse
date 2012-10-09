@@ -249,7 +249,7 @@ let collect_nonterminals nonterms term_count =
 
 let add_forbid forbid tok =
   (* XXX: in-place update *)
-  TerminalSet.set forbid tok.term_index;
+  TerminalSet.add forbid tok.term_index;
   forbid
 
 

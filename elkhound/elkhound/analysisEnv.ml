@@ -182,13 +182,13 @@ let verify_nonshared indexed_nonterms indexed_prods dotted_prods =
 
 let verify_empty indexed_nonterms indexed_prods dotted_prods =
   Array.iter (fun nonterm ->
-    assert (TerminalSet.count nonterm.first = 0)
+    assert (TerminalSet.cardinal nonterm.first = 0)
   ) indexed_nonterms;
   Array.iter (fun prod ->
-    assert (TerminalSet.count prod.first_rhs = 0)
+    assert (TerminalSet.cardinal prod.first_rhs = 0)
   ) indexed_prods;
   Array.iter (Array.iter (fun dprod ->
-    assert (TerminalSet.count dprod.first_set = 0)
+    assert (TerminalSet.cardinal dprod.first_set = 0)
   )) dotted_prods
 
 

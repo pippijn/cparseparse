@@ -36,7 +36,7 @@ let first_includes sym t =
        * others that could not be eliminated at all (they were not
        * statically decidable), so this generalisation might not be
        * useful after all *)
-      TerminalSet.is_set nonterm.first t.term_index
+      TerminalSet.mem nonterm.first t.term_index
 
 
 let is_extending_shift item nonterm term =

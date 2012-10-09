@@ -9,7 +9,7 @@ let first_of_sequence derivable seq term_count =
       match sym with
       (* LHS -> x alpha   means x is in First(LHS) *)
       | Terminal (_, term) ->
-          let dest = (TerminalSet.set dest term.term_index; dest) in
+          let dest = (TerminalSet.add dest term.term_index; dest) in
 
           (* stop considering RHS members since a terminal
            * effectively "hides" all further symbols from First *)

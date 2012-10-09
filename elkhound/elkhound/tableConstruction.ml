@@ -12,12 +12,12 @@ let rec topological_sort nonterm_count (* number of nonterminals in the grammar 
                          next_ordinal (* latest ordinal not yet used *)
                          current (* current nonterminal to expand *)
                          =
-  if BitSet.is_set seen current then (
+  if BitSet.mem seen current then (
     (* already expanded this one *)
     next_ordinal
   ) else (
     (* don't expand this one again *)
-    BitSet.set seen current;
+    BitSet.add seen current;
 
     (* look at all nonterminals this one can derive *)
     let rec loop nt next_ordinal =

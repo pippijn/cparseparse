@@ -21,12 +21,12 @@ let bit_position { width; height; } x y =
 
 let set matrix x y =
   let n = bit_position matrix x y in
-  BitSet.set matrix.bitset n
+  BitSet.add matrix.bitset n
 
 
 let is_set matrix x y =
   let n = bit_position matrix x y in
-  BitSet.is_set matrix.bitset n
+  BitSet.mem matrix.bitset n
 
 
 let test_and_set matrix x y =

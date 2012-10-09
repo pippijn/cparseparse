@@ -8,9 +8,9 @@ type t
  * up their memory on garbage collection *)
 external create        : int -> t         = "ml_BitSet_create"
 external copy          : t -> t           = "ml_BitSet_copy"
-external count         : t -> int         = "ml_BitSet_count"
-external set           : t -> int -> unit = "ml_BitSet_set"
-external is_set        : t -> int -> bool = "ml_BitSet_is_set"
+external cardinal      : t -> int         = "ml_BitSet_count"
+external add           : t -> int -> unit = "ml_BitSet_set"
+external mem           : t -> int -> bool = "ml_BitSet_is_set"
 external unite         : t -> t -> unit   = "ml_BitSet_unite"
 external differentiate : t -> t -> unit   = "ml_BitSet_differentiate"
 external merge         : t -> t -> bool   = "ml_BitSet_merge"
