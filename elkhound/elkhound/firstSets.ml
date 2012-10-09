@@ -1,29 +1,28 @@
 let first_of_sequence derivable seq term_count =
-  let open GrammarType in
-  let dest = TerminalSet.create term_count in
-
   (* for each sequence member such that all
    * preceeding members can derive the empty string *)
-  ignore (ListUtil.iter_until (fun sym ->
-    match sym with
-    (* LHS -> x alpha   means x is in First(LHS) *)
-    | Terminal (_, term) ->
-        TerminalSet.set dest term.term_index;
+  fst (List.fold_left (fun (dest, blocked) sym ->
+    let open GrammarType in
+    if blocked then
+      dest, true
+    else
+      match sym with
+      (* LHS -> x alpha   means x is in First(LHS) *)
+      | Terminal (_, term) ->
+          let dest = (TerminalSet.set dest term.term_index; dest) in
 
-        (* stop considering RHS members since a terminal
-         * effectively "hides" all further symbols from First *)
-        true
+          (* stop considering RHS members since a terminal
+           * effectively "hides" all further symbols from First *)
+          dest, true
 
-    | Nonterminal (_, nonterm) ->
-        (* anything already in nonterm's First should be added to dest *)
-        TerminalSet.unite dest nonterm.first;
+      | Nonterminal (_, nonterm) ->
+          (* anything already in nonterm's First should be added to dest *)
+          let dest = (TerminalSet.unite dest nonterm.first; dest) in
 
-        (* if nonterm can't derive the empty string, then it blocks
-         * further consideration of right-hand side members *)
-        not (Derivability.can_derive_empty derivable nonterm)
-  ) seq);
-
-  dest
+          (* if nonterm can't derive the empty string, then it blocks
+           * further consideration of right-hand side members *)
+          dest, not (Derivability.can_derive_empty derivable nonterm)
+  ) (TerminalSet.create term_count, false) seq)
 
 
 (* Compute, for each nonterminal, the "First" set, defined as:
@@ -55,6 +54,8 @@ let compute_first derivable indexed_nonterms indexed_prods indexed_terms =
 
       (* add everything in First(RHS-sequence) to First(LHS) *)
       if TerminalSet.merge lhs.first first_of_rhs then (
+        changed := true;
+
         if Config.trace_first then (
           print_string "added ";
           PrintAnalysisEnv.print_terminal_set indexed_terms first_of_rhs;
@@ -64,7 +65,6 @@ let compute_first derivable indexed_nonterms indexed_prods indexed_terms =
           PrintGrammar.print_production prod;
           print_newline ();
         );
-        changed := true
       )
     ) indexed_prods
 

@@ -1,7 +1,8 @@
 # OASIS_START
-# DO NOT EDIT (digest: 4a440d3cf69b8b710fdc4fa57db66454)
+# DO NOT EDIT (digest: 7f6b499a58ef601fc402da8523c5a788)
 Bit2d
 BitSet
+CompressedBitSet
 HashStack
 ListUtil
 SexpMap

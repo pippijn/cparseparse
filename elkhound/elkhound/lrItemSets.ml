@@ -10,20 +10,13 @@ type env = {
   mutable next_item_set_id : int;
 
   item_sets_pending : item_set ItemSetStack.t;
-  mutable item_sets_done : item_set ItemSetMap.t;
+  item_sets_done : item_set ItemSetTable.t;
 }
 
 
-let make_item_set ?(hash=0) env kernel_items =
+let make_item_set env kernel_items =
   let state_id = state_id_of_int env.next_item_set_id in
   env.next_item_set_id <- env.next_item_set_id + 1;
-
-  let hash =
-    if hash <> 0 then
-      hash
-    else
-      ItemSetS.hash_kernel_items kernel_items
-  in
 
   {
     kernel_items;
@@ -34,7 +27,7 @@ let make_item_set ?(hash=0) env kernel_items =
     state_symbol = None;
     state_id = state_id;
     bfs_parent = None;
-    hash;
+    hash = 0;
   }
 
 
@@ -113,7 +106,7 @@ let production_closure env finished worklist item b prod =
 
   (* is 'newDP' already there?
    * check in working and finished tables *)
-  let in_done_list, already =
+  let in_finished, already =
     match new_dp.back_pointer with
     | Some _ as item ->
         false, item
@@ -139,6 +132,7 @@ let production_closure env finished worklist item b prod =
       (* but the new item may have additional lookahead
        * components, so merge them with the old *)
       if TerminalSet.merge already.lookahead new_item_la then (
+
         if Config.trace_closure then (
           print_string "      (chg) merged it to make ";
           PrintAnalysisEnv.print_lr_item env already;
@@ -146,7 +140,7 @@ let production_closure env finished worklist item b prod =
         );
 
         (* merging changed 'already' *)
-        if in_done_list then (
+        if in_finished then (
           (* pull from the 'done' list and put in worklist, since the
            * lookahead changed *)
           DottedProductionTable.remove finished already.dprod;
@@ -154,10 +148,12 @@ let production_closure env finished worklist item b prod =
           Stack.push already worklist;
           already.dprod.back_pointer <- Some already; (* now is on worklist *)
         ) else (
-          (* else, 'already' is in the worklist, so that's fine *)
+          (* 'already' is in the worklist, so that's fine *)
         )
       ) else (
-        (* else, the dprod already existed *)
+        if Config.trace_closure then (
+          print_endline "      the dprod already existed";
+        );
       )
 
   | None ->
@@ -217,7 +213,7 @@ let item_set_closure env item_set =
 
   if Config.trace_closure then (
     print_string "%%% computing closure of ";
-    PrintAnalysisEnv.print_item_set env.env item_set;
+    PrintAnalysisEnv.print_item_set env item_set;
   );
 
   (* set of items we've finished *)
@@ -233,7 +229,7 @@ let item_set_closure env item_set =
 
   (* first, close the kernel items -> worklist *)
   List.iter (fun item ->
-    single_item_closure env.env finished worklist item
+    single_item_closure env finished worklist item
   ) item_set.kernel_items;
 
   while not (Stack.is_empty worklist) do
@@ -248,7 +244,7 @@ let item_set_closure env item_set =
     DottedProductionTable.add finished item.dprod item;
 
     (* close it -> worklist *)
-    single_item_closure env.env finished worklist item
+    single_item_closure env finished worklist item
   done;
 
   (* move everything from 'finished' to the nonkernel items list *)
@@ -262,7 +258,7 @@ let item_set_closure env item_set =
 
   if Config.trace_closure then (
     print_string "%%% done with closure of ";
-    PrintAnalysisEnv.print_item_set env.env item_set;
+    PrintAnalysisEnv.print_item_set env item_set;
   )
 
 
@@ -303,7 +299,7 @@ let move_dot_no_closure nonterm_count term_count dotted_prods source symbol =
     state_symbol = None;
     state_id = state_id_of_int (-1);
     bfs_parent = None;
-    hash = ItemSetS.hash_kernel_items kernel_items;
+    hash = 0;
   }
   
 
@@ -324,52 +320,62 @@ let merge_lookaheads_into dest items =
   !changed
 
 
-let merge_or_create_state env item_set sym in_done_list already with_dot_moved =
-  match already with
-  | Some already ->
-      assert (List.length with_dot_moved.kernel_items = List.length already.kernel_items);
+let merge_state env item_set sym in_done_list already with_dot_moved =
+  assert (List.length with_dot_moved.kernel_items = List.length already.kernel_items);
 
-      (* we already have a state with at least equal kernel items, not
-       * considering their lookahead sets; so we have to merge the
-       * computed lookaheads with those in 'already' *)
-      if merge_lookaheads_into already with_dot_moved.kernel_items then (
-        if Config.trace_lrsets then (
-          Printf.printf "from state %d, found that the transition on %s yielded a state similar to %d, but with different lookahead\n"
-            (int_of_state_id item_set.state_id)
-            (GrammarUtil.name_of_symbol sym)
-            (int_of_state_id already.state_id)
-        );
+  (* we already have a state with at least equal kernel items, not
+   * considering their lookahead sets; so we have to merge the
+   * computed lookaheads with those in 'already' *)
+  if merge_lookaheads_into already with_dot_moved.kernel_items then (
+    if Config.trace_lrsets then (
+      Printf.printf "from state %d, found that the transition on %s yielded a state similar to %d, but with different lookahead\n"
+        (int_of_state_id item_set.state_id)
+        (GrammarUtil.name_of_symbol sym)
+        (int_of_state_id already.state_id)
+    );
 
-        (* this changed 'already'; recompute its closure *)
-        item_set_closure env already;
+    (* this changed 'already'; recompute its closure *)
+    item_set_closure env.env already;
 
-        (* and reconsider all of the states reachable from it *)
-        if not in_done_list then (
-          (* item_sets_pending contains 'already', it will be processed later *)
-        ) else (
-          (* we thought we were done with this *)
-          assert (ItemSetMap.mem already env.item_sets_done);
+    (* and reconsider all of the states reachable from it *)
+    if not in_done_list then (
+      (* item_sets_pending contains 'already', it will be processed later *)
+    ) else (
+      (* we thought we were done with this *)
+      assert (ItemSetTable.mem env.item_sets_done already);
 
-          (* but we're not: move it back to the 'pending' list *)
-          env.item_sets_done <- ItemSetMap.remove already env.item_sets_done;
-          ItemSetStack.push already env.item_sets_pending;
-        )
-      );
+      (* but we're not: move it back to the 'pending' list *)
+      ItemSetTable.remove env.item_sets_done already;
+      ItemSetStack.push already env.item_sets_pending;
+    )
+  );
 
-      (* use existing one for setting the transition function *)
-      already
+  (* use existing one for setting the transition function *)
+  already
 
-  | None ->
-      (* we don't already have it; need to actually allocate & copy *)
-      let with_dot_moved = make_item_set ~hash:with_dot_moved.hash env with_dot_moved.kernel_items in
 
-      (* finish it by computing its closure *)
-      item_set_closure env with_dot_moved;
+let create_state env item_set sym dot_moved_items =
+  (* we don't already have it; need to actually allocate & copy *)
+  let with_dot_moved = make_item_set env dot_moved_items.kernel_items in
 
-      (* then add it to 'pending' *)
-      ItemSetStack.push with_dot_moved env.item_sets_pending;
+  (* finish it by computing its closure *)
+  item_set_closure env.env with_dot_moved;
 
-      with_dot_moved
+  (* then add it to 'pending' *)
+  ItemSetStack.push with_dot_moved env.item_sets_pending;
+
+  with_dot_moved
+
+
+let merge_or_create_state env item_set sym dot_moved_items =
+  (* see if we already have it, in either set *)
+  try
+    try
+      merge_state env item_set sym false (ItemSetStack.find env.item_sets_pending dot_moved_items) dot_moved_items
+    with Not_found ->
+      merge_state env item_set sym true (ItemSetTable.find env.item_sets_done dot_moved_items) dot_moved_items
+  with Not_found ->
+    create_state env item_set sym dot_moved_items
 
 
 let create_transition env item_set sym =
@@ -379,24 +385,21 @@ let create_transition env item_set sym =
    *
    * this call also yields the unused remainder of the kernel items,
    * so we can add them back in at the end *)
-  let with_dot_moved =
-    move_dot_no_closure env.nonterm_count env.term_count env.env.dotted_prods item_set sym
+  let dot_moved_items =
+    move_dot_no_closure
+      env.nonterm_count
+      env.term_count
+      env.env.dotted_prods
+      item_set
+      sym
   in
 
-  (* see if we already have it, in either set *)
-  let in_done_list, already =
-    try
-      false, Some (ItemSetStack.find env.item_sets_pending with_dot_moved)
-    with Not_found ->
-      true, ItemSetMap.Exceptionless.find with_dot_moved env.item_sets_done
-  in
-
-  if Config.trace_lrsets then (
-    print_endline (if in_done_list then "from done list" else "from pending list");
-  );
-
   let with_dot_moved =
-    merge_or_create_state env item_set sym in_done_list already with_dot_moved
+    merge_or_create_state
+      env
+      item_set
+      sym
+      dot_moved_items
   in
 
   (* setup the transition function *)
@@ -433,7 +436,7 @@ let process_item_set env =
 
   (* put it in the done set; note that we must do this *before*
    * the processing below, to properly handle self-loops *)
-  env.item_sets_done <- ItemSetMap.add item_set item_set env.item_sets_done;
+  ItemSetTable.add env.item_sets_done item_set item_set;
 
   if Config.trace_lrsets then (
     print_string "%%% ";
@@ -459,7 +462,7 @@ let construct_lr_item_sets env =
     next_item_set_id = 0;
 
     item_sets_pending = ItemSetStack.create 13;
-    item_sets_done = ItemSetMap.empty;
+    item_sets_done = ItemSetTable.create 13;
   } in
 
   (* start by constructing closure of first production
@@ -484,7 +487,7 @@ let construct_lr_item_sets env =
      * executing this reduction within the normal parser core
      * (see Glr.cleanupAfterParse) *)
 
-    item_set_closure env item_set;
+    item_set_closure env.env item_set;
 
     (* this makes the initial pending item_set *)
     ItemSetStack.push item_set env.item_sets_pending
@@ -497,11 +500,11 @@ let construct_lr_item_sets env =
 
   if true || Config.trace_lrsets then (
     print_string "%%% ";
-    Printf.printf "finished item set construction with %d states\n" (ItemSetMap.cardinal env.item_sets_done);
+    Printf.printf "finished item set construction with %d states\n" (ItemSetTable.length env.item_sets_done);
   );
 
   let states =
-    ItemSetMap.fold (fun item_set _ ids -> item_set :: ids) env.item_sets_done []
+    ItemSetTable.fold (fun item_set _ ids -> item_set :: ids) env.item_sets_done []
     |> List.sort (fun a b -> compare a.state_id b.state_id)
   in
 

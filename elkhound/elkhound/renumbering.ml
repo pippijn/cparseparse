@@ -15,7 +15,7 @@ let ordering_operator order =
     "="
 
 
-let compare_by_outgoing indexed transition_fn a b =
+let compare_by_outgoing syms transition_fn a b =
   fst (Array.fold_left (fun (order, t) _ ->
     let order =
       if order <> 0 then
@@ -33,7 +33,7 @@ let compare_by_outgoing indexed transition_fn a b =
     in
 
     order, t + 1
-  ) (0, 0) indexed)
+  ) (0, 0) syms)
 
 
 let compare_by_reductions terms a b =
