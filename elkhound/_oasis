@@ -66,6 +66,7 @@ Library baselib
         BuildDepends:           sexplib,batteries
         Modules:                Bit2d,
                                 BitSet,
+                                CompressedBitSet,
                                 HashStack,
                                 ListUtil,
                                 SexpMap,
@@ -80,4 +81,4 @@ Library baselib
 
 Test runtests
         TestTools:              runtests
-        Command:                _build/runtests
+        Command:                _build/runtests.native
