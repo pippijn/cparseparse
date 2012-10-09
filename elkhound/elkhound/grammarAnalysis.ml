@@ -15,7 +15,7 @@ let compute_grammar_properties env grammar =
   Timing.progress "computation of dotted production first sets"
     (FirstSets.compute_dprod_first env.derivable env.dotted_prods env.indexed_prods) env.indexed_terms;
   Timing.progress "follow sets computation"
-    FollowSets.compute_follow env.derivable env.indexed_prods env.indexed_terms
+    FollowSets.compute_follow env.derivable env.indexed_prods
 
 
 let compute_lr_tables env =

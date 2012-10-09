@@ -1,4 +1,4 @@
-let first_of_sequence derivable seq term_count =
+let first_of_sequence derivable seq =
   (* for each sequence member such that all
    * preceeding members can derive the empty string *)
   fst (List.fold_left (fun (dest, blocked) sym ->
@@ -39,7 +39,6 @@ let first_of_sequence derivable seq term_count =
  * (First(x) = {x}). *)
 let compute_first derivable indexed_nonterms indexed_prods indexed_terms =
   let open GrammarType in
-  let term_count = Array.length indexed_terms in
   let changed = ref true in
 
   while !changed do
@@ -50,7 +49,7 @@ let compute_first derivable indexed_nonterms indexed_prods indexed_terms =
       let lhs = prod.left in
 
       (* compute First(RHS-sequence) *)
-      let first_of_rhs = first_of_sequence derivable prod.right term_count in
+      let first_of_rhs = first_of_sequence derivable prod.right in
 
       (* add everything in First(RHS-sequence) to First(LHS) *)
       let merged = TerminalSet.union lhs.first first_of_rhs in
@@ -85,7 +84,6 @@ let compute_first derivable indexed_nonterms indexed_prods indexed_terms =
 let compute_dprod_first derivable dotted_prods indexed_prods indexed_terms =
   let open GrammarType in
   let open AnalysisEnvType in
-  let term_count = Array.length indexed_terms in
 
   (* for each production *)
   Array.iter (fun prod ->
@@ -98,7 +96,7 @@ let compute_dprod_first derivable dotted_prods indexed_prods indexed_terms =
       let right = ListUtil.nth_tl dprod.prod.right posn in
 
       (* compute its first *)
-      let first_of_rhs = first_of_sequence derivable right term_count in
+      let first_of_rhs = first_of_sequence derivable right in
       dprod.first_set <- first_of_rhs;
 
       (* can it derive empty? *)

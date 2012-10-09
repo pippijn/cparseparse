@@ -3,7 +3,7 @@ open AnalysisEnvType
 
 
 (* clear first/follow sets *)
-let reset_first_follow prods nonterms term_count =
+let reset_first_follow prods nonterms =
   let open GrammarType in
 
   StringMap.iter (fun _ nonterm ->
@@ -107,7 +107,7 @@ let compute_indexed_prods productions nonterm_count =
   indexed, prods_by_lhs
 
 
-let compute_dotted_productions indexed_prods term_count =
+let compute_dotted_productions indexed_prods =
   let next_id =
     let next = ref 0 in
     fun () ->
@@ -205,7 +205,7 @@ let init_env grammar =
   let indexed_prods, prods_by_lhs = compute_indexed_prods grammar.productions nonterm_count in
 
   (* build dotted productions for each production *)
-  let dotted_prods = compute_dotted_productions indexed_prods term_count in
+  let dotted_prods = compute_dotted_productions indexed_prods in
 
   (* make the env *)
   let env = {
@@ -221,7 +221,7 @@ let init_env grammar =
   } in
 
   (* reset first/follow sets to 0 *)
-  reset_first_follow grammar.productions grammar.nonterminals term_count;
+  reset_first_follow grammar.productions grammar.nonterminals;
 
   if Config.paranoid then (
     (* verify that no objects share a terminal set *)

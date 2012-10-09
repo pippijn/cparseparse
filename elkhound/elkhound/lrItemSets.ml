@@ -271,7 +271,7 @@ let item_set_closure env item_set =
 (* yield a new kernel item list by moving the dot across the productions
  * in 'source' that have 'symbol' to the right of the dot; do *not*
  * compute the closure *)
-let move_dot_no_closure nonterm_count term_count dotted_prods source symbol =
+let move_dot_no_closure dotted_prods source symbol =
   let kernel_items =
     ListUtil.fold_left_many (fun kernel_items item ->
       match LrItem.symbol_after_dot item with
@@ -386,8 +386,6 @@ let create_transition env item_set sym =
    * so we can add them back in at the end *)
   let dot_moved_items =
     move_dot_no_closure
-      env.nonterm_count
-      env.term_count
       env.env.dotted_prods
       item_set
       sym
@@ -493,11 +491,9 @@ let construct_lr_item_sets env =
   end;
 
   (* for each pending item set *)
-  Valgrind.Callgrind.instrumented (fun () ->
   while not (ItemListStack.is_empty env.item_sets_pending) do
     process_item_set env
   done;
-  ) ();
 
   if true || Config.trace_lrsets then (
     print_string "%%% ";
