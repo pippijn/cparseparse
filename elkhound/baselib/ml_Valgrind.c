@@ -122,15 +122,23 @@ ml_Valgrind_Memcheck_do_leak_check (void)
 CAMLprim value
 ml_Valgrind_Memcheck_do_added_leak_check (void)
 {
+#ifdef VALGRIND_DO_ADDED_LEAK_CHECK
   VALGRIND_DO_ADDED_LEAK_CHECK;
   return Val_unit;
+#else
+  failwith ("Not supported");
+#endif
 }
 
 CAMLprim value
 ml_Valgrind_Memcheck_do_changed_leak_check (void)
 {
+#ifdef VALGRIND_DO_CHANGED_LEAK_CHECK
   VALGRIND_DO_CHANGED_LEAK_CHECK;
   return Val_unit;
+#else
+  failwith ("Not supported");
+#endif
 }
 
 CAMLprim value
