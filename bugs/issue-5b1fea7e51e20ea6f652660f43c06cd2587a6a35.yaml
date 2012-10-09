@@ -5,7 +5,7 @@ type: :task
 component: cxxparse
 release: 
 reporter: Wojciech Meyer <wojciech.meyer@gmail.com>
-status: :unstarted
+status: :in_progress
 disposition: 
 creation_time: 2012-10-09 03:27:18.321849 Z
 references: []
@@ -15,4 +15,8 @@ log_events:
 - - 2012-10-09 03:27:19.473790 Z
   - Wojciech Meyer <wojciech.meyer@gmail.com>
   - created
+  - ""
+- - 2012-10-09 03:29:53.525831 Z
+  - Wojciech Meyer <wojciech.meyer@gmail.com>
+  - changed status from unstarted to in_progress
   - ""
