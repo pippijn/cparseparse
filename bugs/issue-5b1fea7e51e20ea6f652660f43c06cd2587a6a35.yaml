@@ -1,0 +1,22 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: Create oasis build for AST pieces
+desc: ""
+type: :task
+component: cxxparse
+release: 
+reporter: Wojciech Meyer <wojciech.meyer@gmail.com>
+status: :in_progress
+disposition: 
+creation_time: 2012-10-09 03:27:18.321849 Z
+references: []
+
+id: 5b1fea7e51e20ea6f652660f43c06cd2587a6a35
+log_events: 
+- - 2012-10-09 03:27:19.473790 Z
+  - Wojciech Meyer <wojciech.meyer@gmail.com>
+  - created
+  - ""
+- - 2012-10-09 03:29:53.525831 Z
+  - Wojciech Meyer <wojciech.meyer@gmail.com>
+  - changed status from unstarted to in_progress
+  - ""

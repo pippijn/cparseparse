@@ -5,8 +5,8 @@ type: :task
 component: Parser
 release: 
 reporter: Wojciech Meyer <wojciech.meyer@gmail.com>
-status: :unstarted
-disposition: 
+status: :closed
+disposition: :fixed
 creation_time: 2012-10-08 03:06:15.497799 Z
 references: []
 
@@ -16,3 +16,7 @@ log_events:
   - Wojciech Meyer <wojciech.meyer@gmail.com>
   - created
   - Later step would be to develop the full cxx ast for entry to type checking
+- - 2012-10-09 03:23:14.653820 Z
+  - Wojciech Meyer <wojciech.meyer@gmail.com>
+  - closed with disposition fixed
+  - The initial louse ast has been provided. We will call it C0.
