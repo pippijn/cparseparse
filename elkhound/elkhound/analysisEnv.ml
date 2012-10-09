@@ -7,12 +7,12 @@ let reset_first_follow prods nonterms term_count =
   let open GrammarType in
 
   StringMap.iter (fun _ nonterm ->
-    TerminalSet.clear nonterm.first;
-    TerminalSet.clear nonterm.follow;
+    nonterm.first <- TerminalSet.empty;
+    nonterm.follow <- TerminalSet.empty;
   ) nonterms;
 
   List.iter (fun prod ->
-    TerminalSet.clear prod.first_rhs;
+    prod.first_rhs <- TerminalSet.empty;
   ) prods
 
 
@@ -128,8 +128,8 @@ let compute_dotted_productions indexed_prods term_count =
 
       { prod; dot; dprod_id = next_id ();
         after_dot  = (if dot_at_end then None else Some (List.nth prod.right dot));
-        first_set  = TerminalSet.create term_count;
         can_derive_empty = false;
+        first_set = TerminalSet.empty;
         back_pointer = None;
       }
     )

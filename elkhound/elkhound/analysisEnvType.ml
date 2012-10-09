@@ -20,7 +20,7 @@ type dotted_production = {
 
   (* First of the sentential form that follows the dot; this set
    * is computed by FirstSets.compute_dprod_firsts *)
-  first_set                     : TerminalSet.t;
+  mutable first_set             : TerminalSet.t;
 
   (* also computed by compute_dprod_firsts, this is true if the
    * sentential form can derive epsilon (the empty string) *)
@@ -45,7 +45,7 @@ type dotted_production = {
  * easily collides with other uses) *)
 and lr_item = {
   mutable dprod                 : dotted_production; (* production and dot position *)
-  lookahead                     : TerminalSet.t; (* lookahead symbols *)
+  mutable lookahead             : TerminalSet.t; (* lookahead symbols *)
 } with sexp
 
 
@@ -262,7 +262,7 @@ let empty_dotted_production = {
   prod = GrammarType.empty_production;
   dot = -1;
   after_dot = None;
-  first_set = TerminalSet.empty_set;
+  first_set = TerminalSet.empty;
   can_derive_empty = false;
   back_pointer = None;
 }

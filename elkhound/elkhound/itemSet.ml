@@ -51,7 +51,7 @@ let possible_reductions item_set lookahead =
     ) else if Config.use_SLR1 then (
       (* the follow of its LHS must include 'lookahead' *)
       let prod = item.dprod.prod in
-      if TerminalSet.mem prod.left.follow lookahead.term_index then
+      if TerminalSet.mem lookahead.term_index prod.left.follow then
         prod :: reductions
       else (
         if Config.trace_reductions then (
@@ -68,7 +68,7 @@ let possible_reductions item_set lookahead =
     ) else if Config.use_LALR1 || Config.use_LR1 then (
       (* the item's lookahead must include 'lookahead' *)
       let prod = item.dprod.prod in
-      if TerminalSet.mem item.lookahead lookahead.term_index then (
+      if TerminalSet.mem lookahead.term_index item.lookahead then (
         if Config.trace_reductions then (
           Printf.printf "state %d, reducing by "
             (int_of_state_id item_set.state_id);

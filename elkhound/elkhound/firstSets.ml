@@ -9,7 +9,7 @@ let first_of_sequence derivable seq term_count =
       match sym with
       (* LHS -> x alpha   means x is in First(LHS) *)
       | Terminal (_, term) ->
-          let dest = (TerminalSet.add dest term.term_index; dest) in
+          let dest = TerminalSet.add term.term_index dest in
 
           (* stop considering RHS members since a terminal
            * effectively "hides" all further symbols from First *)
@@ -17,12 +17,12 @@ let first_of_sequence derivable seq term_count =
 
       | Nonterminal (_, nonterm) ->
           (* anything already in nonterm's First should be added to dest *)
-          let dest = (TerminalSet.unite dest nonterm.first; dest) in
+          let dest = TerminalSet.union nonterm.first dest in
 
           (* if nonterm can't derive the empty string, then it blocks
            * further consideration of right-hand side members *)
           dest, not (Derivability.can_derive_empty derivable nonterm)
-  ) (TerminalSet.create term_count, false) seq)
+  ) (TerminalSet.empty, false) seq)
 
 
 (* Compute, for each nonterminal, the "First" set, defined as:
@@ -53,7 +53,9 @@ let compute_first derivable indexed_nonterms indexed_prods indexed_terms =
       let first_of_rhs = first_of_sequence derivable prod.right term_count in
 
       (* add everything in First(RHS-sequence) to First(LHS) *)
-      if TerminalSet.merge lhs.first first_of_rhs then (
+      let merged = TerminalSet.union lhs.first first_of_rhs in
+      if not (TerminalSet.equal lhs.first merged) then (
+        lhs.first <- merged;
         changed := true;
 
         if Config.trace_first then (
@@ -97,7 +99,7 @@ let compute_dprod_first derivable dotted_prods indexed_prods indexed_terms =
 
       (* compute its first *)
       let first_of_rhs = first_of_sequence derivable right term_count in
-      TerminalSet.assign dprod.first_set first_of_rhs;
+      dprod.first_set <- first_of_rhs;
 
       (* can it derive empty? *)
       dprod.can_derive_empty <- Derivability.can_sequence_derive_empty derivable right;

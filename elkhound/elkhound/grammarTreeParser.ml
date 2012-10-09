@@ -229,10 +229,6 @@ let collect_nonterminals nonterms term_count =
              * it is very hard to have cyclic immutable data structures *)
             subset_names = subsets;
 
-            (* Each nonterminal needs its own first/follow sets. *)
-            first  = TerminalSet.create term_count;
-            follow = TerminalSet.create term_count;
-
             nt_index;
           } in
 
@@ -245,12 +241,6 @@ let collect_nonterminals nonterms term_count =
   assert (StringMap.cardinal nonterminals = StringMap.cardinal nonterms);
 
   nonterminals
-
-
-let add_forbid forbid tok =
-  (* XXX: in-place update *)
-  TerminalSet.add forbid tok.term_index;
-  forbid
 
 
 let collect_production_rhs aliases terminals nonterminals is_synthesised rhs_list production =
@@ -318,7 +308,7 @@ let collect_production_rhs aliases terminals nonterminals is_synthesised rhs_lis
           let tok = find_terminal tokName in
 
           let forbid =
-            add_forbid production.forbid tok
+            TerminalSet.add tok.term_index production.forbid
           in
 
           { production with forbid }
@@ -347,7 +337,6 @@ let collect_productions aliases terminals nonterminals nonterms =
               { empty_production with
                 left;
                 action;
-                first_rhs = TerminalSet.create term_count;
                 prod_index = next_prod_index;
               }
               (* deal with RHS elements *)

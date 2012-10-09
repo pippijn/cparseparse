@@ -77,26 +77,31 @@ let production_closure env finished worklist item b prod =
   let beta = DottedProduction.next env.dotted_prods item.dprod in
 
   (* get First(beta) -> new item's lookahead *)
-  let new_item_la = TerminalSet.copy beta.first_set in
+  let new_item_la = beta.first_set in
 
   (* if beta ->* epsilon, add LA *)
-  if beta.can_derive_empty then (
-    if Config.trace_closure then (
-      print_string "      beta: ";
-      PrintAnalysisEnv.print_dotted_production beta;
-      print_newline ();
-      print_endline "      beta can derive empty";
-    );
-    TerminalSet.unite new_item_la item.lookahead;
-  ) else (
-    if Config.trace_closure then (
-      print_endline "      beta can NOT derive empty";
-    );
-  );
+  let new_item_la =
+    if beta.can_derive_empty then (
+      if Config.trace_closure then (
+        print_string "      beta: ";
+        PrintAnalysisEnv.print_dotted_production beta;
+        print_newline ();
+        print_endline "      beta can derive empty";
+      );
+      TerminalSet.union new_item_la item.lookahead
+    ) else (
+      if Config.trace_closure then (
+        print_endline "      beta can NOT derive empty";
+      );
+      new_item_la
+    )
+  in
 
   (* except we do not want to put terminals in the lookahead set
    * for which 'prod' is not allowed to reduce when they are next *)
-  TerminalSet.differentiate new_item_la prod.forbid;
+  let new_item_la =
+    TerminalSet.diff new_item_la prod.forbid
+  in
 
   if Config.trace_closure then (
     print_string "      built item ";
@@ -131,7 +136,9 @@ let production_closure env finished worklist item b prod =
 
       (* but the new item may have additional lookahead
        * components, so merge them with the old *)
-      if TerminalSet.merge already.lookahead new_item_la then (
+      let merged = TerminalSet.union already.lookahead new_item_la in
+      if not (TerminalSet.equal already.lookahead merged) then (
+        already.lookahead <- merged;
 
         if Config.trace_closure then (
           print_string "      (chg) merged it to make ";
@@ -278,7 +285,7 @@ let move_dot_no_closure nonterm_count term_count dotted_prods source symbol =
           let dot_moved = {
             (* move the dot; write dot-moved item into 'dot_moved' *)
             dprod = DottedProduction.next dotted_prods item.dprod;
-            lookahead = TerminalSet.copy item.lookahead;
+            lookahead = item.lookahead;
           } in
 
           dot_moved :: kernel_items
@@ -313,8 +320,11 @@ let merge_lookaheads_into dest items =
      * non-lookahead components of the kernel items *)
     assert (dest_item.dprod == source_item.dprod);
 
-    if TerminalSet.merge dest_item.lookahead source_item.lookahead then
+    let merged = TerminalSet.union dest_item.lookahead source_item.lookahead in
+    if not (TerminalSet.equal dest_item.lookahead merged) then (
+      dest_item.lookahead <- merged;
       changed := true
+    )
   ) dest.kernel_items items;
 
   !changed
@@ -476,7 +486,7 @@ let construct_lr_item_sets env =
 
     let first_item = {
       dprod = first_dp;
-      lookahead = TerminalSet.create env.term_count;
+      lookahead = TerminalSet.empty;
     } in
 
     let item_set = make_item_set env [first_item] in

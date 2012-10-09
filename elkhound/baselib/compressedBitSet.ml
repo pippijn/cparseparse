@@ -140,6 +140,10 @@ let rec subset s1 s2 =
 let mem i s =
   subset (singleton i) s
 
+(* TODO: this is inefficient. optimise it *)
+let diff a b =
+  fold remove b a
+
 let rec union s1 s2 =  
   match s1, s2 with
   | N, s

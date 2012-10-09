@@ -75,8 +75,8 @@ type nonterminal = {
   subset_names          : string list; (* preferred subsets (for scannerless) *)
 
   (* --- annotation --- *)
-  first                 : TerminalSet.t; (* set of terminals that can be start of a string derived from 'this' *)
-  follow                : TerminalSet.t; (* set of terminals that can follow a string derived from 'this' *)
+  mutable first         : TerminalSet.t; (* set of terminals that can be start of a string derived from 'this' *)
+  mutable follow        : TerminalSet.t; (* set of terminals that can follow a string derived from 'this' *)
   nt_index              : int; (* nonterminal index in indexed_nonterminals for grammar analysis *)
   mutable cyclic        : bool; (* true if this can derive itself in 1 or more steps *)
   mutable subsets       : nonterminal list; (* resolved subsets *)
@@ -103,8 +103,8 @@ type production = {
   action                : string; (* user-supplied reduction action code *)
 
   (* --- annotation --- *)
-  first_rhs             : TerminalSet.t; (* First(RHS) *)
-  mutable prod_index            : int; (* unique production id *)
+  mutable first_rhs     : TerminalSet.t; (* First(RHS) *)
+  mutable prod_index    : int; (* unique production id *)
 } with sexp
 
 type config = {
@@ -179,8 +179,8 @@ let empty_nonterminal = {
 
   subset_names = [];
 
-  first    = TerminalSet.empty_set;
-  follow   = TerminalSet.empty_set;
+  first    = TerminalSet.empty;
+  follow   = TerminalSet.empty;
   (* empty has an index of 0; all other nonterminals must have indices >= 1 *)
   nt_index = 0;
   cyclic   = false;
@@ -193,11 +193,11 @@ let empty_production = {
   left       = empty_nonterminal;
   right      = [];
   prec       = 0;
-  forbid     = TerminalSet.empty_set;
+  forbid     = TerminalSet.empty;
             
   action     = "";
 
-  first_rhs  = TerminalSet.empty_set;
+  first_rhs  = TerminalSet.empty;
   prod_index = -1;
 }
 

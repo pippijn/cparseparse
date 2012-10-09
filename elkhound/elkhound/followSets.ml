@@ -27,8 +27,11 @@ let compute_follow derivable indexed_prods indexed_terms =
               let first_of_beta = FirstSets.first_of_sequence derivable after_right_sym term_count in
 
               (* put those into Follow(right_nonterm) *)
-              if TerminalSet.merge right_nonterm.follow first_of_beta then
+              let merged = TerminalSet.union right_nonterm.follow first_of_beta in
+              if not (TerminalSet.equal right_nonterm.follow merged) then (
+                right_nonterm.follow <- merged;
                 changed := true;
+              )
             end;
 
             begin
@@ -37,8 +40,11 @@ let compute_follow derivable indexed_prods indexed_terms =
                * production A -> alpha B beta where beta ->* empty ... *)
               if Derivability.can_sequence_derive_empty derivable after_right_sym then
                 (* ... then everything in Follow(A) is in Follow(B) *)
-                if TerminalSet.merge right_nonterm.follow prod.left.follow then
+                let merged = TerminalSet.union right_nonterm.follow prod.left.follow in
+                if not (TerminalSet.equal right_nonterm.follow merged) then (
+                  right_nonterm.follow <- merged;
                   changed := true;
+                )
             end;
 
       ) prod.right;
