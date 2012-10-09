@@ -103,6 +103,65 @@ module LrItemStack = HashStack.Make(LrItemTable)
 
 
 (************************************************************
+ * :: ItemList types
+ ************************************************************)
+
+type item_list = {
+  items : lr_item list;
+
+  (* profiler also reports I'm still spending time comparing item sets; this
+   * stores a hash of the numerically sorted kernel item pointer addresses,
+   * concatenated into a buffer of sufficient size *)
+  mutable hash : int;
+} with sexp
+
+module ItemListS = struct
+
+  type t = item_list
+
+  let hash_items items =
+    List.fold_left (lxor) 0 (List.map LrItemS.hash items)
+
+  let hash a =
+    if a.hash = 0 then
+      a.hash <- hash_items a.items;
+    a.hash
+
+  let rec compare_items result a b =
+    match a, b with
+    | ah :: at, bh :: bt ->
+        if result <> 0 then
+          result
+        else
+          compare_items (LrItemS.compare ah bh) at bt
+    | _ :: _, [] ->
+        1
+    | [], _ :: _ ->
+        -1
+    | [], [] ->
+        result
+
+  let compare a b =
+    compare_items 0 a.items b.items
+
+  let equal a b =
+    compare a b = 0
+
+  let stats _ = failwith "Not supported"
+  let reset _ = failwith "Not supported"
+
+  let sexp_of_t = sexp_of_item_list
+  let t_of_sexp = item_list_of_sexp
+
+end
+
+module ItemListTable = Hashtbl.Make(ItemListS)
+module ItemListMap = SexpMap.Make(ItemListS)
+module ItemListSet = SexpSet.Make(ItemListS)
+module ItemListStack = HashStack.Make(ItemListTable)
+
+
+(************************************************************
  * :: ItemSet types
  ************************************************************)
 
@@ -122,7 +181,7 @@ type item_set = {
    * the special case of the initial item in the initial state,
    * the kernel items are distinguished by having the dot *not*
    * at the left edge *)
-  kernel_items                  : lr_item list;
+  kernel_items                  : item_list;
   (* nonkernel items: those derived as the closure of the kernel
    * items by expanding symbols to the right of dots; here I am
    * making the choice to materialize them, rather than derive
@@ -154,11 +213,6 @@ type item_set = {
    * the start state's parent is None, since it is the root of the
    * BFS tree *)
   mutable bfs_parent            : item_set option;
-
-  (* profiler also reports I'm still spending time comparing item sets; this
-   * stores a hash of the numerically sorted kernel item pointer addresses,
-   * concatenated into a buffer of sufficient size *)
-  mutable hash : int;
 } with sexp
 
 
@@ -166,39 +220,17 @@ module ItemSetS = struct
 
   type t = item_set
 
-  let hash_kernel_items kernel_items =
-    List.fold_left (lxor) 0 (List.map LrItemS.hash kernel_items)
-
   let hash a =
-    if a.hash = 0 then
-      a.hash <- hash_kernel_items a.kernel_items;
-    a.hash
-
-  (* since nonkernel items are entirely determined by kernel
-   * items, and kernel items are sorted, it's sufficient to
-   * check for kernel list equality *)
-  let rec compare_kernel_items result a b =
-    match a, b with
-    | ah :: at, bh :: bt ->
-        if result <> 0 then
-          result
-        else
-          compare_kernel_items (LrItemS.compare ah bh) at bt
-    | _ :: _, [] ->
-        1
-    | [], _ :: _ ->
-        -1
-    | [], [] ->
-        result
+    ItemListS.hash a.kernel_items
 
   let compare a b =
-    compare_kernel_items 0 a.kernel_items b.kernel_items
+    (* since nonkernel items are entirely determined by kernel
+     * items, and kernel items are sorted, it's sufficient to
+     * check for kernel list equality *)
+    ItemListS.compare a.kernel_items b.kernel_items
 
   let equal a b =
-    if hash a <> hash b then
-      false
-    else
-      compare a b = 0
+    compare a b = 0
 
   let stats _ = failwith "Not supported"
   let reset _ = failwith "Not supported"

@@ -21,7 +21,7 @@ let compute_bfs_tree env states =
   (* initial entry in queue is root of BFS tree *)
   let start_state = BatOption.get env.start_state in
   assert (start_state == List.hd states);
-  ItemSetStack.push start_state queue;
+  ItemSetStack.push start_state start_state queue;
 
   (* it will be convenient to have all the symbols in a single list
    * for iteration purposes *)
@@ -62,7 +62,7 @@ let compute_bfs_tree env states =
           target.bfs_parent <- Some source;
 
           (* finally, enqueue the target so we'll explore its targets too *)
-          ItemSetStack.push target queue
+          ItemSetStack.push target target queue
 
     ) all_symbols;
   done;

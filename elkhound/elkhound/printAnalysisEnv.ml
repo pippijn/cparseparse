@@ -89,7 +89,7 @@ let print_item_set env item_set =
   Printf.printf "ItemSet %d {\n" (int_of_state_id item_set.state_id);
   List.iter print_lr_item
     (List.sort ~cmp:compare
-      (item_set.kernel_items @ item_set.nonkernel_items));
+      (item_set.kernel_items.items @ item_set.nonkernel_items));
   print_newline ();
 
   (* print transition function directly, since I'm now throwing

@@ -1,7 +1,7 @@
 module Make(T : Hashtbl.S) = struct
   type 'a t = {
     table : 'a T.t;
-    mutable stack : T.key list;
+    mutable stack : (T.key * 'a) list;
   }
 
 
@@ -15,16 +15,16 @@ module Make(T : Hashtbl.S) = struct
     stack.stack = []
 
 
-  let push key ?(value=key) stack =
+  let push key value stack =
     T.add stack.table key value;
-    stack.stack <- key :: stack.stack
+    stack.stack <- (key, value) :: stack.stack
 
 
   let pop stack =
-    let key = List.hd stack.stack in
+    let key, value = List.hd stack.stack in
     stack.stack <- List.tl stack.stack;
     T.remove stack.table key;
-    key
+    value
 
 
   let mem stack key =

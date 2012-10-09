@@ -161,19 +161,16 @@ let subset_directive_resolution state sym reductions =
 
   (* make a map of which nonterminals appear on the LHS of one
    * of the reductions, and has a superset *)
-  let map = BatBitSet.create 0 in
-  let any_with_super =
-    List.fold_left (fun any prod ->
-      if BatOption.is_some prod.left.superset then (
-        BatBitSet.set map prod.left.nt_index;
-        true
-      ) else (
-        any
-      )
-    ) false reductions
+  let map =
+    List.fold_left (fun map prod ->
+      if BatOption.is_some prod.left.superset then
+        CompressedBitSet.add prod.left.nt_index map
+      else
+        map
+    ) CompressedBitSet.empty reductions
   in
 
-  if not any_with_super then (
+  if CompressedBitSet.is_empty map then (
     reductions (* nothing we can do *)
   ) else (
     (* walk over the reductions, removing those that have reductions
@@ -184,7 +181,7 @@ let subset_directive_resolution state sym reductions =
           if remove then (
             true
           ) else (
-            if BatBitSet.is_set map sub.nt_index then (
+            if CompressedBitSet.mem sub.nt_index map then (
               if Config.trace_prec then (
                 Printf.printf "in state %d, R/R conflict on token %s, removed production yielding %s, because another yields subset %s\n"
                   (int_of_state_id state.state_id)

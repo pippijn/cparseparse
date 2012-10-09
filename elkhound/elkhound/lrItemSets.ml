@@ -9,8 +9,8 @@ type env = {
 
   mutable next_item_set_id : int;
 
-  item_sets_pending : item_set ItemSetStack.t;
-  item_sets_done : item_set ItemSetTable.t;
+  item_sets_pending : item_set ItemListStack.t;
+  item_sets_done : item_set ItemListTable.t;
 }
 
 
@@ -19,7 +19,7 @@ let make_item_set env kernel_items =
   env.next_item_set_id <- env.next_item_set_id + 1;
 
   {
-    kernel_items;
+    kernel_items = { items = kernel_items; hash = 0 };
     nonkernel_items = [];
     term_transition = Array.make env.term_count None;
     nonterm_transition = Array.make env.nonterm_count None;
@@ -27,7 +27,6 @@ let make_item_set env kernel_items =
     state_symbol = None;
     state_id = state_id;
     bfs_parent = None;
-    hash = 0;
   }
 
 
@@ -41,14 +40,14 @@ let changed_items item_set =
       else
         (* dot is not at end *)
         dots_at_end
-    ) [] [item_set.kernel_items; item_set.nonkernel_items];
+    ) [] [item_set.kernel_items.items; item_set.nonkernel_items];
 
   (* compute this so we can throw away items later if we want to *)
   item_set.state_symbol <-
     try
       (* need only check kernel items since all nonkernel items
        * have their dots at the left side *)
-      Some (DottedProduction.symbol_before_dot (List.find (fun item -> item.dprod.dot <> 0) item_set.kernel_items).dprod)
+      Some (DottedProduction.symbol_before_dot (List.find (fun item -> item.dprod.dot <> 0) item_set.kernel_items.items).dprod)
     with Not_found ->
       None
 
@@ -237,7 +236,7 @@ let item_set_closure env item_set =
   (* first, close the kernel items -> worklist *)
   List.iter (fun item ->
     single_item_closure env finished worklist item
-  ) item_set.kernel_items;
+  ) item_set.kernel_items.items;
 
   while not (Stack.is_empty worklist) do
     (* pull the first production *)
@@ -289,7 +288,7 @@ let move_dot_no_closure nonterm_count term_count dotted_prods source symbol =
           } in
 
           dot_moved :: kernel_items
-    ) [] [source.kernel_items; source.nonkernel_items]
+    ) [] [source.kernel_items.items; source.nonkernel_items]
   in
 
   assert (kernel_items <> []);
@@ -297,17 +296,7 @@ let move_dot_no_closure nonterm_count term_count dotted_prods source symbol =
   (* we added stuff; sorting is needed both for hashing, and also
    * for the lookahead merge step that follows a successful lookup *)
   let kernel_items = List.sort LrItemS.compare kernel_items in
-  {
-    kernel_items;
-    nonkernel_items = [];
-    term_transition = [||];
-    nonterm_transition = [||];
-    dots_at_end = [];
-    state_symbol = None;
-    state_id = state_id_of_int (-1);
-    bfs_parent = None;
-    hash = 0;
-  }
+  { items = kernel_items; hash = 0; }
   
 
 
@@ -325,18 +314,18 @@ let merge_lookaheads_into dest items =
       dest_item.lookahead <- merged;
       changed := true
     )
-  ) dest.kernel_items items;
+  ) dest.kernel_items.items items;
 
   !changed
 
 
-let merge_state env item_set sym in_done_list already with_dot_moved =
-  assert (List.length with_dot_moved.kernel_items = List.length already.kernel_items);
+let merge_state env item_set sym in_done_list already dot_moved_items =
+  assert (List.length dot_moved_items.items = List.length already.kernel_items.items);
 
   (* we already have a state with at least equal kernel items, not
    * considering their lookahead sets; so we have to merge the
    * computed lookaheads with those in 'already' *)
-  if merge_lookaheads_into already with_dot_moved.kernel_items then (
+  if merge_lookaheads_into already dot_moved_items.items then (
     if Config.trace_lrsets then (
       Printf.printf "from state %d, found that the transition on %s yielded a state similar to %d, but with different lookahead\n"
         (int_of_state_id item_set.state_id)
@@ -352,11 +341,11 @@ let merge_state env item_set sym in_done_list already with_dot_moved =
       (* item_sets_pending contains 'already', it will be processed later *)
     ) else (
       (* we thought we were done with this *)
-      assert (ItemSetTable.mem env.item_sets_done already);
+      assert (ItemListTable.mem env.item_sets_done already.kernel_items);
 
       (* but we're not: move it back to the 'pending' list *)
-      ItemSetTable.remove env.item_sets_done already;
-      ItemSetStack.push already env.item_sets_pending;
+      ItemListTable.remove env.item_sets_done already.kernel_items;
+      ItemListStack.push already.kernel_items already env.item_sets_pending;
     )
   );
 
@@ -366,13 +355,13 @@ let merge_state env item_set sym in_done_list already with_dot_moved =
 
 let create_state env item_set sym dot_moved_items =
   (* we don't already have it; need to actually allocate & copy *)
-  let with_dot_moved = make_item_set env dot_moved_items.kernel_items in
+  let with_dot_moved = make_item_set env dot_moved_items.items in
 
   (* finish it by computing its closure *)
   item_set_closure env.env with_dot_moved;
 
   (* then add it to 'pending' *)
-  ItemSetStack.push with_dot_moved env.item_sets_pending;
+  ItemListStack.push with_dot_moved.kernel_items with_dot_moved env.item_sets_pending;
 
   with_dot_moved
 
@@ -381,9 +370,9 @@ let merge_or_create_state env item_set sym dot_moved_items =
   (* see if we already have it, in either set *)
   try
     try
-      merge_state env item_set sym false (ItemSetStack.find env.item_sets_pending dot_moved_items) dot_moved_items
+      merge_state env item_set sym false (ItemListStack.find env.item_sets_pending dot_moved_items) dot_moved_items
     with Not_found ->
-      merge_state env item_set sym true (ItemSetTable.find env.item_sets_done dot_moved_items) dot_moved_items
+      merge_state env item_set sym true (ItemListTable.find env.item_sets_done dot_moved_items) dot_moved_items
   with Not_found ->
     create_state env item_set sym dot_moved_items
 
@@ -442,21 +431,21 @@ let process_item env item_set item =
 
 
 let process_item_set env =
-  let item_set = ItemSetStack.pop env.item_sets_pending in
+  let item_set = ItemListStack.pop env.item_sets_pending in
 
   (* put it in the done set; note that we must do this *before*
    * the processing below, to properly handle self-loops *)
-  ItemSetTable.add env.item_sets_done item_set item_set;
+  ItemListTable.add env.item_sets_done item_set.kernel_items item_set;
 
   if Config.trace_lrsets then (
     print_string "%%% ";
     Printf.printf "state %d, %d kernel items and %d nonkernel items\n"
       (int_of_state_id item_set.state_id)
-      (List.length item_set.kernel_items)
+      (List.length item_set.kernel_items.items)
       (List.length item_set.nonkernel_items)
   );
 
-  List.iter (process_item env item_set) item_set.kernel_items;
+  List.iter (process_item env item_set) item_set.kernel_items.items;
   List.iter (process_item env item_set) item_set.nonkernel_items
 
 
@@ -471,8 +460,8 @@ let construct_lr_item_sets env =
 
     next_item_set_id = 0;
 
-    item_sets_pending = ItemSetStack.create 13;
-    item_sets_done = ItemSetTable.create 13;
+    item_sets_pending = ItemListStack.create 13;
+    item_sets_done    = ItemListTable.create 13;
   } in
 
   (* start by constructing closure of first production
@@ -500,21 +489,23 @@ let construct_lr_item_sets env =
     item_set_closure env.env item_set;
 
     (* this makes the initial pending item_set *)
-    ItemSetStack.push item_set env.item_sets_pending
+    ItemListStack.push item_set.kernel_items item_set env.item_sets_pending
   end;
 
   (* for each pending item set *)
-  while not (ItemSetStack.is_empty env.item_sets_pending) do
+  Valgrind.Callgrind.instrumented (fun () ->
+  while not (ItemListStack.is_empty env.item_sets_pending) do
     process_item_set env
   done;
+  ) ();
 
   if true || Config.trace_lrsets then (
     print_string "%%% ";
-    Printf.printf "finished item set construction with %d states\n" (ItemSetTable.length env.item_sets_done);
+    Printf.printf "finished item set construction with %d states\n" (ItemListTable.length env.item_sets_done);
   );
 
   let states =
-    ItemSetTable.fold (fun item_set _ ids -> item_set :: ids) env.item_sets_done []
+    ItemListTable.fold (fun _ item_set ids -> item_set :: ids) env.item_sets_done []
     |> List.sort (fun a b -> compare a.state_id b.state_id)
   in
 
