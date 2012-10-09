@@ -118,11 +118,6 @@ let sexp_of_state_id id   = sexp_of_int (int_of_state_id id)
 (* a set of dotted productions, and the transitions between
  * item sets, as in LR(0) set-of-items construction *)
 type item_set = {
-  (* profiler also reports I'm still spending time comparing item sets; this
-   * stores a hash of the numerically sorted kernel item pointer addresses,
-   * concatenated into a buffer of sufficient size *)
-  (*mutable hash : int;*)
-
   (* kernel items: the items that define the set; except for
    * the special case of the initial item in the initial state,
    * the kernel items are distinguished by having the dot *not*
@@ -160,6 +155,9 @@ type item_set = {
    * BFS tree *)
   mutable bfs_parent            : item_set option;
 
+  (* profiler also reports I'm still spending time comparing item sets; this
+   * stores a hash of the numerically sorted kernel item pointer addresses,
+   * concatenated into a buffer of sufficient size *)
   mutable hash : int;
 } with sexp
 
@@ -172,6 +170,8 @@ module ItemSetS = struct
     List.fold_left (lxor) 0 (List.map LrItemS.hash kernel_items)
 
   let hash a =
+    if a.hash = 0 then
+      a.hash <- hash_kernel_items a.kernel_items;
     a.hash
 
   (* since nonkernel items are entirely determined by kernel
@@ -195,7 +195,7 @@ module ItemSetS = struct
     compare_kernel_items 0 a.kernel_items b.kernel_items
 
   let equal a b =
-    if a.hash <> b.hash then
+    if hash a <> hash b then
       false
     else
       compare a b = 0

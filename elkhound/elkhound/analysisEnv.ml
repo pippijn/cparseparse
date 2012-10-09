@@ -2,18 +2,17 @@ open GrammarType
 open AnalysisEnvType
 
 
-(* clear first/follow sets by intersecting them with 0 *)
+(* clear first/follow sets *)
 let reset_first_follow prods nonterms term_count =
   let open GrammarType in
-  let reset set = TerminalSet.clear set in
 
   StringMap.iter (fun _ nonterm ->
-    reset nonterm.first;
-    reset nonterm.follow;
+    TerminalSet.clear nonterm.first;
+    TerminalSet.clear nonterm.follow;
   ) nonterms;
 
   List.iter (fun prod ->
-    reset prod.first_rhs
+    TerminalSet.clear prod.first_rhs;
   ) prods
 
 

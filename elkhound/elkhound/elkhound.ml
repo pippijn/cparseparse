@@ -48,7 +48,10 @@ let main () =
     List.iter PrintGrammar.print_production grammar.productions;
   );
   let env, tables = GrammarAnalysis.run_analyses grammar in
-  EmitCode.emit_ml "ccparse/gr/cc" env grammar tables;
+
+  if Array.length Sys.argv > 1 then
+    Timing.progress "emitting ML code" (EmitCode.emit_ml "ccparse/gr/cc" env grammar) tables;
+
   if false then (
     print_grammar grammar;
   );

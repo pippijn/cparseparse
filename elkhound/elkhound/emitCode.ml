@@ -40,13 +40,17 @@ let semtype sym =
     sym.semtype
 
 
-let first_semtype semtype =
-  if semtype = "" then
-    failwith "first nonterminal needs defined type"
-  else if semtype.[0] = '\'' then
-    failwith "first nonterminal cannot be polymorphic"
-  else
-    semtype
+let final_semtype final_prod =
+  match final_prod.right with
+  | Nonterminal (_, { nbase = { semtype } }) :: _ ->
+      if semtype = "" then
+        failwith "final nonterminal needs defined type"
+      else if semtype.[0] = '\'' then
+        failwith "final nonterminal cannot be polymorphic"
+      else
+        semtype
+  | _ ->
+      failwith "could not find final nonterminal"
 
 
 (************************************************
@@ -330,8 +334,8 @@ let emit_ml_dup_del_merge out terms nonterms =
   ()
 
 
-let emit_ml_action_code out dcl terms nonterms prods grammar tables =
-  let result_type = first_semtype nonterms.(2).nbase.semtype in
+let emit_ml_action_code out dcl terms nonterms prods final_prod grammar tables =
+  let result_type = final_semtype final_prod in
 
   emit_ml_prologue dcl;
   emit_ml_prologue out;
@@ -464,6 +468,7 @@ let emit_ml name env grammar tables =
   let terms = env.indexed_terms in
   let nonterms = env.indexed_nonterms in
   let prods = env.indexed_prods in
+  let final_prod = env.indexed_prods.(tables.ParseTablesType.finalProductionIndex) in
 
   (* Tokens *)
   let dcl = open_out (name ^ "Tokens.mli") in
@@ -474,7 +479,7 @@ let emit_ml name env grammar tables =
   (* Actions *)
   let dcl = open_out (name ^ "Actions.mli") in
   let out = open_out (name ^ "Actions.ml") in
-  closing (emit_ml_action_code out dcl terms nonterms prods grammar) tables
+  closing (emit_ml_action_code out dcl terms nonterms prods final_prod grammar) tables
     [dcl; out];
 
   (* Tables *)
