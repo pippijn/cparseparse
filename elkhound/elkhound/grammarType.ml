@@ -114,13 +114,6 @@ type config = {
   expectedRR            : int; (* reduce/reduce conflicts *)
   expectedUNRNonterms   : int; (* # unreachable nonterminals *)
   expectedUNRTerms      : int; (* # unreachable terminals *)
-
-  (* when true, the default dup/del is what's expected for a
-   * garbage-collected system: dup() is the identity function,
-   * and del() is a no-op *)
-  useGCDefaults         : bool;
-  (* when true, unspecified merge() functions abort the program *)
-  defaultMergeAborts    : bool;
 } with sexp
 
 type grammar = {
@@ -206,9 +199,6 @@ let empty_config = {
   expectedRR          = 0;
   expectedUNRNonterms = 0;
   expectedUNRTerms    = 0;
-
-  useGCDefaults       = false;
-  defaultMergeAborts  = false;
 }
 
 

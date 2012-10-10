@@ -30,11 +30,6 @@ let synthesise_start_rule topforms =
 (* handle TF_option *)
 let collect_options options config =
   List.fold_left (fun config -> function
-    | TF_option      ("useGCDefaults",              (0 | 1 as value)) ->
-        { config with useGCDefaults              = value = 1 }
-    | TF_option      ("defaultMergeAborts",         (0 | 1 as value)) ->
-        { config with defaultMergeAborts         = value = 1 }
-
     | TF_option ("shift_reduce_conflicts",   value) ->
         { config with expectedSR          = value }
     | TF_option ("reduce_reduce_conflicts",  value) ->
