@@ -1,7 +1,1 @@
-struct integral_constant
-{
-  constexpr operator int ()
-  {
-    return 0;
-  }
-};
+constexpr operator int () { }

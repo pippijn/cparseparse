@@ -1,7 +1,3 @@
-warning: no function to merge nonterminal 74
-warning: no function to merge nonterminal 52
-warning: no function to merge nonterminal 52
-warning: no function to merge nonterminal 50
 stack nodes: num=0 max=106
 detShift:     9
 detReduce:    20

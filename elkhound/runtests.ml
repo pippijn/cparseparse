@@ -42,7 +42,7 @@ let run (pass, fail) full_dir =
     let start = Unix.gettimeofday () in
 
     (* Parse the file *)
-    let cmd = Printf.sprintf "_build/ccparse/ccparse.native %s %s 2>&1" opts (file "test.cc") in
+    let cmd = Printf.sprintf "_build/ccparse/ccparse.native -trivial %s %s 2>&1" opts (file "test.cc") in
     let stream = Unix.open_process_in cmd in
     let produced = slurp stream in
     ignore (Unix.close_process_in stream);
