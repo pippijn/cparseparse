@@ -1599,12 +1599,12 @@ nonterm('tFunctionDefinition) FunctionDefinition {
   // ordinary function:
   // return type      name/params   body
   -> r:DeclSpecifier  d:FDDeclarator  b:FunctionBody
-       { unimplemented 360 }
+       { C0.ToDef ((), C0.DfFun ((), C0.TyId ((), "test"), C0.AnNil, "func", C0.TaNil, C0.BlNil), C0.ToNil) }
 
   // 2005-03-09: I didn't even realize this was possible for non-ctors
   // return type      name/params            body            handlers
   -> r:DeclSpecifier  d:FDDeclarator  "try"  b:FunctionBody  h:HandlerSeq
-       { unimplemented 361 }
+       { C0.ToNil }
 
   // I've now substituted the RHSs of CDtorModifierOpt, to eliminiate
   // a few s/r conflicts at the toplevel of parsing (where they are
@@ -1613,16 +1613,16 @@ nonterm('tFunctionDefinition) FunctionDefinition {
   // constructor, destructor or conversion operator
   // "explicit"?         name/params     member inits          body
   -> m:CDtorModifierSeq  d:FDDeclarator  c:CtorInitializerOpt  b:FunctionBody
-       { unimplemented 362 }
+       { C0.ToNil }
   -> /*no modifier*/     d:FDDeclarator  c:CtorInitializerOpt  b:FunctionBody
-       { unimplemented 363 }
+       { C0.ToNil }
 
   // ctor with a try block
   // "explicit"?         name/params          member inits         body           handlers
   -> e:CDtorModifierSeq  d:FDDeclarator "try" c:CtorInitializerOpt b:FunctionBody h:HandlerSeq
-       { unimplemented 364 }
+       { C0.ToNil }
   -> /*no modifier*/     d:FDDeclarator "try" c:CtorInitializerOpt b:FunctionBody h:HandlerSeq
-       { unimplemented 365 }
+       { C0.ToNil }
 }
 
 // function definition declarator; must have D_func at the
