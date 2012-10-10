@@ -1,7 +1,7 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: ab8b848a226aa96a4e5a4b65848cf186) *)
+(* DO NOT EDIT (digest: a95f2803cf75629f13179d13f74181c2) *)
 module OASISGettext = struct
-# 21 "/home/pippijn/Downloads/oasis-0.3.0/src/oasis/OASISGettext.ml"
+(* # 21 "/home/danmey/ocamlbrew/ocaml-3.12.1/build/odb/install-oasis/oasis-0.3.0/src/oasis/OASISGettext.ml" *)
 
   let ns_ str =
     str
@@ -24,7 +24,7 @@ module OASISGettext = struct
 end
 
 module OASISExpr = struct
-# 21 "/home/pippijn/Downloads/oasis-0.3.0/src/oasis/OASISExpr.ml"
+(* # 21 "/home/danmey/ocamlbrew/ocaml-3.12.1/build/odb/install-oasis/oasis-0.3.0/src/oasis/OASISExpr.ml" *)
 
 
 
@@ -116,7 +116,7 @@ end
 
 # 117 "myocamlbuild.ml"
 module BaseEnvLight = struct
-# 21 "/home/pippijn/Downloads/oasis-0.3.0/src/base/BaseEnvLight.ml"
+(* # 21 "/home/danmey/ocamlbrew/ocaml-3.12.1/build/odb/install-oasis/oasis-0.3.0/src/base/BaseEnvLight.ml" *)
 
   module MapString = Map.Make(String)
 
@@ -214,7 +214,7 @@ end
 
 # 215 "myocamlbuild.ml"
 module MyOCamlbuildFindlib = struct
-# 21 "/home/pippijn/Downloads/oasis-0.3.0/src/plugins/ocamlbuild/MyOCamlbuildFindlib.ml"
+(* # 21 "/home/danmey/ocamlbrew/ocaml-3.12.1/build/odb/install-oasis/oasis-0.3.0/src/plugins/ocamlbuild/MyOCamlbuildFindlib.ml" *)
 
   (** OCamlbuild extension, copied from 
     * http://brion.inria.fr/gallium/index.php/Using_ocamlfind_with_ocamlbuild
@@ -323,7 +323,7 @@ module MyOCamlbuildFindlib = struct
 end
 
 module MyOCamlbuildBase = struct
-# 21 "/home/pippijn/Downloads/oasis-0.3.0/src/plugins/ocamlbuild/MyOCamlbuildBase.ml"
+(* # 21 "/home/danmey/ocamlbrew/ocaml-3.12.1/build/odb/install-oasis/oasis-0.3.0/src/plugins/ocamlbuild/MyOCamlbuildBase.ml" *)
 
   (** Base functions for writing myocamlbuild.ml
       @author Sylvain Le Gall
@@ -339,7 +339,7 @@ module MyOCamlbuildBase = struct
   type name = string 
   type tag = string 
 
-# 56 "/home/pippijn/Downloads/oasis-0.3.0/src/plugins/ocamlbuild/MyOCamlbuildBase.ml"
+(* # 56 "/home/danmey/ocamlbrew/ocaml-3.12.1/build/odb/install-oasis/oasis-0.3.0/src/plugins/ocamlbuild/MyOCamlbuildBase.ml" *)
 
   type t =
       {
@@ -511,19 +511,25 @@ let grammars = [
   "ccparse/gr/gnu.gr";
 ]
 
+let configure fl =
+  let cmd = Printf.sprintf "../script/check_%s.sh" (String.lowercase fl) in
+  if Sys.command cmd = 0 then
+    []
+  else [A (Printf.sprintf "-DHAS_%s" fl)]
+
 let dispatch_mine = function
   | After_rules ->
       rule "Compile C++ source file"
         ~prod:"%.o"
         ~dep:"%.cpp"
         begin fun env build ->
-          Cmd(S[A"g++"; A(env "%.cpp"); A"-c"; A"-o"; A(env "%.o");
+          Cmd(S([A"g++"; A(env "%.cpp"); A"-c"; A"-o"; A(env "%.o");
             A"-fPIC";
             A"-O3";
             A"-ggdb3";
             A"-std=c++0x";
             A"-I../baselib";
-          ])
+          ] @ configure "OLD_CXX"))
         end;
 
 

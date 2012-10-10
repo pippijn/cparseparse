@@ -13,14 +13,20 @@ extern "C" {
 #include <cstdio>
 #include <vector>
 
+#ifdef HAS_OLD_CXX
+#  include <boost/foreach.hpp>
+#endif
+
 typedef unsigned long word;
 typedef std::vector<word> bitset;
 static size_t const word_size = sizeof (word);
 
 
-#include "ml_BitSet-custom.h"
-//#include "ml_BitSet-raw.h"
-
+#ifdef HAS_OLD_CXX
+#  include "ml_BitSet-raw.h"
+#else
+#  include "ml_BitSet-custom.h"
+#endif
 
 static inline size_t
 count_bits (unsigned long n)
@@ -54,7 +60,11 @@ CAMLprim value
 ml_BitSet_count (value self)
 {
   int count = 0;
+#ifdef HAS_OLD_CXX
+  BOOST_FOREACH(word w, *get_bitset (self))
+#else
   for (word w : *get_bitset (self))
+#endif
     count += count_bits (w);
   return Val_int (count);
 }
@@ -125,7 +135,11 @@ ml_BitSet_merge (value dest, value source)
 CAMLprim value
 ml_BitSet_clear (value self)
 {
+#ifdef HAS_OLD_CXX
+  BOOST_FOREACH(word &w, *get_bitset (self))
+#else
   for (word &w : *get_bitset (self))
+#endif
     w = 0;
   return Val_unit;
 }
