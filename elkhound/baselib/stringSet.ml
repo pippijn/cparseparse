@@ -1,12 +1,9 @@
-module M = struct
-  open Sexplib
+open Sexplib
 
-  include SexpSet.Make(struct
-    include String
-    
-    let t_of_sexp = Conv.string_of_sexp
-    let sexp_of_t = Conv.sexp_of_string
+include SexpSet.Make(struct
+  include String
   
-  end)
+  let t_of_sexp = Conv.string_of_sexp
+  let sexp_of_t = Conv.sexp_of_string
 
-end
+end)
