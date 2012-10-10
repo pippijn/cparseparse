@@ -54,18 +54,11 @@
 // that later mutations all have the same effect as the original.
 
 
-// if I don't specify a merge(), and we want to merge(),
-// then abort
-option defaultMergeAborts;
-
 // expected statistics
 option shift_reduce_conflicts 52;
 option reduce_reduce_conflicts 73;
 option unreachable_nonterminals 1;
-option unreachable_terminals 13;
-
-
-context_class cc { };
+option unreachable_terminals 8;
 
 
 terminals {
