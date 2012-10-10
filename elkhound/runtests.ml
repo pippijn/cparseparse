@@ -128,10 +128,6 @@ let run_test error_log (pass, fail) source reference =
       close_in stream;
       expected
     with Sys_error _ ->
-      let stream = open_out reference in
-      write_all stream produced;
-      close_out stream;
-      
       produced
   in
 
