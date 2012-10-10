@@ -6,7 +6,7 @@ open GrammarType
 
 
 let output_newline out =
-  output_string out "\n"
+  output_char out '\n'
 
 let output_endline out line =
   output_string out line;
@@ -113,13 +113,8 @@ let emit_ml_tokens out dcl terms =
 
   (* emit token type declaration in both mli and ml *)
   emit_ml_token_type dcl terms;
+  output_endline dcl "include Lexerint.TokenInfo with type t := t";
   emit_ml_token_type out terms;
-
-  (* emit declarations for token functions *)
-  output_endline dcl "val name : t -> string";
-  output_endline dcl "val desc : t -> string";
-  output_endline dcl "val index : t -> int";
-  output_endline dcl "val sval : t -> SemanticValue.t";
 
   (* emit the token functions *)
   emit_ml_token_fn out "name" (fun term ->
