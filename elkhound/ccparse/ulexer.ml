@@ -1,7 +1,7 @@
 (* lexer.mll *)
 (* simple lexer for C++ *)
 
-open Cc_tokens
+open CcTokens
 open Cc_keywords
 
 let line = ref 1
@@ -109,18 +109,18 @@ let rec token = lexer
 | xh h+ is?
 | xb b+ is?
 | '0'o+ is?
-| d+	is?							-> TOK_INT_LITERAL
+| d+	is?							-> TOK_INT_LITERAL (Ulexing.utf8_lexeme lexbuf)
 
 (* floats *)
 | d+e		 fs?
 | d*'.'d+e?	 fs?
 | d+'.'d*e?	 fs?
 | xh h*p h*	 fs?
-| xh h*'.'h*p h* fs?						-> TOK_FLOAT_LITERAL
+| xh h*'.'h*p h* fs?						-> TOK_FLOAT_LITERAL (Ulexing.utf8_lexeme lexbuf)
 
 (* strings *)
-| 'L'?sstring							-> TOK_CHAR_LITERAL
-| 'L'?dstring							-> TOK_STRING_LITERAL
+| 'L'?sstring							-> TOK_CHAR_LITERAL (Ulexing.utf8_lexeme lexbuf)
+| 'L'?dstring							-> TOK_STRING_LITERAL (Ulexing.utf8_lexeme lexbuf)
 
 | "#pragma" [^'\n']+						-> token lexbuf
 

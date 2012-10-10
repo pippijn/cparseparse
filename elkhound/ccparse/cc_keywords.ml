@@ -1,7 +1,6 @@
-open Cc_tokens
-module Stringmap = Map.Make (String)
+open CcTokens
 
-let keywords = List.fold_left (fun map (kw, tok) -> Stringmap.add kw tok map) Stringmap.empty [
+let keywords = List.fold_left (fun map (kw, tok) -> StringMap.add kw tok map) StringMap.empty [
   "asm",                 TOK_ASM;
   "__asm",               TOK_ASM;
   "__asm__",             TOK_ASM;
@@ -101,6 +100,6 @@ let keywords = List.fold_left (fun map (kw, tok) -> Stringmap.add kw tok map) St
 
 let classify id =
   try
-    Stringmap.find id keywords
+    StringMap.find id keywords
   with Not_found ->
-    TOK_NAME
+    TOK_NAME id

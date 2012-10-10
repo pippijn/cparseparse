@@ -66,7 +66,7 @@ let glrparse glr getToken =
 
 let rec tokenise tokens token lexbuf =
   let next = token lexbuf in
-  if next == Cc_tokens.TOK_EOF then (
+  if next == CcTokens.TOK_EOF then (
     Printf.printf "%d tokens\n" (List.length tokens);
     flush stdout;
     List.rev (next :: tokens)
@@ -84,12 +84,12 @@ let parse glr actions cin lexer =
     if !Options._pp then
       let tokens = ref (tokenise [] lexer.token lexbuf) in
       fun lex ->
-        lex.tokType <- Cc_tokens.token_index (List.hd !tokens);
+        lex.tokType <- CcTokens.index (List.hd !tokens);
         tokens := List.tl !tokens;
         lex
     else
       fun lex ->
-        lex.tokType <- Cc_tokens.token_index (lexer.token lexbuf);
+        lex.tokType <- CcTokens.index (lexer.token lexbuf);
         lex
   in
 
@@ -101,12 +101,13 @@ let parse glr actions cin lexer =
   in
 
   if !Options._tokens then
-    raise Exit;
+    raise (ExitStatus 0);
 
   glrparse glr getToken
 
 
 let parse_utf8 glr actions cin =
+  print_endline "utf8";
   let open Lexerint in
   parse glr actions cin {
     from_channel = Ulexing.from_utf8_channel;
@@ -153,7 +154,7 @@ let parse_file glr actions input =
 
 
 let tokenKindDesc kind =
-  Cc_tokens.token_desc (Obj.magic kind)
+  CcTokens.desc (Obj.magic kind)
 
 
 let parse_files actions tables inputs =
@@ -188,15 +189,18 @@ let elkmain inputs =
   )
 
 
+let main inputs =
+  try
+    elkmain inputs
+  with ExitStatus status ->
+    exit status
+
+
 let () =
   Gc.set {
     (Gc.get ()) with
     Gc.minor_heap_size = 8 * 1024 * 1024;
   };
 
-  try
-    Printexc.record_backtrace true;
-    Printexc.print elkmain !inputs
-  with
-  | ExitStatus status ->
-      exit status
+  Printexc.record_backtrace true;
+  Printexc.print main !inputs

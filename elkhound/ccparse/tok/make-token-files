@@ -8,7 +8,7 @@ sub usage {
 usage: $0 [-o outname] file.tok [extension.tok [...]]
 
 This script processes a master token description and produces several files:
-  - a .ml file with the enumeration listing all the tokens
+  - a .ml file with token flags
   - a .cc file with a table of spellings, and table of flags
   - a .ids file with grammar token names, ids, and aliases
 
@@ -62,25 +62,8 @@ type token_flag =
   | TF_NONSEPARATOR   (* token is a nonseparator *)
   | TF_CPLUSPLUS      (* token is a keyword in C++, but an identifier in C *)
 
-type token_type =
+let token_flags = function
 EOF
-
-
-my $desc = <<"EOF";
-
-let token_desc = function
-EOF
-
-
-my $indx = <<"EOF";
-
-let token_index = function
-EOF
-
-
-# I'll have to accumulate the flags in a big list and then
-# emit them after I close the 'tokenNames' array
-my @flagsList;
 
 
 my $ids = <<"EOF";
@@ -120,7 +103,6 @@ while (@ARGV > 0) {
         }
 
         $toks .= $line;
-        push @flagsList, $line;
         $ids .= $line;
       }
       next;
@@ -145,17 +127,13 @@ while (@ARGV > 0) {
     $nonsep = ($flags =~ m|n|);
     $cpp = ($flags =~ m|p|);
 
-    # emit to each file
-    $toks .= "  | $enumerator\n";
-    $desc .= "  | $enumerator -> $spelling\n";
-    $indx .= "  | $enumerator -> $nextId\n";
-
-    my @f = ("0");
+    my @f;
     if ($multiSpell) { push @f, "TF_MULTISPELL"; }
     if ($nonsep)     { push @f, "TF_NONSEPARATOR"; }
     if ($cpp)        { push @f, "TF_CPLUSPLUS"; }
-    push @flagsList, sprintf("  %-40s // $enumerator\n",
-                             join(' | ', @f) . ",");
+
+    # emit to each file
+    $toks .= "  | $enumerator -> [" . (join "; ", @f) . "]\n";
 
     $ids .= sprintf "  %3d : %-30s %s;\n",
        $nextId,
@@ -174,6 +152,4 @@ open my $IDS, ">$baseName.ids"
    or die "cannot open $baseName.ids: $!\n";
 
 print $ML $toks;
-print $ML $desc;
-print $ML $indx;
 print $IDS $ids;

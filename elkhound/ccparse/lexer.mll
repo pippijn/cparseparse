@@ -2,7 +2,7 @@
 (* simple lexer for C++ *)
 
 {
-  open Cc_tokens
+  open CcTokens
   open Cc_keywords
 
   let line = ref 1
@@ -111,18 +111,18 @@ rule token = parse
 | xh h+ is?
 | xb b+ is?
 | '0'o+ is?
-| d+    is?                                                     { TOK_INT_LITERAL }
+| d+    is?                                                     { TOK_INT_LITERAL (Lexing.lexeme lexbuf) }
 
 (* floats *)
 | d+e            fs?
 | d*'.'d+e?      fs?
 | d+'.'d*e?      fs?
 | xh h*p h*      fs?
-| xh h*'.'h*p h* fs?                                            { TOK_FLOAT_LITERAL }
+| xh h*'.'h*p h* fs?                                            { TOK_FLOAT_LITERAL (Lexing.lexeme lexbuf) }
 
 (* strings *)
-| 'L'?sstring                                                   { TOK_CHAR_LITERAL }
-| 'L'?dstring                                                   { TOK_STRING_LITERAL }
+| 'L'?sstring                                                   { TOK_CHAR_LITERAL (Lexing.lexeme lexbuf) }
+| 'L'?dstring                                                   { TOK_STRING_LITERAL (Lexing.lexeme lexbuf) }
 
 | "#pragma" [^'\n']+                                            { token lexbuf }
 

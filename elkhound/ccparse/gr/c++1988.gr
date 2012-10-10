@@ -1834,10 +1834,10 @@ nonterm('tCDtorModifierSeq) CDtorModifierSeq {
 }
 
 // I substituted this into everywhere it occurred
-//  nonterm('tCDtorModifierSeqOpt) CDtorModifierSeqOpt {
-//    -> empty                         { unimplemented 414 }
-//    -> m:CDtorModifierSeq            { unimplemented 415 }
-//  }
+// nonterm('tCDtorModifierSeqOpt) CDtorModifierSeqOpt {
+//   -> empty                         { unimplemented 414 }
+//   -> m:CDtorModifierSeq            { unimplemented 415 }
+// }
 
 
 // ------ A.9 Derived classes ------
