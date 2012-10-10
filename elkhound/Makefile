@@ -1,3 +1,5 @@
+CONFIGUREFLAGS ?= --enable-tests
+
 default: setup.native
 	_build/setup.native -build
 	_build/setup.native -doc
