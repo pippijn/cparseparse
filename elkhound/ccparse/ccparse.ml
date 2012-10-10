@@ -84,8 +84,18 @@ let getToken_from_global_list lex =
 
 
 let getToken_from_list tokens =
-  global_token_list := tokens;
-  getToken_from_global_list
+  (* global token list is much faster *)
+  if true then (
+    global_token_list := tokens;
+    getToken_from_global_list
+  ) else (
+    let tokens = ref tokens in
+    fun lex ->
+      let open Lexerint in
+      lex.tokType <- CcTokens.index (List.hd !tokens);
+      tokens := List.tl !tokens;
+      lex
+  )
 
 
 let getToken_from_lexer lexer lexbuf =
