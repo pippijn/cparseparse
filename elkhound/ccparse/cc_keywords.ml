@@ -98,8 +98,14 @@ let keywords = List.fold_left (fun map (kw, tok) -> StringMap.add kw tok map) St
   "char32_t",            TOK_CHAR32_t;
 ]
 
+let string_table = Hashtbl.create 1009
+
 let classify id =
   try
     StringMap.find id keywords
   with Not_found ->
-    TOK_NAME id
+    try
+      TOK_NAME (Hashtbl.find string_table id)
+    with Not_found ->
+      Hashtbl.add string_table id id;
+      TOK_NAME id
