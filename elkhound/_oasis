@@ -38,7 +38,7 @@ Executable elkhound
 
 
 Executable runtests
-        Path:                   .
+        Path:                   testsuite
         BuildTools:             ocamlbuild
         BuildDepends:           unix
         MainIs:                 runtests.ml
@@ -83,4 +83,4 @@ Library baselib
 
 Test runtests
         TestTools:              runtests
-        Command:                _build/runtests.native
+        Command:                _build/testsuite/runtests.native
