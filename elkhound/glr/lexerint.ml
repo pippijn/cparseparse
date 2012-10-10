@@ -8,16 +8,8 @@ module type TokenInfo = sig
 end
 
 
-type t = {
-  mutable tokType : int;
-  mutable tokSval : SemanticValue.t;
-}
-
-type ('lexbuf, 'token) lexer = {
-  from_channel : in_channel -> 'lexbuf;
-  lexeme : 'lexbuf -> string;
-  lexeme_start : 'lexbuf -> int;
-
-  token : 'lexbuf -> 'token;
-  line : int ref;
+type 'tok_type lexer = {
+  token : unit -> 'tok_type;
+  index : 'tok_type -> int;
+  sval  : 'tok_type -> SemanticValue.t;
 }

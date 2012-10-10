@@ -11,17 +11,18 @@ let project : SemanticValue.t -> PtreeNode.t = Obj.magic
 
 (* ------------------------ parseTreeLexer ------------------------- *)
 (* wrap the lexer with one yielding parse tree leaf nodes *)
-let getToken actions underlying lex =
+let make_lexer actions underlying =
+  let open Lexerint in
   let open UserActions in
-  (* get next token *)
-  let lex = underlying lex in
-  (* my sval is a tree leaf *)
-  lex.Lexerint.tokSval <- inject (PtreeNode.make_leaf (actions.terminalName lex.Lexerint.tokType));
-  lex
+  { underlying with
+    sval = (fun token ->
+      inject (PtreeNode.make_leaf (actions.terminalName (underlying.index token)))
+    )
+  }
 
 
 (* ----------------------- parseTreeActions ------------------------ *)
-let makeParseTreeActions underlying tables : PtreeNode.t UserActions.t =
+let make_actions underlying tables : PtreeNode.t UserActions.t =
   UserActions.({
     (* action to perform upon performing a reduction *)
     reductionAction = (

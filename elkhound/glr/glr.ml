@@ -133,9 +133,6 @@ and 'result glr = {
   (* parse tables from the grammar *)
   tables : ParseTablesType.t;
 
-  (* token kind to string for error messages *)
-  tokenKindDesc : term_index -> string;
-
   (* treat this as a local variable of rwlProcessWorklist, included
    * here just to avoid unnecessary repeated allocation *)
   toPass : SemanticValue.t array;
@@ -231,6 +228,11 @@ let deallocateSemanticValue userAct sym sval =
     userAct.deallocateTerminalValue (ParseTables.symAsTerm sym) sval
   else
     userAct.deallocateNontermValue (ParseTables.symAsNonterm sym) sval
+
+
+let terminalName userAct tokType =
+  let open UserActions in
+  userAct.terminalName tokType
 
 
 (* --------------------- SiblingLink ----------------------- *)
@@ -427,11 +429,10 @@ let makeReductionPathQueue tables = {
 }
 
 
-let makeGLR userAct tables tokenKindDesc =
+let makeGLR userAct tables =
   let glr = {
     userAct;
     tables;
-    tokenKindDesc;
     toPass              = Array.make cMAX_RHSLEN SemanticValue.null;
     pathQueue           = makeReductionPathQueue tables;
     topmostParsers      = Arraystack.create ();
@@ -916,7 +917,7 @@ let rwlShiftTerminals glr tokType tokSval =
       if traceParse then
         Printf.printf "state %d, shift token %s, to state %d\n"
                        state
-                       (glr.tokenKindDesc tokType)
+                       (terminalName glr.userAct tokType)
                        newState;
 
       (* already a parser in this state? *)
@@ -972,15 +973,15 @@ let printParseErrorMessage glr tokType lastToDie =
       for i = 0 to glr.tables.numTerms - 1 do
         let act = ParseTables.getActionEntry glr.tables lastToDie i in
         if not (ParseTables.isErrorAction (*tables*) act) then
-          Printf.printf "  [%d] %s\n" i (glr.tokenKindDesc i);
+          Printf.printf "  [%d] %s\n" i (terminalName glr.userAct i);
       done
     ) else (
-      Printf.printf "(expected-token info not available due to nondeterministic mode\n"
+      Printf.printf "(expected-token info not available due to nondeterministic mode)\n"
     );
 
     Printf.printf (*loc*) "Parse error (state %d) at %s\n"
                   lastToDie
-                  (glr.tokenKindDesc tokType);
+                  (terminalName glr.userAct tokType);
   end
 
 
@@ -1015,12 +1016,13 @@ let nondeterministicParseToken glr tokType tokSval =
 
 
 (* pulled out so I can use this block of statements in several places *)
-let glrParseToken glr getToken token =
+let glrParseToken glr lexer token =
   let open Lexerint in
 
   (* grab current token since we'll need it and the access
    * isn't all that fast here in ML *)
-  let { tokType; tokSval } = token in
+  let tokType = lexer.index token in
+  let tokSval = lexer.sval token in
 
   if not (nondeterministicParseToken glr tokType tokSval) then
     raise Exit;              (* "return false" *)
@@ -1031,18 +1033,18 @@ let glrParseToken glr getToken token =
     raise End_of_file;       (* "break" *)
 
   (* get the next token *)
-  getToken token
+  lexer.token ()
 
 
 (**********************************************************
  * :: Mini-LR core
  **********************************************************)
 
-let rec lrParseToken glr lr getToken token =
+let rec lrParseToken glr lr lexer token =
   let parsr = ref (Arraystack.top glr.topmostParsers) in
   assert (!parsr.referenceCount = 1);
 
-  let tokType = Lexerint.(token.tokType) in
+  let tokType = Lexerint.(lexer.index token) in
 
   let action = ParseTables.getActionEntry_noError glr.tables !parsr.state tokType in
 
@@ -1127,7 +1129,7 @@ let rec lrParseToken glr lr getToken token =
 
       (* does the user want to keep it? *)
       if use_keep && not (keepNontermValue glr.userAct lhsIndex sval) then (
-        printParseErrorMessage glr Lexerint.(token.tokType) newNode.state;
+        printParseErrorMessage glr Lexerint.(lexer.index token) newNode.state;
         if accounting then (
           glr.stats.detShift  <- glr.stats.detShift  + lr.lrDetShift;
           glr.stats.detReduce <- glr.stats.detReduce + lr.lrDetReduce;
@@ -1139,10 +1141,10 @@ let rec lrParseToken glr lr getToken token =
       (* we have not shifted a token, so again try to use
        * the deterministic core *)
       (* "goto tryDeterministic;" *)
-      lrParseToken glr lr getToken token
+      lrParseToken glr lr lexer token
     ) else (
       (* deterministic depth insufficient: use GLR *)
-      glrParseToken glr getToken token
+      glrParseToken glr lexer token
     )
 
   ) else if ParseTables.isShiftAction glr.tables action then (
@@ -1165,7 +1167,7 @@ let rec lrParseToken glr lr getToken token =
       makeStackNode glr newState
     in
 
-    addFirstSiblingLink_noRefCt rightSibling !parsr Lexerint.(token.tokSval);
+    addFirstSiblingLink_noRefCt rightSibling !parsr Lexerint.(lexer.sval token);
 
     (* replace 'parsr' with 'rightSibling' *)
     assert (Arraystack.length glr.topmostParsers = 1);
@@ -1183,11 +1185,11 @@ let rec lrParseToken glr lr getToken token =
       raise End_of_file;       (* "break" *)
 
     (* get the next token *)
-    lrParseToken glr lr getToken (getToken token)
+    lrParseToken glr lr lexer Lexerint.(lexer.token ())
 
   ) else (
     (* error or ambig; not deterministic *)
-    glrParseToken glr getToken token
+    glrParseToken glr lexer token
   )
 
 
@@ -1259,13 +1261,13 @@ let stackSummary glr =
  * :: Main parser loop
  **********************************************************)
 
-let rec main_loop glr lr getToken token =
+let rec main_loop glr lr lexer token =
   if traceParse then (
     let open Lexerint in
-    let tokType = token.tokType in
+    let tokType = lexer.index token in
 
     Printf.printf "---- processing token %s, %d active parsers ----\n"
-                   (glr.tokenKindDesc tokType)
+                   (terminalName glr.userAct tokType)
                    (Arraystack.length glr.topmostParsers);
     Printf.printf "Stack:%s\n" (stackSummary glr);
     flush stdout
@@ -1273,10 +1275,10 @@ let rec main_loop glr lr getToken token =
 
   if use_mini_lr && Arraystack.length glr.topmostParsers = 1 then 
     (* try deterministic parsing *)
-    main_loop glr lr getToken (lrParseToken glr lr getToken token)
+    main_loop glr lr lexer (lrParseToken glr lr lexer token)
   else
     (* mini lr core disabled, use full GLR *)
-    main_loop glr lr getToken (glrParseToken glr getToken token)
+    main_loop glr lr lexer (glrParseToken glr lexer token)
 
 
 (**********************************************************
@@ -1320,7 +1322,7 @@ let cleanupAfterParse (glr : 'result glr) : 'result option =
   )
 
 
-let glrParse (glr : 'result glr) getToken token : 'result option =
+let glrParse (glr : 'result glr) lexer : 'result option =
   glr.globalNodeColumn <- 0;
   begin
     let first = makeStackNode glr glr.tables.startState in
@@ -1339,7 +1341,7 @@ let glrParse (glr : 'result glr) getToken token : 'result option =
 
     (* this loop never returns normally *)
     Valgrind.Callgrind.instrumented
-      (main_loop glr lr getToken) (getToken token)
+      (main_loop glr lr lexer) Lexerint.(lexer.token ())
 
   with
   | Exit ->
