@@ -128,7 +128,7 @@ let run_test error_log (pass, fail) source reference =
       close_in stream;
       expected
     with Sys_error _ ->
-      produced
+      []
   in
 
   (* Compare produced and expected outputs *)
