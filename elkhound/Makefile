@@ -71,4 +71,4 @@ profile-elkhound: elkhound/elkhound.native
 	$(CALLGRIND) _build/elkhound/elkhound.native
 
 profile-ccparse: ccparse/ccparse.native
-	$(CALLGRIND) _build/ccparse/ccparse.native -pp -utf8 -trivial testsuite/ccparse/profile.cc
+	$(CALLGRIND) _build/ccparse/ccparse.native -pp -utf8 -trivial testsuite/profile.cc

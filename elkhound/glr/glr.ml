@@ -1,4 +1,105 @@
-(* GLR parser *)
+(* Implementation Notes
+ *
+ * A design point: [GLR] uses more 'global's than I do.  My criteria
+ * here is that something should be global (stored in class GLR) if
+ * it has meaning between processing of tokens.  If something is only
+ * used during the processing of a single token, then I make it a
+ * parameter where necessary.
+ *
+ * Update: I've decided to make 'currentToken' and 'parserWorklist'
+ * global because they are needed deep inside of 'glrShiftNonterminal',
+ * though they are not needed by the intervening levels, and their
+ * presence in the argument lists would therefore only clutter them.
+ *
+ * (OLD) It should be clear that many factors contribute to this
+ * implementation being slow, and I'm going to refrain from any
+ * optimization for a bit.
+ *
+ * UPDATE (3/29/02): I'm now trying to optimize it.  The starting
+ * implementation is 300x slower than bison.  Ideal goal is 3x, but
+ * more realistic is 10x.
+ *
+ * UPDATE (8/24/02): It's very fast now; within 3% of Bison for
+ * deterministic grammars, and 5x when I disable the mini-LR core.
+ *
+ * Description of the various lists in play here:
+ *
+ *   topmostParsers
+ *   --------------
+ *   The active parsers are at the frontier of the parse tree
+ *   space.  It *never* contains more than one stack node with
+ *   a given parse state; I call this the unique-state property
+ *   (USP).  If we're about to add a stack node with the same
+ *   state as an existing node, we merge them (if it's a shift,
+ *   we add another leftAdjState; if it's a reduction, we add a
+ *   rule node *and* another leftAdjState).
+ *
+ *   Before a token is processed, topmostParsers contains those
+ *   parsers that successfully shifted the previous token.  This
+ *   list is then walked to make the initial reduction worklist.
+ *
+ *   Before the shifts are processed, the topmostParsers list is
+ *   cleared.  As each shift is processed, the resulting parser is
+ *   added to topmostParsers (modulo USP).
+ *
+ *   [GLR] calls this "active-parsers"
+ *
+ * 
+ * Discussion of path re-examination, called do-limited-reductions by
+ * [GLR]:
+ *
+ * After thinking about this for some time, I have reached the conclusion
+ * that the only way to handle the problem is to separate the collection
+ * of paths from the iteration over them.
+ *
+ * Here are several alternative schemes, and the reasons they don't
+ * work:
+ *
+ *   1. [GLR]'s approach of limiting re-examination to those involving
+ *      the new link
+ *
+ *      This fails because it does not prevent re-examined paths
+ *      from appearing in the normal iteration also.
+ *
+ *   2. Modify [GLR] so the new link can't be used after the re-examination
+ *      is complete
+ *
+ *      Then if *another* new link is added, paths involving both new
+ *      links wouldn't be processed.
+ *
+ *   3. Further schemes involving controlling which re-examination stage can
+ *      use which links
+ *
+ *      Difficult to reason about, unclear a correct scheme exists, short
+ *      of the full-blown path-listing approach I'm going to take.
+ *
+ *   4. My first "fix" which assumes there is never more than one path to
+ *      a given parser
+ *
+ *      This is WRONG.  There can be more than one path, even as all such
+ *      paths are labeled the same (namely, with the RHS symbols).  Consider
+ *      grammar "E -> x | E + E" parsing "x+x+x": both toplevel parses use
+ *      the "E -> E + E" rule, and both arrive at the root parser
+ *
+ * So, the solution I will implement is to collect all paths into a list
+ * before processing any of them.  During path re-examination, I also will
+ * collect paths into a list, this time only those that involve the new
+ * link.
+ *
+ * This scheme is clearly correct, since path collection cannot be disrupted
+ * by the process of adding links, and when links are added, exactly the new
+ * paths are collected and processed.  It's easy to see that every path is
+ * considered exactly once.
+ *
+ *
+ * MAJOR UPDATE (12/06/02):  I've replaced the state worklist (SWL) core
+ * used in all previous GLR implementations with a reduction worklist (RWL)
+ * core.  This core is just as fast, but can be implemented to always
+ * avoid the yield-then-merge problem for acyclic grammars.
+ *
+ *
+ * Below, parse-tree building activity is marked "TREEBUILD".
+ *)
 
 open ParseTablesType
 
@@ -10,7 +111,6 @@ let getSome = function
 
 
 (* Relative to C++ implementation, what is not done:
- *   - Token reclassification
  *   - Table compression
  *   - Heavy testing of the mini-LR core
  *)
@@ -173,6 +273,8 @@ type tLR = {
 
 (* maximum RHS length for mini-lr core *)
 let cMAX_RHSLEN = 8
+(* this is the length to make arrays which hold rhsLen many items
+ * typically, but are growable *)
 let cINITIAL_RHSLEN_SIZE = 8
 
 
@@ -228,6 +330,20 @@ let deallocateSemanticValue userAct sym sval =
     userAct.deallocateTerminalValue (ParseTables.symAsTerm sym) sval
   else
     userAct.deallocateNontermValue (ParseTables.symAsNonterm sym) sval
+
+
+let reclassifiedToken userAct lexer token =
+  let open Lexerint in
+  let open UserActions in
+  (* get original type/sval *)
+  let tokType = lexer.index token in
+  let tokSval = lexer.sval token in
+
+  (* reclassify type *)
+  let tokType = userAct.reclassifyToken tokType tokSval in
+
+  (* return a pair *)
+  tokType, tokSval
 
 
 let terminalName userAct tokType =
@@ -296,6 +412,9 @@ and deinitStackNode node =
 
 
 and deallocSemanticValues node =
+  (* explicitly deallocate siblings, so I can deallocate their
+   * semantic values if necessary (this requires knowing the
+   * associated symbol, which the sibling_links don't know) *)
   if node.firstSib.sib != cNULL_STACK_NODE then
     deallocateSemanticValue node.glr.userAct (getNodeSymbol node) node.firstSib.sval;
 
@@ -335,19 +454,30 @@ let hasMultipleSiblings node =
   node.leftSiblings != []
 
 
+(* add the very first sibling *)
 let addFirstSiblingLink_noRefCt node leftSib sval =
   assert (hasZeroSiblings node);
 
+  (* my depth will be my new sibling's depth, plus 1 *)
   node.determinDepth <- leftSib.determinDepth + 1;
 
+  (* we don't have any siblings yet; use embedded
+   * don't update reference count of 'leftSib', instead caller must do so *)
   assert (node.firstSib.sib == cNULL_STACK_NODE);
   node.firstSib.sib <- leftSib;     (* update w/o refct *)
 
   node.firstSib.sval <- sval
 
 
+(* pulled out of 'addSiblingLink' so I can inline addSiblingLink
+ * without excessive object code bloat; the branch represented by
+ * the code in this function is much less common *)
 let addAdditionalSiblingLink node leftSib sval =
-  (* now there is a second outgoing pointer *)
+  (* there's currently at least one sibling, and now we're adding another;
+   * right now, no other stack node should point at this one (if it does,
+   * most likely will catch that when we use the stale info)
+   *
+   * now there is a second outgoing pointer *)
   node.determinDepth <- 0;
 
   (* this was implicit in the C++ verison *)
@@ -359,16 +489,20 @@ let addAdditionalSiblingLink node leftSib sval =
   link
 
 
+(* add a new sibling by creating a new link *)
 let addSiblingLink node leftSib sval =
   if node.firstSib.sib == cNULL_STACK_NODE then (
     addFirstSiblingLink_noRefCt node leftSib sval;
 
-    (* manually inc refct *)
+    (* manually increment leftSib's refct *)
     incRefCt leftSib;
 
     (* pointer to firstSib.. *)
     node.firstSib
   ) else (
+    (* as best I can tell, x86 static branch prediction is simply
+     * "conditional forward branches are assumed not taken", hence
+     * the uncommon case belongs in the 'else' branch *)
     addAdditionalSiblingLink node leftSib sval
   )
 
@@ -379,11 +513,11 @@ let getUniqueLink node =
 
 
 let getLinkTo node another =
-  (* first? *)
+  (* check first.. *)
   if node.firstSib.sib == another then (
     Some node.firstSib
   ) else (
-    (* rest? *)
+    (* check rest *)
     try
       let link = List.find (fun candidate -> candidate.sib == another) node.leftSiblings in
       Some link
@@ -398,7 +532,7 @@ let computeDeterminDepth node =
   if hasZeroSiblings node then (
     1
   ) else if hasOneSibling node then (
-    (* sibling's plus one *)
+    (* it must be equal to sibling's, plus one *)
     node.firstSib.sib.determinDepth + 1
   ) else (
     assert (hasMultipleSiblings node);
@@ -466,8 +600,14 @@ let makeGLR userAct tables =
 
   glr.stackNodePool <- Objpool.make (fun () -> make_stack_node glr);
 
+  (* the ordinary GLR core doesn't have this limitation because
+   * it uses a growable array *)
   if use_mini_lr then
-    (* check that none of the productions exceed cMAX_RHSLEN *)
+    (* make sure none of the productions have right-hand sides
+     * that are too long; I think it's worth doing an iteration
+     * here since going over the limit would be really hard to
+     * debug, and this ctor is of course outside the main
+     * parsing loop *)
     for i = 0 to glr.tables.numProds - 1 do
       let len = ParseTables.getProdInfo_rhsLen glr.tables i in
 
@@ -495,6 +635,8 @@ let makeStackNode glr state =
   dest
 
 
+(* add a new parser to the 'topmostParsers' list, maintaining
+ * related invariants*)
 let addTopmostParser glr parsr =
   assert (checkLocalInvariants parsr);
 
@@ -1021,8 +1163,7 @@ let glrParseToken glr lexer token =
 
   (* grab current token since we'll need it and the access
    * isn't all that fast here in ML *)
-  let tokType = lexer.index token in
-  let tokSval = lexer.sval token in
+  let tokType, tokSval = reclassifiedToken glr.userAct lexer token in
 
   if not (nondeterministicParseToken glr tokType tokSval) then
     raise Exit;              (* "return false" *)
@@ -1044,7 +1185,7 @@ let rec lrParseToken glr lr lexer token =
   let parsr = ref (Arraystack.top glr.topmostParsers) in
   assert (!parsr.referenceCount = 1);
 
-  let tokType = Lexerint.(lexer.index token) in
+  let tokType, tokSval = reclassifiedToken glr.userAct lexer token in
 
   let action = ParseTables.getActionEntry_noError glr.tables !parsr.state tokType in
 
@@ -1129,7 +1270,7 @@ let rec lrParseToken glr lr lexer token =
 
       (* does the user want to keep it? *)
       if use_keep && not (keepNontermValue glr.userAct lhsIndex sval) then (
-        printParseErrorMessage glr Lexerint.(lexer.index token) newNode.state;
+        printParseErrorMessage glr tokType newNode.state;
         if accounting then (
           glr.stats.detShift  <- glr.stats.detShift  + lr.lrDetShift;
           glr.stats.detReduce <- glr.stats.detReduce + lr.lrDetReduce;
@@ -1167,7 +1308,7 @@ let rec lrParseToken glr lr lexer token =
       makeStackNode glr newState
     in
 
-    addFirstSiblingLink_noRefCt rightSibling !parsr Lexerint.(lexer.sval token);
+    addFirstSiblingLink_noRefCt rightSibling !parsr tokSval;
 
     (* replace 'parsr' with 'rightSibling' *)
     assert (Arraystack.length glr.topmostParsers = 1);
@@ -1261,6 +1402,8 @@ let stackSummary glr =
  * :: Main parser loop
  **********************************************************)
 
+(* This function is the core of the parser, and its performance is
+ * critical to the end-to-end performance of the whole system. *)
 let rec main_loop glr lr lexer token =
   if traceParse then (
     let open Lexerint in
@@ -1285,6 +1428,8 @@ let rec main_loop glr lr lexer token =
  * :: Entry and exit of GLR parser
  **********************************************************)
 
+(* used to extract the svals from the nodes just under the
+ * start symbol reduction *)
 let grabTopSval userAct node =
   let sib = getUniqueLink node in
   let ret = sib.sval in

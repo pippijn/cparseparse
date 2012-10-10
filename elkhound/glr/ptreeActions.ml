@@ -23,7 +23,8 @@ let make_lexer actions underlying =
 
 (* ----------------------- parseTreeActions ------------------------ *)
 let make_actions underlying tables : PtreeNode.t UserActions.t =
-  UserActions.({
+  UserActions.({ underlying with
+
     (* action to perform upon performing a reduction *)
     reductionAction = (
       fun prodId svals ->
@@ -64,8 +65,7 @@ let make_actions underlying tables : PtreeNode.t UserActions.t =
     (* choose whether to keep or drop a reduced value: trivial *)
     keepNontermValue = (fun _ _ -> true);
 
-    terminalDescription    = (fun id _ -> (underlying.terminalName    id));
-    nonterminalDescription = (fun id _ -> (underlying.nonterminalName id));
-    terminalName           = (fun id   -> (underlying.terminalName    id));
-    nonterminalName        = (fun id   -> (underlying.nonterminalName id));
+    (* token reclassification: trivial *)
+    reclassifyToken = (fun oldTokenType _ -> oldTokenType);
+
   })

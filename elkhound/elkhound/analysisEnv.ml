@@ -199,7 +199,6 @@ let init_env grammar =
 
   (* build indexed terminal map *)
   let indexed_terms = compute_indexed_terms grammar.terminals in
-  let term_count = Array.length indexed_terms in
 
   (* build indexed production map *)
   let indexed_prods, prods_by_lhs = compute_indexed_prods grammar.productions nonterm_count in

@@ -342,7 +342,6 @@ let emit_ml_action_code out dcl terms nonterms prods final_prod grammar tables =
 
   (* all that goes into the interface is the name of the
    * UserActions.t object *)
-  output_endline dcl "module T : UserActions.S";
   Printf.fprintf dcl "val userActions : %s UserActions.t\n" result_type;
 
   (* Open module so record field labels are visible *)
@@ -373,29 +372,28 @@ let emit_ml_action_code out dcl terms nonterms prods final_prod grammar tables =
   output_newline out;
 
   (* main action function; uses the array emitted above *)
-  output_endline out "module T : UserActions.S = struct";
-  output_endline out "  let reductionAction (productionId : int) (svals : SemanticValue.t array) : SemanticValue.t =";
-  output_endline out "    userFunctions.reductionActionArray.(productionId) svals";
+  output_endline out "let reductionAction (productionId : int) (svals : SemanticValue.t array) : SemanticValue.t =";
+  output_endline out "  userFunctions.reductionActionArray.(productionId) svals";
 
   (* dup *)
-  output_endline out "  let duplicateNontermValue (nontermId : int) (sval : SemanticValue.t) : SemanticValue.t =";
-  output_endline out "    userFunctions.duplicateNontermValueArray.(nontermId) sval";
-  output_endline out "  let duplicateTerminalValue (termId : int) (sval : SemanticValue.t) : SemanticValue.t =";
-  output_endline out "    userFunctions.duplicateTerminalValueArray.(termId) sval";
+  output_endline out "let duplicateNontermValue (nontermId : int) (sval : SemanticValue.t) : SemanticValue.t =";
+  output_endline out "  userFunctions.duplicateNontermValueArray.(nontermId) sval";
+  output_endline out "let duplicateTerminalValue (termId : int) (sval : SemanticValue.t) : SemanticValue.t =";
+  output_endline out "  userFunctions.duplicateTerminalValueArray.(termId) sval";
   (* del *)
-  output_endline out "  let deallocateNontermValue (nontermId : int) (sval : SemanticValue.t) : unit =";
-  output_endline out "    userFunctions.deallocateNontermValueArray.(nontermId) sval";
-  output_endline out "  let deallocateTerminalValue (termId : int) (sval : SemanticValue.t) : unit =";
-  output_endline out "    userFunctions.deallocateTerminalValueArray.(termId) sval";
+  output_endline out "let deallocateNontermValue (nontermId : int) (sval : SemanticValue.t) : unit =";
+  output_endline out "  userFunctions.deallocateNontermValueArray.(nontermId) sval";
+  output_endline out "let deallocateTerminalValue (termId : int) (sval : SemanticValue.t) : unit =";
+  output_endline out "  userFunctions.deallocateTerminalValueArray.(termId) sval";
   (* merge *)
-  output_endline out "  let mergeAlternativeParses (nontermId : int) (left : SemanticValue.t) (right : SemanticValue.t) : SemanticValue.t =";
-  output_endline out "    userFunctions.mergeAlternativeParsesArray.(nontermId) left right";
+  output_endline out "let mergeAlternativeParses (nontermId : int) (left : SemanticValue.t) (right : SemanticValue.t) : SemanticValue.t =";
+  output_endline out "  userFunctions.mergeAlternativeParsesArray.(nontermId) left right";
   (* keep *)
-  output_endline out "  let keepNontermValue (nontermId : int) (sval : SemanticValue.t) : bool =";
-  output_endline out "    userFunctions.keepNontermValueArray.(nontermId) sval";
+  output_endline out "let keepNontermValue (nontermId : int) (sval : SemanticValue.t) : bool =";
+  output_endline out "  userFunctions.keepNontermValueArray.(nontermId) sval";
   (* classify *)
-  output_endline out "  let reclassifyToken (oldTokenType : int) (sval : SemanticValue.t) : int =";
-  output_endline out "    userFunctions.reclassifyTokenArray.(oldTokenType) sval";
+  output_endline out "let reclassifyToken (oldTokenType : int) (sval : SemanticValue.t) : int =";
+  output_endline out "  userFunctions.reclassifyTokenArray.(oldTokenType) sval";
   (* emit a function to describe terminals; at some point I'd like to
    * extend my grammar format to allow the user to supply
    * token-specific description functions, but for now I will just
@@ -405,33 +403,33 @@ let emit_ml_action_code out dcl terms nonterms prods final_prod grammar tables =
    *
    * ML: I could do something like this using Obj, but I'd rather
    * not abuse that interface unnecessarily. *)
-  output_endline out "  let terminalDescription (termId : int) (sval : SemanticValue.t) : string =";
-  output_endline out "    termNamesArray.(termId)";
+  output_endline out "let terminalDescription (termId : int) (sval : SemanticValue.t) : string =";
+  output_endline out "  termNamesArray.(termId)";
   (* and a function to describe nonterminals also *)
-  output_endline out "  let nonterminalDescription (nontermId : int) (sval : SemanticValue.t) : string =";
-  output_endline out "    nontermNamesArray.(nontermId)";
+  output_endline out "let nonterminalDescription (nontermId : int) (sval : SemanticValue.t) : string =";
+  output_endline out "  nontermNamesArray.(nontermId)";
   (* emit functions to get access to the static maps *)
-  output_endline out "  let terminalName (termId : int) : string =";
-  output_endline out "    termNamesArray.(termId)";
-  output_endline out "  let nonterminalName (nontermId : int) : string =";
-  output_endline out "    nontermNamesArray.(nontermId)";
-  output_endline out "end";
+  output_endline out "let terminalName (termId : int) : string =";
+  output_endline out "  termNamesArray.(termId)";
+  output_endline out "let nonterminalName (nontermId : int) : string =";
+  output_endline out "  nontermNamesArray.(nontermId)";
   output_newline out;
   output_newline out;
 
   (* wrap all the action stuff up as a record *)
   Printf.fprintf out "let userActions : %s UserActions.t = {\n" result_type;
-  output_endline out "  reductionAction = T.reductionAction;";
-  output_endline out "  duplicateTerminalValue = T.duplicateTerminalValue;";
-  output_endline out "  duplicateNontermValue = T.duplicateNontermValue;";
-  output_endline out "  deallocateTerminalValue = T.deallocateTerminalValue;";
-  output_endline out "  deallocateNontermValue = T.deallocateNontermValue;";
-  output_endline out "  mergeAlternativeParses = T.mergeAlternativeParses;";
-  output_endline out "  keepNontermValue = T.keepNontermValue;";
-  output_endline out "  terminalDescription = T.terminalDescription;";
-  output_endline out "  nonterminalDescription = T.nonterminalDescription;";
-  output_endline out "  terminalName = T.terminalName;";
-  output_endline out "  nonterminalName = T.nonterminalName;";
+  output_endline out "  reductionAction;";
+  output_endline out "  duplicateTerminalValue;";
+  output_endline out "  duplicateNontermValue;";
+  output_endline out "  deallocateTerminalValue;";
+  output_endline out "  deallocateNontermValue;";
+  output_endline out "  mergeAlternativeParses;";
+  output_endline out "  keepNontermValue;";
+  output_endline out "  reclassifyToken;";
+  output_endline out "  terminalDescription;";
+  output_endline out "  nonterminalDescription;";
+  output_endline out "  terminalName;";
+  output_endline out "  nonterminalName;";
   output_endline out "}"
 
 
