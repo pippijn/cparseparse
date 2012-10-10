@@ -1,7 +1,5 @@
 open Sexplib.Conv
 open GrammarAst
-module StringMap = StringMap.M
-module StringSet = StringSet.M
 
 
 let accumulators =

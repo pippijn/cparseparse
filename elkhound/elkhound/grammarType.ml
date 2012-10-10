@@ -13,7 +13,6 @@
  *)
 
 open Sexplib.Conv
-module StringMap = StringMap.M
 
 type spec_func = {
   params                : string list;
