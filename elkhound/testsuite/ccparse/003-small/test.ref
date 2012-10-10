@@ -1,5 +1,0 @@
-stack nodes: num=0 max=137
-detShift:     6
-detReduce:    29
-nondetShift:  222
-nondetReduce: 2840
