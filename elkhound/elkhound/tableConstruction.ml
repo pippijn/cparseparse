@@ -84,43 +84,84 @@ let compute_actions state terminal allow_ambig sr rr =
 let compute_cell_action tables state shift_dest reductions terminal =
   let open GrammarType in
 
+  if Config.trace_table then (
+    Printf.printf "state %d, on terminal %d (\"%s\") "
+      (int_of_state_id state.state_id)
+      terminal.term_index
+      terminal.tbase.name;
+  );
+
   (* still conflicts? *)
   let actions = ConflictResolution.actions shift_dest reductions in
-  if actions >= 2 then (
-    (* make a new ambiguous-action entry-set *)
-    let shift_action =
+  let cell_action =
+    if actions >= 2 then (
+      (* make a new ambiguous-action entry-set *)
+      let shift_action =
+        match shift_dest with
+        | Some shift_dest ->
+            if Config.trace_table then (
+              Printf.printf " [shift token %d, to state %d"
+                terminal.term_index
+                (int_of_state_id shift_dest.state_id);
+            );
+            [TableEncoding.encode_shift tables shift_dest.state_id terminal.term_index]
+        | None ->
+            []
+      in
+
+      let reduce_actions =
+        List.map (fun prod ->
+          if Config.trace_table then (
+            Printf.printf "; reduce by %d"
+              prod.prod_index;
+          );
+          TableEncoding.encode_reduce tables prod.prod_index state.state_id
+        ) reductions
+      in
+
+      if Config.trace_table then (
+        print_string "]";
+      );
+
+      let set = shift_action @ reduce_actions in
+      assert (List.length set = actions);
+
+      TableEncoding.encode_ambig tables set state.state_id
+    ) else (
+      if Config.trace_table then (
+        print_string "(unambig)";
+      );
+      (* single action *)
       match shift_dest with
       | Some shift_dest ->
-          [TableEncoding.encode_shift tables shift_dest.state_id terminal.term_index]
+          assert (reductions = []);
+          if Config.trace_table then (
+            Printf.printf " shift token %d, to state %d"
+              terminal.term_index
+              (int_of_state_id shift_dest.state_id);
+          );
+          TableEncoding.encode_shift tables shift_dest.state_id terminal.term_index
       | None ->
-          []
-    in
-
-    let reduce_actions =
-      List.map (fun prod ->
-        TableEncoding.encode_reduce tables prod.prod_index state.state_id
-      ) reductions
-    in
-
-    let set = shift_action @ reduce_actions in
-    assert (List.length set = actions);
-
-    TableEncoding.encode_ambig tables set state.state_id
-  ) else (
-    (* single action *)
-    match shift_dest with
-    | Some shift_dest ->
-        assert (reductions = []);
-        TableEncoding.encode_shift tables shift_dest.state_id terminal.term_index
-    | None ->
-        match reductions with
-        | [] ->
-            TableEncoding.encode_error tables
-        | [prod] ->
-            TableEncoding.encode_reduce tables prod.prod_index state.state_id
-        | _ ->
-            failwith "logic error"
-  )
+          match reductions with
+          | [] ->
+              if Config.trace_table then (
+                Printf.printf " error";
+              );
+              TableEncoding.encode_error tables
+          | [prod] ->
+              if Config.trace_table then (
+                Printf.printf " reduce by %d"
+                  prod.prod_index;
+              );
+              TableEncoding.encode_reduce tables prod.prod_index state.state_id
+          | _ ->
+              failwith "logic error"
+    )
+  in
+  if Config.trace_table then (
+    print_newline ();
+  );
+  cell_action
 
 
 
