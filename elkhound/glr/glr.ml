@@ -246,12 +246,12 @@ let cNULL_STACK_NODE : 'result stack_node = Obj.magic ()
 
 
 let make_stack_node glr = {
+  glr            = glr;
   state          = cSTATE_INVALID;
   leftSiblings   = [];
   firstSib       = makeSiblingLink cNULL_STACK_NODE SemanticValue.null;
   referenceCount = 0;
   determinDepth  = 0;
-  glr            = glr;
   column         = 0;
 }
 
@@ -487,7 +487,6 @@ let makeGLR userAct tables tokenKindDesc =
  **********************************************************)
 
 
-(* macro in C++ version *)
 let makeStackNode glr state =
   let dest = Objpool.alloc glr.stackNodePool in
   initStackNode dest state;
@@ -716,7 +715,7 @@ let rwlShiftActive glr tokType leftSibling rightSibling lhsIndex sval =
        * +--------------------------------------------------+
        *)
 
-      (* dead tree optimization *)
+      (* dead tree optimisation *)
       if not (canMakeProgress glr tokType rightSibling) then (
         if traceParse then
           Printf.printf "avoided a merge by noticing the state was dead\n";
@@ -988,7 +987,7 @@ let printParseErrorMessage glr tokType lastToDie =
 let nondeterministicParseToken glr tokType tokSval =
   let lastToDie = ref cSTATE_INVALID in
 
-  (* seed the reduction worklist by analyzing the top nodes *)
+  (* seed the reduction worklist by analysing the top nodes *)
   Arraystack.iter (fun parsr ->
     let action = ParseTables.getActionEntry glr.tables parsr.state tokType in
     let actions = rwlEnqueueReductions glr parsr action None(*sibLink*) in
