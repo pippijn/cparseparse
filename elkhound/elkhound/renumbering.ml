@@ -129,4 +129,8 @@ let renumber_states env states =
     ) states;
   );
 
+  if Config.dump_automaton (
+    List.iter (PrintAnalysisEnv.print_item_set ~out:(Pervasives.open_out "automaton.out") env) states;
+  );
+
   states
