@@ -1,7 +1,7 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: 8b7943d35beb22f77ab3482321fdc647) *)
+(* DO NOT EDIT (digest: ab8b848a226aa96a4e5a4b65848cf186) *)
 module OASISGettext = struct
-(* # 21 "/home/danmey/ocamlbrew/ocaml-3.12.1/build/odb/install-oasis/oasis-0.3.0/src/oasis/OASISGettext.ml" *)
+# 21 "/home/pippijn/Downloads/oasis-0.3.0/src/oasis/OASISGettext.ml"
 
   let ns_ str =
     str
@@ -24,7 +24,7 @@ module OASISGettext = struct
 end
 
 module OASISExpr = struct
-(* # 21 "/home/danmey/ocamlbrew/ocaml-3.12.1/build/odb/install-oasis/oasis-0.3.0/src/oasis/OASISExpr.ml" *)
+# 21 "/home/pippijn/Downloads/oasis-0.3.0/src/oasis/OASISExpr.ml"
 
 
 
@@ -116,7 +116,7 @@ end
 
 # 117 "myocamlbuild.ml"
 module BaseEnvLight = struct
-(* # 21 "/home/danmey/ocamlbrew/ocaml-3.12.1/build/odb/install-oasis/oasis-0.3.0/src/base/BaseEnvLight.ml" *)
+# 21 "/home/pippijn/Downloads/oasis-0.3.0/src/base/BaseEnvLight.ml"
 
   module MapString = Map.Make(String)
 
@@ -214,7 +214,7 @@ end
 
 # 215 "myocamlbuild.ml"
 module MyOCamlbuildFindlib = struct
-(* # 21 "/home/danmey/ocamlbrew/ocaml-3.12.1/build/odb/install-oasis/oasis-0.3.0/src/plugins/ocamlbuild/MyOCamlbuildFindlib.ml" *)
+# 21 "/home/pippijn/Downloads/oasis-0.3.0/src/plugins/ocamlbuild/MyOCamlbuildFindlib.ml"
 
   (** OCamlbuild extension, copied from 
     * http://brion.inria.fr/gallium/index.php/Using_ocamlfind_with_ocamlbuild
@@ -323,7 +323,7 @@ module MyOCamlbuildFindlib = struct
 end
 
 module MyOCamlbuildBase = struct
-(* # 21 "/home/danmey/ocamlbrew/ocaml-3.12.1/build/odb/install-oasis/oasis-0.3.0/src/plugins/ocamlbuild/MyOCamlbuildBase.ml" *)
+# 21 "/home/pippijn/Downloads/oasis-0.3.0/src/plugins/ocamlbuild/MyOCamlbuildBase.ml"
 
   (** Base functions for writing myocamlbuild.ml
       @author Sylvain Le Gall
@@ -339,7 +339,7 @@ module MyOCamlbuildBase = struct
   type name = string 
   type tag = string 
 
-(* # 56 "/home/danmey/ocamlbrew/ocaml-3.12.1/build/odb/install-oasis/oasis-0.3.0/src/plugins/ocamlbuild/MyOCamlbuildBase.ml" *)
+# 56 "/home/pippijn/Downloads/oasis-0.3.0/src/plugins/ocamlbuild/MyOCamlbuildBase.ml"
 
   type t =
       {
@@ -484,27 +484,33 @@ let package_default =
           (["oasis_library_baselib_cclib"; "link"],
             [(OASISExpr.EBool true, S [A "-cclib"; A "-lstdc++"])]);
           (["oasis_library_baselib_cclib"; "ocamlmklib"; "c"],
-            [(OASISExpr.EBool true, S [A "-lstdc++"])]);
-          (["oasis_library_glr_native"; "ocaml"; "link"; "native"],
-            [(OASISExpr.EBool true, S [A "-inline"; A "0"])]);
-          (["oasis_library_glr_native"; "ocaml"; "ocamldep"; "native"],
-            [(OASISExpr.EBool true, S [A "-inline"; A "0"])]);
-          (["oasis_library_glr_native"; "ocaml"; "compile"; "native"],
-            [(OASISExpr.EBool true, S [A "-inline"; A "0"])])
+            [(OASISExpr.EBool true, S [A "-lstdc++"])])
        ];
      includes =
        [
           ("glr", ["baselib"]);
           ("elkhound", ["baselib"; "glr"]);
-          ("ccparse", ["glr"])
+          ("ccparse", ["baselib"; "glr"])
        ];
      }
   ;;
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default package_default;;
 
-# 507 "myocamlbuild.ml"
+# 501 "myocamlbuild.ml"
 (* OASIS_STOP *)
+let tokens = [
+  "ccparse/tok/c++1988.tok";
+  "ccparse/tok/c++2011.tok";
+  "ccparse/tok/gnu.tok";
+]
+let grammars = [
+  "ccparse/gr/c++1988.gr";
+  "ccparse/gr/c++2011.gr";
+  "ccparse/gr/kandr.gr";
+  "ccparse/gr/gnu.gr";
+]
+
 let dispatch_mine = function
   | After_rules ->
       rule "Compile C++ source file"
@@ -521,12 +527,18 @@ let dispatch_mine = function
         end;
 
 
-      let grammars = [
-        "ccparse/gr/c++1988.gr";
-        "ccparse/gr/c++2011.gr";
-        "ccparse/gr/kandr.gr";
-        "ccparse/gr/gnu.gr";
-      ] in
+      rule "Generate token files"
+        ~prods:[
+          "ccparse/tok/cc_tokens.ids";
+          "ccparse/tok/cc_tokens.ml";
+        ]
+        ~deps:([
+          "ccparse/tok/make-token-files";
+        ] @ tokens)
+        begin fun env build ->
+          Cmd(S([A"perl"; A"ccparse/tok/make-token-files"; A"-o"; A"ccparse/tok/cc_tokens"] @ List.map (fun a -> A a) tokens))
+        end;
+
 
       rule "Compile C++ grammar to ML"
         ~prods:[
@@ -538,10 +550,10 @@ let dispatch_mine = function
           "ccparse/gr/ccTokens.mli";
           "ccparse/gr/ccTokens.ml";
         ]
-        ~deps:(grammars @ [
+        ~deps:([
           "ccparse/tok/cc_tokens.ids";
           "elkhound/elkhound.native";
-        ])
+        ] @ grammars)
         begin fun env build ->
           Cmd(S([A"elkhound/elkhound.native"] @ List.map (fun a -> A a) grammars))
         end;
@@ -552,9 +564,9 @@ let dispatch_mine = function
           "ccparse/gr/cc.mli";
           "ccparse/gr/cc.ml";
         ]
-        ~deps:(grammars @ [
+        ~deps:([
           "ccparse/tok/cc_tokens.ids";
-        ])
+        ] @ grammars)
         begin fun env build ->
           Cmd(S([A"../../oink-stack/elkhound/elkhound"; A"-ocaml"] @ List.map (fun a -> A a) grammars))
         end;
