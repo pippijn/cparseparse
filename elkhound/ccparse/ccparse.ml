@@ -9,6 +9,7 @@ module Options = struct
   let _dumptoks = ref false
   let _loadtoks = ref false
   let _trivial = ref false
+  let _timing = ref false
 end
 
 let () =
@@ -21,6 +22,7 @@ let () =
     "-dumptoks",	Set Options._dumptoks,		" dump tokens to file (implies -pp)";
     "-loadtoks",	Set Options._loadtoks,		" load tokens from file";
     "-trivial",		Set Options._trivial,		" use trivial user actions";
+    "-timing",		Set Options._timing,		" output timing details";
   ]) (fun input -> inputs := input :: !inputs) "Usage: cxxparse [option...] <file...>")
 
 
@@ -41,7 +43,10 @@ let handle_return = function
 
 let glrparse glr getToken =
   let tree =
-    Glr.glrParse glr getToken Lexerint.({ tokType = 0; tokSval = SemanticValue.null })
+    if !Options._timing then
+      Timing.time "parsing" (Glr.glrParse glr getToken) Lexerint.({ tokType = 0; tokSval = SemanticValue.null })
+    else
+      Glr.glrParse glr getToken Lexerint.({ tokType = 0; tokSval = SemanticValue.null })
   in
 
   (* print accounting statistics from glr.ml *)
@@ -70,14 +75,18 @@ let rec tokenise tokens token lexbuf =
     tokenise (next :: tokens) token lexbuf
   )
 
+let global_token_list = ref []
+let getToken_from_global_list lex =
+  let open Lexerint in
+  lex.tokType <- CcTokens.index (List.hd !global_token_list);
+  global_token_list := List.tl !global_token_list;
+  lex
+
 
 let getToken_from_list tokens =
-  let tokens = ref tokens in
-  fun lex ->
-    let open Lexerint in
-    lex.tokType <- CcTokens.index (List.hd !tokens);
-    tokens := List.tl !tokens;
-    lex
+  global_token_list := tokens;
+  getToken_from_global_list
+
 
 let getToken_from_lexer lexer lexbuf =
   fun lex ->
@@ -87,7 +96,7 @@ let getToken_from_lexer lexer lexbuf =
 
 
 let getToken_from_dump input =
-  let tokens = Marshal.from_channel (open_in (input ^ ".tkd")) in
+  let tokens = Marshal.from_channel (open_in_bin (input ^ ".tkd")) in
   getToken_from_list tokens
 
 
@@ -105,7 +114,7 @@ let getToken_from_file input lexer =
     if !Options._dumptoks then (
       if !Options._loadtoks then
         failwith "-dumptoks and -loadtoks are mutually exclusive";
-      Marshal.to_channel (open_out (input ^ ".tkd")) tokens [Marshal.No_sharing];
+      Marshal.to_channel (open_out_bin (input ^ ".tkd")) tokens [Marshal.No_sharing];
     );
 
     getToken_from_list tokens
