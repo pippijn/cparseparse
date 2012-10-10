@@ -5,3 +5,7 @@
 "grammarAst.ml": syntax_camlp4o, pkg_sexplib.syntax
 "merge.ml": syntax_camlp4o, pkg_sexplib.syntax
 "grammarLexer.ml": syntax_camlp4o, pkg_ulex.syntax
+
+# library import
+"../baselib": include
+"../glr": include
