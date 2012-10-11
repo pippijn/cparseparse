@@ -14,7 +14,7 @@ let upper    = ['A'-'Z']
 
 let digit    = ['0'-'9']
 
-let alpha = (lower | upper)
+let alpha = (lower | upper | '$')
 let alnum = (alpha | digit)
 
 let identifier = (alpha | '_')(alnum | '_')*
