@@ -1,1 +1,1 @@
-<*>: pkg_sexplib.syntax,pkg_sexplib,syntax_camlp4o
+true: syntax_camlp4o
