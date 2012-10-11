@@ -100,7 +100,7 @@ let keywords = List.fold_left (fun map (kw, tok) -> StringMap.add kw tok map) St
 
 let string_table = Hashtbl.create 1009
 
-let classify id =
+let classify_cc id =
   try
     StringMap.find id keywords
   with Not_found ->
@@ -109,3 +109,18 @@ let classify id =
     with Not_found ->
       Hashtbl.add string_table id id;
       TOK_NAME id
+
+let classify_c id =
+  let open Cc_tokens in
+  let tok = classify_cc id in
+  if List.memq TF_CPLUSPLUS (token_flags tok) then
+    TOK_NAME id
+  else
+    tok
+
+
+let classify =
+  if Options._xc then
+    classify_c
+  else
+    classify_cc

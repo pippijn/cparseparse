@@ -9,6 +9,7 @@ module Priv = struct
   let _stats = ref false
   let _trivial = ref false
   let _timing = ref false
+  let _xc = ref false
 
   let inputs = ref []
 end
@@ -25,6 +26,7 @@ let () =
     "-stats",		Set Priv._stats,	" print parsing statistics";
     "-trivial",		Set Priv._trivial,	" use trivial user actions";
     "-timing",		Set Priv._timing,	" output timing details";
+    "-xc",		Set Priv._xc,		" parse code as C, not as C++";
   ]) (fun input -> Priv.inputs := input :: !Priv.inputs) "Usage: cxxparse [option...] <file...>");
 
   if !Priv._dumptoks then
@@ -41,5 +43,6 @@ let _loadtoks = !Priv._loadtoks
 let _stats = !Priv._stats
 let _trivial = !Priv._trivial
 let _timing = !Priv._timing
+let _xc = !Priv._xc
 
 let inputs = !Priv.inputs

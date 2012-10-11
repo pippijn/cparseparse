@@ -56,6 +56,8 @@ my $toks = <<"EOF";
  *   $myCommand
  *)
 
+open CcTokens
+
 (* token flags *)
 type token_flag =
   | TF_MULTISPELL     (* token has multiple spellings *)
@@ -133,7 +135,11 @@ while (@ARGV > 0) {
     if ($cpp)        { push @f, "TF_CPLUSPLUS"; }
 
     # emit to each file
-    $toks .= "  | $enumerator -> [" . (join "; ", @f) . "]\n";
+    if ($multiSpell) {
+       $toks .= "  | $enumerator s -> [" . (join "; ", @f) . "]\n";
+    } else {
+       $toks .= "  | $enumerator -> [" . (join "; ", @f) . "]\n";
+    }
 
     $ids .= sprintf "  %3d : %-30s %s;\n",
        $nextId,
