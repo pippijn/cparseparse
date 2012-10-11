@@ -22,7 +22,7 @@ SourceRepository head
 Executable ccparse
         Path:                   ccparse
         BuildTools:             ocamlbuild
-        BuildDepends:           glr,ast,baselib,ulex,unix,deriving-ocsigen,deriving-ocsigen.base
+        BuildDepends:           glr,ast,baselib,ulex,unix
         MainIs:                 ccparse.ml
         CompiledObject:         native
 #        NativeOpt:              -inline 999 -unsafe -noassert -nodynlink
@@ -31,7 +31,7 @@ Executable ccparse
 Executable elkhound
         Path:                   elkhound
         BuildTools:             ocamlbuild
-        BuildDepends:           sexplib,ulex,menhirLib,batteries,glr,baselib,unix,deriving-ocsigen,deriving-ocsigen.base
+        BuildDepends:           sexplib,ulex,menhirLib,batteries,glr,baselib,unix
         MainIs:                 elkhound.ml
         CompiledObject:         native
 #        NativeOpt:              -inline 0 -unsafe -noassert -nodynlink
@@ -48,7 +48,7 @@ Executable runtests
 Library glr
         Path:                   glr
         BuildTools:             ocamlbuild
-        BuildDepends:           baselib,deriving-ocsigen,ast
+        BuildDepends:           ast
         Modules:                Arraystack,
                                 Glr,
                                 Lexerint,
@@ -72,7 +72,7 @@ Library ast
 Library baselib
         Path:                   baselib
         BuildTools:             ocamlbuild
-        BuildDepends:           sexplib,batteries,deriving-ocsigen,deriving-ocsigen.base
+        BuildDepends:           sexplib,batteries
         Modules:                Bit2d,
                                 BitSet,
                                 CompressedBitSet,

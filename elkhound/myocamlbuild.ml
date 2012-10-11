@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: f051d0162bf7818d85b5f1d7eab4f8c8) *)
+(* DO NOT EDIT (digest: c6dbe96791919ca75402c9388450de47) *)
 module OASISGettext = struct
 (* # 21 "/home/danmey/ocamlbrew/ocaml-3.12.1/build/odb/install-oasis/oasis-0.3.0/src/oasis/OASISGettext.ml" *)
 
@@ -478,7 +478,7 @@ open Ocamlbuild_plugin;;
 let package_default =
   {
      MyOCamlbuildBase.lib_ocaml =
-       [("ast", ["ast"]); ("baselib", ["baselib"]); ("glr", ["glr"])];
+       [("ast", ["ast"]); ("glr", ["glr"]); ("baselib", ["baselib"])];
      lib_c = [("baselib", "baselib", [])];
      flags =
        [
@@ -489,7 +489,7 @@ let package_default =
        ];
      includes =
        [
-          ("glr", ["ast"; "baselib"]);
+          ("glr", ["ast"]);
           ("elkhound", ["baselib"; "glr"]);
           ("ccparse", ["ast"; "baselib"; "glr"])
        ];
