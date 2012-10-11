@@ -84,6 +84,10 @@ let keywords = List.fold_left (fun map (kw, tok) -> StringMap.add kw tok map) St
   "__imag__",            TOK_IMAG;
   "__complex__",         TOK_COMPLEX;
   "__extension__",       TOK___EXTENSION__;
+  "_Complex",            TOK_COMPLEX;
+  "_Imaginary",          TOK_IMAGINARY;
+  "__inline",            TOK_INLINE;
+  "__inline__",          TOK_INLINE;
 
   (* C++11 *)
   "noexcept",            TOK_NOEXCEPT;
