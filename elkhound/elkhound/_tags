@@ -1,11 +1,12 @@
 # sexplib
-"analysisEnvType.ml": syntax_camlp4o, pkg_sexplib.syntax
-"grammarType.ml": syntax_camlp4o, pkg_sexplib.syntax
-"assoc.ml": syntax_camlp4o, pkg_sexplib.syntax
-"grammarAst.ml": syntax_camlp4o, pkg_sexplib.syntax
-"merge.ml": syntax_camlp4o, pkg_sexplib.syntax
-"grammarLexer.ml": syntax_camlp4o, pkg_ulex.syntax
+"analysisEnvType.ml": syntax_camlp4o, pkg_sexplib.syntax,pkg_deriving-ocsigen,pkg_deriving-ocsigen.base
+"grammarType.ml": syntax_camlp4o, pkg_sexplib.syntax,pkg_deriving-ocsigen,pkg_deriving-ocsigen.base
+"assoc.ml": syntax_camlp4o, pkg_sexplib.syntax,pkg_deriving-ocsigen,pkg_deriving-ocsigen.base
+"grammarAst.ml": syntax_camlp4o, pkg_sexplib.syntax,pkg_deriving-ocsigen,pkg_deriving-ocsigen.base
+"merge.ml": syntax_camlp4o, pkg_sexplib.syntax,pkg_deriving-ocsigen,pkg_deriving-ocsigen.base
+"grammarLexer.ml": syntax_camlp4o, pkg_ulex.syntax,pkg_deriving-ocsigen,pkg_deriving-ocsigen.base
 
 # library import
 "../baselib": include
 "../glr": include
+<*>: pkg_deriving-ocsigen,pkg_deriving-ocsigen.base

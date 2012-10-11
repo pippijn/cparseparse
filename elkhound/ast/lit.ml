@@ -1,11 +1,12 @@
 (*----------------------------------------------------------------------------
                               Literals
   --------------------------------------------------------------------------*)
+open Sexplib.Conv
 
-type size = [ `I | `L | `LL | `U | `UL | `ULL ]
+type size = [ `I | `L | `LL | `U | `UL | `ULL ] with sexp
 
-type 'a t =
-    Float of 'a * string
-  | Int of 'a * size * string
-  | String of 'a * string
-  | Char of 'a * string
+type t =
+    Float of Loc.t * string
+  | Int of Loc.t * size * string
+  | String of Loc.t * string
+  | Char of Loc.t * string with sexp

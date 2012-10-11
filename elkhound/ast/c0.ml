@@ -1,62 +1,66 @@
 (*----------------------------------------------------------------------------
         C0 AST - lousy AST before the symbol and ambiguity resolution
   --------------------------------------------------------------------------*)
+open Sexplib.Conv
 
 (* Toplevel definition *)
-type 'a topl =
+type program = topl
+and topl =
     ToNil
-  | ToDef of 'a * 'a def * 'a topl
-  | ToDecl of 'a * 'a decl * 'a topl
-  | ToTypedef of 'a * 'a Ident.t * 'a typ
-  (* | ToStruct of 'a * 'a struc *)
+  | ToDef of Loc.t * def * topl
+  | ToDecl of Loc.t * decl * topl
+  | ToTypedef of Loc.t * Ident.t * typ
+  (* | ToStruct of Loc.t * struc *)
 (* Type *)
-and 'a typ =
-    TyId of 'a * 'a Ident.t
-  | TySta of 'a * 'a typ
-  | TyAmp of 'a * 'a typ
-  | TyAnn of 'a * 'a ann * 'a typ
+and typ =
+    TyId of Loc.t * Ident.t
+  | TySta of Loc.t * typ
+  | TyAmp of Loc.t * typ
+  | TyAnn of Loc.t * ann * typ
 (* Generic annotation *)
-and 'a ann =
+and ann =
     AnNil
-  | AnId of 'a * 'a Ident.t * 'a ann
+  | AnId of Loc.t * Ident.t * ann
 (* Declaration *)
-and 'a decl =
-  | DcVar of 'a * 'a typ * 'a ann * 'a Ident.t
-  | DcFun of 'a * 'a typ * 'a ann * 'a Ident.t * 'a targ
-and 'a def =
-  | DfVar of 'a * 'a typ * 'a ann * 'a Ident.t * 'a expr
-  | DfFun of 'a * 'a typ * 'a ann * 'a Ident.t * 'a targ * 'a block
+and decl =
+  | DcVar of Loc.t * typ * ann * Ident.t
+  | DcFun of Loc.t * typ * ann * Ident.t * targ
+and def =
+  | DfVar of Loc.t * typ * ann * Ident.t * expr
+  | DfFun of Loc.t * typ * ann * Ident.t * targ * block
 (* Typed argument *)
-and 'a targ =
+and targ =
     TaNil
-  | TaItem of 'a * 'a typ * 'a Ident.t option * 'a targ
+  | TaItem of Loc.t * typ * Ident.t option * targ
 (* Expression *)
-and 'a expr =
-  | ExApp of 'a * 'a Ident.t * 'a arg
-  | ExOp of 'a * 'a expr * 'a Ident.t * 'a expr
-  | ExId of 'a * 'a Ident.t
-  | ExLit of 'a * 'a Lit.t
-  | ExDot of 'a * 'a expr * 'a Ident.t
-  | ExArr of 'a * 'a expr * 'a Ident.t
-  | ExPar of 'a * 'a expr
-  | ExAmp of 'a * 'a expr
-  | ExSta of 'a * 'a expr
-  | ExCom of 'a * 'a expr * 'a expr
+and expr =
+  | ExApp of Loc.t * Ident.t * arg
+  | ExOp of Loc.t * expr * Ident.t * expr
+  | ExId of Loc.t * Ident.t
+  | ExLit of Loc.t * Lit.t
+  | ExDot of Loc.t * expr * Ident.t
+  | ExArr of Loc.t * expr * Ident.t
+  | ExPar of Loc.t * expr
+  | ExAmp of Loc.t * expr
+  | ExSta of Loc.t * expr
+  | ExCom of Loc.t * expr * expr
 (* Statement *)
-and 'a stmt =
-    (* StAss of 'a * 'a lval * 'a Ident.t * 'a expr *)
-  | StEx of 'a * 'a expr
-  | StBlock of 'a * 'a block
-  | StDo of 'a * 'a expr * 'a block
-  | StWhile of 'a * 'a block * 'a expr
-  | StFor of 'a expr * 'a expr * 'a expr * 'a block
-  | StTry of 'a block * 'a targ * 'a block
-  | StCom of 'a * 'a expr * 'a expr
+and stmt =
+    (* StAss of Loc.t * lval * Ident.t * expr *)
+  | StEx of Loc.t * expr
+  | StBlock of Loc.t * block
+  | StDo of Loc.t * expr * block
+  | StWhile of Loc.t * block * expr
+  | StFor of expr * expr * expr * block
+  | StTry of block * targ * block
+  | StCom of Loc.t * expr * expr
 (* Block *)
-and 'a block =
+and block =
     BlNil
-  | BlSta of 'a * 'a stmt
+  | BlSta of Loc.t * stmt
 (* Argument *)
-and 'a arg =
+and arg =
     ArNil
-  | ArId of 'a * 'a Ident.t * 'a arg
+  | ArId of Loc.t * Ident.t * arg with sexp
+
+let output_program channel s = Sexplib.Sexp.output_hum channel (sexp_of_topl s)

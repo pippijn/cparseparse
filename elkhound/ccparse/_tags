@@ -3,3 +3,4 @@
 "tok": include
 # ulex
 "ulexer.ml": syntax_camlp4o
+true: pkg_deriving-ocsigen,pkg_deriving-ocsigen.base, use_ast

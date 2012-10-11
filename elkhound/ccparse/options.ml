@@ -9,6 +9,7 @@ module Priv = struct
   let _stats = ref false
   let _trivial = ref false
   let _timing = ref false
+  let _print_lousy_ast = ref false
 
   let inputs = ref []
 end
@@ -17,6 +18,7 @@ let () =
   Arg.(parse (align [
     "-ptree",		Set Priv._ptree,	" build parse tree";
     "-print",		Set Priv._print,	" print tree";
+    "-print-lousy-ast", Set Priv._print_lousy_ast, " print lousy ast";
     "-utf8",		Set Priv._utf8,		" assume source file is in UTF-8 encoding";
     "-pp",		Set Priv._pp,		" fully tokenise before parsing";
     "-tokens",		Set Priv._tokens,	" tokenise only; do not parse";
@@ -41,5 +43,5 @@ let _loadtoks = !Priv._loadtoks
 let _stats = !Priv._stats
 let _trivial = !Priv._trivial
 let _timing = !Priv._timing
-
+let _print_lousy_ast = !Priv._print_lousy_ast
 let inputs = !Priv.inputs

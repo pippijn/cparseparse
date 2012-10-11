@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: a95f2803cf75629f13179d13f74181c2) *)
+(* DO NOT EDIT (digest: f051d0162bf7818d85b5f1d7eab4f8c8) *)
 module OASISGettext = struct
 (* # 21 "/home/danmey/ocamlbrew/ocaml-3.12.1/build/odb/install-oasis/oasis-0.3.0/src/oasis/OASISGettext.ml" *)
 
@@ -477,7 +477,8 @@ end
 open Ocamlbuild_plugin;;
 let package_default =
   {
-     MyOCamlbuildBase.lib_ocaml = [("baselib", ["baselib"]); ("glr", ["glr"])];
+     MyOCamlbuildBase.lib_ocaml =
+       [("ast", ["ast"]); ("baselib", ["baselib"]); ("glr", ["glr"])];
      lib_c = [("baselib", "baselib", [])];
      flags =
        [
@@ -488,16 +489,16 @@ let package_default =
        ];
      includes =
        [
-          ("glr", ["baselib"]);
+          ("glr", ["ast"; "baselib"]);
           ("elkhound", ["baselib"; "glr"]);
-          ("ccparse", ["baselib"; "glr"])
+          ("ccparse", ["ast"; "baselib"; "glr"])
        ];
      }
   ;;
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default package_default;;
 
-# 501 "myocamlbuild.ml"
+# 502 "myocamlbuild.ml"
 (* OASIS_STOP *)
 let tokens = [
   "ccparse/tok/c++1988.tok";
@@ -564,7 +565,6 @@ let dispatch_mine = function
           Cmd(S([A"elkhound/elkhound.native"] @ List.map (fun a -> A a) grammars))
         end;
 
-
       rule "Compile C++ grammar to ML (original elkhound)"
         ~prods:[
           "ccparse/gr/cc.mli";
@@ -578,22 +578,40 @@ let dispatch_mine = function
         end;
 
 
-      rule "Compile grammar to ML"
+      (* rule "Compile grammar to ML" *)
+      (*   ~prods:[ *)
+      (*     "%Actions.mli"; *)
+      (*     "%Actions.ml"; *)
+      (*     "%Tables.dat"; *)
+      (*     "%Tables.mli"; *)
+      (*     "%Tables.ml"; *)
+      (*     "%Tokens.mli"; *)
+      (*     "%Tokens.ml"; *)
+      (*   ] *)
+      (*   ~deps:[ *)
+      (*     "%.gr"; *)
+      (*     "elkhound/elkhound.native"; *)
+      (*   ] *)
+      (*   begin fun env build -> *)
+      (*     Cmd(S[A"elkhound/elkhound.native"; A(env "%.gr")]) *)
+      (*   end; *)
+
+      rule "Package fixup"
         ~prods:[
-          "%Actions.mli";
-          "%Actions.ml";
-          "%Tables.dat";
-          "%Tables.mli";
-          "%Tables.ml";
-          "%Tokens.mli";
-          "%Tokens.ml";
+          "ccParser.cmxa";
         ]
         ~deps:[
-          "%.gr";
-          "elkhound/elkhound.native";
+          "ccparse/gr/ccActions.ml";
+          "ccparse/gr/ccTables.ml";
+          "ccparse/gr/ccTokens.ml";
         ]
         begin fun env build ->
-          Cmd(S[A"elkhound/elkhound.native"; A(env "%.gr")])
+          Cmd(S[A"ocamlopt";
+                A"-o";
+                A("ccParser.cmxa");
+                A("ccparse/gr/ccActions.ml");
+                A("ccparse/gr/ccTables.ml");
+                A("ccparse/gr/ccTokens.ml");])
         end;
 
   | _ ->

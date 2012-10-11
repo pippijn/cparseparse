@@ -206,12 +206,21 @@ let elkmain inputs =
   ) else if Options._trivial then (
 
     let actions = UserActions.make_trivial actions in
-    List.iter (function None | Some () -> ()) (parse_files actions tables inputs)
+    (* Print our AST *)
+      List.iter (function
+      | None -> ()
+      | Some program ->
+          if Options._print_lousy_ast then
+            C0.output_program Pervasives.stderr program)
+        (parse_files actions tables inputs)
 
   ) else (
 
     (* unit list list *)
-    List.iter (function None -> () | Some l -> List.iter (fun () -> ()) l) (parse_files actions tables inputs)
+    List.iter (function
+    | None -> ()
+    | Some lst -> List.iter (C0.output_program Pervasives.stderr) lst)
+      (parse_files actions tables inputs)
 
   )
 
