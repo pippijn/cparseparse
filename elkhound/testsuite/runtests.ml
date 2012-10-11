@@ -230,10 +230,10 @@ let () =
 
     if fail = 0 then (
       Printf.fprintf error_log "all %d tests PASSed\n" pass;
-      Printf.fprintf stdout    "all %d tests %sPASS%sed\n" pass green reset;
+      Printf.fprintf stdout    "Summary: all %d tests %sPASS%sed\n" pass green reset;
     ) else (
       Printf.fprintf error_log "%d PASS, **%d FAIL**\n" pass fail;
-      Printf.fprintf stdout    "%s%d PASS%s, %s%d FAIL%s\n"
+      Printf.fprintf stdout    "Summary: %s%d PASS%s, %s%d FAIL%s\n"
         green pass reset
         red   fail reset;
     );
