@@ -137,7 +137,7 @@ type 'result t = {
 }
 
 
-let make_trivial (underlying : 'a t) : C0.topl t = { underlying with
+let make_trivial (underlying : 'a t) : unit t = { underlying with
   reductionAction = (fun _ _ -> SemanticValue.null);
   duplicateTerminalValue = (fun _ a -> a);
   duplicateNontermValue = (fun _ a -> a);

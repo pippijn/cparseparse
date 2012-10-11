@@ -316,8 +316,6 @@ let collect_production_rhs aliases terminals nonterminals is_synthesised rhs_lis
 
 
 let collect_productions aliases terminals nonterminals nonterms =
-  let term_count = StringMap.cardinal terminals in
-
   let productions, last_prod_index =
     StringMap.fold (fun _ (nterm, _) (productions, next_prod_index) ->
       match nterm with

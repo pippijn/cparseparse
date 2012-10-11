@@ -95,7 +95,7 @@ nonterm AbstractDeclarator {
 
 nonterm Declarator {
   -> "&&" cv:CVQualifierSeqOpt /*dsw: discarded; can be 'restrict' */ d:Declarator
-       { unimplemented 309 }
+       { (  ), cv, (  ) }
 }
 
 nonterm ConversionDeclaratorOpt {

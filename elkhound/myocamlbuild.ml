@@ -1,7 +1,7 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: c6dbe96791919ca75402c9388450de47) *)
+(* DO NOT EDIT (digest: 3e54bf7b8cc82bdb9ea84cfee4185edb) *)
 module OASISGettext = struct
-(* # 21 "/home/danmey/ocamlbrew/ocaml-3.12.1/build/odb/install-oasis/oasis-0.3.0/src/oasis/OASISGettext.ml" *)
+# 21 "/home/pippijn/Downloads/oasis-0.3.0/src/oasis/OASISGettext.ml"
 
   let ns_ str =
     str
@@ -24,7 +24,7 @@ module OASISGettext = struct
 end
 
 module OASISExpr = struct
-(* # 21 "/home/danmey/ocamlbrew/ocaml-3.12.1/build/odb/install-oasis/oasis-0.3.0/src/oasis/OASISExpr.ml" *)
+# 21 "/home/pippijn/Downloads/oasis-0.3.0/src/oasis/OASISExpr.ml"
 
 
 
@@ -116,7 +116,7 @@ end
 
 # 117 "myocamlbuild.ml"
 module BaseEnvLight = struct
-(* # 21 "/home/danmey/ocamlbrew/ocaml-3.12.1/build/odb/install-oasis/oasis-0.3.0/src/base/BaseEnvLight.ml" *)
+# 21 "/home/pippijn/Downloads/oasis-0.3.0/src/base/BaseEnvLight.ml"
 
   module MapString = Map.Make(String)
 
@@ -214,7 +214,7 @@ end
 
 # 215 "myocamlbuild.ml"
 module MyOCamlbuildFindlib = struct
-(* # 21 "/home/danmey/ocamlbrew/ocaml-3.12.1/build/odb/install-oasis/oasis-0.3.0/src/plugins/ocamlbuild/MyOCamlbuildFindlib.ml" *)
+# 21 "/home/pippijn/Downloads/oasis-0.3.0/src/plugins/ocamlbuild/MyOCamlbuildFindlib.ml"
 
   (** OCamlbuild extension, copied from 
     * http://brion.inria.fr/gallium/index.php/Using_ocamlfind_with_ocamlbuild
@@ -323,7 +323,7 @@ module MyOCamlbuildFindlib = struct
 end
 
 module MyOCamlbuildBase = struct
-(* # 21 "/home/danmey/ocamlbrew/ocaml-3.12.1/build/odb/install-oasis/oasis-0.3.0/src/plugins/ocamlbuild/MyOCamlbuildBase.ml" *)
+# 21 "/home/pippijn/Downloads/oasis-0.3.0/src/plugins/ocamlbuild/MyOCamlbuildBase.ml"
 
   (** Base functions for writing myocamlbuild.ml
       @author Sylvain Le Gall
@@ -339,7 +339,7 @@ module MyOCamlbuildBase = struct
   type name = string 
   type tag = string 
 
-(* # 56 "/home/danmey/ocamlbrew/ocaml-3.12.1/build/odb/install-oasis/oasis-0.3.0/src/plugins/ocamlbuild/MyOCamlbuildBase.ml" *)
+# 56 "/home/pippijn/Downloads/oasis-0.3.0/src/plugins/ocamlbuild/MyOCamlbuildBase.ml"
 
   type t =
       {
@@ -478,7 +478,7 @@ open Ocamlbuild_plugin;;
 let package_default =
   {
      MyOCamlbuildBase.lib_ocaml =
-       [("ast", ["ast"]); ("glr", ["glr"]); ("baselib", ["baselib"])];
+       [("ast", ["ast"]); ("baselib", ["baselib"]); ("glr", ["glr"])];
      lib_c = [("baselib", "baselib", [])];
      flags =
        [
@@ -489,7 +489,7 @@ let package_default =
        ];
      includes =
        [
-          ("glr", ["ast"]);
+          ("glr", ["baselib"]);
           ("elkhound", ["baselib"; "glr"]);
           ("ccparse", ["ast"; "baselib"; "glr"])
        ];

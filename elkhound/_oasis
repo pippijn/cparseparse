@@ -48,7 +48,7 @@ Executable runtests
 Library glr
         Path:                   glr
         BuildTools:             ocamlbuild
-        BuildDepends:           ast
+        BuildDepends:           baselib
         Modules:                Arraystack,
                                 Glr,
                                 Lexerint,
