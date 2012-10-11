@@ -108,7 +108,7 @@ terminals {
     left   40 "|";
     left   30 "&&";
     left   20 "||";
-    
+
     // also provided only for reference and for bpprint
     //right  10 "?:";
     //right   9 "=" ... "+";
@@ -126,9 +126,8 @@ impl_verbatim {
 }
 
 
-nonterm(unit list) File -> t:TranslationUnit
+nonterm(C0.topl list) File -> t:TranslationUnit
   { List.rev t }
-
 
 // 4/20/04: Removed long-since defunct EnterScope and LeaveScope
 
@@ -895,17 +894,17 @@ nonterm ForInitStatement {
 //}
 
 nonterm Declaration {
-  -> d:BlockDeclaration        { unimplemented 206 }
-  -> f:FunctionDefinition      { unimplemented 207 }
-  -> t:TemplateDeclaration     { unimplemented 208 }
-  -> d:ExplicitInstantiation   { unimplemented 209 }
+  -> d:BlockDeclaration        { C0.ToNil }
+  -> f:FunctionDefinition      { f }
+  -> t:TemplateDeclaration     { C0.ToNil }
+  -> d:ExplicitInstantiation   { C0.ToNil }
   //-> ExplicitSpecialization  // folded into TemplateDeclaration
-  -> s:LinkageSpecification    { unimplemented 210 }
+  -> s:LinkageSpecification    { C0.ToNil }
 
   // substituted from BlockDeclaration
-  -> a:AsmDefinition           { unimplemented 211 }
-  -> n:NamespaceDefinition     { unimplemented 212 }
-  -> n:NamespaceDecl           { unimplemented 213 }
+  -> a:AsmDefinition           { C0.ToNil }
+  -> n:NamespaceDefinition     { C0.ToNil }
+  -> n:NamespaceDecl           { C0.ToNil }
 }
 
 nonterm BlockDeclaration {

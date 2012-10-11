@@ -10,8 +10,8 @@
 
 // only allow K&R func defns at toplevel
 nonterm Declaration {
-  -> k:KandRFunctionDefinition             { unimplemented 711 }
-  -> k:KandRFunctionDefinition_implInt     { unimplemented 712 }
+  -> k:KandRFunctionDefinition             { C0.ToNil }
+  -> k:KandRFunctionDefinition_implInt     { C0.ToNil }
 }
 
 nonterm KandRFunctionDefinition {
@@ -122,7 +122,7 @@ nonterm KandRDirectDeclarator {
 //       ql:QLiterals                      // qualifier literals
 //       cv:CVQualifierSeqOpt
       { unimplemented 728 }
-      
+
   // sm: for in/c/k0003.c; the KandR declarator structure is
   // pretty messed up, but when I made a few tweaks it introduced
   // quite a few conflicts...
@@ -176,7 +176,7 @@ nonterm KandRIdentifier {
 }
 
 // implicit-int ****************
-                            
+
 // modifiers that can precede a function decl/defn in C; note
 // that the only intersection with CDtorModifier is "inline"
 nonterm CFuncModifier_no_inline {
@@ -229,14 +229,14 @@ nonterm ImplIntFunctionDefinition {
 nonterm Declaration {
   fun keep(x) { true }
 
-  fun merge(l,r) { unimplemented 752 }
+  fun merge(l,r) { C0.ToNil }
 
   // only allow implicit-int func defns at toplevel
   -> f:ImplIntFunctionDefinition
-    { unimplemented 753 }
+    { C0.ToNil }
 
   -> m1:UberModifierSeqOpt /*implicit-int*/ list:InitDeclaratorList ";"
-    { unimplemented 754 }
+    { C0.ToNil }
 }
 
 
@@ -284,5 +284,3 @@ nonterm ImplicitIntTypeId {
   -> spec:ImplicitIntTypeSpecifier
        { unimplemented 758 }
 }
-
-
