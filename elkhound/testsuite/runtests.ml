@@ -151,7 +151,7 @@ let run_test error_log (pass, fail) source reference =
       | [] ->
           output_string error_log " no output\n"
       | lines ->
-          output_string error_log ":\n::\n\n";
+          output_string error_log ":\n\n::\n\n";
           List.iter (fun line -> Printf.fprintf error_log "  %s\n" line) lines
     in
 

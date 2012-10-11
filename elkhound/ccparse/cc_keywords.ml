@@ -92,6 +92,10 @@ let cxx1998_keywords = [
   "xor_eq",			TOK_XOREQUAL;
   "not",			TOK_BANG;
   "not_eq",			TOK_NOTEQUAL;
+
+  (* XXX: C99 keywords usable in C++, as they are reserved names *)
+  "_Complex",                   TOK_COMPLEX;
+  "_Imaginary",                 TOK_IMAGINARY;
 ]
 
 (* C++11 *)

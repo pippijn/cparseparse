@@ -110,28 +110,6 @@ let lexer_from_file input lexing =
   )
 
 
-let lexer_from_file input lexing =
-  (* FIXME: this is never closed *)
-  let cin = Unix.open_process_in ("gcc -I /usr/include/qt4 -xc++ -E -P " ^ input) in
-
-  let lexbuf = lexing.from_channel cin in
-
-  assert (not Options._loadtoks);
-  if Options._pp then (
-    let tokens = tokenise [] lexing.lex lexbuf in
-    if Options._dumptoks then (
-      if Options._loadtoks then
-        failwith "-dumptoks and -loadtoks are mutually exclusive";
-      Marshal.to_channel (open_out_bin (input ^ ".tkd")) tokens [Marshal.No_sharing];
-    );
-
-    lexer_from_list tokens
-  ) else (
-    assert (not Options._dumptoks);
-    lexer_from_lexing lexing lexbuf
-  )
-
-
 let parse glr actions input lexing =
   let lexer =
     if Options._loadtoks then
