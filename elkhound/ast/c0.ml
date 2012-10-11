@@ -21,6 +21,8 @@ and typ =
 and ann =
     AnNil
   | AnId of Loc.t * Ident.t * ann
+  | AnSta of Loc.t * ann
+  | AnAmp of Loc.t * ann
 (* Declaration *)
 and decl =
   | DcVar of Loc.t * typ * ann * Ident.t
@@ -62,5 +64,7 @@ and block =
 and arg =
     ArNil
   | ArId of Loc.t * Ident.t * arg with sexp
+
+type qual = [ `Const | `Volatile | `Restrict ]
 
 let output_program channel s = Sexplib.Sexp.output_hum channel (sexp_of_topl s)

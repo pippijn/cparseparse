@@ -1323,18 +1323,18 @@ nonterm InitializerList {
 // regex for this nonterm: (PtrOperator)* DirectDeclarator
 nonterm Declarator {
   -> "*" cv:CVQualifierSeqOpt d:Declarator
-       { unimplemented 308 }
+       { (  ), cv, (  ) }
   // dsw: I could have just allowed 'restrict' here instead of
   // allowing any CVQualifierSeqOpt after a "&" but it would mean
   // duplicating the parsing rule three times (there are three
   // occurances of "&" with this meaning in the grammar) and moving it
   // to gnu.gr; perhaps Scott will prefer that more specific solution.
   -> "&" cv:CVQualifierSeqOpt /*dsw: discarded; can be 'restrict' */ d:Declarator
-       { unimplemented 309 }
+       { (  ), cv, (  ) }
   -> n:PtrToMemberName "*" cv:CVQualifierSeqOpt d:Declarator
-       { unimplemented 310 }
+       { (  ), cv, (  ) }
   -> d:DirectDeclarator
-       { unimplemented 311 }
+       { (  ), C0.AnNil, (  ) }
 }
 
 nonterm DirectDeclarator {
@@ -1426,18 +1426,18 @@ nonterm PtrToMemberName {
 
 
 nonterm CVQualifierSeqOpt {
-  -> empty                       { unimplemented 327 }
-  -> s:CVQualifierSeq            { unimplemented 328 }
+  -> empty                       { C0.AnNil }
+  -> s:CVQualifierSeq            { s }
 }
 
 nonterm CVQualifierSeq {
-  -> q:CVQualifier                       { unimplemented 329 }
-  -> q:CVQualifier s:CVQualifierSeq      { unimplemented 330 }
+  -> q:CVQualifier                       { C0.AnId (((*loc*)), q, C0.AnNil) }
+  -> q:CVQualifier s:CVQualifierSeq      { C0.AnId (((*loc*)), q, s) }
 }
 
 nonterm CVQualifier {
-  -> "const"                 { unimplemented 331 }
-  -> "volatile"              { unimplemented 332 }
+  -> "const"                 { "const" }
+  -> "volatile"              { "volatile" }
 }
 
 
@@ -1599,7 +1599,8 @@ nonterm FunctionDefinition {
   // ordinary function:
   // return type      name/params   body
   -> r:DeclSpecifier  d:FDDeclarator  b:FunctionBody
-       { C0.ToDef ((), C0.DfFun ((), C0.TyId ((), "test"), C0.AnNil, "func", C0.TaNil, C0.BlNil), C0.ToNil) }
+       { C0.ToDef
+         ((), C0.DfFun ((), C0.TyId ((), "test"), C0.AnNil, "func", C0.TaNil, C0.BlNil), C0.ToNil) }
 
   // 2005-03-09: I didn't even realize this was possible for non-ctors
   // return type      name/params            body            handlers
@@ -1631,7 +1632,7 @@ nonterm FunctionDefinition {
 nonterm FDDeclarator {
   fun keep(d) { true }
 
-  -> d:Declarator    { unimplemented 366 }
+  -> d:Declarator    { d }
 }
 
 nonterm FunctionBody -> s:CompoundStatement
