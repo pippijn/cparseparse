@@ -76,6 +76,7 @@ let keywords = List.fold_left (fun map (kw, tok) -> StringMap.add kw tok map) St
   (* GNU *)
   "__builtin_va_arg",           TOK___BUILTIN_VA_ARG;
   "__builtin_constant_p",       TOK___BUILTIN_CONSTANT_P;
+  "__attribute",                TOK___ATTRIBUTE__;
   "__attribute__",              TOK___ATTRIBUTE__;
   "__offsetof__",               TOK___OFFSETOF__;
   "__builtin_offsetof",         TOK___BUILTIN_OFFSETOF;
