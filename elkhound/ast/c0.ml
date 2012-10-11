@@ -64,5 +64,7 @@ and block =
 and arg =
     ArNil
   | ArId of Loc.t * Ident.t * arg with sexp
-and qual = `Const | `Volatile | `Restrict
+
+type qual = [ `Const | `Volatile | `Restrict ]
+
 let output_program channel s = Sexplib.Sexp.output_hum channel (sexp_of_topl s)
