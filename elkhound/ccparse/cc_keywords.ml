@@ -78,6 +78,7 @@ let keywords = List.fold_left (fun map (kw, tok) -> StringMap.add kw tok map) St
   "__FUNCTION__",        TOK___FUNCTION__;
   "__label__",           TOK___LABEL__;
   "__PRETTY_FUNCTION__", TOK___PRETTY_FUNCTION__;
+  "typeof",              TOK___TYPEOF__;
   "__typeof",            TOK___TYPEOF__;
   "__typeof__",          TOK___TYPEOF__;
   "__real__",            TOK_REAL;
