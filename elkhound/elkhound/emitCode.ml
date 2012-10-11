@@ -147,6 +147,104 @@ let emit_ml_tokens out dcl terms =
 
 
 (************************************************
+ * :: Concrete syntax tree
+ ************************************************)
+
+
+let emit_ml_parse_tree_type has_merge out prods =
+  output_string out "  type t =";
+  if has_merge then
+    output_string out "\n    | Merge of t * t";
+
+  match prods with
+  (* nonterminal with a single production that is a tagged terminal *)
+  | [{ right = [Terminal (tag, { tbase = { semtype } })] }] when tag <> "" ->
+      output_char out ' ';
+      output_string out semtype
+
+  | prods ->
+      List.iter (fun prod ->
+        (* XXX: camlp4o doesn't like left-shift-equals in comments *)
+        if false then (
+          output_string out "\n  (*";
+          PrintGrammar.print_production ~out prod;
+          output_endline out " *)";
+        );
+        output_newline out;
+
+        begin match prod.prod_name with
+        | None ->
+            Printf.fprintf out "    | P%d" prod.prod_index
+        | Some name ->
+            Printf.fprintf out "    | %s" name
+        end;
+
+        ignore (List.fold_left (fun first sym ->
+          let separator = if first then "of" else "*" in
+
+          match sym with
+          | Nonterminal ("", _)
+          | Terminal ("", _) ->
+              (* nothing to do for untagged symbols *)
+              first
+
+          | Nonterminal (tag, nonterm) ->
+              (* the type is the referenced nonterminal module *)
+              Printf.fprintf out " %s %s.t" separator nonterm.nbase.name;
+              false
+
+          | Terminal (tag, term) ->
+              (* use the terminal type. tagged terminals must have a declared type *)
+              Printf.fprintf out " %s %s" separator term.tbase.semtype;
+              false
+
+        ) true prod.right);
+      ) prods
+
+
+let emit_ml_parse_tree out prods_by_lhs =
+  emit_ml_prologue out;
+
+  output_endline out "open Sexplib.Conv";
+  output_newline out;
+
+  let first_module = ref "" in
+  Array.iteri (fun i prods ->
+    (* the empty nonterminal has no productions and we do not
+     * emit code for the synthesised start rule *)
+    if i > 1 then (
+      let nterm = (List.hd prods).left in
+
+      if i = 2 then (
+        first_module := nterm.nbase.name;
+        Printf.fprintf out "module rec %s : sig\n" nterm.nbase.name
+      ) else (
+        Printf.fprintf out "and %s : sig\n" nterm.nbase.name
+      );
+
+      let has_merge = nterm.merge != None in
+
+      (* signature *)
+      emit_ml_parse_tree_type has_merge out prods;
+      output_newline out;
+      output_endline out "  val sexp_of_t : t -> Sexplib.Sexp.t";
+      output_endline out "  val t_of_sexp : Sexplib.Sexp.t -> t";
+      output_endline out "end = struct";
+      (* implementation *)
+      emit_ml_parse_tree_type has_merge out prods;
+      output_endline out "\n  with sexp";
+
+      output_string out "end\n\n";
+    )
+  ) prods_by_lhs;
+
+  Printf.fprintf out "\ntype t = %s.t" !first_module;
+  Printf.fprintf out "\nlet t_of_sexp = %s.t_of_sexp" !first_module;
+  Printf.fprintf out "\nlet sexp_of_t = %s.sexp_of_t" !first_module;
+  output_newline out
+
+
+(************************************************
  * :: User actions
  ************************************************)
 
@@ -329,8 +427,8 @@ let emit_ml_dup_del_merge out terms nonterms =
   ()
 
 
-let emit_ml_action_code out dcl terms nonterms prods final_prod grammar tables =
-  let result_type = final_semtype final_prod in
+let emit_ml_action_code out dcl terms nonterms prods final_prod verbatims impl_verbatims =
+  let result_type = final_semtype (final_prod prods) in
 
   emit_ml_prologue dcl;
   emit_ml_prologue out;
@@ -338,7 +436,7 @@ let emit_ml_action_code out dcl terms nonterms prods final_prod grammar tables =
   (* insert the stand-alone verbatim sections *)
   List.iter (fun code ->
     emit_ml_user_code ~braces:false dcl code
-  ) grammar.verbatim;
+  ) verbatims;
 
   (* all that goes into the interface is the name of the
    * UserActions.t object *)
@@ -352,7 +450,7 @@ let emit_ml_action_code out dcl terms nonterms prods final_prod grammar tables =
   (* stand-alone verbatim sections go into .ml file *also* *)
   List.iter (fun code ->
     emit_ml_user_code ~braces:false out code
-  ) grammar.verbatim;
+  ) verbatims;
 
   emit_ml_descriptions out terms nonterms;
 
@@ -360,7 +458,7 @@ let emit_ml_action_code out dcl terms nonterms prods final_prod grammar tables =
   output_endline out "(* ------------------- impl_verbatim sections ------------------ *)";
   List.iter (fun code ->
     emit_ml_user_code ~braces:false out code
-  ) grammar.impl_verbatim;
+  ) impl_verbatims;
   output_newline out;
   output_newline out;
 
@@ -456,12 +554,8 @@ let emit_ml_tables out dcl dat tables =
  * :: Main entry point
  ************************************************)
 
-let emit_ml name env grammar tables =
-  let open AnalysisEnvType in
-  let terms = env.indexed_terms in
-  let nonterms = env.indexed_nonterms in
-  let prods = env.indexed_prods in
-  let final_prod = env.indexed_prods.(tables.ParseTablesType.finalProductionIndex) in
+let emit_ml name terms nonterms prods prods_by_lhs verbatims impl_verbatims tables =
+  let final_prod prods = prods.(tables.ParseTablesType.finalProductionIndex) in
 
   (* Tokens *)
   let dcl = open_out (name ^ "Tokens.mli") in
@@ -469,10 +563,29 @@ let emit_ml name env grammar tables =
   closing (emit_ml_tokens out dcl) terms
     [dcl; out];
 
+  (* Parse Tree *)
+  let out = open_out (name ^ "Ptree.ml") in
+  closing (emit_ml_parse_tree out) prods_by_lhs
+    [out];
+
+  (* Parse Tree Actions *)
+  let dcl = open_out (name ^ "PtreeActions.mli") in
+  let out = open_out (name ^ "PtreeActions.ml") in
+  closing (emit_ml_action_code out dcl
+      terms
+      (PtreeMaker.nonterms nonterms)
+      (PtreeMaker.prods prods)
+      final_prod verbatims) impl_verbatims
+    [dcl; out];
+
   (* Actions *)
   let dcl = open_out (name ^ "Actions.mli") in
   let out = open_out (name ^ "Actions.ml") in
-  closing (emit_ml_action_code out dcl terms nonterms prods final_prod grammar) tables
+  closing (emit_ml_action_code out dcl
+      terms
+      nonterms
+      prods
+      final_prod verbatims) impl_verbatims
     [dcl; out];
 
   (* Tables *)

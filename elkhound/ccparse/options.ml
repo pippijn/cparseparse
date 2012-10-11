@@ -1,5 +1,6 @@
 module Priv = struct
   let _ptree = ref false
+  let _tptree = ref false
   let _print = ref false
   let _print_lousy_ast = ref false
   let _utf8 = ref false
@@ -18,6 +19,7 @@ end
 let () =
   Arg.(parse (align [
     "-ptree",		Set Priv._ptree,		" build parse tree";
+    "-tptree",		Set Priv._tptree,		" build strongly typed parse tree";
     "-print",		Set Priv._print,		" print tree";
     "-print-lousy-ast", Set Priv._print_lousy_ast,	" print lousy ast";
     "-utf8",		Set Priv._utf8,			" assume source file is in UTF-8 encoding";
@@ -36,6 +38,7 @@ let () =
 
 
 let _ptree = !Priv._ptree
+let _tptree = !Priv._tptree
 let _print = !Priv._print
 let _print_lousy_ast = !Priv._print_lousy_ast
 let _utf8 = !Priv._utf8

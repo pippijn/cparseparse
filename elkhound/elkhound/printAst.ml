@@ -10,12 +10,12 @@ let print_termdecl = function
 let print_specfunc = function
   | SpecFunc (name, formals, code) ->
       printf "  fun %s (" name;
-      List.fold_left (fun first formal ->
+      ignore (List.fold_left (fun first formal ->
         if not first then
           print_string ", ";
         print_string formal;
         false
-      ) true formals;
+      ) true formals);
       printf ") %s\n" code
 
 let print_termtype = function
@@ -47,18 +47,23 @@ let print_rhs = function
       printf " forbid_next (%s)" tokName
 
 let print_proddecl = function
-  | ProdDecl (PDK_NEW, rhs, actionCode) ->
+  | ProdDecl (PDK_NEW, None, rhs, actionCode) ->
       printf "  ->";
       List.iter print_rhs rhs;
       printf " %s\n" actionCode
-  | ProdDecl (PDK_REPLACE, rhs, actionCode) ->
+  | ProdDecl (PDK_NEW, Some prod_name, rhs, actionCode) ->
+      printf "  -> [%s]" prod_name;
+      List.iter print_rhs rhs;
+      printf " %s\n" actionCode
+  | ProdDecl (PDK_REPLACE, None, rhs, actionCode) ->
       printf "  replace";
       List.iter print_rhs rhs;
       printf " %s\n" actionCode
-  | ProdDecl (PDK_DELETE, rhs, actionCode) ->
+  | ProdDecl (PDK_DELETE, None, rhs, actionCode) ->
       printf "  delete";
       List.iter print_rhs rhs;
       printf " %s\n" actionCode
+  | _ -> failwith "invalid ProdDecl"
 
 let print_topform = function
   | TF_verbatim (false, code) ->

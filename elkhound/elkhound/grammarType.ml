@@ -99,6 +99,7 @@ type production = {
   prec                  : int; (* precedence level for disambiguation (0 for none specified) *)
   forbid                : TerminalSet.t; (* forbidden next tokens *)
 
+  prod_name		: string option; (* parse tree name for this production *)
   action                : string; (* user-supplied reduction action code *)
 
   (* --- annotation --- *)
@@ -187,6 +188,7 @@ let empty_production = {
   prec       = 0;
   forbid     = TerminalSet.empty;
             
+  prod_name  = None;
   action     = "";
 
   first_rhs  = TerminalSet.empty;

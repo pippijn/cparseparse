@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: 3e54bf7b8cc82bdb9ea84cfee4185edb) *)
+(* DO NOT EDIT (digest: bb1b17382b0616468f318f4590f5449a) *)
 module OASISGettext = struct
 # 21 "/home/pippijn/Downloads/oasis-0.3.0/src/oasis/OASISGettext.ml"
 
@@ -478,7 +478,12 @@ open Ocamlbuild_plugin;;
 let package_default =
   {
      MyOCamlbuildBase.lib_ocaml =
-       [("ast", ["ast"]); ("baselib", ["baselib"]); ("glr", ["glr"])];
+       [
+          ("ast", ["ast"]);
+          ("baselib", ["baselib"]);
+          ("glr", ["glr"]);
+          ("ccparse", ["ccparse"; "ccparse/gr"])
+       ];
      lib_c = [("baselib", "baselib", [])];
      flags =
        [
@@ -491,22 +496,24 @@ let package_default =
        [
           ("glr", ["baselib"]);
           ("elkhound", ["baselib"; "glr"]);
-          ("ccparse", ["ast"; "baselib"; "glr"])
+          ("cpapa", ["ast"; "ccparse"; "ccparse/gr"]);
+          ("ccparse/gr", ["ast"; "baselib"; "ccparse"; "glr"]);
+          ("ccparse", ["ast"; "baselib"; "ccparse/gr"; "glr"])
        ];
      }
   ;;
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default package_default;;
 
-# 502 "myocamlbuild.ml"
+# 509 "myocamlbuild.ml"
 (* OASIS_STOP *)
 let tokens = [
-  "ccparse/tok/c++1988.tok";
+  "ccparse/tok/c++1998.tok";
   "ccparse/tok/c++2011.tok";
   "ccparse/tok/gnu.tok";
 ]
 let grammars = [
-  "ccparse/gr/c++1988.gr";
+  "ccparse/gr/c++1998.gr";
   "ccparse/gr/c++2011.gr";
   "ccparse/gr/kandr.gr";
   "ccparse/gr/gnu.gr";
@@ -516,7 +523,8 @@ let configure fl =
   let cmd = Printf.sprintf "../script/check_%s.sh" (String.lowercase fl) in
   if Sys.command cmd = 0 then
     []
-  else [A (Printf.sprintf "-DHAS_%s" fl)]
+  else
+    [A ("-DHAS_" ^ fl)]
 
 let dispatch_mine = function
   | After_rules ->
@@ -551,6 +559,9 @@ let dispatch_mine = function
         ~prods:[
           "ccparse/gr/ccActions.mli";
           "ccparse/gr/ccActions.ml";
+          "ccparse/gr/ccPtree.ml";
+          "ccparse/gr/ccPtreeActions.mli";
+          "ccparse/gr/ccPtreeActions.ml";
           "ccparse/gr/ccTables.dat";
           "ccparse/gr/ccTables.mli";
           "ccparse/gr/ccTables.ml";
@@ -583,6 +594,9 @@ let dispatch_mine = function
       (*   ~prods:[ *)
       (*     "%Actions.mli"; *)
       (*     "%Actions.ml"; *)
+      (*     "%Ptree.ml"; *)
+      (*     "%PtreeActions.mli"; *)
+      (*     "%PtreeActions.ml"; *)
       (*     "%Tables.dat"; *)
       (*     "%Tables.mli"; *)
       (*     "%Tables.ml"; *)

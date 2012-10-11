@@ -44,6 +44,8 @@ let print = function
   | TOK_STRING id -> "TOK_STRING " ^ id
   | TOK_LIT_CODE id -> "TOK_LIT_CODE " ^ id
 
+  | TOK_LBRACK -> "TOK_LBRACK"
+  | TOK_RBRACK -> "TOK_RBRACK"
   | TOK_LBRACE -> "TOK_LBRACE"
   | TOK_RBRACE -> "TOK_RBRACE"
   | TOK_COLON -> "TOK_COLON"
@@ -184,6 +186,8 @@ let rec normal state = lexer
 | ":"								-> TOK_COLON
 | ";"								-> state.in_rhs <- false; TOK_SEMICOLON
 | "->"								-> state.in_rhs <- true; TOK_ARROW
+| "["								-> TOK_LBRACK
+| "]"								-> TOK_RBRACK
 | "("								-> TOK_LPAREN
 | ")"								-> TOK_RPAREN
 | ","								-> TOK_COMMA

@@ -119,7 +119,7 @@ let run_test error_log (pass, fail) source reference =
   let start = Unix.gettimeofday () in
 
   (* Parse the file *)
-  let cmd = Printf.sprintf "_build/ccparse/ccparse.native -trivial %s %s %s 2>&1" _xc opts source in
+  let cmd = Printf.sprintf "_build/cpapa/cpapa.native -trivial %s %s %s 2>&1" _xc opts source in
   let stream = Unix.open_process_in cmd in
   let produced = read_all stream in
   let status = Unix.close_process_in stream in

@@ -67,4 +67,6 @@ and arg =
 
 type qual = [ `Const | `Volatile | `Restrict ]
 
-let output_program channel s = Sexplib.Sexp.output_hum channel (sexp_of_topl s)
+let output_program channel s =
+  Sexplib.Sexp.output_hum channel (sexp_of_topl s);
+  output_char channel '\n'

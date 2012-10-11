@@ -60,15 +60,15 @@ check-ccparse: ccparse/ccparse.native
 	_build/ccparse/ccparse.native -ptree testsuite/c++11.ii
 
 
-CALLGRIND = valgrind --tool=callgrind		\
-	--callgrind-out-file=callgrind.out.1	\
-	--dump-line=no				\
-	--dump-instr=yes			\
-	--collect-jumps=yes			\
+CALLGRIND = valgrind --tool=callgrind			\
+	--callgrind-out-file=$(PWD)/callgrind.out.1	\
+	--dump-line=no					\
+	--dump-instr=yes				\
+	--collect-jumps=yes				\
 	--instr-atstart=no
 
 profile-elkhound: elkhound/elkhound.native
-	$(CALLGRIND) _build/elkhound/elkhound.native
+	cd _build && $(CALLGRIND) elkhound/elkhound.native
 
 profile-ccparse: ccparse/ccparse.native
 	$(CALLGRIND) _build/ccparse/ccparse.native -pp -utf8 -trivial testsuite/profile.cc

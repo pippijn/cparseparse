@@ -15,7 +15,7 @@ let synthesise_start_rule topforms =
   (* build a start production *)
   let start =
     TF_nonterm ((* name = *)start_name, (* type = *)"", (* funcs = *)[], (* prods = *)[
-      ProdDecl (PDK_NEW, [
+      ProdDecl (PDK_NEW, Some "", [
         RH_name ("top", topforms.first_nonterm);
         RH_name ("", eof);
       ], (* code: *)"")
@@ -324,12 +324,13 @@ let collect_productions aliases terminals nonterminals nonterms =
           (* is this the special start symbol I inserted? *)
           let is_synthesised = name = start_name in
 
-          List.fold_left (fun (productions, next_prod_index) (ProdDecl (kind, rhs, action)) ->
+          List.fold_left (fun (productions, next_prod_index) (ProdDecl (kind, prod_name, rhs, action)) ->
             (* build a production *)
             let production =
               { empty_production with
                 left;
                 action;
+                prod_name;
                 prod_index = next_prod_index;
               }
               (* deal with RHS elements *)

@@ -77,12 +77,12 @@ let rhs_equal al bl =
 let merge_prods nprods oprods =
   let merged =
     (* Iterate over the new productions, yield the merged list. *)
-    List.fold_left (fun oprods (ProdDecl (nkind, nrhs, ncode) as nprod) ->
+    List.fold_left (fun oprods (ProdDecl (nkind, nname, nrhs, ncode) as nprod) ->
       (* found: true if the old list contained this production
        * prods: old list; if found is true, one production was deleted or replaced,
        *        otherwise the list is unchanged *)
       let found, prods =
-        List.fold_left (fun (found, prods) (ProdDecl (okind, orhs, ocode) as oprod) ->
+        List.fold_left (fun (found, prods) (ProdDecl (okind, oname, orhs, ocode) as oprod) ->
           (* If the old production RHS matches the new one *)
           if rhs_equal nrhs orhs then
 

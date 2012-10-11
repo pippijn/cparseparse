@@ -285,6 +285,8 @@ type env = {
 
   (* options from grammar *)
   options                       : GrammarType.config;
+  verbatims                     : string list;
+  impl_verbatims                : string list;
 } with sexp
 
 

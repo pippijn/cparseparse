@@ -170,6 +170,11 @@ let parse_files actions tables inputs =
   List.map (parse_file glr actions) inputs
 
 
+let print_tptree tree =
+  Sexplib.Sexp.output_hum stdout (CcPtree.sexp_of_t tree);
+  print_newline ()
+
+
 let elkmain inputs =
   let actions = CcActions.userActions in
   let tables  = CcTables.parseTables in
@@ -185,10 +190,22 @@ let elkmain inputs =
             PtreeNode.print_tree tree stdout true
     ) trees
 
+  ) else if Options._tptree then (
+
+    let actions = CcPtreeActions.userActions in
+    let trees = parse_files actions tables inputs in
+    List.iter (function
+      | None -> ()
+      | Some lst ->
+          (* Print our parse tree *)
+          print_tptree lst
+    ) trees
+
   ) else if Options._trivial then (
 
     let actions = UserActions.make_trivial actions in
-    List.iter (function None | Some () -> ()) (parse_files actions tables inputs)
+    let trees = parse_files actions tables inputs in
+    List.iter (function None | Some () -> ()) trees
 
   ) else (
 
@@ -208,13 +225,3 @@ let main inputs =
     elkmain inputs
   with ExitStatus status ->
     exit status
-
-
-let () =
-  Gc.set {
-    (Gc.get ()) with
-    Gc.minor_heap_size = 8 * 1024 * 1024;
-  };
-
-  Printexc.record_backtrace true;
-  Printexc.print main Options.inputs

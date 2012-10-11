@@ -1,3 +1,5 @@
+let module_name = "Cc"
+
 let paranoid = false
 
 let use_LR0 = false

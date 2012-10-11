@@ -17,7 +17,7 @@ type proddecl_kind =
 
 (* production: rhs description, and code to execute upon recognition *)
 type proddecl =
-  | ProdDecl of (* kind: *)proddecl_kind * (* rhs: *)rhs list * (* action: *)string
+  | ProdDecl of (* kind: *)proddecl_kind * (* name: *)string option * (* rhs: *)rhs list * (* action: *)string
   with sexp
 
 (* specification function: formals + code *)

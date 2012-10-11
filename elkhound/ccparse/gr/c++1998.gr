@@ -126,8 +126,9 @@ impl_verbatim {
 }
 
 
-nonterm(C0.topl list) File -> t:TranslationUnit
-  { List.rev t }
+nonterm(C0.topl list) File {
+  -> t:TranslationUnit [Unit] { List.rev t }
+}
 
 // 4/20/04: Removed long-since defunct EnterScope and LeaveScope
 
@@ -157,37 +158,37 @@ nonterm TypeName {
 nonterm TranslationUnit {
   fun dup(n) { n }    // prevent multi-yield
 
-  -> empty                                { [] }
+  -> empty                                [Empty] { [] }
 
   // destructive action on 't'
-  -> t:TranslationUnit d:Declaration      { d :: t }
+  -> t:TranslationUnit d:Declaration      [List] { d :: t }
 
   // arg!  Mozilla is littered with toplevel semicolons..
-  -> t:TranslationUnit ";"                { t }
+  -> t:TranslationUnit ";"                [Unit] { t }
 }
 
 // ------ A.4 Expressions ------
 nonterm PrimaryExpression {
   -> e:Literal
-       { unimplemented 5 }
+       [Literal] { unimplemented 5 }
 
   -> "this"
-       { unimplemented 6 }
+       [This] { unimplemented 6 }
 
   -> "(" e:Expression ")"
-       { unimplemented 7 }
+       [Expression] { unimplemented 7 }
 
   -> e:IdExpression
-       { unimplemented 8 }
+       [Id] { unimplemented 8 }
 }
 
 nonterm Literal {
-  -> i:TOK_INT_LITERAL    { unimplemented 9 }
-  -> f:TOK_FLOAT_LITERAL  { unimplemented 10 }
-  -> s:StringLiteral      { unimplemented 11 }
-  -> c:TOK_CHAR_LITERAL   { unimplemented 12 }
-  -> "true"               { unimplemented 13 }
-  -> "false"              { unimplemented 14 }
+  -> i:TOK_INT_LITERAL    [Int]    { unimplemented 9 }
+  -> f:TOK_FLOAT_LITERAL  [Float]  { unimplemented 10 }
+  -> s:StringLiteral      [String] { unimplemented 11 }
+  -> c:TOK_CHAR_LITERAL   [Char]   { unimplemented 12 }
+  -> "true"               [True]   { unimplemented 13 }
+  -> "false"              [False]  { unimplemented 14 }
 }
 
 // a single quoted sequence of characters; this nonterminal exists
@@ -207,28 +208,28 @@ nonterm StringLiteral {
 nonterm IdExpression {
   fun merge(l,r) { unimplemented 18 }
 
-  -> id:PQualifiedId              { unimplemented 19 }
+  -> id:PQualifiedId              [Id] { unimplemented 19 }
 
   // a bare "::" qualifier can only appear at the start of a qualifier
   // sequence; I'm enforcing it a little bit differently than the std
   // does
   -> "::" id:PQualifiedId
-       { unimplemented 20 }
+       [GlobalId] { unimplemented 20 }
 }
 
 // names that are not qualified
 nonterm UnqualifiedId {
   fun merge(l,r) { unimplemented 21 }
 
-  -> id:Identifier                { unimplemented 22 }
-  -> on:OperatorFunctionId        { unimplemented 23 }
-  -> on:ConversionFunctionId      { unimplemented 24 }
+  -> id:Identifier                [Id] { unimplemented 22 }
+  -> on:OperatorFunctionId        [OpFun] { unimplemented 23 }
+  -> on:ConversionFunctionId      [ConvFun] { unimplemented 24 }
 
   // std has `"~" ClassName' here, but I've chosen to separate out the
   // places that a destructor name can occur, since it avoids an
   // ambiguity with the "~" unary operator
 
-  -> id:TemplateId                { unimplemented 25 }
+  -> id:TemplateId                [Templ] { unimplemented 25 }
 }
 
 // optional qualifier sequence (with no bare "::"), then an
@@ -238,21 +239,21 @@ nonterm PQualifiedId {
   fun merge(l,r) { unimplemented 26 }
 
   -> id:UnqualifiedId             precedence("::")
-       { unimplemented 27 }
+       [Unqual] { unimplemented 27 }
 
   -> n:Identifier "::" id:PQualifiedId
-       { unimplemented 28 }
+       [Qual] { unimplemented 28 }
 
   // quarl 2006-06-14
   //    changed targs:TemplateArgumentList to targs:TemplateArgumentListOpt;
   //    see in/k0112.cc
 
   -> n:Identifier "<" targs:TemplateArgumentListOpt ">" "::" id:PQualifiedId
-       { unimplemented 29 }
+       [Templ] { unimplemented 29 }
 
   // passing a dependent template as template template argument
-  -> n:Identifier "::" "template" n:Identifier
-       { unimplemented 30 }
+  -> n:Identifier "::" "template" tn:Identifier
+       [DepTemplTempl] { unimplemented 30 }
 
   // versions with "template" in front (it's not clear to me that this
   // is equivalent to the standard grammar.. I'm hacking it for now);
@@ -261,7 +262,7 @@ nonterm PQualifiedId {
   // marking all as TEMPLATE_QUALIFIER_HACK
   //
   -> "template" n:Identifier "<" targs:TemplateArgumentListOpt ">" "::" id:PQualifiedId
-       { unimplemented 31 }
+       [DepTempl] { unimplemented 31 }
 }
 
 
@@ -967,26 +968,26 @@ nonterm DeclSpecifier {
 
   // TS_name: triggered by PQTypeName
   -> n:PQTypeName m2:UberModifierSeqOpt
-       { unimplemented 211 }
+       [PostModName] { unimplemented 211 }
 
   -> m1:UberModifierSeq n:PQTypeName m2:UberModifierSeqOpt
-       { unimplemented 212 }
+       [PreModName] { unimplemented 212 }
 
   // TS_simple: triggered by UberTypeKeyword
   -> k1:UberTypeKeyword m2:UberTypeAndModifierSeqOpt
-       { unimplemented 213 }
+       [SimpleName] { unimplemented 213 }
 
   -> m1:UberModifierSeq k1:UberTypeKeyword m2:UberTypeAndModifierSeqOpt
-       { unimplemented 214 }
+       [PreModSimpleName] { unimplemented 214 }
 
   // TS_elaborated, TS_classSpec, TS_enumSpec:
   // triggered by one of "class", "struct", "union", "enum", "typename",
   // with the particular instance sorted out by ElaboratedOrSpecifier
   -> e:ElaboratedOrSpecifier m2:UberModifierSeqOpt
-       { unimplemented 215 }
+       [ElabName] { unimplemented 215 }
 
   -> m1:UberModifierSeq e:ElaboratedOrSpecifier m2:UberModifierSeqOpt
-       { unimplemented 216 }
+       [PreModElabName] { unimplemented 216 }
 }
 
 // choose among TS_elaborated, TS_classSpec and TS_enumSpec
@@ -1015,9 +1016,9 @@ nonterm UberModifierSeqOpt {
 // possibly empty sequence of modifiers (e.g. "static") or type
 // keywords (e.g. "int")
 nonterm UberTypeAndModifierSeqOpt {
-  -> empty                                          { unimplemented 0 }
-  -> s:UberTypeAndModifierSeqOpt u:UberModifier     { unimplemented 0 }
-  -> s:UberTypeAndModifierSeqOpt u:UberTypeKeyword  { unimplemented 0 }
+  -> empty                                          [Empty] { unimplemented 0 }
+  -> s:UberTypeAndModifierSeqOpt u:UberModifier     [ModSeq] { unimplemented 0 }
+  -> s:UberTypeAndModifierSeqOpt u:UberTypeKeyword  [TypeSeq] { unimplemented 0 }
 }
 
 
@@ -1334,7 +1335,7 @@ nonterm Declarator {
   -> n:PtrToMemberName "*" cv:CVQualifierSeqOpt d:Declarator
        { (  ), cv, (  ) }
   -> d:DirectDeclarator
-       { (  ), C0.AnNil, (  ) }
+       [Direct] { (  ), C0.AnNil, (  ) }
 }
 
 nonterm DirectDeclarator {
@@ -1345,11 +1346,11 @@ nonterm DirectDeclarator {
   // note: this rule handles constructor names!
   // note: this also handles operator names!
   -> n:IdExpression//_no_colon_colon
-       { unimplemented 312 }
+       [IdDecl] { unimplemented 312 }
 
   // dtor
   -> n:PQDtorName
-       { unimplemented 313 }
+       [DtorDecl] { unimplemented 313 }
 
   // function declarator; the return type comes from the type
   // specifier that precedes this
@@ -1357,15 +1358,15 @@ nonterm DirectDeclarator {
      "(" params:ParameterDeclarationClause ")" // parameters
      cv:CVQualifierSeqOpt                      // optional "const"
      e:ExceptionSpecificationOpt               // optional "throw" clause
-       { unimplemented 314 }
+       [FuncDecl] { unimplemented 314 }
 
   // array with optional size
   -> d:DirectDeclarator "[" sz:ConstantExpressionOpt "]"
-       { unimplemented 315 }
+       [ArrayDecl] { unimplemented 315 }
 
   // precedence grouping; must be recorded in the AST for disambiguation
   -> "(" d:Declarator ")"
-       { unimplemented 316 }
+       [ParenDecl] { unimplemented 316 }
 }
 
 // I choose to encode ctor and dtor names as ordinary PQNames, because
@@ -1632,7 +1633,7 @@ nonterm FunctionDefinition {
 nonterm FDDeclarator {
   fun keep(d) { true }
 
-  -> d:Declarator    { d }
+  -> d:Declarator    [Decl] { d }
 }
 
 nonterm FunctionBody -> s:CompoundStatement

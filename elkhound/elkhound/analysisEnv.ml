@@ -216,7 +216,10 @@ let init_env grammar =
     derivable = Derivability.initial_derivable_relation nonterm_count;
     cyclic_grammar = false;
     start_state = None;
+
     options = grammar.config;
+    verbatims = grammar.verbatim;
+    impl_verbatims = grammar.impl_verbatim;
   } in
 
   (* reset first/follow sets to 0 *)

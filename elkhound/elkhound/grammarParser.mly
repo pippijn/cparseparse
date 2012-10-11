@@ -12,6 +12,8 @@
 %token <string> TOK_LIT_CODE
 
 /* punctuators */
+%token TOK_LBRACK		/* "["	*/
+%token TOK_RBRACK		/* "]"	*/
 %token TOK_LBRACE		/* "{"	*/
 %token TOK_RBRACE		/* "}"	*/
 %token TOK_COLON		/* ":"	*/
@@ -155,7 +157,7 @@ spec_funcs
 
 
 spec_func
-	: TOK_FUN TOK_NAME TOK_LPAREN formals_opt TOK_RPAREN TOK_LIT_CODE
+	: TOK_FUN TOK_NAME TOK_LPAREN formals_opt TOK_RPAREN action
 		{ SpecFunc ($2, $4, $6) }
 
 
@@ -189,12 +191,19 @@ productions
 
 
 production
-	: TOK_ARROW rhs action		
-		{ ProdDecl (PDK_NEW, List.rev $2, $3) }
+	: TOK_ARROW rhs action
+		{ ProdDecl (PDK_NEW, None, List.rev $2, $3) }
+	| TOK_ARROW rhs production_name action
+		{ ProdDecl (PDK_NEW, $3, List.rev $2, $4) }
 	| TOK_REPLACE TOK_ARROW rhs action
-		{ ProdDecl (PDK_REPLACE, List.rev $3, $4) }
+		{ ProdDecl (PDK_REPLACE, None, List.rev $3, $4) }
 	| TOK_DELETE TOK_ARROW rhs TOK_SEMICOLON
-		{ ProdDecl (PDK_DELETE, List.rev $3, "") }
+		{ ProdDecl (PDK_DELETE, None, List.rev $3, "") }
+
+
+production_name
+	: TOK_LBRACK TOK_NAME TOK_RBRACK
+		{ Some $2 }
 
 
 action
@@ -203,7 +212,7 @@ action
 
 
 rhs
-	: /* empty */				{ [] }
+	: rhs_elt				{ [$1] }
 	| rhs rhs_elt				{ $2 :: $1 }
 
 
