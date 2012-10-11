@@ -8,7 +8,7 @@ type 'a topl =
   | ToDef of 'a * 'a def * 'a topl
   | ToDecl of 'a * 'a decl * 'a topl
   | ToTypedef of 'a * 'a Ident.t * 'a typ
-  | ToStruct of 'a * 'a struc
+  (* | ToStruct of 'a * 'a struc *)
 (* Type *)
 and 'a typ =
     TyId of 'a * 'a Ident.t
@@ -36,15 +36,15 @@ and 'a expr =
   | ExOp of 'a * 'a expr * 'a Ident.t * 'a expr
   | ExId of 'a * 'a Ident.t
   | ExLit of 'a * 'a Lit.t
-  | ExDot of 'a * 'a expr * Ident.t
-  | ExArr of 'a * 'a expr * Ident.t
+  | ExDot of 'a * 'a expr * 'a Ident.t
+  | ExArr of 'a * 'a expr * 'a Ident.t
   | ExPar of 'a * 'a expr
   | ExAmp of 'a * 'a expr
   | ExSta of 'a * 'a expr
   | ExCom of 'a * 'a expr * 'a expr
 (* Statement *)
 and 'a stmt =
-    StAss of 'a * 'a lval * 'a Ident.t * 'a expr
+    (* StAss of 'a * 'a lval * 'a Ident.t * 'a expr *)
   | StEx of 'a * 'a expr
   | StBlock of 'a * 'a block
   | StDo of 'a * 'a expr * 'a block
