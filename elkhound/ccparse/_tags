@@ -3,4 +3,4 @@
 "tok": include
 # ulex
 "ulexer.ml": syntax_camlp4o
-<**/*>: use_ast
+<gr/*>: use_ast
