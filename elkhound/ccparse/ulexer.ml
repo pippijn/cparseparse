@@ -12,7 +12,7 @@ let regexp upper    = ['A'-'Z']
 
 let regexp digit    = ['0'-'9']
 
-let regexp alpha = (lower | upper)
+let regexp alpha = (lower | upper | '$')
 let regexp alnum = (alpha | digit)
 
 let regexp identifier = (alpha | '_')(alnum | '_')*
