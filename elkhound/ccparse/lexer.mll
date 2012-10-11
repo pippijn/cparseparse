@@ -49,8 +49,10 @@ rule token = parse
 | "__extension__"                                               { token lexbuf }
 | "("                                                           { TOK_LPAREN }
 | ")"                                                           { TOK_RPAREN }
-| "["                                                           { TOK_LBRACKET }
-| "]"                                                           { TOK_RBRACKET }
+| "[" | "<:"                                                    { TOK_LBRACKET }
+| "]" | ":>"                                                    { TOK_RBRACKET }
+| "{" | "<%"                                                    { TOK_LBRACE }
+| "}" | "%>"                                                    { TOK_RBRACE }
 | "->"                                                          { TOK_ARROW }
 | "::"                                                          { TOK_COLONCOLON }
 | "."                                                           { TOK_DOT }
@@ -94,8 +96,10 @@ rule token = parse
 | ","                                                           { TOK_COMMA }
 | "..."                                                         { TOK_ELLIPSIS }
 | ";"                                                           { TOK_SEMICOLON }
-| "{"                                                           { TOK_LBRACE }
-| "}"                                                           { TOK_RBRACE }
+
+(* GNU *)
+| ">?"								{ TOK_MAX_OP }
+| "<?"								{ TOK_MIN_OP }
 
 (* C++ comments *)
 | "//" [^ '\n']*                                                { token lexbuf }

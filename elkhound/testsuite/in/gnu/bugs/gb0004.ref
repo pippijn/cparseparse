@@ -1,4 +1,4 @@
-In state 927, I expected one of these tokens:
+In state 928, I expected one of these tokens:
   [1] TOK_NAME
   [9] TOK_AUTO
   [17] TOK_CONST
@@ -23,4 +23,4 @@ In state 927, I expected one of these tokens:
   [125] TOK_CONSTEXPR
   [138] TOK___ATTRIBUTE__
   [148] TOK_RESTRICT
-Parse error (state 927) at TOK_RBRACE
+Parse error (state 928) at TOK_RBRACE
