@@ -1,0 +1,18 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: Build system is a bit mess
+desc: We need to establish root of the project, and prepare nice entry points, and some Makefile targets with well defined semantics.
+type: :bugfix
+component: Infrastructure
+release: 
+reporter: Wojciech Meyer <wojciech.meyer@gmail.com>
+status: :unstarted
+disposition: 
+creation_time: 2012-10-10 23:03:45.987136 Z
+references: []
+
+id: 437da1b4c3dbbd0e78afe6a1171330c62f104689
+log_events: 
+- - 2012-10-10 23:03:47.811080 Z
+  - Wojciech Meyer <wojciech.meyer@gmail.com>
+  - created
+  - ""
