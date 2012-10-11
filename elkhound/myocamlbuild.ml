@@ -565,6 +565,7 @@ let dispatch_mine = function
           Cmd(S([A"elkhound/elkhound.native"] @ List.map (fun a -> A a) grammars))
         end;
 
+
       rule "Compile C++ grammar to ML (original elkhound)"
         ~prods:[
           "ccparse/gr/cc.mli";
@@ -595,24 +596,6 @@ let dispatch_mine = function
       (*   begin fun env build -> *)
       (*     Cmd(S[A"elkhound/elkhound.native"; A(env "%.gr")]) *)
       (*   end; *)
-
-      rule "Package fixup"
-        ~prods:[
-          "ccParser.cmxa";
-        ]
-        ~deps:[
-          "ccparse/gr/ccActions.ml";
-          "ccparse/gr/ccTables.ml";
-          "ccparse/gr/ccTokens.ml";
-        ]
-        begin fun env build ->
-          Cmd(S[A"ocamlopt";
-                A"-o";
-                A("ccParser.cmxa");
-                A("ccparse/gr/ccActions.ml");
-                A("ccparse/gr/ccTables.ml");
-                A("ccparse/gr/ccTokens.ml");])
-        end;
 
   | _ ->
       ()
