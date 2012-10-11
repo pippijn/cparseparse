@@ -135,7 +135,7 @@ nonterm(unit list) File -> t:TranslationUnit
 
 // ------------- identifiers -------------------
 // simple string of characters
-nonterm('tIdentifier) Identifier {
+nonterm Identifier {
   -> n:TOK_NAME          { () }
 }
 
@@ -145,7 +145,7 @@ nonterm('tIdentifier) Identifier {
 //
 // update: I've substituted it into the grammar elsewhere, since
 // it's just causing s/r conflicts with no gain
-nonterm('tTypeName) TypeName {
+nonterm TypeName {
   -> n:TOK_TYPE_NAME     { unimplemented 4 }
 }
 
@@ -155,7 +155,7 @@ nonterm('tTypeName) TypeName {
 // C++ standard document
 
 // ------ A.3 Basic Concepts ------
-nonterm('tTranslationUnit) TranslationUnit {
+nonterm TranslationUnit {
   fun dup(n) { n }    // prevent multi-yield
 
   -> empty                                { [] }
@@ -168,7 +168,7 @@ nonterm('tTranslationUnit) TranslationUnit {
 }
 
 // ------ A.4 Expressions ------
-nonterm('tPrimaryExpression) PrimaryExpression {
+nonterm PrimaryExpression {
   -> e:Literal
        { unimplemented 5 }
 
@@ -182,7 +182,7 @@ nonterm('tPrimaryExpression) PrimaryExpression {
        { unimplemented 8 }
 }
 
-nonterm('tLiteral) Literal {
+nonterm Literal {
   -> i:TOK_INT_LITERAL    { unimplemented 9 }
   -> f:TOK_FLOAT_LITERAL  { unimplemented 10 }
   -> s:StringLiteral      { unimplemented 11 }
@@ -193,19 +193,19 @@ nonterm('tLiteral) Literal {
 
 // a single quoted sequence of characters; this nonterminal exists
 // so that gnu.gr can extend it
-nonterm('tPreprocString) PreprocString {
+nonterm PreprocString {
   -> s:TOK_STRING_LITERAL                   { unimplemented 15 }
 }
 
 // a string literal, with all concatenated parts
-nonterm('tStringLiteral) StringLiteral {
+nonterm StringLiteral {
   -> s:PreprocString                        { unimplemented 16 }
   -> s:PreprocString cont:StringLiteral     { unimplemented 17 }
 }
 
 
 // possibly-qualified name
-nonterm('tIdExpression) IdExpression {
+nonterm IdExpression {
   fun merge(l,r) { unimplemented 18 }
 
   -> id:PQualifiedId              { unimplemented 19 }
@@ -218,7 +218,7 @@ nonterm('tIdExpression) IdExpression {
 }
 
 // names that are not qualified
-nonterm('tUnqualifiedId) UnqualifiedId {
+nonterm UnqualifiedId {
   fun merge(l,r) { unimplemented 21 }
 
   -> id:Identifier                { unimplemented 22 }
@@ -235,7 +235,7 @@ nonterm('tUnqualifiedId) UnqualifiedId {
 // optional qualifier sequence (with no bare "::"), then an
 // UnqualifiedId; there is no option here that uses "~", since that
 // is handled by PQDtorName
-nonterm('tPQualifiedId) PQualifiedId {
+nonterm PQualifiedId {
   fun merge(l,r) { unimplemented 26 }
 
   -> id:UnqualifiedId             precedence("::")
@@ -278,12 +278,12 @@ nonterm('tPQualifiedId) PQualifiedId {
 // able to share the expression list one level higher than it
 // otherwise would.  (To see the effect, print the node addresses in
 // the resulting ASTs.)
-nonterm('tArgumentList) ArgumentList {
+nonterm ArgumentList {
   -> "(" e:ExpressionListOpt ")"      { unimplemented 32 }
 }
 
 
-nonterm('tPostfixExpression) PostfixExpression {
+nonterm PostfixExpression {
   // ambiguous:
   //   x(y)
   // can either be a function call (x is a function)
@@ -346,7 +346,7 @@ nonterm('tPostfixExpression) PostfixExpression {
 // the std calls this SimpleTypeSpecifier, but then also uses that
 // name in some other roles; this is only for the name of a class or
 // type, used as a constructor name
-nonterm('tCtorExpressionType) CtorExpressionType {
+nonterm CtorExpressionType {
   //-> ColonColonOpt NestedNameSpecifier "template" TemplateId;
 
   -> n:PQTypeName        { unimplemented 46 }
@@ -367,7 +367,7 @@ nonterm('tCtorExpressionType) CtorExpressionType {
   -> "void"              { unimplemented 57 }
 }
 
-nonterm('tCastKeyword) CastKeyword {
+nonterm CastKeyword {
   -> "dynamic_cast"      { unimplemented 58 }
   -> "static_cast"       { unimplemented 59 }
   -> "reinterpret_cast"  { unimplemented 60 }
@@ -379,7 +379,7 @@ nonterm('tCastKeyword) CastKeyword {
 // is linear in the size of the list, but the benefit of not
 // having to reverse the list or use ASTList (which is difficult
 // to share) is worth it
-nonterm('tExpressionList) ExpressionList {
+nonterm ExpressionList {
   // ambiguous; see t0182.cc
   fun merge(l,r) { unimplemented 62 }
 
@@ -389,7 +389,7 @@ nonterm('tExpressionList) ExpressionList {
        { unimplemented 64 }
 }
 
-nonterm('tExpressionListOpt) ExpressionListOpt {
+nonterm ExpressionListOpt {
   -> empty               { unimplemented 65 }
   -> e:ExpressionList    { unimplemented 66 }
 }
@@ -398,7 +398,7 @@ nonterm('tExpressionListOpt) ExpressionListOpt {
 //PseudoDestructorName -> "~" ClassName
 //PseudoDestructorName -> Qualifier PseudoDestructorName
 
-nonterm('tUnaryExpression) UnaryExpression {
+nonterm UnaryExpression {
   // ambiguous:
   //   sizeof(x)
   // could either be size of an expression 'x', or
@@ -433,12 +433,12 @@ nonterm('tUnaryExpression) UnaryExpression {
 
 
 // ---------------- "new" and "delete" expressions --------------
-nonterm('tColonColonOpt) ColonColonOpt {
+nonterm ColonColonOpt {
   -> empty     { unimplemented 81 }
   -> "::"      { unimplemented 82 }
 }
 
-nonterm('tNewExpression) NewExpression {
+nonterm NewExpression {
   // ambiguous (see in/t0482.cc)
   fun merge(l,r) { unimplemented 83 }
 
@@ -448,12 +448,12 @@ nonterm('tNewExpression) NewExpression {
        { unimplemented 85 }
 }
 
-nonterm('tNewPlacementOpt) NewPlacementOpt {
+nonterm NewPlacementOpt {
   -> empty                          { unimplemented 86 }
   -> "(" lst:ExpressionList ")"     { unimplemented 87 }
 }
 
-nonterm('tNewTypeId) NewTypeId {
+nonterm NewTypeId {
   -> spec:TypeSpecifier decl:NewDeclaratorOpt
     { unimplemented 88 }
 }
@@ -466,7 +466,7 @@ nonterm('tNewTypeId) NewTypeId {
 // however, I cannot find any explanation in the spec of whether "&"
 // is in fact allowed (it doesn't make sense to me) so I do not allow
 // it (so I'll see the counterexample syntax if it exists)
-nonterm('tNewDeclaratorOpt) NewDeclaratorOpt {
+nonterm NewDeclaratorOpt {
   -> empty
        { unimplemented 89 }
 
@@ -479,7 +479,7 @@ nonterm('tNewDeclaratorOpt) NewDeclaratorOpt {
   // commit to at least one "[" ... "]"
   -> d:DirectNewDeclarator               { unimplemented 92 }
 }
-nonterm('tDirectNewDeclarator) DirectNewDeclarator {
+nonterm DirectNewDeclarator {
   fun keep(x) { true }
 
   -> /*abstract declarator*/ "[" sz:Expression "]"
@@ -488,12 +488,12 @@ nonterm('tDirectNewDeclarator) DirectNewDeclarator {
        { unimplemented 94 }
 }
 
-nonterm('tNewInitializerOpt) NewInitializerOpt {
+nonterm NewInitializerOpt {
   -> empty                            { unimplemented 95 }
   -> "(" lst:ExpressionListOpt ")"    { unimplemented 96 }
 }
 
-nonterm('tDeleteExpression) DeleteExpression {
+nonterm DeleteExpression {
   -> c:ColonColonOpt "delete" e:CastExpression
        { unimplemented 97 }
   -> c:ColonColonOpt "delete" "[" "]" e:CastExpression
@@ -511,7 +511,7 @@ nonterm('tDeleteExpression) DeleteExpression {
 // build my AST in a certain way (bottom-up), so I redesigned this
 // part of the grammar.
 
-nonterm('tNameAfterDot) NameAfterDot {
+nonterm NameAfterDot {
   fun merge(l,r) { unimplemented 99 }
 
   -> n:NAD1
@@ -523,7 +523,7 @@ nonterm('tNameAfterDot) NameAfterDot {
 }
 
 // can begin with "~" or "template" or Identifier or "operator"
-nonterm('tNAD1) NAD1 {
+nonterm NAD1 {
   fun merge(l,r) { unimplemented 102 }
 
   -> n:NAD2
@@ -546,7 +546,7 @@ nonterm('tNAD1) NAD1 {
 
 // can only begin with Identifier or "operator"; this is essentially
 // what follows "::" in cppstd's qualified-id
-nonterm('tNAD2) NAD2 {
+nonterm NAD2 {
   fun merge(l,r) { unimplemented 109 }
 
   // final names
@@ -570,7 +570,7 @@ nonterm('tNAD2) NAD2 {
 // -------------- END: syntax after "." or "->" -------------------
 
 
-nonterm('tCastExpression) CastExpression {
+nonterm CastExpression {
   // ambiguous:
   //   (x)(y)
   // could either be a call to function 'x' with argument 'y', or
@@ -585,7 +585,7 @@ nonterm('tCastExpression) CastExpression {
 
 // ---- binary operator expression ----
 // binary exprs with precedence higher than ">"
-nonterm('tBinExp_high) BinExp_high {
+nonterm BinExp_high {
   // ambiguous:
   //   (x) - (y)
   // could either be the difference of expressions x and y, or
@@ -613,7 +613,7 @@ nonterm('tBinExp_high) BinExp_high {
 // had to remove them; couldn't I have just forced the other rules
 // that mention ">" to have no precedence (perhaps by adding syntax to
 // Elkhound to say that)?  Hmm... oh well.
-nonterm('tBinExp_mid) BinExp_mid {
+nonterm BinExp_mid {
   // ambiguous:
   //   x<y>(z)
   // could either be two relationals (E_binary), with redundant parens
@@ -633,7 +633,7 @@ nonterm('tBinExp_mid) BinExp_mid {
 }
 
 // binary exprs with lower precedence than ">"
-nonterm('tBinaryExpression) BinaryExpression {
+nonterm BinaryExpression {
   // ambiguous:
   //   (x) & (y)
   // could either be the bitwise AND of expressions x and y, or
@@ -653,7 +653,7 @@ nonterm('tBinaryExpression) BinaryExpression {
 }
 
 
-nonterm('tConditionalExpression) ConditionalExpression {
+nonterm ConditionalExpression {
   // in/k0012.cc
   fun merge(l,r) { unimplemented 146 }
 
@@ -667,7 +667,7 @@ nonterm('tConditionalExpression) ConditionalExpression {
 // why is conditional not allowed on left side of = ?  can I confirm
 // that in another language spec?  clearly both alternatives would have
 // to be like-typed lvalues, but...
-nonterm('tAssignmentExpression) AssignmentExpression {
+nonterm AssignmentExpression {
   -> e:ConditionalExpression
        { unimplemented 149 }
 
@@ -678,7 +678,7 @@ nonterm('tAssignmentExpression) AssignmentExpression {
        { unimplemented 151 }
 }
 
-nonterm('tAssignmentOperator) AssignmentOperator {
+nonterm AssignmentOperator {
   -> "*="  { unimplemented 152 }
   -> "/="  { unimplemented 153 }
   -> "%="  { unimplemented 154 }
@@ -699,7 +699,7 @@ nonterm('tAssignmentOperator) AssignmentOperator {
 // update: now that I'm doing translation too, the difference
 // in the meanings is great enough that I think they should be
 // separate, as they are
-nonterm('tExpression) Expression {
+nonterm Expression {
   // ambiguous:
   //   a < b , c > (d)
   // could either be a comma-exp with two relationals, or
@@ -714,7 +714,7 @@ nonterm('tExpression) Expression {
        { unimplemented 165 }
 }
 
-nonterm('tExpressionOpt) ExpressionOpt {
+nonterm ExpressionOpt {
   // empty expression is a true no-op
   -> empty         { unimplemented 166 }
   -> e:Expression  { unimplemented 167 }
@@ -724,7 +724,7 @@ nonterm('tExpressionOpt) ExpressionOpt {
 // it be entirely evaluable to an int at compile time
 // (the name exists simply to help document that fact; the grammar
 // cannot enforce it)
-nonterm('tConstantExpression) ConstantExpression {
+nonterm ConstantExpression {
   // cppstd says 'ConditionalExpression', but gcc allows assignments
   // here too, for its dynamically-sized arrays extension; if that
   // extension is *not* enabled, we will still reject an assignment
@@ -733,7 +733,7 @@ nonterm('tConstantExpression) ConstantExpression {
   -> e:AssignmentExpression { unimplemented 168 }
 }
 
-nonterm('tConstantExpressionOpt) ConstantExpressionOpt {
+nonterm ConstantExpressionOpt {
   -> empty                   { unimplemented 169 }
   -> e:ConstantExpression    { unimplemented 170 }
 }
@@ -753,7 +753,7 @@ nonterm('tConstantExpressionOpt) ConstantExpressionOpt {
 
 // ------ A.5 Statements ------
 // pull the label and colon out to make things easier in gnu.gr
-nonterm('tLabelAndColon) LabelAndColon {
+nonterm LabelAndColon {
   // 10/20/04: The precedence specification here fixes in/c/t0018.c by
   // telling the parser to shift any __attribute__ that follows the ":".
   -> n:Identifier ":"    precedence(TOK_PREFER_SHIFT)
@@ -761,7 +761,7 @@ nonterm('tLabelAndColon) LabelAndColon {
 }
 
 // labeled-statement
-nonterm('tStatement) Statement {
+nonterm Statement {
   // ambiguous:
   //   x(y);
   // can either be an Expression statement (constructor call)
@@ -832,17 +832,17 @@ nonterm('tStatement) Statement {
   -> n:NamespaceDecl                    { unimplemented 192 }
 }
 
-nonterm('tExpressionStatement) ExpressionStatement {
+nonterm ExpressionStatement {
   -> ";"                  { unimplemented 193 }
   -> e:Expression ";"     { unimplemented 194 }
 }
 
-nonterm('tCompoundStatement) CompoundStatement {
+nonterm CompoundStatement {
   -> seq:CompoundStmtHelper "}"
        { unimplemented 195 }
 }
 
-nonterm('tCompoundStmtHelper) CompoundStmtHelper {
+nonterm CompoundStmtHelper {
   // I pushed "{" into this nonterminal so the 'loc' would reflect
   // its location, instead of the location of the first statement inside
   // (and in fact since 'empty' has no location, I wouldn't even have
@@ -855,7 +855,7 @@ nonterm('tCompoundStmtHelper) CompoundStmtHelper {
 
 
 // the guard of e.g. an 'if' statement
-nonterm('tCondition) Condition {
+nonterm Condition {
   // ambiguous:
   //   if (A * a = 0) { /*...*/ }
   // could either be a CN_expr (mult+assign) or CN_decl (of variable 'a')
@@ -869,13 +869,13 @@ nonterm('tCondition) Condition {
        { unimplemented 200 }
 }
 
-nonterm('tConditionOpt) ConditionOpt {
+nonterm ConditionOpt {
   // an empty condition (e.g. in a for loop) is interpreted as true
   -> empty             { unimplemented 201 }
   -> c:Condition       { unimplemented 202 }
 }
 
-nonterm('tForInitStatement) ForInitStatement {
+nonterm ForInitStatement {
   // ambiguous:
   //   x * y = z
   // could be an expression or a declaration
@@ -887,14 +887,14 @@ nonterm('tForInitStatement) ForInitStatement {
 
 
 // ----- A.6 Declarations ------
-//nonterm('tDeclarationSeqOpt) DeclarationSeqOpt {
+//nonterm DeclarationSeqOpt {
 //  -> empty
 //       { unimplemented 206 }
 //  -> seq:DeclarationSeqOpt d:Declaration
 //       { seq->append(d); return seq; }
 //}
 
-nonterm('tDeclaration) Declaration {
+nonterm Declaration {
   -> d:BlockDeclaration        { unimplemented 206 }
   -> f:FunctionDefinition      { unimplemented 207 }
   -> t:TemplateDeclaration     { unimplemented 208 }
@@ -908,7 +908,7 @@ nonterm('tDeclaration) Declaration {
   -> n:NamespaceDecl           { unimplemented 213 }
 }
 
-nonterm('tBlockDeclaration) BlockDeclaration {
+nonterm BlockDeclaration {
   -> d:SimpleDeclaration     { unimplemented 207 }
 
   // all of these have been substituted into the places BlockDeclaration occurs
@@ -925,7 +925,7 @@ nonterm('tBlockDeclaration) BlockDeclaration {
 //   (I've moved those guys into more specialized contexts)
 // ok, why is the InitDeclaratorList optional?
 //   for declaring classes and enums
-nonterm('tSimpleDeclaration) SimpleDeclaration {
+nonterm SimpleDeclaration {
   fun keep(d) { true }
 
   // destructive action on 'spec'
@@ -963,7 +963,7 @@ nonterm('tSimpleDeclaration) SimpleDeclaration {
 // instead of
 //   -> UberModifierSeqOpt PQTypeName UberModifierSeqOpt
 // because the latter would cause shift/reduce conflicts.
-nonterm('tDeclSpecifier) DeclSpecifier {
+nonterm DeclSpecifier {
   fun dup(d) { unimplemented 210 }    // prevent multi-yield
 
   // TS_name: triggered by PQTypeName
@@ -991,7 +991,7 @@ nonterm('tDeclSpecifier) DeclSpecifier {
 }
 
 // choose among TS_elaborated, TS_classSpec and TS_enumSpec
-nonterm('tElaboratedOrSpecifier) ElaboratedOrSpecifier {
+nonterm ElaboratedOrSpecifier {
   // Note: This can multi-yield in cases like in/k0072.cc.
 
   -> s:ElaboratedTypeSpecifier { unimplemented 217 }
@@ -1002,12 +1002,12 @@ nonterm('tElaboratedOrSpecifier) ElaboratedOrSpecifier {
 
 // nonempty sequence of UberModifiers; note that the act of combining
 // UberModifiers sets checks for and complains about duplication
-nonterm('tUberModifierSeq) UberModifierSeq {
+nonterm UberModifierSeq {
   -> u:UberModifier                    { unimplemented 220 }
   -> s:UberModifierSeq u:UberModifier  { unimplemented 221 }
 }
 
-nonterm('tUberModifierSeqOpt) UberModifierSeqOpt {
+nonterm UberModifierSeqOpt {
   -> empty                    { unimplemented 222 }
   -> s:UberModifierSeq        { unimplemented 223 }
 }
@@ -1015,7 +1015,7 @@ nonterm('tUberModifierSeqOpt) UberModifierSeqOpt {
 
 // possibly empty sequence of modifiers (e.g. "static") or type
 // keywords (e.g. "int")
-nonterm('tUberTypeAndModifierSeqOpt) UberTypeAndModifierSeqOpt {
+nonterm UberTypeAndModifierSeqOpt {
   -> empty                                          { unimplemented 0 }
   -> s:UberTypeAndModifierSeqOpt u:UberModifier     { unimplemented 0 }
   -> s:UberTypeAndModifierSeqOpt u:UberTypeKeyword  { unimplemented 0 }
@@ -1024,17 +1024,17 @@ nonterm('tUberTypeAndModifierSeqOpt) UberTypeAndModifierSeqOpt {
 
 // repetition of above rules when the only modifiers allowed
 // are "const" and "volatile"; this is for TypeSpecifier
-nonterm('tUberCVQualifierSeq) UberCVQualifierSeq {
+nonterm UberCVQualifierSeq {
   -> u:UberCVQualifier                       { unimplemented 227 }
   -> s:UberCVQualifierSeq u:UberCVQualifier  { unimplemented 228 }
 }
 
-nonterm('tUberCVQualifierSeqOpt) UberCVQualifierSeqOpt {
+nonterm UberCVQualifierSeqOpt {
   -> empty                       { unimplemented 229 }
   -> s:UberCVQualifierSeq        { unimplemented 230 }
 }
 
-nonterm('tUberTypeAndCVQualifierSeqOpt) UberTypeAndCVQualifierSeqOpt {
+nonterm UberTypeAndCVQualifierSeqOpt {
   -> empty                                             { unimplemented 231 }
   -> s:UberTypeAndCVQualifierSeqOpt u:UberCVQualifier  { unimplemented 232 }
   -> s:UberTypeAndCVQualifierSeqOpt u:UberTypeKeyword  { unimplemented 233 }
@@ -1042,7 +1042,7 @@ nonterm('tUberTypeAndCVQualifierSeqOpt) UberTypeAndCVQualifierSeqOpt {
 
 
 // modifiers
-nonterm('tUberModifier) UberModifier {
+nonterm UberModifier {
   // storage-class-specifier
   -> "auto"      { unimplemented 234 }
   -> "register"  { unimplemented 235 }
@@ -1065,13 +1065,13 @@ nonterm('tUberModifier) UberModifier {
 }
 
 // just the cv-qualifiers
-nonterm('tUberCVQualifier) UberCVQualifier {
+nonterm UberCVQualifier {
   -> "const"     { unimplemented 246 }
   -> "volatile"  { unimplemented 247 }
 }
 
 // keywords that name a type, or part of one
-nonterm('tUberTypeKeyword) UberTypeKeyword {
+nonterm UberTypeKeyword {
   -> "char"      { unimplemented 248 }
   -> "wchar_t"   { unimplemented 249 }
   -> "bool"      { unimplemented 250 }
@@ -1086,7 +1086,7 @@ nonterm('tUberTypeKeyword) UberTypeKeyword {
 }
 
 
-nonterm('tElaboratedTypeSpecifier) ElaboratedTypeSpecifier {
+nonterm ElaboratedTypeSpecifier {
   -> k:ClassKey n:PQTypeName    { unimplemented 259 }
   -> "enum" n:PQTypeName        { unimplemented 260 }
 
@@ -1099,7 +1099,7 @@ nonterm('tElaboratedTypeSpecifier) ElaboratedTypeSpecifier {
 // plays role of "TypeSpecifierSeq" in cppstd; this is a
 // version of DeclSpecifier restricted to only allow "const" and
 // "volatile" UberModifiers
-nonterm('tTypeSpecifier) TypeSpecifier {
+nonterm TypeSpecifier {
   // TS_name
   -> n:PQTypeName cv2:UberCVQualifierSeqOpt
        { unimplemented 262 }
@@ -1126,7 +1126,7 @@ nonterm('tTypeSpecifier) TypeSpecifier {
 // I had been separating these into typedef/enum/class names, but
 // the parser can never distinguish, so the grammar shouldn't suggest
 // that it can
-nonterm('tPQTypeName) PQTypeName {
+nonterm PQTypeName {
   fun merge(l,r) { unimplemented 268 }
 
   -> n:PQTypeName_ncc
@@ -1136,7 +1136,7 @@ nonterm('tPQTypeName) PQTypeName {
 }
 
 // no-colon-colon
-nonterm('tPQTypeName_ncc) PQTypeName_ncc {
+nonterm PQTypeName_ncc {
   fun merge(l,r) { unimplemented 271 }
 
   -> n:Identifier                  precedence("::")
@@ -1153,7 +1153,7 @@ nonterm('tPQTypeName_ncc) PQTypeName_ncc {
 // after at least one qualifier other than "::"; 'template' has to be
 // squirreled away down here because otherwise it becomes ambiguous
 // with the 'template' at the start of an ElaboratedTypeSpecifier
-nonterm('tPQTypeName_notfirst) PQTypeName_notfirst {
+nonterm PQTypeName_notfirst {
   fun merge(l,r) { unimplemented 276 }
 
   -> id:PQTypeName_ncc             precedence("::")
@@ -1171,7 +1171,7 @@ nonterm('tPQTypeName_notfirst) PQTypeName_notfirst {
 }
 
 
-nonterm('tEnumSpecifier) EnumSpecifier {
+nonterm EnumSpecifier {
   -> "enum" "{" list:EnumeratorListOpt "}"
        { unimplemented 281 }
   -> "enum" n:Identifier "{" list:EnumeratorListOpt "}"
@@ -1182,7 +1182,7 @@ nonterm('tEnumSpecifier) EnumSpecifier {
 // rewrote this definition so I can always tell with one token of
 // lookahead whether this is the last enumerator definition; this
 // allows an optional comma at the end, on purpose
-nonterm('tEnumeratorListOpt) EnumeratorListOpt {
+nonterm EnumeratorListOpt {
   -> empty
        { unimplemented 283 }
   -> def:EnumeratorDefinition
@@ -1192,7 +1192,7 @@ nonterm('tEnumeratorListOpt) EnumeratorListOpt {
 }
 
 
-nonterm('tEnumeratorDefinition) EnumeratorDefinition {
+nonterm EnumeratorDefinition {
   -> name:Identifier
        { unimplemented 286 }
   -> name:Identifier "=" expr:ConstantExpression
@@ -1207,12 +1207,12 @@ nonterm('tEnumeratorDefinition) EnumeratorDefinition {
 // extension module.  Second, gnu.gr's AsmDefinition *extends* this
 // one, which is how it should be.  This is the AsmDefinition for
 // C++.
-nonterm('tAsmDefinition) AsmDefinition {
+nonterm AsmDefinition {
   -> "asm" "(" s:StringLiteral ")" ";"    { unimplemented 288 }
 }
 
 
-nonterm('tLinkageSpecification) LinkageSpecification {
+nonterm LinkageSpecification {
   -> "extern" n:TOK_STRING_LITERAL "{" tu:TranslationUnit "}"
        { unimplemented 289 }
 
@@ -1225,7 +1225,7 @@ nonterm('tLinkageSpecification) LinkageSpecification {
 // -- declarator --
 // a declarator is the "x" in a declaration like "int x"
 
-nonterm('tInitDeclaratorList) InitDeclaratorList {
+nonterm InitDeclaratorList {
   -> d:InitDeclarator
        { unimplemented 291 }
   -> d:InitDeclarator "," list:InitDeclaratorList
@@ -1233,7 +1233,7 @@ nonterm('tInitDeclaratorList) InitDeclaratorList {
 }
 
 // obsolete now that I've substituted it into SimpleDeclaration
-//  nonterm('tInitDeclaratorListOpt) InitDeclaratorListOpt {
+//  nonterm InitDeclaratorListOpt {
 //    -> empty
 //         { unimplemented 293 }
 //    -> list:InitDeclaratorList
@@ -1241,7 +1241,7 @@ nonterm('tInitDeclaratorList) InitDeclaratorList {
 //  }
 
 
-nonterm('tInitDeclarator) InitDeclarator {
+nonterm InitDeclarator {
   // ambiguous:
   //   int f(x *y);
   // could be declaring a variable called "f" with ctor-initializer "(x*y)",
@@ -1263,7 +1263,7 @@ nonterm('tInitDeclarator) InitDeclarator {
        { unimplemented 297 }
 }
 
-nonterm('tInitializer) Initializer {
+nonterm Initializer {
   -> "=" i:SimpleInitializerClause
        { unimplemented 298 }
 
@@ -1274,7 +1274,7 @@ nonterm('tInitializer) Initializer {
   // see [cppstd. sec. 8.5 para 8]
 }
 
-nonterm('tSimpleInitializerClause) SimpleInitializerClause {
+nonterm SimpleInitializerClause {
   -> e:AssignmentExpression              // scalar
        { unimplemented 300 }
   -> c:CompoundInitializer               // array/structure initializer
@@ -1283,12 +1283,12 @@ nonterm('tSimpleInitializerClause) SimpleInitializerClause {
 
 // this nonterminal exists so that extensions can augment it with
 // possibilities for designated initializers
-nonterm('tInitializerClause) InitializerClause {
+nonterm InitializerClause {
   -> init:SimpleInitializerClause
     { unimplemented 302 }
 }
 
-nonterm('tCompoundInitializer) CompoundInitializer {
+nonterm CompoundInitializer {
   // array/structure initializer
   -> "{" list:InitializerList CommaOpt "}"  { unimplemented 303 }
 
@@ -1297,12 +1297,12 @@ nonterm('tCompoundInitializer) CompoundInitializer {
 }
 
 // useful syntactic quirk
-nonterm('tCommaOpt) CommaOpt {
+nonterm CommaOpt {
   -> empty ;
   -> "," ;
 }
 
-nonterm('tInitializerList) InitializerList {
+nonterm InitializerList {
   fun dup(i) { unimplemented 305 }     // prevent multi-yield
 
   -> init:InitializerClause
@@ -1322,7 +1322,7 @@ nonterm('tInitializerList) InitializerList {
 // parser vs. subsequent phases of analysis
 //
 // regex for this nonterm: (PtrOperator)* DirectDeclarator
-nonterm('tDeclarator) Declarator {
+nonterm Declarator {
   -> "*" cv:CVQualifierSeqOpt d:Declarator
        { unimplemented 308 }
   // dsw: I could have just allowed 'restrict' here instead of
@@ -1338,7 +1338,7 @@ nonterm('tDeclarator) Declarator {
        { unimplemented 311 }
 }
 
-nonterm('tDirectDeclarator) DirectDeclarator {
+nonterm DirectDeclarator {
   fun keep(x) { true }
 
   // it doesn't matter how this was classified before, because a
@@ -1377,7 +1377,7 @@ nonterm('tDirectDeclarator) DirectDeclarator {
 // a "~" to them, so later phases of analysis will have to look for that.
 // (I notice the standard calls this PseudoDestructorName; I'll stick with
 // my terminology.)
-nonterm('tPQDtorName) PQDtorName {
+nonterm PQDtorName {
   fun merge(l,r) { unimplemented 317 }
 
   -> "~" n:Identifier
@@ -1406,7 +1406,7 @@ nonterm('tPQDtorName) PQDtorName {
 
 
 // syntax that precedes "*" in the pointer-to-member declarator syntax
-nonterm('tPtrToMemberName) PtrToMemberName {
+nonterm PtrToMemberName {
   fun merge(l,r) { unimplemented 325 }
 
   -> n:IdExpression "::"    { unimplemented 326 }
@@ -1417,7 +1417,7 @@ nonterm('tPtrToMemberName) PtrToMemberName {
 // also, it reminds me that every place I've substituted PtrOperator
 // into the syntaxes elsewhere has an implicit TODO for the
 // pointer-to-member syntax
-//  nonterm('tPtrOperator) PtrOperator {
+//  nonterm PtrOperator {
 //    -> "*" q:CVQualifierSeqOpt ;
 //    -> "&"                     ;
 
@@ -1426,17 +1426,17 @@ nonterm('tPtrToMemberName) PtrToMemberName {
 //  }
 
 
-nonterm('tCVQualifierSeqOpt) CVQualifierSeqOpt {
+nonterm CVQualifierSeqOpt {
   -> empty                       { unimplemented 327 }
   -> s:CVQualifierSeq            { unimplemented 328 }
 }
 
-nonterm('tCVQualifierSeq) CVQualifierSeq {
+nonterm CVQualifierSeq {
   -> q:CVQualifier                       { unimplemented 329 }
   -> q:CVQualifier s:CVQualifierSeq      { unimplemented 330 }
 }
 
-nonterm('tCVQualifier) CVQualifier {
+nonterm CVQualifier {
   -> "const"                 { unimplemented 331 }
   -> "volatile"              { unimplemented 332 }
 }
@@ -1445,18 +1445,18 @@ nonterm('tCVQualifier) CVQualifier {
 // -- type-id --
 // a type-id is like a declaration of one thing, but without the variable name;
 // it is, for example, what appears inside the parens of a typecast
-nonterm('tTypeId) TypeId {
+nonterm TypeId {
   -> spec:TypeSpecifier decl:AbstractDeclaratorOpt
        { unimplemented 333 }
 }
 
-nonterm('tAbstractDeclaratorOpt) AbstractDeclaratorOpt {
+nonterm AbstractDeclaratorOpt {
   -> empty                 { unimplemented 334 }
   -> d:AbstractDeclarator  { unimplemented 335 }
 }
 
 // an abstract declarator (not opt) must have *some* ground syntax in it
-nonterm('tAbstractDeclarator) AbstractDeclarator {
+nonterm AbstractDeclarator {
   -> "*" cv:CVQualifierSeqOpt d:AbstractDeclaratorOpt
        { unimplemented 336 }
   -> "&" cv:CVQualifierSeqOpt /*dsw: discarded; can be 'restrict' */ d:AbstractDeclaratorOpt
@@ -1467,13 +1467,13 @@ nonterm('tAbstractDeclarator) AbstractDeclarator {
        { unimplemented 339 }
 }
 
-nonterm('tDirectAbstractDeclaratorOpt) DirectAbstractDeclaratorOpt {
+nonterm DirectAbstractDeclaratorOpt {
   -> empty                       { unimplemented 340 }
   -> d:DirectAbstractDeclarator  { unimplemented 341 }
 }
 
 // this also must have some ground syntax
-nonterm('tDirectAbstractDeclarator) DirectAbstractDeclarator {
+nonterm DirectAbstractDeclarator {
   fun keep(x) { true }
 
   // note: the "opt" in the DirectAbstractDeclarator part of the
@@ -1504,7 +1504,7 @@ nonterm('tDirectAbstractDeclarator) DirectAbstractDeclarator {
 }
 
 
-nonterm('tParameterDeclarationClause) ParameterDeclarationClause {
+nonterm ParameterDeclarationClause {
   -> p:ParameterDeclarationList              // some args
        { unimplemented 345 }
   -> empty                                   // no args
@@ -1512,7 +1512,7 @@ nonterm('tParameterDeclarationClause) ParameterDeclarationClause {
 }
 
 // little bending over backwards here to accomodate FakeList
-nonterm('tParameterDeclarationList) ParameterDeclarationList {
+nonterm ParameterDeclarationList {
   // last (and perhaps only) arg is "..."
   -> "..."
        { unimplemented 347 }
@@ -1531,7 +1531,7 @@ nonterm('tParameterDeclarationList) ParameterDeclarationList {
        { unimplemented 350 }
 }
 
-nonterm('tParameterDeclaration) ParameterDeclaration {
+nonterm ParameterDeclaration {
   fun merge(l,r) { unimplemented 351 }
 
   // NOTE: The 'register' keyword is simply ignored.
@@ -1544,7 +1544,7 @@ nonterm('tParameterDeclaration) ParameterDeclaration {
        { unimplemented 354 }
 }
 
-nonterm('tParameterDeclarator) ParameterDeclarator {
+nonterm ParameterDeclarator {
   // ambiguity:
   //   int (x)
   // is either type "int" with Declarator "(x)", or
@@ -1567,7 +1567,7 @@ nonterm('tParameterDeclarator) ParameterDeclarator {
 
 
 // -- function definition --
-nonterm('tFunctionDefinition) FunctionDefinition {
+nonterm FunctionDefinition {
   // whereas the std merges c/dtors and ordinary functions by making
   // the DeclSpecifier optional, I split cases; this way in the common
   // case where I can clearly see a return type, ctor is ruled out;
@@ -1629,29 +1629,29 @@ nonterm('tFunctionDefinition) FunctionDefinition {
 // function definition declarator; must have D_func at the
 // bottom; moved this down from FunctionDefinition itself
 // to get earlier parse filtering for in/k0041.cc
-nonterm('tFDDeclarator) FDDeclarator {
+nonterm FDDeclarator {
   fun keep(d) { true }
 
   -> d:Declarator    { unimplemented 366 }
 }
 
-nonterm('tFunctionBody) FunctionBody -> s:CompoundStatement
+nonterm FunctionBody -> s:CompoundStatement
   { unimplemented 367 }
 
-nonterm('tCtorInitializerOpt) CtorInitializerOpt {
+nonterm CtorInitializerOpt {
   -> empty                        { unimplemented 368 }
   -> ":" list:MemInitializerList  { unimplemented 369 }
 }
 
 
 // ------ A.8 Classes ------
-nonterm('tClassSpecifier) ClassSpecifier {
+nonterm ClassSpecifier {
   -> k:ClassKey n:ClassHeadNameOpt b:BaseClauseOpt "{" memb:MemberDeclarationSeqOpt "}"
        { unimplemented 370 }
 }
 
 // this is the name portion of what the standard calls "ClassHead"
-nonterm('tClassHeadNameOpt) ClassHeadNameOpt {
+nonterm ClassHeadNameOpt {
   fun merge(l,r) { unimplemented 371 }
 
   -> empty               { unimplemented 372 }
@@ -1659,7 +1659,7 @@ nonterm('tClassHeadNameOpt) ClassHeadNameOpt {
 }
 
 // a possibly-qualified Identifier or TemplateId
-nonterm('tClassHeadName) ClassHeadName {
+nonterm ClassHeadName {
   fun merge(l,r) { unimplemented 374 }
 
   -> n:Identifier             precedence("::")
@@ -1679,7 +1679,7 @@ nonterm('tClassHeadName) ClassHeadName {
        { unimplemented 380 }
 }
 
-nonterm('tClassKey) ClassKey {
+nonterm ClassKey {
   -> "class"       { unimplemented 381 }
   -> "struct"      { unimplemented 382 }
   -> "union"       { unimplemented 383 }
@@ -1688,7 +1688,7 @@ nonterm('tClassKey) ClassKey {
 
 // I'm using an encapsulated ASTList to avoid right recursion,
 // since there are often many members of classes
-nonterm('tMemberDeclarationSeqOpt) MemberDeclarationSeqOpt {
+nonterm MemberDeclarationSeqOpt {
   fun dup(m) { unimplemented 384 }       // prevent multi-yield
 
   -> empty
@@ -1712,13 +1712,13 @@ nonterm('tMemberDeclarationSeqOpt) MemberDeclarationSeqOpt {
        { unimplemented 388 }
 }
 
-nonterm('tAccessSpecifier) AccessSpecifier {
+nonterm AccessSpecifier {
   -> "public"     { unimplemented 389 }
   -> "private"    { unimplemented 390 }
   -> "protected"  { unimplemented 391 }
 }
 
-nonterm('tMemberDeclaration) MemberDeclaration {
+nonterm MemberDeclaration {
   fun keep(m) { true }
 
   // destructive action on 'spec'
@@ -1762,7 +1762,7 @@ nonterm('tMemberDeclaration) MemberDeclaration {
 
 // declaration (with no definition) of a c/dtor or conversion
 // operator function
-nonterm('tCDtorProtoDecl) CDtorProtoDecl {
+nonterm CDtorProtoDecl {
   fun keep(m) { true }
 
   // Q: what about pure virtual?
@@ -1773,7 +1773,7 @@ nonterm('tCDtorProtoDecl) CDtorProtoDecl {
        { unimplemented 400 }
 }
 
-nonterm('tMemberDeclaratorList) MemberDeclaratorList {
+nonterm MemberDeclaratorList {
   -> d:MemberDeclarator
        { unimplemented 401 }
   -> d:MemberDeclarator "," list:MemberDeclaratorList
@@ -1784,7 +1784,7 @@ nonterm('tMemberDeclaratorList) MemberDeclaratorList {
 // the grammar doesn't nest MemberDeclarators, and because that way I
 // have a place to return the "=0" of a pure virtual function, and also
 // a place to put member initializers
-nonterm('tMemberDeclarator) MemberDeclarator {
+nonterm MemberDeclarator {
   -> d:Declarator
        { unimplemented 403 }
 
@@ -1800,7 +1800,7 @@ nonterm('tMemberDeclarator) MemberDeclarator {
        { unimplemented 405 }
 }
 
-nonterm('tIdentifierOpt) IdentifierOpt {
+nonterm IdentifierOpt {
   -> empty         { unimplemented 406 }
   -> n:Identifier  { unimplemented 407 }
 }
@@ -1813,7 +1813,7 @@ nonterm('tIdentifierOpt) IdentifierOpt {
 // NOTE: to avoid a syntactic ambiguity with the ctor syntax "Foo(x)",
 // the set of flags here must not include "static" or "typedef"; see
 // the action function associated with MemberDeclaration's first production
-nonterm('tCDtorModifier) CDtorModifier {
+nonterm CDtorModifier {
   -> "explicit"    { unimplemented 408 }
   -> "virtual"     { unimplemented 409 }
   -> "inline"      { unimplemented 410 }
@@ -1822,25 +1822,25 @@ nonterm('tCDtorModifier) CDtorModifier {
   -> "friend"      { unimplemented 411 }
 }
 
-nonterm('tCDtorModifierSeq) CDtorModifierSeq {
+nonterm CDtorModifierSeq {
   -> m:CDtorModifier                       { unimplemented 412 }
   -> s:CDtorModifierSeq m:CDtorModifier    { unimplemented 413 }
 }
 
 // I substituted this into everywhere it occurred
-// nonterm('tCDtorModifierSeqOpt) CDtorModifierSeqOpt {
+// nonterm CDtorModifierSeqOpt {
 //   -> empty                         { unimplemented 414 }
 //   -> m:CDtorModifierSeq            { unimplemented 415 }
 // }
 
 
 // ------ A.9 Derived classes ------
-nonterm('tBaseClauseOpt) BaseClauseOpt {
+nonterm BaseClauseOpt {
   -> empty                      { unimplemented 416 }
   -> ":" b:BaseSpecifierList    { unimplemented 417 }
 }
 
-nonterm('tBaseSpecifierList) BaseSpecifierList {
+nonterm BaseSpecifierList {
   -> b:BaseSpecifier
        { unimplemented 418 }
   -> b:BaseSpecifier "," list:BaseSpecifierList
@@ -1849,7 +1849,7 @@ nonterm('tBaseSpecifierList) BaseSpecifierList {
 
 
 // TODO: spec allows leading "::" on the PQClassName
-nonterm('tBaseSpecifier) BaseSpecifier {
+nonterm BaseSpecifier {
   -> n:PQClassName
        { unimplemented 420 }
   -> "virtual" a:AccessSpecifierOpt n:PQClassName
@@ -1858,7 +1858,7 @@ nonterm('tBaseSpecifier) BaseSpecifier {
        { unimplemented 422 }
 }
 
-nonterm('tVirtualOpt) VirtualOpt {
+nonterm VirtualOpt {
   -> empty      { unimplemented 423 }
   -> "virtual"  { unimplemented 424 }
 }
@@ -1866,12 +1866,12 @@ nonterm('tVirtualOpt) VirtualOpt {
 // if the access specifier is missing, then it defaults to private
 // when inherited by a class, and public when inherited by a struct;
 // typechecking will replace AK_UNSPECIFIED with the right thing later
-nonterm('tAccessSpecifierOpt) AccessSpecifierOpt {
+nonterm AccessSpecifierOpt {
   -> empty              { unimplemented 425 }
   -> k:AccessSpecifier  { unimplemented 426 }
 }
 
-nonterm('tPQClassName) PQClassName {
+nonterm PQClassName {
   fun merge(l,r) { unimplemented 427 }
 
   -> n:PQTypeName                 { unimplemented 428 }
@@ -1879,18 +1879,18 @@ nonterm('tPQClassName) PQClassName {
 
 
 // ------ A.10 Special member functions ------
-nonterm('tConversionFunctionId) ConversionFunctionId {
+nonterm ConversionFunctionId {
   -> "operator" t:ConversionTypeId  { unimplemented 429 }
 }
 
-nonterm('tConversionTypeId) ConversionTypeId {
+nonterm ConversionTypeId {
   -> s:TypeSpecifier d:ConversionDeclaratorOpt
        { unimplemented 430 }
 }
 
 // collects the stars that might follow a type specifier in a
 // conversion function (for converting to pointer type)
-nonterm('tConversionDeclaratorOpt) ConversionDeclaratorOpt {
+nonterm ConversionDeclaratorOpt {
   // this rule is given low precedence so that if there are
   // stars (etc.) following, they will be considered to be part
   // of the conversion operator's name (cppstd 12.3.2 para 4);
@@ -1908,14 +1908,14 @@ nonterm('tConversionDeclaratorOpt) ConversionDeclaratorOpt {
 }
 
 
-nonterm('tMemInitializerList) MemInitializerList {
+nonterm MemInitializerList {
   -> i:MemInitializer
        { unimplemented 435 }
   -> i:MemInitializer "," list:MemInitializerList
        { unimplemented 436 }
 }
 
-nonterm('tMemInitializer) MemInitializer {
+nonterm MemInitializer {
   -> n:MemInitializerId "(" e:ExpressionListOpt ")"
        { unimplemented 437 }
 }
@@ -1925,7 +1925,7 @@ nonterm('tMemInitializer) MemInitializer {
 // then in typechecking make sure that the latter case does not
 // have any qualifiers (because in most cases the parser can't make
 // the distinction so it would fall through to typechecking anyway)
-nonterm('tMemInitializerId) MemInitializerId {
+nonterm MemInitializerId {
   // PQTypeName includes the 'identifier' case, and is otherwise
   // exactly right for the 'base class' case, so just use it
   -> n:PQTypeName { unimplemented 438 }
@@ -1933,13 +1933,13 @@ nonterm('tMemInitializerId) MemInitializerId {
 
 
 // ------ A.11 Overloading ------
-nonterm('tOperatorFunctionId) OperatorFunctionId {
+nonterm OperatorFunctionId {
   -> "operator" od:Operator  { unimplemented 439 }
 }
 
 // this nonterm('tis) is only used in the OperatorFunctionId context,
 // so go ahead and have it return a full OperatorName
-nonterm('tOperator) Operator {
+nonterm Operator {
   // ambiguity:
   //   void operator delete [] () ;
   // could be operator "delete[]", or
@@ -2010,12 +2010,12 @@ nonterm('tOperator) Operator {
 // ------ A.12 Templates ------
 // I recognize this syntax, but ignore it
 // 8/15/04: it is now folded inline where it occurs
-//nonterm('tExportOpt) ExportOpt {
+//nonterm ExportOpt {
 //  -> empty;
 //  -> "export";
 //}
 
-nonterm('tTemplateDeclaration) TemplateDeclaration {
+nonterm TemplateDeclaration {
   fun keep(d) { true }
 
   // these are the std's rules for template declarations and specializations:
@@ -2051,7 +2051,7 @@ nonterm('tTemplateDeclaration) TemplateDeclaration {
 }
 
 // the "template <...>" stuff
-nonterm('tTemplatePreamble) TemplatePreamble {
+nonterm TemplatePreamble {
   // 8/15/04: substituted 'ExportOpt' inline since it gives rise to
   // easily-removed S/R conflicts (continuing to ignore it though)
 
@@ -2068,7 +2068,7 @@ nonterm('tTemplatePreamble) TemplatePreamble {
        { unimplemented 489 }
 }
 
-nonterm('tTemplateParameterList) TemplateParameterList {
+nonterm TemplateParameterList {
   fun keep(x) { true }
 
   // unfortunately, while we can record an ambiguous template parameter
@@ -2076,50 +2076,52 @@ nonterm('tTemplateParameterList) TemplateParameterList {
   fun merge(l,r) { unimplemented 490 }
 
   // non-template type parameter
-  -> ClassOrTypename i:IdentifierOpt t:DefaultTypeOpt next:TemplateParameterListContinuation
+  -> p:TypeParameter next:TemplateParameterListContinuation
      { unimplemented 491 }
+}
+
+nonterm TypeParameter {
+  // non-template type parameter
+  -> ClassOrTypename i:IdentifierOpt t:DefaultTypeOpt;
 
   // non-type parameter
-  -> p:ParameterDeclaration next:TemplateParameterListContinuation
-     { unimplemented 492 }
+  -> p:ParameterDeclaration;
 
   // template type parameter
-  -> "template" "<" pl:TemplateParameterList ">" "class" i:IdentifierOpt
-       t:DefaultTemplateOpt next:TemplateParameterListContinuation
-     { unimplemented 493 }
+  -> "template" "<" pl:TemplateParameterList ">" "class" i:IdentifierOpt t:DefaultTemplateOpt;
 }
 
 // what comes after a template paramter: nothing, or else
 // a comma and then more parameters
-nonterm('tTemplateParameterListContinuation) TemplateParameterListContinuation {
+nonterm TemplateParameterListContinuation {
   fun merge(l,r) { unimplemented 494 }
 
   -> empty                             { unimplemented 495 }
   -> "," next:TemplateParameterList    { unimplemented 496 }
 }
 
-nonterm('tClassOrTypename) ClassOrTypename {
+nonterm ClassOrTypename {
   -> "class";
   -> "typename";
 }
 
-nonterm('tDefaultTypeOpt) DefaultTypeOpt {
+nonterm DefaultTypeOpt {
   -> empty                    { unimplemented 497 }
   -> "=" t:TypeId             { unimplemented 498 }
 }
 
-nonterm('tDefaultTemplateOpt) DefaultTemplateOpt {
+nonterm DefaultTemplateOpt {
   -> empty                    { unimplemented 499 }
   -> "=" t:IdExpression       { unimplemented 500 }
 }
 
 
-nonterm('tTemplateArgumentListOpt) TemplateArgumentListOpt {
+nonterm TemplateArgumentListOpt {
   -> empty                       { unimplemented 501 }
   -> list:TemplateArgumentList   { unimplemented 502 }
 }
 
-nonterm('tTemplateId) TemplateId {
+nonterm TemplateId {
   -> n:Identifier "<" list:TemplateArgumentListOpt ">"
        { unimplemented 503 }
 
@@ -2146,35 +2148,32 @@ nonterm('tTemplateId) TemplateId {
   //     { unimplemented 506 }
 }
 
-nonterm('tTemplateArgumentList) TemplateArgumentList {
-  // the list-ness is embedded in TemplateArgument
+nonterm TemplateArgumentList {
   -> a:TemplateArgument
+       { unimplemented 507 }
+
+  -> a:TemplateArgument "," tail:TemplateArgumentList
        { unimplemented 507 }
 }
 
-nonterm('tTemplateArgumentListTailOpt) TemplateArgumentListTailOpt {
-  -> empty                      { unimplemented 508 }
-  -> "," a:TemplateArgument     { unimplemented 509 }
-}
-
-nonterm('tTemplateArgument) TemplateArgument {
+nonterm TemplateArgument {
   // ambiguous due to type/variable name ambiguity, and also
   // due to angle brackets vs. less-than
   fun merge(l,r) { unimplemented 510 }
 
   fun keep(n) { true }
 
-  -> typeid:TypeId tail:TemplateArgumentListTailOpt
+  -> typeid:TypeId
      { unimplemented 511 }
 
-  -> e:AssignmentExpression tail:TemplateArgumentListTailOpt
+  -> e:AssignmentExpression
      { unimplemented 512 }
 
   // is this for template args that are templates, or what?
   //-> IdExpression;
 }
 
-nonterm('tExplicitInstantiation) ExplicitInstantiation {
+nonterm ExplicitInstantiation {
   -> "template" d:BlockDeclaration
        { unimplemented 513 }
   -> "inline" "template" d:BlockDeclaration
@@ -2182,16 +2181,16 @@ nonterm('tExplicitInstantiation) ExplicitInstantiation {
 }
 
 // ------ A.13 Exception handling ------
-nonterm('tTryBlock) TryBlock {
+nonterm TryBlock {
   -> "try" s:CompoundStatement h:HandlerSeq  { unimplemented 515 }
 }
 
-nonterm('tHandlerSeq) HandlerSeq {
+nonterm HandlerSeq {
   -> h:Handler                 { unimplemented 516 }
   -> h:Handler seq:HandlerSeq  { unimplemented 517 }
 }
 
-nonterm('tHandler) Handler {
+nonterm Handler {
   -> "catch" "(" d:HandlerParameter ")" s:CompoundStatement
        { unimplemented 518 }
 
@@ -2199,7 +2198,7 @@ nonterm('tHandler) Handler {
        { unimplemented 519 }
 }
 
-nonterm('tHandlerParameter) HandlerParameter {
+nonterm HandlerParameter {
   -> s:TypeSpecifier d:UnqualifiedDeclarator
        { unimplemented 520 }
   -> s:TypeSpecifier d:AbstractDeclaratorOpt
@@ -2210,7 +2209,7 @@ nonterm('tHandlerParameter) HandlerParameter {
 // this nonterminal helps with the TYPENAME ::NAME ambiguity, and also
 // partially enforces 8.3.5p8, which says that a parameter name must
 // be an identifier (only), if present
-nonterm('tUnqualifiedDeclarator) UnqualifiedDeclarator {
+nonterm UnqualifiedDeclarator {
   fun keep(d) { true }
 
   -> d:Declarator              { unimplemented 522 }
@@ -2220,13 +2219,13 @@ nonterm('tUnqualifiedDeclarator) UnqualifiedDeclarator {
 // because abstract declarators do not contain an id-expression.
 
 
-nonterm('tThrowExpression) ThrowExpression {
+nonterm ThrowExpression {
   -> "throw"                         { unimplemented 523 }
   -> "throw" e:AssignmentExpression  { unimplemented 524 }
 }
 
 
-nonterm('tExceptionSpecificationOpt) ExceptionSpecificationOpt {
+nonterm ExceptionSpecificationOpt {
   -> empty
        { unimplemented 525 }
   -> "throw" "(" ")"
@@ -2235,7 +2234,7 @@ nonterm('tExceptionSpecificationOpt) ExceptionSpecificationOpt {
        { unimplemented 527 }
 }
 
-nonterm('tTypeIdList) TypeIdList {
+nonterm TypeIdList {
   -> t:TypeId
        { unimplemented 528 }
   -> t:TypeId "," list:TypeIdList
@@ -2244,12 +2243,12 @@ nonterm('tTypeIdList) TypeIdList {
 
 
 // ------------------------ namespaces -----------------------
-nonterm('tNamespaceDefinition) NamespaceDefinition {
+nonterm NamespaceDefinition {
   -> "namespace" n:IdentifierOpt "{" unit:TranslationUnit "}"
        { unimplemented 530 }
 }
 
-nonterm('tNamespaceDecl) NamespaceDecl {
+nonterm NamespaceDecl {
   -> "namespace" alias:Identifier "=" orig:IdExpression ";"
        { unimplemented 531 }
 
@@ -2266,12 +2265,12 @@ nonterm('tNamespaceDecl) NamespaceDecl {
 
 
 // ------------------------ annotations -----------------------
-nonterm('tAnnotationOpt) AnnotationOpt {
+nonterm AnnotationOpt {
   -> empty               { unimplemented 534 }
   -> a:AnnotationList    { unimplemented 535 }
 }
 
-nonterm('tAnnotationList) AnnotationList {
+nonterm AnnotationList {
   -> a:TOK_ANNOTATION
        { unimplemented 536 }
   -> a:TOK_ANNOTATION l:AnnotationList

@@ -1,22 +1,22 @@
 // expected statistics
 option shift_reduce_conflicts 3;
-option reduce_reduce_conflicts 0;
+option reduce_reduce_conflicts 18;
 
 
 // decltype
-nonterm('tDeclSpecifier) DeclSpecifier {
+nonterm DeclSpecifier {
   -> te:DecltypeTypeSpecifier m2:UberModifierSeqOpt;
   -> m1:UberModifierSeq te:DecltypeTypeSpecifier m2:UberModifierSeqOpt;
 }
 
 
-nonterm('tTypeSpecifier) TypeSpecifier {
+nonterm TypeSpecifier {
   -> te:DecltypeTypeSpecifier cv2:UberCVQualifierSeqOpt;
   -> cv1:UberCVQualifierSeq te:DecltypeTypeSpecifier cv2:UberCVQualifierSeqOpt;
 }
 
 
-nonterm('tDecltypeTypeSpecifier) DecltypeTypeSpecifier {
+nonterm DecltypeTypeSpecifier {
   fun merge(l,r) { unimplemented 0 }
 
   -> e:DecltypeExpr;
@@ -24,46 +24,81 @@ nonterm('tDecltypeTypeSpecifier) DecltypeTypeSpecifier {
 }
 
 
-nonterm('tDecltypeExpr) DecltypeExpr {
+nonterm DecltypeExpr {
   -> "decltype" "(" e:Expression ")";
        
 }
 
-nonterm('tDecltypeType) DecltypeType {
+nonterm DecltypeType {
   -> "decltype" "(" t:TypeId ")";
 }
 
 
 // nullptr
-nonterm('tLiteral) Literal {
+nonterm Literal {
   -> "nullptr";
 }
 
 // new character types
-nonterm('tUberTypeKeyword) UberTypeKeyword {
+nonterm UberTypeKeyword {
   -> "char16_t"      { unimplemented 248 }
   -> "char32_t"      { unimplemented 248 }
 }
 
 // constexpr
-nonterm('tUberModifier) UberModifier {
+nonterm UberModifier {
+  -> "constexpr"     { unimplemented 248 }
+}
+
+nonterm CDtorModifier {
+  // TODO: this gives 19 RR conflicts
   -> "constexpr"     { unimplemented 248 }
 }
 
 // noexcept
-nonterm('tUnaryExpression) UnaryExpression {
+nonterm UnaryExpression {
   -> e:NoexceptExpression;
 }
 
-nonterm('tNoexceptExpression) NoexceptExpression {
+nonterm NoexceptExpression {
   -> "noexcept" "(" e:ParenthesizedExpression ")";
 }
 
-nonterm('tExceptionSpecificationOpt) ExceptionSpecificationOpt {
+nonterm ExceptionSpecificationOpt {
   -> s:NoexceptSpecification;
 }
 
-nonterm('tNoexceptSpecification) NoexceptSpecification {
+nonterm NoexceptSpecification {
   -> "noexcept";
   -> "noexcept" "(" e:ConstantExpression ")";
+}
+
+// variadic templates
+nonterm TypeParameter {
+  // non-template type parameter
+  -> ClassOrTypename "..." i:IdentifierOpt t:DefaultTypeOpt;
+
+  // template type parameter
+  -> "template" "<" pl:TemplateParameterList ">" "class" "..." i:IdentifierOpt;
+}
+
+nonterm TemplateArgument {
+  -> typeid:TypeId "..."
+     { unimplemented 511 }
+}
+
+// rvalue references
+nonterm AbstractDeclarator {
+  -> "&&" cv:CVQualifierSeqOpt /*dsw: discarded; can be 'restrict' */ d:AbstractDeclaratorOpt
+       { unimplemented 337 }
+}
+
+nonterm Declarator {
+  -> "&&" cv:CVQualifierSeqOpt /*dsw: discarded; can be 'restrict' */ d:Declarator
+       { unimplemented 309 }
+}
+
+nonterm ConversionDeclaratorOpt {
+  -> "&&" cv:CVQualifierSeqOpt /*dsw: discarded; can be 'restrict' */ d:ConversionDeclaratorOpt
+       { unimplemented 433 }
 }

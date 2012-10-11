@@ -128,7 +128,11 @@ let parse glr actions input lexing =
   if Options._tokens then
     None
   else
-    glrparse glr lexer
+    match glrparse glr lexer with
+    | Some _ as result -> result
+    | None ->
+        Printf.printf "near line %d\n" !(lexing.line);
+        None
 
 
 let parse_utf8 glr actions input =

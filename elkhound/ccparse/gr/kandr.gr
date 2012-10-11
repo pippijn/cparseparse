@@ -9,12 +9,12 @@
 // KandR stuff ****************************************************************
 
 // only allow K&R func defns at toplevel
-nonterm('tDeclaration) Declaration {
+nonterm Declaration {
   -> k:KandRFunctionDefinition             { unimplemented 711 }
   -> k:KandRFunctionDefinition_implInt     { unimplemented 712 }
 }
 
-nonterm('tKandRFunctionDefinition) KandRFunctionDefinition {
+nonterm KandRFunctionDefinition {
   // K&R function:
 
   // return type        name/params
@@ -27,7 +27,7 @@ nonterm('tKandRFunctionDefinition) KandRFunctionDefinition {
 }
 
 // split from above so ambiguity will bubble up to the Declaration level
-nonterm('tKandRFunctionDefinition_implInt) KandRFunctionDefinition_implInt {
+nonterm KandRFunctionDefinition_implInt {
   // no return type!      name/params
   ->                      id:KandRDeclarator
   //     parameters in K&R style
@@ -41,7 +41,7 @@ nonterm('tKandRFunctionDefinition_implInt) KandRFunctionDefinition_implInt {
     { unimplemented 715 }
 }
 
-nonterm('tKandRSimpleDeclarationSeq) KandRSimpleDeclarationSeq {
+nonterm KandRSimpleDeclarationSeq {
   // don't allow empty, as the empty parameter list is also not
   // allowed; Scott says to do it this way; I prevents an ambiguity
   // with the usual C++ no-arg function declaration
@@ -54,7 +54,7 @@ nonterm('tKandRSimpleDeclarationSeq) KandRSimpleDeclarationSeq {
 }
 
 
-nonterm('tKandRSimpleDeclaration) KandRSimpleDeclaration {
+nonterm KandRSimpleDeclaration {
   // destructive action on 'spec'
   //e.g.: int                x                  ;
   -> spec:DeclSpecifier list:KandRInitDeclaratorList ";"
@@ -62,7 +62,7 @@ nonterm('tKandRSimpleDeclaration) KandRSimpleDeclaration {
 }
 
 
-nonterm('tKandRInitDeclaratorList) KandRInitDeclaratorList {
+nonterm KandRInitDeclaratorList {
   -> d:KandRInitDeclarator
        { unimplemented 720 }
   -> d:KandRInitDeclarator "," list:KandRInitDeclaratorList
@@ -70,7 +70,7 @@ nonterm('tKandRInitDeclaratorList) KandRInitDeclaratorList {
 }
 
 
-nonterm('tKandRInitDeclarator) KandRInitDeclarator {
+nonterm KandRInitDeclarator {
   // ambiguous:
   //   int f(x *y);
   // could be declaring a variable called "f" with ctor-initializer "(x*y)",
@@ -95,7 +95,7 @@ nonterm('tKandRInitDeclarator) KandRInitDeclarator {
 
 
 // for K&R function definitions
-nonterm('tKandRDeclarator) KandRDeclarator {
+nonterm KandRDeclarator {
   -> "*" cv:CVQualifierSeqOpt d:KandRDeclarator
        { unimplemented 725 }
   -> d:KandRDirectDeclarator
@@ -103,7 +103,7 @@ nonterm('tKandRDeclarator) KandRDeclarator {
 }
 
 // for K&R function definitions
-nonterm('tKandRDirectDeclarator) KandRDirectDeclarator {
+nonterm KandRDirectDeclarator {
   fun keep(x) { true }
 
   // FIX: not sure I'm not ruling out something in the grammar that
@@ -152,18 +152,18 @@ nonterm('tKandRDirectDeclarator) KandRDirectDeclarator {
 
 // FIX: see note above; not sure this is necessary nor that it is not
 // too strict
-nonterm('tKandRIdExpression) KandRIdExpression {
+nonterm KandRIdExpression {
   -> n:KandRIdentifier
        { unimplemented 733 }
 }
 
-//  nonterm('tIdentifierListOpt) IdentifierListOpt {
+//  nonterm IdentifierListOpt {
 //    -> empty               { unimplemented 734 }
 //    -> il:IdentifierList   { unimplemented 735 }
 //  }
 
-//  nonterm('tIdentifierList) IdentifierList {
-nonterm('tKandRIdentifierList) KandRIdentifierList {
+//  nonterm IdentifierList {
+nonterm KandRIdentifierList {
   -> i:KandRIdentifier
        { unimplemented 736 }
   -> i:KandRIdentifier "," e:KandRIdentifierList
@@ -171,7 +171,7 @@ nonterm('tKandRIdentifierList) KandRIdentifierList {
 }
 
 
-nonterm('tKandRIdentifier) KandRIdentifier {
+nonterm KandRIdentifier {
   -> i:Identifier { unimplemented 738 }
 }
 
@@ -179,24 +179,24 @@ nonterm('tKandRIdentifier) KandRIdentifier {
                             
 // modifiers that can precede a function decl/defn in C; note
 // that the only intersection with CDtorModifier is "inline"
-nonterm('tCFuncModifier_no_inline) CFuncModifier_no_inline {
+nonterm CFuncModifier_no_inline {
   -> "static"                              { unimplemented 739 }
   -> "extern"                              { unimplemented 740 }
   -> "const"                               { unimplemented 741 }
   -> "volatile"                            { unimplemented 742 }
 }
 
-nonterm('tCFuncModifier) CFuncModifier {
+nonterm CFuncModifier {
   -> m:CFuncModifier_no_inline             { unimplemented 743 }
   -> "inline"                              { unimplemented 744 }
 }
 
-nonterm('tCFuncModifierSeq) CFuncModifierSeq {
+nonterm CFuncModifierSeq {
   -> m:CFuncModifier                       { unimplemented 745 }
   -> s:CFuncModifierSeq m:CFuncModifier    { unimplemented 746 }
 }
 
-nonterm('tCFuncModifierSeqOpt) CFuncModifierSeqOpt {
+nonterm CFuncModifierSeqOpt {
   -> empty                                 { unimplemented 747 }
   -> m:CFuncModifier                       { unimplemented 748 }
 }
@@ -206,7 +206,7 @@ nonterm('tCFuncModifierSeqOpt) CFuncModifierSeqOpt {
 // covered by the existing syntax for constructors; but if the
 // 'static' keyword is used, that isn't legal for ctors, so we
 // need a special rule
-nonterm('tImplIntFunctionDefinition) ImplIntFunctionDefinition {
+nonterm ImplIntFunctionDefinition {
   // make it look like the existing ctor AST, since those get
   // converted into implicit-int
   -> m:CFuncModifier_no_inline d:Declarator b:FunctionBody
@@ -226,7 +226,7 @@ nonterm('tImplIntFunctionDefinition) ImplIntFunctionDefinition {
        { unimplemented 751 }
 }
 
-nonterm('tDeclaration) Declaration {
+nonterm Declaration {
   fun keep(x) { true }
 
   fun merge(l,r) { unimplemented 752 }
@@ -240,7 +240,7 @@ nonterm('tDeclaration) Declaration {
 }
 
 
-nonterm('tKandRSimpleDeclaration) KandRSimpleDeclaration {
+nonterm KandRSimpleDeclaration {
   fun keep(x) { true }
 
   // I'm sure this production introduces an unhandled ambiguity,
@@ -251,14 +251,14 @@ nonterm('tKandRSimpleDeclaration) KandRSimpleDeclaration {
      { unimplemented 752 }
 }
 
-nonterm('tStatement) Statement {
+nonterm Statement {
   fun keep(x) { true }
 
   -> m1:UberModifierSeq /*implicit-int*/ list:InitDeclaratorList ";"
     { unimplemented 753 }
 }
 
-nonterm('tParameterDeclaration) ParameterDeclaration {
+nonterm ParameterDeclaration {
   fun keep(x) { true }
 
   -> /*implicit-int*/ d:UnqualifiedDeclarator
@@ -270,17 +270,17 @@ nonterm('tParameterDeclaration) ParameterDeclaration {
 
 
 // ------ implicit int for cast expressions ------
-nonterm('tCastExpression) CastExpression {
+nonterm CastExpression {
   -> "(" t:ImplicitIntTypeId ")" e:CastExpression
     { unimplemented 756 }
 }
 
-nonterm('tImplicitIntTypeSpecifier) ImplicitIntTypeSpecifier {
+nonterm ImplicitIntTypeSpecifier {
   -> m:UberCVQualifierSeq
        { unimplemented 757 }
 }
 
-nonterm('tImplicitIntTypeId) ImplicitIntTypeId {
+nonterm ImplicitIntTypeId {
   -> spec:ImplicitIntTypeSpecifier
        { unimplemented 758 }
 }
