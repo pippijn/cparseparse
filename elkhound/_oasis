@@ -65,7 +65,10 @@ Library ast
         Path:                   ast
         BuildTools:             ocamlbuild
         BuildDepends:           sexplib,sexplib.syntax
-        Modules:                C0,Ident,Lit,Loc
+        Modules:                C0,
+                                Ident,
+                                Lit,
+                                Loc
         CompiledObject:         native
 
 
