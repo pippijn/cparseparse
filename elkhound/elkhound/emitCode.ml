@@ -333,15 +333,21 @@ let emit_ml_parse_tree prods_by_lhs =
         failwith "could not find first module"
   in
 
-  <:str_item<
-    open Sexplib.Conv
+  let modules = Ast.StRecMod (_loc, combined) in
 
-    module rec $combined$
+  let impl =
+    <:str_item<
+      open Sexplib.Conv
 
-    type t = $uid:first_module$.t
-    let t_of_sexp = $uid:first_module$.t_of_sexp
-    let sexp_of_t = $uid:first_module$.sexp_of_t
-  >>
+      $modules$
+
+      type t = $uid:first_module$.t
+      let t_of_sexp = $uid:first_module$.t_of_sexp
+      let sexp_of_t = $uid:first_module$.sexp_of_t
+    >>
+  in
+
+  impl
 
 
 (************************************************
@@ -672,8 +678,8 @@ let emit_ml name terms nonterms prods prods_by_lhs verbatims impl_verbatims tabl
 
   OCamlPrinter.print_implem ~output_file:out impl;
   (* TODO: with sexp *)
-  Sys.command ("sed -i -e 's/type t = string;;/type t = string with sexp;;/' " ^ out);
-  Sys.command ("sed -i -e 's/ | SEXP;;/ with sexp;;/' " ^ out);
+  ignore (Sys.command ("sed -i -e 's/type t = string;;/type t = string with sexp;;/' " ^ out));
+  ignore (Sys.command ("sed -i -e 's/ | SEXP;;/ with sexp;;/' " ^ out));
 
 
   (* Parse Tree Actions *)
