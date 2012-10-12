@@ -204,6 +204,12 @@ let sym_type = function
 
 
 let production_types has_merge prods =
+  let merge_types =
+    if has_merge then
+      [ <:ctyp<Merge of t * t>> ]
+    else
+      []
+  in
 
   match prods with
   (* nonterminal with a single production that is a tagged terminal *)
@@ -249,7 +255,9 @@ let production_types has_merge prods =
           in
 
           <:ctyp<$prod_variant$>>
-        ) prods |> Ast.tyOr_of_list
+        ) prods
+      in
+      let types = Ast.tyOr_of_list (merge_types @ types)
       in
 
       (* TODO: with sexp *)
