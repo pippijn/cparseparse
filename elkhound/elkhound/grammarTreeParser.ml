@@ -15,7 +15,7 @@ let synthesise_start_rule topforms =
   (* build a start production *)
   let start =
     TF_nonterm ((* name = *)start_name, (* type = *)"", (* funcs = *)[], (* prods = *)[
-      ProdDecl (PDK_NEW, Some "", [
+      ProdDecl (PDK_NEW, None, [
         RH_name ("top", topforms.first_nonterm);
         RH_name ("", eof);
       ], (* code: *)"")

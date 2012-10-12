@@ -1,9 +1,15 @@
+open Camlp4
+open Camlp4.PreCast
 open GrammarType
+
+module OCamlPrinter = Camlp4.PreCast.Printers.OCaml
+
 
 (************************************************
  * :: Output helpers
  ************************************************)
 
+let _loc = Loc.ghost
 
 let output_newline out =
   output_char out '\n'
@@ -34,6 +40,7 @@ let closing f x channels =
 
 
 let semtype sym =
+  let node = <:ctyp<'$lid:"t" ^ sym.name$>> in
   if sym.semtype = "" then
     "'t" ^ sym.name
   else
@@ -78,170 +85,263 @@ let emit_ml_user_code ?(braces=true) out code =
  ************************************************)
 
 
-let emit_ml_token_type out terms =
-  output_endline out "type t =";
-  Array.iter (fun term ->
-    output_string out "  | ";
-    output_string out term.tbase.name;
-    if term.tbase.semtype <> "" then (
-      output_string out " of ";
-      output_string out term.tbase.semtype;
-    );
-    output_newline out;
-  ) terms;
-  output_newline out
+let emit_ml_token_type terms =
+  Array.fold_left (fun types term ->
+    let semtype =
+      <:ctyp<$uid:term.tbase.name$>>
+    in
+
+    let semtype =
+      match term.tbase.semtype with
+      | "" -> semtype
+      | sv -> <:ctyp<$semtype$ of $lid:sv$>>
+    in
+
+    <:ctyp<$types$ | $semtype$>>
+  ) <:ctyp<>> terms
 
 
-let emit_ml_token_fn out name value terms =
-  Printf.fprintf out "let %s = function\n" name;
-  Array.iter (fun term ->
-    output_string out "  | ";
-    output_string out term.tbase.name;
-    if term.tbase.semtype <> "" then (
-      output_string out " _";
-    );
-    output_string out " -> ";
-    output_string out (value term);
-    output_newline out;
-  ) terms;
-  output_newline out
+let emit_ml_token_fn ?default value terms =
+  let cases =
+    Array.fold_left (fun cases term ->
+      try
+        let name = term.tbase.name in
+
+        let patt =
+          match term.tbase.semtype with
+          | "" -> <:patt<$uid:name$>>
+          | _  -> <:patt<$uid:name$ sval>>
+        in
+
+        let case =
+          <:match_case<$patt$ -> $value term$>>
+        in
+
+        <:match_case<$cases$ | $case$>>
+      with Exit ->
+        cases
+    ) <:match_case<>> terms
+  in
+
+  let cases =
+    match default with
+    | None -> cases
+    | Some case -> <:match_case<$cases$ | $case$>>
+  in
+
+  <:expr<function $cases$>>
 
 
-let emit_ml_tokens out dcl terms =
-  emit_ml_prologue dcl;
-  emit_ml_prologue out;
-
+let emit_ml_tokens terms =
   (* emit token type declaration in both mli and ml *)
-  emit_ml_token_type dcl terms;
-  output_endline dcl "include Lexerint.TokenInfo with type t := t";
-  emit_ml_token_type out terms;
+  let types = emit_ml_token_type terms in
+  let intf =
+    <:sig_item<
+      type t = $types$
+      include Lexerint.TokenInfo with type t := t
+    >>
+  in
 
   (* emit the token functions *)
-  emit_ml_token_fn out "name" (fun term ->
-    "\"" ^ term.tbase.name ^ "\""
-  ) terms;
+  let name_fn =
+    emit_ml_token_fn (fun term ->
+      <:expr<$str:term.tbase.name$>>
+    ) terms
+  in
 
-  emit_ml_token_fn out "desc" (fun term ->
-    if term.alias <> "" then
-      "\"" ^ term.alias ^ "\""
-    else
-      "\"" ^ term.tbase.name ^ "\""
-  ) terms;
+  let desc_fn =
+    emit_ml_token_fn (fun { alias; tbase = { name } } ->
+      match alias with
+      | ""    -> <:expr<$str:name$>>
+      | alias -> <:expr<$str:alias$>>
+    ) terms
+  in
 
-  emit_ml_token_fn out "index" (fun term ->
-    string_of_int term.term_index
-  ) terms;
+  let index_fn =
+    emit_ml_token_fn (fun term ->
+      <:expr<$int:string_of_int term.term_index$>>
+    ) terms
+  in
 
-  (* this one is special, because it uses the token's data *)
-  output_endline out "let sval = function";
-  Array.iter (fun term ->
-    if term.tbase.semtype <> "" then (
-      output_string out "  | ";
-      output_string out term.tbase.name;
-      output_endline out " sval -> SemanticValue.repr sval";
-    )
-  ) terms;
-  output_endline out "  | tok -> SemanticValue.null";
+  let sval_fn =
+    emit_ml_token_fn (fun term ->
+      match term.tbase.semtype with
+      | "" -> raise Exit
+      | _  -> <:expr<SemanticValue.repr sval>>
+    ) terms ~default:<:match_case<tok -> SemanticValue.null>>
+  in
 
-  ()
+  let impl =
+    <:str_item<
+      type t = $types$
+      let name = $name_fn$
+      let desc = $desc_fn$
+      let index = $index_fn$
+      let sval = $sval_fn$
+    >>
+  in
+
+  intf, impl
 
 
 (************************************************
  * :: Concrete syntax tree
  ************************************************)
 
+let and_type typ1 typ2 =
+  match typ1 with
+  | <:ctyp<>> ->
+      typ2
+  | typ1 ->
+      Ast.TyAnd (_loc, typ1, typ2)
 
-let emit_ml_parse_tree_type has_merge out prods =
-  output_string out "  type t =";
-  if has_merge then
-    output_string out "\n    | Merge of t * t";
+
+let sym_type = function
+  | Nonterminal (tag, nonterm) ->
+      (* the type is the referenced nonterminal module *)
+      let typ = nonterm.nbase.name in
+      assert (typ <> "");
+      <:ctyp<$uid:typ$.t>>
+
+  | Terminal (tag, term) ->
+      (* use the terminal type. tagged terminals must have a declared type *)
+      let typ = term.tbase.semtype in
+      assert (typ <> "");
+      <:ctyp<$lid:typ$>>
+
+
+let production_types has_merge prods =
+  let types =
+    if has_merge then
+      <:ctyp<Merge of t * t>>
+    else
+      <:ctyp<>>
+  in
 
   match prods with
   (* nonterminal with a single production that is a tagged terminal *)
   | [{ right = [Terminal (tag, { tbase = { semtype } })] }] when tag <> "" ->
-      output_char out ' ';
-      output_string out semtype
+      assert (not has_merge);
+      assert (semtype <> "");
+      <:sig_item<type t = $lid:semtype$>>,
+      <:str_item<type t = $lid:semtype$>>
 
   | prods ->
-      List.iter (fun prod ->
-        (* XXX: camlp4o doesn't like left-shift-equals in comments *)
-        if false then (
-          output_string out "\n  (*";
-          PrintGrammar.print_production ~out prod;
-          output_endline out " *)";
-        );
-        output_newline out;
+      let types =
+        List.fold_left (fun types prod ->
+          if false then (
+            print_string "    (*";
+            PrintGrammar.print_production prod;
+            print_endline " *)";
+          );
 
-        begin match prod.prod_name with
-        | None ->
-            Printf.fprintf out "    | P%d" prod.prod_index
-        | Some name ->
-            Printf.fprintf out "    | %s" name
-        end;
+          let prod_type =
+            List.fold_left (fun prod_type sym ->
+              match sym with
+              | Nonterminal ("", _)
+              | Terminal ("", _) ->
+                  (* nothing to do for untagged symbols *)
+                  prod_type
 
-        ignore (List.fold_left (fun first sym ->
-          let separator = if first then "of" else "*" in
+              | sym ->
+                  and_type prod_type (sym_type sym)
 
-          match sym with
-          | Nonterminal ("", _)
-          | Terminal ("", _) ->
-              (* nothing to do for untagged symbols *)
-              first
+            ) <:ctyp<>> prod.right
+          in
 
-          | Nonterminal (tag, nonterm) ->
-              (* the type is the referenced nonterminal module *)
-              Printf.fprintf out " %s %s.t" separator nonterm.nbase.name;
-              false
+          let prod_name =
+            match prod.prod_name with
+            | None      -> "P" ^ string_of_int prod.prod_index
+            | Some name -> assert (name <> ""); name
+          in
 
-          | Terminal (tag, term) ->
-              (* use the terminal type. tagged terminals must have a declared type *)
-              Printf.fprintf out " %s %s" separator term.tbase.semtype;
-              false
+          let prod_variant =
+            match prod_type with
+            | <:ctyp<>> -> <:ctyp<$uid:prod_name$>>
+            | _	      -> <:ctyp<$uid:prod_name$ of $prod_type$>>
+          in
 
-        ) true prod.right);
-      ) prods
+          <:ctyp<$prod_variant$ | $types$>>
+        ) types prods
+      in
+
+      (* TODO: with sexp *)
+      <:sig_item<type t = $types$>>,
+      <:str_item<type t = $types$ | SEXP>>
 
 
-let emit_ml_parse_tree out prods_by_lhs =
-  emit_ml_prologue out;
 
-  output_endline out "open Sexplib.Conv";
-  output_newline out;
+let emit_ml_parse_tree prods_by_lhs =
+  let bindings =
+    List.rev (Array.fold_left (fun bindings prods ->
+      match prods with
+      | [] ->
+          (* the empty nonterminal has no productions *)
+          bindings
 
-  let first_module = ref "" in
-  Array.iteri (fun i prods ->
-    (* the empty nonterminal has no productions and we do not
-     * emit code for the synthesised start rule *)
-    if i > 1 then (
-      let nterm = (List.hd prods).left in
+      | { left = { nbase = { name } } } :: _ when name.[0] = '_' ->
+          (* we do not emit code for the synthesised start rule *)
+          bindings
 
-      if i = 2 then (
-        first_module := nterm.nbase.name;
-        Printf.fprintf out "module rec %s : sig\n" nterm.nbase.name
-      ) else (
-        Printf.fprintf out "and %s : sig\n" nterm.nbase.name
-      );
+      | first :: _ ->
+          let nonterm = first.left in
+          let name = nonterm.nbase.name in
 
-      let has_merge = nterm.merge != None in
+          let has_merge = nonterm.merge != None in
 
-      (* signature *)
-      emit_ml_parse_tree_type has_merge out prods;
-      output_newline out;
-      output_endline out "  val sexp_of_t : t -> Sexplib.Sexp.t";
-      output_endline out "  val t_of_sexp : Sexplib.Sexp.t -> t";
-      output_endline out "end = struct";
-      (* implementation *)
-      emit_ml_parse_tree_type has_merge out prods;
-      output_endline out "\n  with sexp";
+          let intf_types, impl_types = production_types has_merge prods in
 
-      output_string out "end\n\n";
-    )
-  ) prods_by_lhs;
+          (* signature *)
+          let intf =
+            <:module_type<
+              sig
+                $intf_types$
+                val sexp_of_t : t -> Sexplib.Sexp.t
+                val t_of_sexp : Sexplib.Sexp.t -> t
+              end
+            >>
+          in
 
-  Printf.fprintf out "\ntype t = %s.t" !first_module;
-  Printf.fprintf out "\nlet t_of_sexp = %s.t_of_sexp" !first_module;
-  Printf.fprintf out "\nlet sexp_of_t = %s.sexp_of_t" !first_module;
-  output_newline out
+          (* implementation *)
+          let impl =
+            <:module_expr<
+              struct
+                $impl_types$
+              end
+            >>
+          in
+
+          let binding =
+            <:module_binding<$name$ : $intf$ = $impl$>>
+          in
+
+          binding :: bindings
+    ) [] prods_by_lhs)
+  in
+
+  let combined =
+    BatList.reduce (fun combined binding ->
+      Ast.MbAnd (_loc, binding, combined)
+    ) (List.rev bindings)
+  in
+
+  let first_module =
+    match bindings with
+    | <:module_binding<$name$ : $_$ = $_$>> :: _ ->
+        name
+    | _ ->
+        failwith "could not find first module"
+  in
+
+  <:str_item<
+    open Sexplib.Conv
+
+    module rec $combined$
+
+    type t = $uid:first_module$.t
+    let t_of_sexp = $uid:first_module$.t_of_sexp
+    let sexp_of_t = $uid:first_module$.sexp_of_t
+  >>
 
 
 (************************************************
@@ -279,7 +379,7 @@ let emit_ml_actions out prods =
   (* iterate over productions, emitting action function closures *)
   Array.iter (fun prod ->
     (* put the production in comments above the defn *)
-    output_string out "    (* ";
+    output_string out "    (*";
     PrintGrammar.print_production ~out prod;
     output_endline out " *)";
 
@@ -558,15 +658,23 @@ let emit_ml name terms nonterms prods prods_by_lhs verbatims impl_verbatims tabl
   let final_prod prods = prods.(tables.ParseTablesType.finalProductionIndex) in
 
   (* Tokens *)
-  let dcl = open_out (name ^ "Tokens.mli") in
-  let out = open_out (name ^ "Tokens.ml") in
-  closing (emit_ml_tokens out dcl) terms
-    [dcl; out];
+  let dcl = name ^ "Tokens.mli" in
+  let out = name ^ "Tokens.ml" in
+  let intf, impl = emit_ml_tokens terms in
+
+  OCamlPrinter.print_interf ~output_file:dcl intf;
+  OCamlPrinter.print_implem ~output_file:out impl;
+
 
   (* Parse Tree *)
-  let out = open_out (name ^ "Ptree.ml") in
-  closing (emit_ml_parse_tree out) prods_by_lhs
-    [out];
+  let out = name ^ "Ptree.ml" in
+  let impl = emit_ml_parse_tree prods_by_lhs in
+
+  OCamlPrinter.print_implem ~output_file:out impl;
+  (* TODO: with sexp *)
+  Sys.command ("sed -i -e 's/type t = string;;/type t = string with sexp;;/' " ^ out);
+  Sys.command ("sed -i -e 's/ | SEXP;;/ with sexp;;/' " ^ out);
+
 
   (* Parse Tree Actions *)
   let dcl = open_out (name ^ "PtreeActions.mli") in

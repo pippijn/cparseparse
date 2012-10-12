@@ -21,8 +21,8 @@ SourceRepository head
 
 Executable elkhound
         Path:                   elkhound
-        BuildTools:             ocamlbuild
-        BuildDepends:           sexplib,ulex,menhirLib,batteries,glr,baselib,unix
+        BuildTools:             ocamlbuild,camlp4of
+        BuildDepends:           sexplib,ulex,menhirLib,batteries,glr,baselib,unix,camlp4,camlp4.lib
         MainIs:                 elkhound.ml
         CompiledObject:         native
 #        NativeOpt:              -inline 0 -unsafe -noassert -nodynlink

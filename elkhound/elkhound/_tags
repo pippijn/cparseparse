@@ -9,3 +9,6 @@
 # library import
 "../baselib": include
 "../glr": include
+
+# ML code generation
+"emitCode.ml": camlp4of
