@@ -249,7 +249,7 @@ let production_types has_merge prods =
           in
 
           <:ctyp<$prod_variant$>>
-        ) prods |> Ast.tyAnd_of_list
+        ) prods |> Ast.tyOr_of_list
       in
 
       (* TODO: with sexp *)
