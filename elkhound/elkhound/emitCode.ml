@@ -3,7 +3,7 @@ open Camlp4.PreCast
 open GrammarType
 
 module OCamlPrinter = Camlp4.PreCast.Printers.OCaml
-
+let (|>) = BatPervasives.(|>)
 
 (************************************************
  * :: Output helpers
@@ -86,7 +86,7 @@ let emit_ml_user_code ?(braces=true) out code =
 
 
 let emit_ml_token_type terms =
-  Array.fold_left (fun types term ->
+  Array.map (fun term ->
     let semtype =
       <:ctyp<$uid:term.tbase.name$>>
     in
@@ -97,8 +97,9 @@ let emit_ml_token_type terms =
       | sv -> <:ctyp<$semtype$ of $lid:sv$>>
     in
 
-    <:ctyp<$types$ | $semtype$>>
-  ) <:ctyp<>> terms
+    <:ctyp<$semtype$>>
+  ) terms |> Array.to_list |> Ast.tyOr_of_list
+
 
 
 let emit_ml_token_fn ?default value terms =
@@ -203,12 +204,6 @@ let sym_type = function
 
 
 let production_types has_merge prods =
-  let types =
-    if has_merge then
-      <:ctyp<Merge of t * t>>
-    else
-      <:ctyp<>>
-  in
 
   match prods with
   (* nonterminal with a single production that is a tagged terminal *)
@@ -220,7 +215,7 @@ let production_types has_merge prods =
 
   | prods ->
       let types =
-        List.fold_left (fun types prod ->
+        List.map (fun prod ->
           if false then (
             print_string "    (*";
             PrintGrammar.print_production prod;
@@ -228,17 +223,17 @@ let production_types has_merge prods =
           );
 
           let prod_type =
-            List.fold_left (fun prod_type sym ->
+            List.map (fun sym ->
               match sym with
               | Nonterminal ("", _)
               | Terminal ("", _) ->
                   (* nothing to do for untagged symbols *)
-                  prod_type
+                  []
 
               | sym ->
-                  Ast.tyAnd_of_list [prod_type;(sym_type sym)]
+                  [sym_type sym]
 
-            ) <:ctyp<>> prod.right
+            ) prod.right |> List.concat |> Ast.tyAnd_of_list
           in
 
           let prod_name =
@@ -253,8 +248,8 @@ let production_types has_merge prods =
             | _	      -> <:ctyp<$uid:prod_name$ of $prod_type$>>
           in
 
-          <:ctyp<$prod_variant$ | $types$>>
-        ) types prods
+          <:ctyp<$prod_variant$>>
+        ) prods |> Ast.tyAnd_of_list
       in
 
       (* TODO: with sexp *)
