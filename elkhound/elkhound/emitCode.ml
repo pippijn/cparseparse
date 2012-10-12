@@ -188,14 +188,6 @@ let emit_ml_tokens terms =
  * :: Concrete syntax tree
  ************************************************)
 
-let and_type typ1 typ2 =
-  match typ1 with
-  | <:ctyp<>> ->
-      typ2
-  | typ1 ->
-      Ast.TyAnd (_loc, typ1, typ2)
-
-
 let sym_type = function
   | Nonterminal (tag, nonterm) ->
       (* the type is the referenced nonterminal module *)
@@ -244,7 +236,7 @@ let production_types has_merge prods =
                   prod_type
 
               | sym ->
-                  and_type prod_type (sym_type sym)
+                  Ast.tyAnd_of_list [prod_type;(sym_type sym)]
 
             ) <:ctyp<>> prod.right
           in
