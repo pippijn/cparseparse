@@ -24,7 +24,7 @@ let () =
     "-print-lousy-ast", Set Priv._print_lousy_ast,	" print lousy ast";
     "-utf8",		Set Priv._utf8,			" assume source file is in UTF-8 encoding";
     "-pp",		Set Priv._pp,			" fully tokenise before parsing";
-    "-tokens",		Set Priv._tokens,		" tokenise only; do not parse";
+    "-tokens",		Set Priv._tokens,		" tokenise only; do not parse (implies -pp)";
     "-dumptoks",	Set Priv._dumptoks,		" dump tokens to file (implies -pp)";
     "-loadtoks",	Set Priv._loadtoks,		" load tokens from file";
     "-stats",		Set Priv._stats,		" print parsing statistics";
@@ -33,7 +33,7 @@ let () =
     "-xc",		Set Priv._xc,			" parse code as C, not as C++";
   ]) (fun input -> Priv.inputs := input :: !Priv.inputs) "Usage: cxxparse [option...] <file...>");
 
-  if !Priv._dumptoks then
+  if !Priv._dumptoks || !Priv._tokens then
     Priv._pp := true
 
 

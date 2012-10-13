@@ -57,8 +57,10 @@ let glrparse glr lexer =
 let rec tokenise tokens token lexbuf =
   let next = token lexbuf in
   if next == CcTokens.TOK_EOF then (
-    Printf.printf "%d tokens\n" (List.length tokens);
-    flush stdout;
+    if false then (
+      Printf.printf "%d tokens\n" (List.length tokens);
+      flush stdout;
+    );
     List.rev (next :: tokens)
   ) else (
     tokenise (next :: tokens) token lexbuf
@@ -96,7 +98,7 @@ let lexer_from_file input lexing =
 
   assert (not Options._loadtoks);
   if Options._pp then (
-    let tokens = tokenise [] lexing.lex lexbuf in
+    let tokens = Timing.time "lexing" (tokenise [] lexing.lex) lexbuf in
     if Options._dumptoks then (
       if Options._loadtoks then
         failwith "-dumptoks and -loadtoks are mutually exclusive";
