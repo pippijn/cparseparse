@@ -194,12 +194,13 @@ let elkmain inputs =
 
     let actions = CcPtreeActions.userActions in
     let trees = parse_files actions tables inputs in
-    List.iter (function
-      | None -> ()
-      | Some lst ->
-          (* Print our parse tree *)
-          print_tptree lst
-    ) trees
+    if Options._print then
+      List.iter (function
+        | None -> ()
+        | Some lst ->
+            (* Print our parse tree *)
+            print_tptree lst
+      ) trees
 
   ) else if Options._trivial then (
 
