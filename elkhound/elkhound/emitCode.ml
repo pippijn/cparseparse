@@ -60,7 +60,9 @@ let emit_user_actions name terms nonterms prods final_prod verbatims impl_verbat
   in
 
   OCamlPrinter.print_interf ~output_file:dcl intf;
-  OCamlPrinter.print_implem ~output_file:out impl
+  OCamlPrinter.print_implem ~output_file:out impl;
+  (* TODO: True/False *)
+  ignore (Sys.command ("sed -i -e 's/\\.true/.True/;s/\\.false/.False/' " ^ out))
 
 
 let emit_ptree_actions name terms nonterms prods final_prod verbatims impl_verbatims =

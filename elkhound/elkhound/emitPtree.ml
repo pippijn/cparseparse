@@ -71,7 +71,9 @@ let production_types has_merge prods =
               | sym ->
                   [ctyp_of_symbol sym]
 
-            ) prod.right |> List.concat |> Ast.tyAnd_of_list
+            ) prod.right
+            |> List.concat
+            |> Ast.tyAnd_of_list
           in
 
           let prod_name =

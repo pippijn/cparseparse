@@ -110,7 +110,8 @@ let make_ml_actions prods =
 
           | Nonterminal (tag, nonterm) ->
               [make_binding tag index nonterm.nbase]
-        ) prod.right |> List.concat
+        ) prod.right
+        |> List.concat
       in
 
       let action_code =

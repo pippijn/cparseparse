@@ -111,7 +111,7 @@ let string_of_process_status = let open Unix in function
 (* |                             Execute tests                             | *)
 (* +=====~~~-------------------------------------------------------~~~=====+ *)
 
-let run_test error_log (pass, fail) source reference =
+let run_test error_log (pass, fail, total_time) source reference =
   (* Retrieve command line options from file *)
   let opts =
     let stream = open_in source in
@@ -129,9 +129,9 @@ let run_test error_log (pass, fail) source reference =
     | None -> ""
   in
 
+  (* Parse the file *)
   let start = Unix.gettimeofday () in
 
-  (* Parse the file *)
   let cmd = Printf.sprintf "_build/cpapa/cpapa.native -trivial %s %s %s 2>&1" _xc opts source in
   let stream = Unix.open_process_in cmd in
   let produced = read_all stream in
@@ -155,7 +155,7 @@ let run_test error_log (pass, fail) source reference =
   if produced = expected then (
     Printf.printf "[%sPASS%s] %s (%fs)\n" green reset source time;
 
-    (pass + 1, fail)
+    (pass + 1, fail, total_time +. time)
   ) else (
     Printf.printf "[%sFAIL%s] %s (%fs)\n" red   reset source time;
 
@@ -178,7 +178,7 @@ let run_test error_log (pass, fail) source reference =
     output_string error_log "\nproduced";
     print_output produced;
 
-    (pass, fail + 1)
+    (pass, fail + 1, total_time +. time)
   )
 
 
@@ -225,20 +225,15 @@ let () =
       output_string error_log "================================================";
     end;
 
-    let start = Unix.gettimeofday () in
-
-    let pass, fail =
+    let pass, fail, time =
       List.fold_left (fun result base_dir ->
         let contents = Sys.readdir base_dir in
         (* Sort the tests lexicograpically *)
         Array.sort String.compare contents;
         (* Run the tests *)
         Array.fold_left (run error_log base_dir) result contents
-      ) (0, 0) dirs
+      ) (0, 0, 0.0) dirs
     in
-
-    let finish = Unix.gettimeofday () in
-    let time = finish -. start in
 
     output_string error_log "\nSummary";
     output_string error_log "\n-------\n";

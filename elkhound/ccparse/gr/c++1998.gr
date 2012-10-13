@@ -158,13 +158,16 @@ nonterm TypeName {
 nonterm TranslationUnit {
   fun dup(n) { n }    // prevent multi-yield
 
-  -> empty                                [Empty] { [] }
+  -> empty
+       [Empty] { [] }
 
   // destructive action on 't'
-  -> t:TranslationUnit d:Declaration      [List] { d :: t }
+  -> head:TranslationUnit tail:Declaration
+       [List] { tail :: head }
 
   // arg!  Mozilla is littered with toplevel semicolons..
-  -> t:TranslationUnit ";"                [Unit] { t }
+  -> head:TranslationUnit ";"
+       [Unit] { head }
 }
 
 // ------ A.4 Expressions ------
@@ -187,8 +190,8 @@ nonterm Literal {
   -> f:TOK_FLOAT_LITERAL  [Float]  { unimplemented 10 }
   -> s:StringLiteral      [String] { unimplemented 11 }
   -> c:TOK_CHAR_LITERAL   [Char]   { unimplemented 12 }
-  -> "true"               [TrueC]  { unimplemented 13 }
-  -> "false"              [FalseC] { unimplemented 14 }
+  -> "true"               [True]   { unimplemented 13 }
+  -> "false"              [False]  { unimplemented 14 }
 }
 
 // a single quoted sequence of characters; this nonterminal exists
@@ -199,8 +202,8 @@ nonterm PreprocString {
 
 // a string literal, with all concatenated parts
 nonterm StringLiteral {
-  -> s:PreprocString                        { unimplemented 16 }
-  -> s:PreprocString cont:StringLiteral     { unimplemented 17 }
+  -> tail:PreprocString                        { [tail] }
+  -> head:StringLiteral tail:PreprocString     { tail :: head }
 }
 
 
@@ -208,7 +211,8 @@ nonterm StringLiteral {
 nonterm IdExpression {
   fun merge(l,r) { unimplemented 18 }
 
-  -> id:PQualifiedId              [Id] { unimplemented 19 }
+  -> id:PQualifiedId
+       [Id] { unimplemented 19 }
 
   // a bare "::" qualifier can only appear at the start of a qualifier
   // sequence; I'm enforcing it a little bit differently than the std
