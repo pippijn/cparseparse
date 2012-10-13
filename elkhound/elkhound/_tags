@@ -10,5 +10,12 @@
 "../baselib": include
 "../glr": include
 
+# ML code parsing
+"elkhound.native": use_camlp4_full
+"grammarTreeParser.ml": use_camlp4_full
+
 # ML code generation
 "emitCode.ml": camlp4of
+"tablePrinting.ml": camlp4of
+"ptreeMaker.ml": camlp4of
+"grammarTreeParser.ml": camlp4of

@@ -14,15 +14,16 @@
 
 open Sexplib.Conv
 
+
 type spec_func = {
   params                : string list;
-  code                  : string;
+  code                  : CamlAst.expr;
 } with sexp
 
 type symbol_base = {
   (* --- representation --- *)
   name                  : string; (* symbol's name in grammar *)
-  semtype               : string; (* OCaml type of semantic value *)
+  semtype               : CamlAst.ctyp option; (* OCaml type of semantic value *)
 
   dup                   : spec_func option; (* code to duplicate a semantic value *)
   del                   : spec_func option; (* code to clean up a semantic value *)
@@ -100,7 +101,7 @@ type production = {
   forbid                : TerminalSet.t; (* forbidden next tokens *)
 
   prod_name		: string option; (* parse tree name for this production *)
-  action                : string; (* user-supplied reduction action code *)
+  action                : CamlAst.expr option; (* user-supplied reduction action code *)
 
   (* --- annotation --- *)
   mutable first_rhs     : TerminalSet.t; (* First(RHS) *)
@@ -127,9 +128,9 @@ type grammar = {
 
   (* sections of verbatim code emitted into the interface file, before 
    * the parser context class body *)
-  verbatim              : string list;
+  verbatim              : CamlAst.sig_item list;
   (* code emitted into the implementation file at the end *)
-  impl_verbatim         : string list;
+  impl_verbatim         : CamlAst.str_item list;
 
   config                : config;
 } with sexp
@@ -137,7 +138,7 @@ type grammar = {
 
 let empty_symbol_base = {
   name      = "";
-  semtype   = "";
+  semtype   = None;
   dup       = None;
   del       = None;
 
@@ -189,7 +190,7 @@ let empty_production = {
   forbid     = TerminalSet.empty;
             
   prod_name  = None;
-  action     = "";
+  action     = None;
 
   first_rhs  = TerminalSet.empty;
   prod_index = -1;

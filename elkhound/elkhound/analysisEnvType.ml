@@ -285,8 +285,8 @@ type env = {
 
   (* options from grammar *)
   options                       : GrammarType.config;
-  verbatims                     : string list;
-  impl_verbatims                : string list;
+  verbatims                     : CamlAst.sig_item list;
+  impl_verbatims                : CamlAst.str_item list;
 } with sexp
 
 

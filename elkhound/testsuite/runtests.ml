@@ -62,6 +62,19 @@ let output_endline out line =
   output_newline out
 
 
+let output_underline dot out str =
+  ignore (BatString.fold_left (fun skip c ->
+    match c with
+    | '' -> true
+    | 'm' when skip -> false
+    | _ when skip -> true
+
+    | _ ->
+        output_char out dot;
+        false
+  ) false str)
+
+
 let with_out file f =
   let out = open_out file in
   begin try
@@ -159,7 +172,7 @@ let run_test error_log (pass, fail) source reference =
     let title = Printf.sprintf "FAIL: %s *(%s)*" source (string_of_process_status status) in
     output_string error_log title;
     output_char error_log '\n';
-    String.iter (fun _ -> output_char error_log '-') title;
+    output_underline '-' error_log title;
     output_string error_log "\n\nexpected";
     print_output expected;
     output_string error_log "\nproduced";
@@ -212,6 +225,8 @@ let () =
       output_string error_log "================================================";
     end;
 
+    let start = Unix.gettimeofday () in
+
     let pass, fail =
       List.fold_left (fun result base_dir ->
         let contents = Sys.readdir base_dir in
@@ -222,21 +237,26 @@ let () =
       ) (0, 0) dirs
     in
 
-    output_string error_log "\nSummary\n";
-    output_string error_log "-------\n";
+    let finish = Unix.gettimeofday () in
+    let time = finish -. start in
 
-    output_string stdout "\n-------------------------------\n";
-    output_string stdout "  ";
+    output_string error_log "\nSummary";
+    output_string error_log "\n-------\n";
 
-    if fail = 0 then (
-      Printf.fprintf error_log "all %d tests PASSed\n" pass;
-      Printf.fprintf stdout    "Summary: all %d tests %sPASS%sed\n" pass green reset;
-    ) else (
-      Printf.fprintf error_log "%d PASS, **%d FAIL**\n" pass fail;
-      Printf.fprintf stdout    "Summary: %s%d PASS%s, %s%d FAIL%s\n"
-        green pass reset
-        red   fail reset;
-    );
+    let msg =
+      if fail = 0 then (
+        Printf.fprintf error_log "all %d tests PASSed\n" pass;
+        Printf.sprintf "  Summary: all %d tests %sPASS%sed [%fs]  " pass green reset time
+      ) else (
+        Printf.fprintf error_log "%d PASS, **%d FAIL**\n" pass fail;
+        Printf.sprintf "  Summary: %s%d PASS%s, %s%d FAIL%s [%fs]  "
+          green pass reset
+          red   fail reset
+          time
+      );
+    in
 
-    output_string stdout "-------------------------------\n";
+    print_newline (); output_underline '-' stdout msg; print_newline ();
+    print_string msg;
+    print_newline (); output_underline '-' stdout msg; print_newline ();
   )

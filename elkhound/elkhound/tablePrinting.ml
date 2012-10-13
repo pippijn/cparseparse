@@ -55,7 +55,3 @@ let print_tables out tables =
   Printf.fprintf out "  startState = %d;\n" tables.startState;
   Printf.fprintf out "  finalProductionIndex = %d;\n" tables.finalProductionIndex;
   Printf.fprintf out "})\n"
-
-
-let dump_tables out (tables : ParseTablesType.t) =
-  Marshal.to_channel out tables [Marshal.No_sharing]

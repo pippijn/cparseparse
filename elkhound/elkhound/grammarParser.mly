@@ -110,20 +110,15 @@ terminal_decl
 		{ TermDecl ($1, $3, $4) }
 
 
-type_decl
-	: TOK_LIT_CODE			{ $1 }
-	| /* empty */			{ "" }
-
-
 term_types
 	: /* empty */			{ [] }
 	| term_types term_type		{ $2 :: $1 }
 
 
 term_type
-	: TOK_TOKEN type_decl TOK_NAME TOK_SEMICOLON
+	: TOK_TOKEN TOK_LIT_CODE TOK_NAME TOK_SEMICOLON
 		{ TermType ($3, $2, []) }
-	| TOK_TOKEN type_decl TOK_NAME TOK_LBRACE spec_funcs TOK_RBRACE
+	| TOK_TOKEN TOK_LIT_CODE TOK_NAME TOK_LBRACE spec_funcs TOK_RBRACE
 		{ TermType ($3, $2, List.rev $5) }
 
 
@@ -157,7 +152,7 @@ spec_funcs
 
 
 spec_func
-	: TOK_FUN TOK_NAME TOK_LPAREN formals_opt TOK_RPAREN action
+	: TOK_FUN TOK_NAME TOK_LPAREN formals_opt TOK_RPAREN TOK_LIT_CODE
 		{ SpecFunc ($2, $4, $6) }
 
 
@@ -185,6 +180,11 @@ nonterminal
 		{ TF_nonterm ($3, $2, List.rev $5, List.rev $6, $7) }
 
 
+type_decl
+	: TOK_LIT_CODE			{ Some $1 }
+	| /* empty */			{ None }
+
+
 productions
 	: /* empty */			{ [] }
 	| productions production	{ $2 :: $1 }
@@ -198,7 +198,7 @@ production
 	| TOK_REPLACE TOK_ARROW rhs action
 		{ ProdDecl (PDK_REPLACE, None, List.rev $3, $4) }
 	| TOK_DELETE TOK_ARROW rhs TOK_SEMICOLON
-		{ ProdDecl (PDK_DELETE, None, List.rev $3, "") }
+		{ ProdDecl (PDK_DELETE, None, List.rev $3, None) }
 
 
 production_name
@@ -207,8 +207,8 @@ production_name
 
 
 action
-	: TOK_LIT_CODE				{ $1 }
-	| TOK_SEMICOLON				{ "" }
+	: TOK_LIT_CODE				{ Some $1 }
+	| TOK_SEMICOLON				{ None }
 
 
 rhs

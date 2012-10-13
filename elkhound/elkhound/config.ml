@@ -8,6 +8,7 @@ let use_LR1 = false
 let use_LALR1 = true
 
 let dump_automaton = false
+let use_table_dump = true
 
 let trace_closure = false
 let trace_lrsets = false

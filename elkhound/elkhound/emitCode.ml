@@ -1,8 +1,7 @@
-open Camlp4
 open Camlp4.PreCast
 open GrammarType
 
-module OCamlPrinter = Camlp4.PreCast.Printers.OCaml
+module OCamlPrinter = Printers.OCaml
 let (|>) = BatPervasives.(|>)
 
 (************************************************
@@ -35,27 +34,48 @@ let closing f x channels =
 
 
 (************************************************
+ * :: Identifier checkers
+ ************************************************)
+
+
+let is_lid id =
+  assert (id <> "");
+  match id.[0] with
+  | 'a' .. 'z' | '_' -> true
+  | _ -> false
+
+let is_uid id =
+  assert (id <> "");
+  match id.[0] with
+  | 'A' .. 'Z' -> true
+  | _ -> false
+
+
+(************************************************
  * :: Semantic type helpers
  ************************************************)
 
 
 let semtype sym =
-  let node = <:ctyp<'$lid:"t" ^ sym.name$>> in
-  if sym.semtype = "" then
-    "'t" ^ sym.name
-  else
-    sym.semtype
+  match sym.semtype with
+  | None ->
+      <:ctyp<'$lid:"t" ^ sym.name$>>
+  | Some semtype ->
+      semtype
 
 
 let final_semtype final_prod =
   match final_prod.right with
   | Nonterminal (_, { nbase = { semtype } }) :: _ ->
-      if semtype = "" then
-        failwith "final nonterminal needs defined type"
-      else if semtype.[0] = '\'' then
-        failwith "final nonterminal cannot be polymorphic"
-      else
-        semtype
+      begin match semtype with
+      | None ->
+          failwith "final nonterminal needs defined type"
+      | Some <:ctyp<'$_$>> ->
+          failwith "final nonterminal cannot be polymorphic"
+      | Some semtype ->
+          semtype
+      end
+
   | _ ->
       failwith "could not find final nonterminal"
 
@@ -72,13 +92,10 @@ let emit_ml_prologue out =
   output_newline out
 
 
-let emit_ml_user_code ?(braces=true) out code =
-  if braces then
-    output_string out "(";
-  output_string out code;
-  if braces then
-    output_string out ")"
-
+let fold_bindings =
+  List.fold_left (fun code binding ->
+    <:expr<let $binding$ in $code$>>
+  )
 
 (************************************************
  * :: Tokens
@@ -88,17 +105,16 @@ let emit_ml_user_code ?(braces=true) out code =
 let emit_ml_token_type terms =
   Array.map (fun term ->
     let semtype =
+      assert (is_uid term.tbase.name);
       <:ctyp<$uid:term.tbase.name$>>
     in
 
-    let semtype =
-      match term.tbase.semtype with
-      | "" -> semtype
-      | sv -> <:ctyp<$semtype$ of $lid:sv$>>
-    in
-
-    <:ctyp<$semtype$>>
-  ) terms |> Array.to_list |> Ast.tyOr_of_list
+    match term.tbase.semtype with
+    | None    -> semtype
+    | Some ty -> <:ctyp<$semtype$ of $ty$>>
+  ) terms
+  |> Array.to_list
+  |> Ast.tyOr_of_list
 
 
 
@@ -107,11 +123,12 @@ let emit_ml_token_fn ?default value terms =
     Array.fold_left (fun cases term ->
       try
         let name = term.tbase.name in
+        assert (is_uid name);
 
         let patt =
           match term.tbase.semtype with
-          | "" -> <:patt<$uid:name$>>
-          | _  -> <:patt<$uid:name$ sval>>
+          | None   -> <:patt<$uid:name$>>
+          | Some _ -> <:patt<$uid:name$ sval>>
         in
 
         let case =
@@ -167,8 +184,8 @@ let emit_ml_tokens terms =
   let sval_fn =
     emit_ml_token_fn (fun term ->
       match term.tbase.semtype with
-      | "" -> raise Exit
-      | _  -> <:expr<SemanticValue.repr sval>>
+      | None   -> raise Exit
+      | Some _ -> <:expr<SemanticValue.repr sval>>
     ) terms ~default:<:match_case<tok -> SemanticValue.null>>
   in
 
@@ -189,20 +206,29 @@ let emit_ml_tokens terms =
  * :: Concrete syntax tree
  ************************************************)
 
-let sym_type = function
-  | Nonterminal (tag, nonterm) ->
-      (* the type is the referenced nonterminal module *)
-      let typ = nonterm.nbase.name in
-      assert (typ <> "");
-      <:ctyp<$uid:typ$.t>>
-
-  | Terminal (tag, term) ->
-      (* use the terminal type. tagged terminals must have a declared type *)
-      let typ = term.tbase.semtype in
-      assert (typ <> "");
-      <:ctyp<$lid:typ$>>
+let ctyp_of_nonterminal nonterm =
+  (* the type is the referenced nonterminal module *)
+  let typ = nonterm.nbase.name in
+  assert (is_uid typ);
+  <:ctyp<$uid:typ$.t>>
 
 
+let ctyp_of_terminal term =
+  (* use the terminal type *)
+  match term.tbase.semtype with
+  | None ->
+      failwith "tagged terminals must have a declared type"
+  | Some ty ->
+      ty
+
+
+let ctyp_of_symbol = function
+  | Nonterminal (_, nonterm) -> ctyp_of_nonterminal nonterm
+  | Terminal    (_,    term) -> ctyp_of_terminal term
+
+
+(* XXX: if this function changes its output, PtreeMaker.prods probably
+ * also needs to change *)
 let production_types has_merge prods =
   let merge_types =
     if has_merge then
@@ -213,11 +239,13 @@ let production_types has_merge prods =
 
   match prods with
   (* nonterminal with a single production that is a tagged terminal *)
-  | [{ right = [Terminal (tag, { tbase = { semtype } })] }] when tag <> "" ->
+  | [{ right = [Terminal (tag, term)] }] when tag <> "" ->
       assert (not has_merge);
-      assert (semtype <> "");
-      <:sig_item<type t = $lid:semtype$>>,
-      <:str_item<type t = $lid:semtype$>>
+      let semtype = ctyp_of_terminal term in
+      let ty_dcl = Ast.TyDcl (_loc, "t", [], semtype, []) in
+
+      Ast.SgTyp (_loc, ty_dcl),
+      Ast.StTyp (_loc, ty_dcl)
 
   | prods ->
       let types =
@@ -237,7 +265,7 @@ let production_types has_merge prods =
                   []
 
               | sym ->
-                  [sym_type sym]
+                  [ctyp_of_symbol sym]
 
             ) prod.right |> List.concat |> Ast.tyAnd_of_list
           in
@@ -245,7 +273,7 @@ let production_types has_merge prods =
           let prod_name =
             match prod.prod_name with
             | None      -> "P" ^ string_of_int prod.prod_index
-            | Some name -> assert (name <> ""); name
+            | Some name -> assert (is_uid name); name
           in
 
           let prod_variant =
@@ -257,8 +285,8 @@ let production_types has_merge prods =
           <:ctyp<$prod_variant$>>
         ) prods
       in
-      let types = Ast.tyOr_of_list (merge_types @ types)
-      in
+
+      let types = Ast.tyOr_of_list (merge_types @ types) in
 
       (* TODO: with sexp *)
       <:sig_item<type t = $types$>>,
@@ -281,6 +309,7 @@ let emit_ml_parse_tree prods_by_lhs =
       | first :: _ ->
           let nonterm = first.left in
           let name = nonterm.nbase.name in
+          assert (is_uid name);
 
           let has_merge = nonterm.merge != None in
 
@@ -350,304 +379,350 @@ let emit_ml_parse_tree prods_by_lhs =
  ************************************************)
 
 
-let emit_ml_descriptions out terms nonterms =
-  output_endline out "(* ------------------- description functions ------------------ *)";
-
+(* ------------------- description functions ------------------ *)
+let emit_ml_descriptions terms nonterms =
   (* emit a map of terminal ids to their names *)
-  output_endline out "let termNamesArray : string array = [|";
-  Array.iteri (fun code term ->
-    Printf.fprintf out "  \"%s\"; (* %d *)\n" term.tbase.name code;
-  ) terms;
-  output_endline out "|]";
-  output_newline out;
-  output_newline out;
+  let term_names_array =
+    let names =
+      Array.map (fun term -> <:expr<$str:term.tbase.name$>>) terms
+      |> Array.to_list
+      |> Ast.exSem_of_list
+    in
+    <:str_item<let termNamesArray : string array = [| $names$ |]>>
+  in
 
   (* emit a map of nonterminal ids to their names *)
-  output_endline out "let nontermNamesArray : string array = [|";
-  Array.iteri (fun code nonterm ->
-    Printf.fprintf out "  \"%s\"; (* %d *)\n" nonterm.nbase.name code;
-  ) nonterms;
-  output_endline out "|]";
-  output_newline out;
-  output_newline out;
-
-  ()
-
-
-let emit_ml_actions out prods =
-  output_endline out "  (* ------------------- actions ------------------ *)";
-  output_endline out "  reductionActionArray = [|";
-  (* iterate over productions, emitting action function closures *)
-  Array.iter (fun prod ->
-    (* put the production in comments above the defn *)
-    output_string out "    (*";
-    PrintGrammar.print_production ~out prod;
-    output_endline out " *)";
-
-    output_endline out "    (fun svals ->";
-
-    let output_binding tag index sym =
-      output_string out "      let ";
-      output_string out tag;
-      output_string out " = (SemanticValue.obj svals.(";
-      output_int out index;
-      output_string out ") : ";
-      output_string out (semtype sym);
-      output_endline out ") in";
+  let nonterm_names_array =
+    let names =
+      Array.map (fun nonterm -> <:expr<$str:nonterm.nbase.name$>>) nonterms
+      |> Array.to_list
+      |> Ast.exSem_of_list
     in
+    <:str_item<let nontermNamesArray : string array = [| $names$ |]>>
+  in
 
-    (* iterate over RHS elements, emitting bindings for each with a tag *)
-    let first_tagged, _ =
-      List.fold_left (fun (first_tagged, index) sym ->
-        let first_tagged =
+  <:str_item<
+    $term_names_array$
+    $nonterm_names_array$
+  >>
+
+
+(* ------------------- actions ------------------ *)
+let emit_ml_actions prods =
+  (* iterate over productions, emitting action function closures *)
+  let closures =
+    Array.map (fun prod ->
+      (* put the production in comments above the defn *)
+      if false then (
+        print_string "(*";
+        PrintGrammar.print_production prod;
+        print_endline " *)";
+      );
+
+      let make_binding tag index sym =
+        assert (is_lid tag);
+        <:binding<$lid:tag$ = (SemanticValue.obj svals.($int:string_of_int index$) : $semtype sym$)>>
+      in
+
+      (* iterate over RHS elements, emitting bindings for each with a tag *)
+      let bindings =
+        BatList.mapi (fun index sym ->
           match sym with
-          (* only consider elements with a tag *)
-          | Terminal ("", term) -> first_tagged
-          | Nonterminal ("", term) -> first_tagged
+          | Terminal ("", _)
+          | Nonterminal ("", _) ->
+              (* only consider elements with a tag *)
+              []
 
           | Terminal (tag, term) ->
-              output_binding tag index term.tbase;
-              if first_tagged <> "" then first_tagged else tag
+              [make_binding tag index term.tbase]
 
           | Nonterminal (tag, nonterm) ->
-              output_binding tag index nonterm.nbase;
-              if first_tagged <> "" then first_tagged else tag
-        in
+              [make_binding tag index nonterm.nbase]
+        ) prod.right |> List.concat
+      in
 
-        first_tagged, index + 1
-      ) ("", 0) prod.right
-    in
+      let action_code =
+        match prod.action with
+        | None ->
+            begin match bindings with
+            | [ <:binding<$lid:first_tagged$ = $_$>> ] ->
+                <:expr<$lid:first_tagged$>>
 
-    (* give a name to the yielded value so we can ensure it conforms to
-     * the declared type *)
-    output_string out "      let __result : ";
-    output_string out (semtype prod.left.nbase);
-    output_string out " = ";
+            | [binding] ->
+                failwith "invalid name binding format"
 
-    (* now insert the user's code, to execute in this environment of
-     * properly-typed semantic values *)
-    if prod.action = "" then
-      emit_ml_user_code out first_tagged
-    else
-      emit_ml_user_code out prod.action;
+            | binding :: _ ->
+                (*PrintGrammar.print_production prod;*)
+                (* TODO: move this to a semantic check phase *)
+                failwith "production with more than one binding must provide action code"
 
-    output_newline out;
-    output_endline out "      in (SemanticValue.repr __result));"; (* cast to SemanticValue.t *)
-    output_newline out;
+            | [] ->
+                (*PrintGrammar.print_production prod;*)
+                (* TODO: this, too *)
+                failwith "no name bindings in production with default action"
+            end
+        | Some code ->
+            code
+      in
 
-  ) prods;
-  output_endline out "  |];";
-  output_newline out;
-  output_newline out;
+      (* give a name to the yielded value so we can ensure it conforms to
+       * the declared type *)
+      let result =
+        <:expr<
+          (* now insert the user's code, to execute in this environment of
+           * properly-typed semantic values *)
+          let __result : $semtype prod.left.nbase$ = $action_code$ in
+          (* cast to SemanticValue.t *)
+          SemanticValue.repr __result
+        >>
+      in
 
-  ()
+      let fun_body = fold_bindings result bindings in
+      
+      <:expr<fun svals -> $fun_body$>>
+    ) prods
+
+    |> Array.to_list
+    |> Ast.exSem_of_list
+  in
+
+  <:rec_binding<reductionActionArray = [| $closures$ |]>>
 
 
-let emit_ml_spec_func out name semtype rettype func id =
+let emit_ml_spec_func name semtype rettype func id =
   match func with
+  | None ->
+      <:expr<$lid:"default_" ^ name$ $int:string_of_int id$>>
+
   | Some { params; code } ->
       let real_rettype =
         if rettype = semtype then
-          "SemanticValue.t"
+          <:ctyp<SemanticValue.t>>
         else
           rettype
       in
 
-      output_string out "    (fun";
-      List.iter (fun param ->
-        output_string out " (_";
-        output_string out param;
-        output_string out " : SemanticValue.t)";
-      ) params;
-      output_endline out " ->";
-      List.iter (fun param ->
-        output_string out "      let ";
-        output_string out param;
-        output_string out " : ";
-        output_string out semtype;
-        output_string out " = SemanticValue.obj (_";
-        output_string out param;
-        output_endline out ") in"
-      ) params;
-      output_string out "      let __result : ";
-      output_string out rettype;
-      output_string out " = ";
-      emit_ml_user_code out code;
-      output_endline out " in";
-      if real_rettype <> rettype then
-        output_endline out "      SemanticValue.repr __result);"
-      else
-        output_endline out "      __result);"
+      let untyped_params =
+        List.rev_map (fun param ->
+          <:patt<($lid:"_" ^ param$ : SemanticValue.t)>>
+        ) params
+      in
 
-  | None ->
-      output_string out "    default_";
-      output_string out name;
-      output_string out " ";
-      output_int out id;
-      output_endline out ";"
+      let bindings =
+        <:binding<__result : $rettype$ = $code$>>
+        :: List.rev_map (fun param ->
+          <:binding<($lid:param$ : $semtype$) = SemanticValue.obj $lid:"_" ^ param$>>
+        ) params
+      in
+
+      let result =
+        if real_rettype != rettype then
+          <:expr<SemanticValue.repr __result>>
+        else
+          <:expr<__result>>
+      in
+
+      let fun_body = fold_bindings result bindings in
+
+      List.fold_left (fun code param ->
+        <:expr<fun $param$ -> $code$>>
+      ) fun_body untyped_params
 
 
-let emit_ml_dup_del_merge out terms nonterms =
-  output_endline out "  (* ------------------- dup/del/merge/keep nonterminals ------------------ *)";
+let emit_ml_dup_del_merge terms nonterms =
 
   let emit sf_name a_name rettype base func syms =
-    output_string out "  ";
-    output_string out a_name;
-    output_endline out "Array = [|";
-    Array.iteri (fun i sym ->
-      let paramtype = semtype (base sym) in
-      let rettype = if rettype <> "" then rettype else paramtype in
-      emit_ml_spec_func out sf_name paramtype rettype (func sym) i;
-    ) syms;
-    output_endline out "  |];";
+    let closures =
+      Array.mapi (fun i sym ->
+        let paramtype = semtype (base sym) in
+        let rettype = BatOption.default paramtype rettype in
+        emit_ml_spec_func sf_name paramtype rettype (func sym) i
+      ) syms
+
+      |> Array.to_list
+      |> Ast.exSem_of_list
+    in
+
+    assert (is_lid a_name);
+    <:rec_binding<$lid:a_name ^ "Array"$ = [| $closures$ |]>>
   in
 
-  let emit_nonterm sf_name a_name rettype func =
+  let emit_nonterm sf_name a_name func rettype =
     emit sf_name a_name rettype
       (fun nonterm -> nonterm.nbase)
       func
       nonterms
   in
 
-  let emit_term sf_name a_name rettype func =
+  let emit_term sf_name a_name func rettype =
     emit sf_name a_name rettype
       (fun term -> term.tbase)
       func
       terms
   in
 
-  emit_nonterm "dup"   "duplicateNontermValue"  ""     (fun nonterm -> nonterm.nbase.dup);
-  emit_nonterm "del"   "deallocateNontermValue" "unit" (fun nonterm -> nonterm.nbase.del);
-  emit_nonterm "merge" "mergeAlternativeParses" ""     (fun nonterm -> nonterm.merge);
-  emit_nonterm "keep"  "keepNontermValue"       "bool" (fun nonterm -> nonterm.keep);
+  [
+    (* ------------------- dup/del/merge/keep nonterminals ------------------ *)
+    emit_nonterm "dup"   "duplicateNontermValue"  (fun nonterm -> nonterm.nbase.dup) None;
+    emit_nonterm "del"   "deallocateNontermValue" (fun nonterm -> nonterm.nbase.del) (Some <:ctyp<unit>>);
+    emit_nonterm "merge" "mergeAlternativeParses" (fun nonterm -> nonterm.merge) 	   None;
+    emit_nonterm "keep"  "keepNontermValue"       (fun nonterm -> nonterm.keep) 	   (Some <:ctyp<bool>>);
 
-  emit_term "dup"      "duplicateTerminalValue"  ""     (fun term -> term.tbase.dup);
-  emit_term "del"      "deallocateTerminalValue" "unit" (fun term -> term.tbase.del);
-  emit_term "classify" "reclassifyToken"         "int"  (fun term -> term.classify);
+    (* ------------------- dup/del/classify terminals ------------------ *)
+    emit_term "dup"      "duplicateTerminalValue"  (fun term -> term.tbase.dup) None;
+    emit_term "del"      "deallocateTerminalValue" (fun term -> term.tbase.del) (Some <:ctyp<unit>>);
+    emit_term "classify" "reclassifyToken"         (fun term -> term.classify)  (Some <:ctyp<int>>);
+  ]
 
-  ()
 
-
-let emit_ml_action_code out dcl terms nonterms prods final_prod verbatims impl_verbatims =
+let emit_ml_action_code terms nonterms prods final_prod verbatims impl_verbatims =
   let result_type = final_semtype (final_prod prods) in
 
-  emit_ml_prologue dcl;
-  emit_ml_prologue out;
+  let closures =
+    emit_ml_actions prods
+    :: emit_ml_dup_del_merge terms nonterms
+    |> Ast.rbSem_of_list
+  in
 
-  (* insert the stand-alone verbatim sections *)
-  List.iter (fun code ->
-    emit_ml_user_code ~braces:false dcl code
-  ) verbatims;
+  <:sig_item<
+    (* insert the stand-alone verbatim sections *)
+    $Ast.sgSem_of_list verbatims$
 
-  (* all that goes into the interface is the name of the
-   * UserActions.t object *)
-  Printf.fprintf dcl "val userActions : %s UserActions.t\n" result_type;
+    (* all that goes into the interface is the name of the
+     * UserActions.t object *)
+    val userActions : $result_type$ UserActions.t
+  >>,
+  <:str_item<
+    (* Open module so record field labels are visible *)
+    open UserActions
 
-  (* Open module so record field labels are visible *)
-  output_endline out "open UserActions";
-  output_newline out;
-  output_newline out;
+    (* impl_verbatim sections *)
+    $Ast.stSem_of_list impl_verbatims$
 
-  (* stand-alone verbatim sections go into .ml file *also* *)
-  List.iter (fun code ->
-    emit_ml_user_code ~braces:false out code
-  ) verbatims;
+    $emit_ml_descriptions terms nonterms$
 
-  emit_ml_descriptions out terms nonterms;
+    let userFunctions : UserActions.functions = { $closures$ }
 
-  (* impl_verbatim sections *)
-  output_endline out "(* ------------------- impl_verbatim sections ------------------ *)";
-  List.iter (fun code ->
-    emit_ml_user_code ~braces:false out code
-  ) impl_verbatims;
-  output_newline out;
-  output_newline out;
+    (* main action function; uses the array emitted above *)
+    let reductionAction (productionId : int) (svals : SemanticValue.t array) : SemanticValue.t =
+      userFunctions.reductionActionArray.(productionId) svals
 
-  output_endline out "let userFunctions : UserActions.functions = {";
-  emit_ml_actions out prods;
-  emit_ml_dup_del_merge out terms nonterms;
-  output_endline out "}";
-  output_newline out;
-  output_newline out;
+    (* dup *)
+    let duplicateNontermValue (nontermId : int) (sval : SemanticValue.t) : SemanticValue.t =
+      userFunctions.duplicateNontermValueArray.(nontermId) sval
+    let duplicateTerminalValue (termId : int) (sval : SemanticValue.t) : SemanticValue.t =
+      userFunctions.duplicateTerminalValueArray.(termId) sval
+    (* del *)
+    let deallocateNontermValue (nontermId : int) (sval : SemanticValue.t) : unit =
+      userFunctions.deallocateNontermValueArray.(nontermId) sval
+    let deallocateTerminalValue (termId : int) (sval : SemanticValue.t) : unit =
+      userFunctions.deallocateTerminalValueArray.(termId) sval
+    (* merge *)
+    let mergeAlternativeParses (nontermId : int) (left : SemanticValue.t) (right : SemanticValue.t) : SemanticValue.t =
+      userFunctions.mergeAlternativeParsesArray.(nontermId) left right
+    (* keep *)
+    let keepNontermValue (nontermId : int) (sval : SemanticValue.t) : bool =
+      userFunctions.keepNontermValueArray.(nontermId) sval
+    (* classify *)
+    let reclassifyToken (oldTokenType : int) (sval : SemanticValue.t) : int =
+      userFunctions.reclassifyTokenArray.(oldTokenType) sval
+    (* emit a function to describe terminals; at some point I'd like to
+     * extend my grammar format to allow the user to supply
+     * token-specific description functions, but for now I will just
+     * use the information easily available to synthesise one;
+     * I print "sval % 100000" so I get a 5-digit number, which is
+     * easy for me to compare for equality without adding much clutter
+     *
+     * ML: I could do something like this using Obj, but I'd rather
+     * not abuse that interface unnecessarily. *)
+    let terminalDescription (termId : int) (sval : SemanticValue.t) : string =
+      termNamesArray.(termId)
+    (* and a function to describe nonterminals also *)
+    let nonterminalDescription (nontermId : int) (sval : SemanticValue.t) : string =
+      nontermNamesArray.(nontermId)
+    (* emit functions to get access to the static maps *)
+    let terminalName (termId : int) : string =
+      termNamesArray.(termId)
+    let nonterminalName (nontermId : int) : string =
+      nontermNamesArray.(nontermId)
 
-  (* main action function; uses the array emitted above *)
-  output_endline out "let reductionAction (productionId : int) (svals : SemanticValue.t array) : SemanticValue.t =";
-  output_endline out "  userFunctions.reductionActionArray.(productionId) svals";
-
-  (* dup *)
-  output_endline out "let duplicateNontermValue (nontermId : int) (sval : SemanticValue.t) : SemanticValue.t =";
-  output_endline out "  userFunctions.duplicateNontermValueArray.(nontermId) sval";
-  output_endline out "let duplicateTerminalValue (termId : int) (sval : SemanticValue.t) : SemanticValue.t =";
-  output_endline out "  userFunctions.duplicateTerminalValueArray.(termId) sval";
-  (* del *)
-  output_endline out "let deallocateNontermValue (nontermId : int) (sval : SemanticValue.t) : unit =";
-  output_endline out "  userFunctions.deallocateNontermValueArray.(nontermId) sval";
-  output_endline out "let deallocateTerminalValue (termId : int) (sval : SemanticValue.t) : unit =";
-  output_endline out "  userFunctions.deallocateTerminalValueArray.(termId) sval";
-  (* merge *)
-  output_endline out "let mergeAlternativeParses (nontermId : int) (left : SemanticValue.t) (right : SemanticValue.t) : SemanticValue.t =";
-  output_endline out "  userFunctions.mergeAlternativeParsesArray.(nontermId) left right";
-  (* keep *)
-  output_endline out "let keepNontermValue (nontermId : int) (sval : SemanticValue.t) : bool =";
-  output_endline out "  userFunctions.keepNontermValueArray.(nontermId) sval";
-  (* classify *)
-  output_endline out "let reclassifyToken (oldTokenType : int) (sval : SemanticValue.t) : int =";
-  output_endline out "  userFunctions.reclassifyTokenArray.(oldTokenType) sval";
-  (* emit a function to describe terminals; at some point I'd like to
-   * extend my grammar format to allow the user to supply
-   * token-specific description functions, but for now I will just
-   * use the information easily available to synthesise one;
-   * I print "sval % 100000" so I get a 5-digit number, which is
-   * easy for me to compare for equality without adding much clutter
-   *
-   * ML: I could do something like this using Obj, but I'd rather
-   * not abuse that interface unnecessarily. *)
-  output_endline out "let terminalDescription (termId : int) (sval : SemanticValue.t) : string =";
-  output_endline out "  termNamesArray.(termId)";
-  (* and a function to describe nonterminals also *)
-  output_endline out "let nonterminalDescription (nontermId : int) (sval : SemanticValue.t) : string =";
-  output_endline out "  nontermNamesArray.(nontermId)";
-  (* emit functions to get access to the static maps *)
-  output_endline out "let terminalName (termId : int) : string =";
-  output_endline out "  termNamesArray.(termId)";
-  output_endline out "let nonterminalName (nontermId : int) : string =";
-  output_endline out "  nontermNamesArray.(nontermId)";
-  output_newline out;
-  output_newline out;
-
-  (* wrap all the action stuff up as a record *)
-  Printf.fprintf out "let userActions : %s UserActions.t = {\n" result_type;
-  output_endline out "  reductionAction;";
-  output_endline out "  duplicateTerminalValue;";
-  output_endline out "  duplicateNontermValue;";
-  output_endline out "  deallocateTerminalValue;";
-  output_endline out "  deallocateNontermValue;";
-  output_endline out "  mergeAlternativeParses;";
-  output_endline out "  keepNontermValue;";
-  output_endline out "  reclassifyToken;";
-  output_endline out "  terminalDescription;";
-  output_endline out "  nonterminalDescription;";
-  output_endline out "  terminalName;";
-  output_endline out "  nonterminalName;";
-  output_endline out "}"
+    (* wrap all the action stuff up as a record *)
+    let userActions : $result_type$ UserActions.t = {
+      reductionAction;
+      duplicateTerminalValue;
+      duplicateNontermValue;
+      deallocateTerminalValue;
+      deallocateNontermValue;
+      mergeAlternativeParses;
+      keepNontermValue;
+      reclassifyToken;
+      terminalDescription;
+      nonterminalDescription;
+      terminalName;
+      nonterminalName;
+    }
+  >>
 
 
 (************************************************
  * :: Parse tables
  ************************************************)
 
+let exSem_of_int_list table =
+  Array.map (fun value ->
+    <:expr<$int:string_of_int value$>>
+  ) table
+  |> Array.to_list
+  |> Ast.exSem_of_list
 
-let emit_ml_tables out dcl dat tables =
-  TablePrinting.dump_tables dat tables;
 
-  emit_ml_prologue dcl;
-  output_endline dcl "val parseTables : ParseTablesType.t";
+let print_tables tables =
+  let open ParseTablesType in
 
-  emit_ml_prologue out;
-  if true then (
-    output_endline out "let parseTables : ParseTablesType.t = Marshal.from_channel (open_in_bin \"_build/ccparse/gr/ccTables.dat\")";
+  <:str_item<
+    let parseTables = ParseTablesType.({
+      numTerms = $int:string_of_int tables.numTerms$;
+      numNonterms = $int:string_of_int tables.numNonterms$;
+      numProds = $int:string_of_int tables.numProds$;
+
+      numStates = $int:string_of_int tables.numStates$;
+
+      actionCols = $int:string_of_int tables.actionCols$;
+      actionTable = [| $exSem_of_int_list tables.actionTable$ |];
+
+      gotoCols = $int:string_of_int tables.gotoCols$;
+      gotoTable = [| $exSem_of_int_list tables.gotoTable$ |];
+
+      prodInfo_rhsLen = [| $exSem_of_int_list tables.prodInfo_rhsLen$ |];
+      prodInfo_lhsIndex = [| $exSem_of_int_list tables.prodInfo_lhsIndex$ |];
+
+      stateSymbol = [| $exSem_of_int_list tables.stateSymbol$ |];
+
+      ambigTable = [| $exSem_of_int_list tables.ambigTable$ |];
+
+      nontermOrder = [| $exSem_of_int_list tables.nontermOrder$ |];
+
+      startState = $int:string_of_int tables.startState$;
+      finalProductionIndex = $int:string_of_int tables.finalProductionIndex$;
+    })
+  >>
+
+let emit_ml_tables dat tables =
+  Marshal.to_channel dat tables [Marshal.No_sharing];
+
+  <:sig_item<
+    val parseTables : ParseTablesType.t
+  >>,
+  if Config.use_table_dump then (
+    Some <:str_item<
+      let parseTables : ParseTablesType.t =
+        input_value (open_in_bin "_build/ccparse/gr/ccTables.dat")
+    >>
   ) else (
-    TablePrinting.print_tables out tables
+    if true then
+      None
+    else
+      Some (print_tables tables)
   )
 
 
@@ -678,29 +753,52 @@ let emit_ml name terms nonterms prods prods_by_lhs verbatims impl_verbatims tabl
 
 
   (* Parse Tree Actions *)
-  let dcl = open_out (name ^ "PtreeActions.mli") in
-  let out = open_out (name ^ "PtreeActions.ml") in
-  closing (emit_ml_action_code out dcl
+  let dcl = name ^ "PtreeActions.mli" in
+  let out = name ^ "PtreeActions.ml" in
+  let intf, impl =
+    emit_ml_action_code
       terms
       (PtreeMaker.nonterms nonterms)
       (PtreeMaker.prods prods)
-      final_prod verbatims) impl_verbatims
-    [dcl; out];
+      final_prod verbatims impl_verbatims
+  in
+
+  OCamlPrinter.print_interf ~output_file:dcl intf;
+  OCamlPrinter.print_implem ~output_file:out impl;
+
 
   (* Actions *)
-  let dcl = open_out (name ^ "Actions.mli") in
-  let out = open_out (name ^ "Actions.ml") in
-  closing (emit_ml_action_code out dcl
+  let dcl = name ^ "Actions.mli" in
+  let out = name ^ "Actions.ml" in
+  let intf, impl =
+    emit_ml_action_code
       terms
       nonterms
       prods
-      final_prod verbatims) impl_verbatims
-    [dcl; out];
+      final_prod verbatims impl_verbatims
+  in
+
+  OCamlPrinter.print_interf ~output_file:dcl intf;
+  OCamlPrinter.print_implem ~output_file:out impl;
+
 
   (* Tables *)
-  let dcl = open_out     (name ^ "Tables.mli") in
-  let out = open_out     (name ^ "Tables.ml") in
+  let dcl = name ^ "Tables.mli" in
+  let out = name ^ "Tables.ml" in
   let dat = open_out_bin (name ^ "Tables.dat") in
 
-  closing (emit_ml_tables out dcl dat) tables
-    [dcl; out; dat];
+  let intf, impl =
+    closing (emit_ml_tables dat) tables
+      [dat]
+  in
+
+  OCamlPrinter.print_interf ~output_file:dcl intf;
+
+  match impl with
+  | None ->
+      let out = open_out out in
+      closing (TablePrinting.print_tables out) tables
+        [out]
+
+  | Some impl ->
+      OCamlPrinter.print_implem ~output_file:out impl

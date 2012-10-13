@@ -187,8 +187,8 @@ nonterm Literal {
   -> f:TOK_FLOAT_LITERAL  [Float]  { unimplemented 10 }
   -> s:StringLiteral      [String] { unimplemented 11 }
   -> c:TOK_CHAR_LITERAL   [Char]   { unimplemented 12 }
-  -> "true"               [True]   { unimplemented 13 }
-  -> "false"              [False]  { unimplemented 14 }
+  -> "true"               [TrueC]  { unimplemented 13 }
+  -> "false"              [FalseC] { unimplemented 14 }
 }
 
 // a single quoted sequence of characters; this nonterminal exists
@@ -1298,8 +1298,8 @@ nonterm CompoundInitializer {
 
 // useful syntactic quirk
 nonterm CommaOpt {
-  -> empty ;
-  -> "," ;
+  -> empty { () }
+  -> "," { () }
 }
 
 nonterm InitializerList {
@@ -2083,13 +2083,13 @@ nonterm TemplateParameterList {
 
 nonterm TypeParameter {
   // non-template type parameter
-  -> ClassOrTypename i:IdentifierOpt t:DefaultTypeOpt;
+  -> ClassOrTypename i:IdentifierOpt t:DefaultTypeOpt { () }
 
   // non-type parameter
   -> p:ParameterDeclaration;
 
   // template type parameter
-  -> "template" "<" pl:TemplateParameterList ">" "class" i:IdentifierOpt t:DefaultTemplateOpt;
+  -> "template" "<" pl:TemplateParameterList ">" "class" i:IdentifierOpt t:DefaultTemplateOpt { () }
 }
 
 // what comes after a template paramter: nothing, or else
@@ -2102,8 +2102,8 @@ nonterm TemplateParameterListContinuation {
 }
 
 nonterm ClassOrTypename {
-  -> "class";
-  -> "typename";
+  -> "class" { () }
+  -> "typename"{ () }
 }
 
 nonterm DefaultTypeOpt {

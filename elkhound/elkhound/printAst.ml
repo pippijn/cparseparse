@@ -7,6 +7,12 @@ let print_termdecl = function
   | TermDecl (code, name, alias) ->
       printf "  %3d : %s %s;\n" code name alias
 
+let print_action_code = function
+  | None ->
+      printf ";\n"
+  | Some code ->
+      printf " %s\n" code
+
 let print_specfunc = function
   | SpecFunc (name, formals, code) ->
       printf "  fun %s (" name;
@@ -50,19 +56,19 @@ let print_proddecl = function
   | ProdDecl (PDK_NEW, None, rhs, actionCode) ->
       printf "  ->";
       List.iter print_rhs rhs;
-      printf " %s\n" actionCode
+      print_action_code actionCode
   | ProdDecl (PDK_NEW, Some prod_name, rhs, actionCode) ->
       printf "  -> [%s]" prod_name;
       List.iter print_rhs rhs;
-      printf " %s\n" actionCode
+      print_action_code actionCode
   | ProdDecl (PDK_REPLACE, None, rhs, actionCode) ->
       printf "  replace";
       List.iter print_rhs rhs;
-      printf " %s\n" actionCode
+      print_action_code actionCode
   | ProdDecl (PDK_DELETE, None, rhs, actionCode) ->
       printf "  delete";
       List.iter print_rhs rhs;
-      printf " %s\n" actionCode
+      print_action_code actionCode
   | _ -> failwith "invalid ProdDecl"
 
 let print_topform = function
@@ -80,13 +86,13 @@ let print_topform = function
       List.iter print_precspec prec;
       printf "  }\n";
       printf "}\n\n"
-  | TF_nonterm (name, "", funcs, prods, subsets) ->
+  | TF_nonterm (name, None, funcs, prods, subsets) ->
       printf "nonterm %s {\n" name;
       List.iter print_specfunc funcs;
       List.iter print_proddecl prods;
       List.iter (printf "  %s\n") subsets;
       printf "}\n\n"
-  | TF_nonterm (name, semtype, funcs, prods, subsets) ->
+  | TF_nonterm (name, Some semtype, funcs, prods, subsets) ->
       printf "nonterm(%s) %s {\n" semtype name;
       List.iter print_specfunc funcs;
       List.iter print_proddecl prods;

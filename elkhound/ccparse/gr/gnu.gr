@@ -288,41 +288,41 @@ nonterm Operator {
 
 // dsw: FIX: add returning semantic value
 nonterm BracketedWordOpt {
-  -> empty ;
+  -> empty { () }
   -> "[" id:Identifier "]" ;
 }
 
 
 // dsw: FIX: add returning semantic value
 nonterm ParenthesizedExpressionOpt {
-  -> empty ;
+  -> empty { () }
   ->  "(" e:Expression ")" ;
 }
 
 
 // dsw: FIX: add returning semantic value
 nonterm OpConstraint {
-  -> name:BracketedWordOpt constr:StringLiteral e:ParenthesizedExpressionOpt ;
+  -> name:BracketedWordOpt constr:StringLiteral e:ParenthesizedExpressionOpt { () }
 }
 
 
 // dsw: FIX: add returning semantic value
 nonterm OpConstraintList {
-  -> empty ;
+  -> empty { () }
   -> oc:OpConstraint ;
-  -> oc:OpConstraint "," ocl:OpConstraintList ;
+  -> oc:OpConstraint "," ocl:OpConstraintList { () }
 }
 
 
 // dsw: FIX: add returning semantic value
 // note: technically you can only have up to 3, but I allow 0 or more
 nonterm OpConstraints {
-  -> empty;
-  -> NonemptyOpConstraints;
+  -> empty { () }
+  -> ocs:NonemptyOpConstraints;
 }
 nonterm NonemptyOpConstraints {
-  -> ocs:OpConstraints ":" ocl:OpConstraintList ;
-  -> ocs:OpConstraints "::" ocl:OpConstraintList ;
+  -> ocs:OpConstraints ":" ocl:OpConstraintList { () }
+  -> ocs:OpConstraints "::" ocl:OpConstraintList { () }
 }
 
 
@@ -440,16 +440,16 @@ nonterm DeclSpecifier {
 // these are the only ones that could be meaningfully combined with
 // an existing typedef, I think
 nonterm BuggyGccTypeModifier {
-  -> "long";
-  -> "short";
-  -> "signed";
-  -> "unsigned";
+  -> "long" { () }
+  -> "short" { () }
+  -> "signed" { () }
+  -> "unsigned" { () }
 
   // make it a sequence...
-  -> "long"       BuggyGccTypeModifier;
-  -> "short"      BuggyGccTypeModifier;
-  -> "signed"     BuggyGccTypeModifier;
-  -> "unsigned"   BuggyGccTypeModifier;
+  -> "long"       BuggyGccTypeModifier { () }
+  -> "short"      BuggyGccTypeModifier { () }
+  -> "signed"     BuggyGccTypeModifier { () }
+  -> "unsigned"   BuggyGccTypeModifier { () }
 }
 
 

@@ -2,6 +2,24 @@ open Batteries_uni
 open GrammarAst
 open GrammarType
 open Merge
+open Camlp4.PreCast
+
+module CamlSyntax = Camlp4OCamlParser.Make(Camlp4OCamlRevisedParser.Make(Syntax))
+
+let parse_string syntax loc str =
+  try
+    CamlSyntax.Gram.parse_string syntax loc str
+  with Loc.Exc_located (loc, Stream.Error msg) ->
+    Format.eprintf "%a@.  while parsing \"%s\": %s" Loc.print loc str msg;
+    exit 1
+
+let ctyp_of_string     = parse_string CamlSyntax.ctyp
+let expr_of_string     = parse_string CamlSyntax.expr
+let sig_item_of_string = parse_string CamlSyntax.sig_item
+let str_item_of_string = parse_string CamlSyntax.str_item
+
+let _loc = Loc.ghost
+
 
 
 let start_name = "__EarlyStartSymbol"
@@ -14,11 +32,11 @@ let synthesise_start_rule topforms =
 
   (* build a start production *)
   let start =
-    TF_nonterm ((* name = *)start_name, (* type = *)"", (* funcs = *)[], (* prods = *)[
+    TF_nonterm ((* name = *)start_name, (* type = *)None, (* funcs = *)[], (* prods = *)[
       ProdDecl (PDK_NEW, None, [
         RH_name ("top", topforms.first_nonterm);
         RH_name ("", eof);
-      ], (* code: *)"")
+      ], (* code: *)None)
     ], (* subsets: *)[])
   in
 
@@ -46,8 +64,14 @@ let collect_options options config =
 let collect_verbatims verbatims =
   List.fold_left (fun (verbatim, impl_verbatim) -> function
     | TF_verbatim (true, code) ->
+        let code =
+          str_item_of_string _loc code
+        in
         (verbatim, code :: impl_verbatim)
     | TF_verbatim (false, code) ->
+        let code =
+          sig_item_of_string _loc code
+        in
         (code :: verbatim, impl_verbatim)
 
     | _ -> failwith "merge failed"
@@ -111,6 +135,8 @@ let spec_func funcs name formal_count =
     if not (List.memq (List.length params) formal_count) then
       failwith ("incorrect number of formal parameters for '" ^ name ^ "' function");
 
+    let code = expr_of_string _loc code in
+
     Some { params; code; }
 
   with Not_found ->
@@ -127,9 +153,9 @@ let collect_terminals decls types precs =
       let semtype, funcs =
         try
           let (TermType (_, termtype, funcs)) = StringMap.find name types in
-          termtype, funcs
+          Some (ctyp_of_string _loc termtype), funcs
         with Not_found ->
-          "", []
+          None, []
       in
 
       (* apply precedence spec *)
@@ -212,7 +238,7 @@ let collect_nonterminals nonterms term_count =
           let nonterminal = { empty_nonterminal with
             nbase = {
               name;
-              semtype;
+              semtype = BatOption.map (ctyp_of_string _loc) semtype;
               dup = spec_func funcs "dup" [1];
               del = spec_func funcs "del" [0; 1];
               reachable = false;
@@ -325,6 +351,10 @@ let collect_productions aliases terminals nonterminals nonterms =
           let is_synthesised = name = start_name in
 
           List.fold_left (fun (productions, next_prod_index) (ProdDecl (kind, prod_name, rhs, action)) ->
+            let action =
+              BatOption.map (expr_of_string _loc) action
+            in
+
             (* build a production *)
             let production =
               { empty_production with

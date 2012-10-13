@@ -17,7 +17,7 @@ type proddecl_kind =
 
 (* production: rhs description, and code to execute upon recognition *)
 type proddecl =
-  | ProdDecl of (* kind: *)proddecl_kind * (* name: *)string option * (* rhs: *)rhs list * (* action: *)string
+  | ProdDecl of (* kind: *)proddecl_kind * (* name: *)string option * (* rhs: *)rhs list * (* action: *)string option
   with sexp
 
 (* specification function: formals + code *)
@@ -55,7 +55,7 @@ type topform =
                   * (* precs: *)precspec list (* precedence and associativity *)
   (* a nonterminal, with productions *)
   | TF_nonterm of (* name: *)string (* nonterm name *)
-  		* (* type: *)string (* semantic value type *)
+  		* (* type: *)string option (* semantic value type *)
                 * (* funcs: *)specfunc list (* special situation action functions *)
                 * (* prods: *)proddecl list (* productions (right-hand side alternatives) *)
                 * (* subsets: *)string list (* preference subset nonterminals (for scannerless) *)

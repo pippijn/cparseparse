@@ -39,7 +39,7 @@ Executable cpapa
 Executable runtests
         Path:                   testsuite
         BuildTools:             ocamlbuild
-        BuildDepends:           unix
+        BuildDepends:           unix,batteries
         MainIs:                 runtests.ml
         CompiledObject:         native
 
