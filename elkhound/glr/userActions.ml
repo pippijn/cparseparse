@@ -8,22 +8,22 @@
 
 
 type functions = {
-  reductionActionArray : (SemanticValue.t array -> SemanticValue.t) array;
-  duplicateTerminalValueArray : (SemanticValue.t -> SemanticValue.t) array;
-  duplicateNontermValueArray : (SemanticValue.t -> SemanticValue.t) array;
-  deallocateTerminalValueArray : (SemanticValue.t -> unit) array;
-  deallocateNontermValueArray : (SemanticValue.t -> unit) array;
-  mergeAlternativeParsesArray : (SemanticValue.t -> SemanticValue.t -> SemanticValue.t) array;
-  keepNontermValueArray : (SemanticValue.t -> bool) array;
-  reclassifyTokenArray : (SemanticValue.t -> int) array;
+  reductionActionArray          : (SemanticValue.t array -> SemanticValue.t) array;
+  duplicateTerminalValueArray   : (SemanticValue.t -> SemanticValue.t) array;
+  duplicateNontermValueArray    : (SemanticValue.t -> SemanticValue.t) array;
+  deallocateTerminalValueArray  : (SemanticValue.t -> unit) array;
+  deallocateNontermValueArray   : (SemanticValue.t -> unit) array;
+  mergeAlternativeParsesArray   : (SemanticValue.t -> SemanticValue.t -> SemanticValue.t) array;
+  keepNontermValueArray         : (SemanticValue.t -> bool) array;
+  reclassifyTokenArray          : (SemanticValue.t -> int) array;
 }
 
-let default_dup   (sym : int) (sval : SemanticValue.t) : SemanticValue.t = sval
-let default_del   (sym : int) (sval : SemanticValue.t) : unit = ()
-let default_merge (sym : int) (left : SemanticValue.t) (right : SemanticValue.t) : SemanticValue.t =
-  Printf.printf "warning: no function to merge nonterminal %d\n" sym; left
-let default_keep  (sym : int) (sval : SemanticValue.t) : bool = true
-let default_classify (oldTokenType : int) (sval : SemanticValue.t) : int = oldTokenType
+let default_dup      (names : string array) (sym : int) (sval : SemanticValue.t) : SemanticValue.t = sval
+let default_del      (names : string array) (sym : int) (sval : SemanticValue.t) : unit = ()
+let default_merge    (names : string array) (sym : int) (left : SemanticValue.t) (right : SemanticValue.t) : SemanticValue.t =
+  Printf.printf "warning: no function to merge nonterminal %s\n" names.(sym); left
+let default_keep     (names : string array) (sym : int) (sval : SemanticValue.t) : bool = true
+let default_classify (names : string array) (oldTokenType : int) (sval : SemanticValue.t) : int = oldTokenType
 
 
 (* package of functions; the user will create an instance of this

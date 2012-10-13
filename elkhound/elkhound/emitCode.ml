@@ -489,10 +489,10 @@ let emit_ml_actions prods =
   <:rec_binding<reductionActionArray = [| $closures$ |]>>
 
 
-let emit_ml_spec_func name semtype rettype func id =
+let emit_ml_spec_func name semtype rettype kind func id =
   match func with
   | None ->
-      <:expr<$lid:"default_" ^ name$ $int:string_of_int id$>>
+      <:expr<$lid:"default_" ^ name$ $lid:kind ^ "NamesArray"$ ($int:string_of_int id$)>>
 
   | Some { params; code } ->
       let real_rettype =
@@ -531,12 +531,12 @@ let emit_ml_spec_func name semtype rettype func id =
 
 let emit_ml_dup_del_merge terms nonterms =
 
-  let emit sf_name a_name rettype base func syms =
+  let emit sf_name a_name rettype kind base func syms =
     let closures =
       Array.mapi (fun i sym ->
         let paramtype = semtype (base sym) in
         let rettype = BatOption.default paramtype rettype in
-        emit_ml_spec_func sf_name paramtype rettype (func sym) i
+        emit_ml_spec_func sf_name paramtype rettype kind (func sym) i
       ) syms
 
       |> Array.to_list
@@ -549,6 +549,7 @@ let emit_ml_dup_del_merge terms nonterms =
 
   let emit_nonterm sf_name a_name func rettype =
     emit sf_name a_name rettype
+      "nonterm"
       (fun nonterm -> nonterm.nbase)
       func
       nonterms
@@ -556,6 +557,7 @@ let emit_ml_dup_del_merge terms nonterms =
 
   let emit_term sf_name a_name func rettype =
     emit sf_name a_name rettype
+      "term"
       (fun term -> term.tbase)
       func
       terms
