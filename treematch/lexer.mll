@@ -11,7 +11,8 @@ let digit    = ['0'-'9']
 let alpha = (lower | upper)
 let alnum = (alpha | digit)
 
-let identifier = (alpha | '_')(alnum | '_')*
+let lident = (lower | '_')(alnum | '_')*
+let uident = upper (alnum | '_')*
 
 let bstring = '`'  ('\\' _ | [^ '\\' '`' ])* '`'
 let dstring = '"'  ('\\' _ | [^ '\\' '"' ])* '"'
@@ -60,8 +61,9 @@ rule token = parse
 
 (* identifier *)
 | "ast"                                                         { TOK_AST }
-| identifier ":"                                                { TOK_LABEL (Lexing.lexeme lexbuf) }
-| identifier                                                    { TOK_IDENT (Lexing.lexeme lexbuf) }
+| uident as nm ":"                                              { TOK_LABEL nm }
+| uident                                                        { TOK_UIDENT (Lexing.lexeme lexbuf) }
+| lident                                                        { TOK_LIDENT (Lexing.lexeme lexbuf) }
 
 | d+                                                            { TOK_INT_LITERAL (Lexing.lexeme lexbuf) }
 
