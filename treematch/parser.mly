@@ -29,6 +29,7 @@
 %token <string> TOK_INT_LITERAL
 %token <string> TOK_CHAR_LITERAL
 %token <string> TOK_STRING_LITERAL
+%token <string> TOK_LABEL
 %token <string> TOK_IDENT
 
 %token TOK_EOF
@@ -39,13 +40,13 @@ program
 : definitions=list(definition) TOK_EOF { }
 
 definition
-: TOK_AST nm=TOK_IDENT TOK_LBRACE ast_body TOK_RBRACE { }
+: TOK_AST nm=TOK_IDENT TOK_LBRACE list(ast_node) TOK_RBRACE { }
 
-ast_body
-: TOK_IDENT TOK_COLON option(TOK_BAR) nodes=ast_nodes { }
+ast_node
+: TOK_LABEL option(TOK_BAR) clauses=ast_clauses { }
 
-ast_nodes
-: separated_list(TOK_BAR,node_clause) { }
+ast_clauses
+: separated_list(TOK_BAR,node_tag) { }
 
-node_clause
+node_tag
 : list(TOK_IDENT) {}
