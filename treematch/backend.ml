@@ -22,8 +22,8 @@ module Emit = struct
         end
 
       >>
-    | Program.Map (name, ty, nodes) ->
-      let methods = List.map rewrite_node nodes in
+    | Program.Map (name, [st;dt], nodes) ->
+      let methods = List.map (rewrite_node (st,dt)) nodes in
       <:str_item<
 
         class $lid:name$ = object (self : 'a)
@@ -50,24 +50,24 @@ module Emit = struct
     let args = List.map (fun nm -> <:ctyp< $lid:nm$ >>) args in
     <:ctyp< $uid:nm$ of $Ast.tySta_of_list args$>>
 
-  and rewrite_node (nm, cl) =
+  and rewrite_node typing (nm, cl) =
     <:class_str_item<
 
         method $lid:String.lowercase nm$ =
-          function $List.map rewrite_clause cl |> Ast.mcOr_of_list$
+          function $List.map (rewrite_clause typing) cl |> Ast.mcOr_of_list$
 
     >>
 
- and rewrite_clause (l,r) = <:match_case< $tup:paTree l$ -> $tup:exTree r$>>
+ and rewrite_clause (st,dt) (l,r) = <:match_case< $tup:paTree st l$ -> $tup:exTree dt r$>>
 
- and paTree = function
- | Tree.Tree (nm, lst) -> <:patt< $uid:nm$ $List.map paTree lst |> Ast.paCom_of_list$>>
+ and paTree t = function
+ | Tree.Tree (nm, lst) -> <:patt< $uid:t$ . $uid:nm$ $List.map (paTree t) lst |> Ast.paCom_of_list$>>
  | Tree.Var nm -> <:patt< $lid:nm$ >>
  | Tree.Const (Tree.String str) -> <:patt<$str:str$>>
  | Tree.Const (Tree.Int i) -> <:patt<$int:string_of_int i$>>
 
- and exTree = function
- | Tree.Tree (nm, lst) -> <:expr< $uid:nm$ $List.map exTree lst |> Ast.exCom_of_list$>>
+ and exTree t = function
+ | Tree.Tree (nm, lst) -> <:expr< $uid:t$ . $uid:nm$ $List.map (exTree t) lst |> Ast.exCom_of_list$>>
  | Tree.Var nm -> <:expr< $lid:nm$ >>
  | Tree.Const (Tree.String str) -> <:expr<$str:str$>>
  | Tree.Const (Tree.Int i) -> <:expr<$int:string_of_int i$>>
