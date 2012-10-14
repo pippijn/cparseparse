@@ -11,7 +11,7 @@ let () =
     "-i",                       Set Priv._i,		" generate interface files";
     "-infer",                   Set Priv._infer,        " infer the ast from map strategies";
     "-dump-ast",		Set Priv._dump_ast,	" dump source ast";
-    "-dump-tokens",		Set Priv._dump_ast,	" dump source tokens";
+    "-dump-tokens",		Set Priv._dump_tokens,	" dump source tokens";
   ]) (fun input -> Priv.inputs := input :: !Priv.inputs) "Usage: treematch [option...] <file...>")
 
 let _i = !Priv._i
