@@ -5,10 +5,10 @@
 let (|-) f g x = f (g x)
 
 let run f =
-  Gc.set {
-    (Gc.get ()) with
-    Gc.minor_heap_size = 8 * 1024 * 1024;
-  };
+  (* Gc.set { *)
+  (*   (Gc.get ()) with *)
+  (*   Gc.minor_heap_size = 8 * 1024 * 1024; *)
+  (* }; *)
   Printexc.record_backtrace true;
   Printexc.print f Options.inputs
 
@@ -28,7 +28,6 @@ let rec tokenise tokens token lexbuf =
 
 let files =
   let single name =
-    Printf.printf "***** Processing %s\n" name;
     let lexbuf = Lexing.from_channel (open_in name) in
     if Options._dump_tokens then (
       Printf.printf "***** Processing %s\n" name;
