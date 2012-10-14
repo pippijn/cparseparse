@@ -7,9 +7,12 @@ open Sexplib.Conv
 type t = program
 and program = definition list
 and definition = Ast of string * ast_node list
-and ast_node = string * ast_clause list
-and ast_clause = node_tag
-and node_tag = string list
+and ast_node = string * node
+and node =
+    CustomNode of ast_clause list
+  | NativeNode of string
+and ast_clause = topl_tree
+and topl_tree = Constr.t
 with sexp
 
 let output_program channel s =
