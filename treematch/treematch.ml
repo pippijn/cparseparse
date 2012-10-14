@@ -34,9 +34,9 @@ let files =
       let tokens = tokenise [] Lexer.token lexbuf in
       List.iter (print_endline |- Token.to_string) tokens;
       Printf.printf "***** End of %s\n" name;
-      flush stdout)
-    else (
-      Parser.program Lexer.token lexbuf
+      flush stdout);
+    if Options._dump_ast then (
+      Ast.output_program stdout (Parser.program Lexer.token lexbuf)
     )
   in
   List.iter single
