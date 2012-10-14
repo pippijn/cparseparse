@@ -1,0 +1,110 @@
+# OASIS_START
+# DO NOT EDIT (digest: 429d1b613e4bf368e1241d6b9968ff7f)
+# Ignore VCS directories, you can use the same kind of rule outside 
+# OASIS_START/STOP if you want to exclude directories that contains 
+# useless stuff for the build process
+<**/.svn>: -traverse
+<**/.svn>: not_hygienic
+".bzr": -traverse
+".bzr": not_hygienic
+".hg": -traverse
+".hg": not_hygienic
+".git": -traverse
+".git": not_hygienic
+"_darcs": -traverse
+"_darcs": not_hygienic
+# Executable runtests
+"testsuite/runtests.native": pkg_batteries
+"testsuite/runtests.native": pkg_unix
+<testsuite/*.ml{,i}>: pkg_batteries
+<testsuite/*.ml{,i}>: pkg_unix
+# Library ast
+"ast/ast.cmxs": use_ast
+<ast/*.ml{,i}>: pkg_sexplib
+<ast/*.ml{,i}>: pkg_sexplib.syntax
+# Library baselib
+"baselib/baselib.cmxs": use_baselib
+<baselib/baselib.{cma,cmxa}>: oasis_library_baselib_cclib
+"baselib/libbaselib_stubs.lib": oasis_library_baselib_cclib
+"baselib/dllbaselib_stubs.dll": oasis_library_baselib_cclib
+"baselib/libbaselib_stubs.a": oasis_library_baselib_cclib
+"baselib/dllbaselib_stubs.so": oasis_library_baselib_cclib
+<baselib/baselib.{cma,cmxa}>: use_libbaselib_stubs
+<baselib/*.ml{,i}>: pkg_sexplib
+<baselib/*.ml{,i}>: pkg_batteries
+"baselib/ml_BitSet.c": pkg_sexplib
+"baselib/ml_BitSet.c": pkg_batteries
+"baselib/ml_Valgrind.c": pkg_sexplib
+"baselib/ml_Valgrind.c": pkg_batteries
+# Library glr
+"glr/glr.cmxs": use_glr
+<glr/*.ml{,i}>: use_baselib
+<glr/*.ml{,i}>: pkg_sexplib
+<glr/*.ml{,i}>: pkg_batteries
+# Library ccparse
+"ccparse/ccparse.cmxs": use_ccparse
+<ccparse/*.ml{,i}>: use_ast
+<ccparse/*.ml{,i}>: use_glr
+<ccparse/*.ml{,i}>: use_baselib
+<ccparse/*.ml{,i}>: pkg_sexplib
+<ccparse/*.ml{,i}>: pkg_ulex
+<ccparse/*.ml{,i}>: pkg_batteries
+<ccparse/*.ml{,i}>: pkg_unix
+<ccparse/*.ml{,i}>: pkg_sexplib.syntax
+<ccparse/gr/*.ml{,i}>: use_ast
+<ccparse/gr/*.ml{,i}>: use_glr
+<ccparse/gr/*.ml{,i}>: use_baselib
+<ccparse/gr/*.ml{,i}>: pkg_sexplib
+<ccparse/gr/*.ml{,i}>: pkg_ulex
+<ccparse/gr/*.ml{,i}>: pkg_batteries
+<ccparse/gr/*.ml{,i}>: pkg_unix
+<ccparse/gr/*.ml{,i}>: pkg_sexplib.syntax
+# Executable cpapa
+"cpapa/cpapa.native": use_ccparse
+"cpapa/cpapa.native": use_ast
+"cpapa/cpapa.native": use_glr
+"cpapa/cpapa.native": use_baselib
+"cpapa/cpapa.native": pkg_sexplib
+"cpapa/cpapa.native": pkg_ulex
+"cpapa/cpapa.native": pkg_batteries
+"cpapa/cpapa.native": pkg_unix
+"cpapa/cpapa.native": pkg_sexplib.syntax
+<cpapa/*.ml{,i}>: use_ccparse
+<cpapa/*.ml{,i}>: use_ast
+<cpapa/*.ml{,i}>: use_glr
+<cpapa/*.ml{,i}>: use_baselib
+<cpapa/*.ml{,i}>: pkg_sexplib
+<cpapa/*.ml{,i}>: pkg_ulex
+<cpapa/*.ml{,i}>: pkg_batteries
+<cpapa/*.ml{,i}>: pkg_unix
+<cpapa/*.ml{,i}>: pkg_sexplib.syntax
+# Executable elkhound
+"elkhound/elkhound.native": use_glr
+"elkhound/elkhound.native": use_baselib
+"elkhound/elkhound.native": pkg_sexplib
+"elkhound/elkhound.native": pkg_ulex
+"elkhound/elkhound.native": pkg_menhirLib
+"elkhound/elkhound.native": pkg_batteries
+"elkhound/elkhound.native": pkg_unix
+"elkhound/elkhound.native": pkg_camlp4
+"elkhound/elkhound.native": pkg_camlp4.lib
+<elkhound/*.ml{,i}>: use_glr
+<elkhound/*.ml{,i}>: use_baselib
+<elkhound/*.ml{,i}>: pkg_sexplib
+<elkhound/*.ml{,i}>: pkg_ulex
+<elkhound/*.ml{,i}>: pkg_menhirLib
+<elkhound/*.ml{,i}>: pkg_batteries
+<elkhound/*.ml{,i}>: pkg_unix
+<elkhound/*.ml{,i}>: pkg_camlp4
+<elkhound/*.ml{,i}>: pkg_camlp4.lib
+# OASIS_STOP
+
+true: debug
+true: use_menhir
+true: annot
+"testsuite": -traverse
+"wip": -traverse
+
+# XXX: oasis dependencies should do this
+"baselib": include
+"glr": include

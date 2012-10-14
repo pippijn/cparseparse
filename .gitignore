@@ -1,7 +1,12 @@
-_build
+/configure
 /.ditz-config
 /html
+/INSTALL
 /*.native
-/cc.*
+/setup.data
+/setup.log
+/setup.ml
 /wip
-/config.mk
+
+_build
+callgrind.out.*

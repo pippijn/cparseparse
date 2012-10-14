@@ -1,9 +1,0 @@
-/html
-/*.native
-/INSTALL
-/configure
-/setup.data
-/setup.log
-/setup.ml
-/wip
-callgrind.out.*
