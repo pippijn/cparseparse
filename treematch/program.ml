@@ -10,7 +10,7 @@ and definition =
     Ast of string * ast_node list
   | Map of string * type_decl * rewrite_node list
 and ast_node = string * node
-and rewrite_node = rewrite_clause list
+and rewrite_node = string * rewrite_clause list
 and rewrite_clause = Tree.t * Tree.t
 and node =
     CustomNode of ast_clause list
