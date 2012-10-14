@@ -57,7 +57,7 @@ let compute_first derivable indexed_nonterms indexed_prods indexed_terms =
         lhs.first <- merged;
         changed := true;
 
-        if Config.trace_first then (
+        if Options._trace_first then (
           print_string "added ";
           PrintAnalysisEnv.print_terminal_set indexed_terms first_of_rhs;
           print_string " to ";
@@ -71,7 +71,7 @@ let compute_first derivable indexed_nonterms indexed_prods indexed_terms =
 
   done;
 
-  if Config.trace_first then (
+  if Options._trace_first then (
     Array.iter (fun nonterm ->
       if nonterm != empty_nonterminal then (
         PrintAnalysisEnv.print_terminal_set ~name:nonterm.nbase.name indexed_terms nonterm.first;
@@ -102,7 +102,7 @@ let compute_dprod_first derivable dotted_prods indexed_prods indexed_terms =
       (* can it derive empty? *)
       dprod.can_derive_empty <- Derivability.can_sequence_derive_empty derivable right;
 
-      if Config.trace_first then (
+      if Options._trace_first then (
         PrintAnalysisEnv.print_dotted_production ~terms:indexed_terms dprod;
 
         if dprod.can_derive_empty then

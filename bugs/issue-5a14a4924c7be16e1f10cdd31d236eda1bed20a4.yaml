@@ -7,8 +7,8 @@ type: :task
 component: Parsgen
 release: 
 reporter: Pippijn van Steenhoven <pippijn@xinutec.org>
-status: :unstarted
-disposition: 
+status: :closed
+disposition: :fixed
 creation_time: 2012-10-09 02:09:32.462684 Z
 references: []
 
@@ -18,3 +18,7 @@ log_events:
   - Pippijn van Steenhoven <pippijn@xinutec.org>
   - created
   - ""
+- - 2012-10-14 14:19:41.616893 Z
+  - Pippijn van Steenhoven <pippijn@xinutec.org>
+  - closed with disposition fixed
+  - command line interface is defined in the Options module

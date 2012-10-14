@@ -16,6 +16,7 @@ module Priv = struct
   let inputs = ref []
 end
 
+
 let () =
   Arg.(parse (align [
     "-ptree",		Set Priv._ptree,		" build parse tree";
@@ -51,4 +52,4 @@ let _trivial = !Priv._trivial
 let _timing = !Priv._timing
 let _xc = !Priv._xc
 
-let inputs = !Priv.inputs
+let inputs = List.rev !Priv.inputs

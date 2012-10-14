@@ -225,7 +225,7 @@ let init_env grammar =
   (* reset first/follow sets to 0 *)
   reset_first_follow grammar.productions grammar.nonterminals;
 
-  if Config.paranoid then (
+  if Options._paranoid then (
     (* verify that no objects share a terminal set *)
     verify_nonshared indexed_nonterms indexed_prods dotted_prods;
 

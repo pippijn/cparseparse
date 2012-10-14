@@ -39,7 +39,7 @@ let add_derivable_i env left right =
   if left == right then (
     let left = env.indexed_nonterms.(left) in (* == right *)
 
-    if Config.trace_derivable then (
+    if Options._trace_derivable then (
       if not left.cyclic then (
         print_string "%%% derivable: ";
         Printf.printf "discovered that %s ->+ %s (i.e. is cyclic)\n"
@@ -92,7 +92,7 @@ let add_derivable_nonterminal env left right_nonterm after_right_sym =
         match sym with
         | Terminal _ ->
             (* if it's a terminal, it can't derive empty *)
-            if Config.trace_derivable then (
+            if Options._trace_derivable then (
               print_endline "terminal can't derive empty";
             );
             false
@@ -100,14 +100,14 @@ let add_derivable_nonterminal env left right_nonterm after_right_sym =
             (* this symbol can't derive empty string (or, we don't
              * yet know that it can), so we conclude that prod.left
              * can't derive right_sym *)
-            if Config.trace_derivable then (
+            if Options._trace_derivable then (
               Printf.printf "nonterminal %s can derive empty?\n" nonterm.nbase.name;
             );
             can_derive_empty env.derivable nonterm
     ) true after_right_sym
   in
 
-  if Config.trace_derivable then (
+  if Options._trace_derivable then (
     Printf.printf "%s's rest can %sderive empty\n"
       left.nbase.name
       (if rest_derive_empty then "" else "NOT ");
@@ -118,7 +118,7 @@ let add_derivable_nonterminal env left right_nonterm after_right_sym =
     let added = add_derivable env left right_nonterm in
     assert added; (* above, we verified we didn't already know this *)
 
-    if Config.trace_derivable then (
+    if Options._trace_derivable then (
       print_string "%%% derivable: ";
       Printf.printf "discovered (by production): %s ->* %s\n"
         left.nbase.name
@@ -133,7 +133,7 @@ let add_derivable_nonterminal env left right_nonterm after_right_sym =
 
 let add_derivable_relations env changes =
   Array.iter (fun prod ->
-    if Config.trace_derivable then (
+    if Options._trace_derivable then (
       PrintGrammar.print_production prod;
       print_newline ();
     );
@@ -200,7 +200,7 @@ let compute_derivability_closure env changes =
           if v <> w && can_derive_i env.derivable v w then
             (* add an edge (u,w), if there isn't one already *)
             if add_derivable_i env u w then (
-              if Config.trace_derivable then (
+              if Options._trace_derivable then (
                 print_string "%%% derivable: ";
                 Printf.printf "discovered (by closure step): %s ->* %s\n"
                   env.indexed_nonterms.(u).nbase.name
@@ -225,15 +225,15 @@ let compute_derivability_relation env =
     (* first part: add new can_derive relations *)
     add_derivable_relations env changes;
     let new_relations = !changes in
-    if Config.trace_derivable then
+    if Options._trace_derivable then
       Printf.printf "%d new relations\n" new_relations;
 
     (* second part: compute closure over existing relations *)
     compute_derivability_closure env changes;
-    if Config.trace_derivable then
+    if Options._trace_derivable then
       Printf.printf "%d relations by closure\n" (!changes - new_relations);
 
   done;
 
-  if Config.trace_derivable then
+  if Options._trace_derivable then
     Bit2d.print env.derivable
