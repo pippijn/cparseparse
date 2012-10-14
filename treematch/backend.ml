@@ -22,10 +22,15 @@ module Emit = struct
         end
 
       >>
-    | Program.Map _ ->
+    | Program.Map (name, ty, nodes) ->
+      let methods = List.map rewrite_node nodes in
       <:str_item<
 
+        class $lid:name$ = object (self : 'a)
+            $methods |> Ast.crSem_of_list$
+        end
       >>
+
   and ast_node (nm, nd) =
     match nd with
     | Program.CustomNode clauses ->
@@ -45,6 +50,27 @@ module Emit = struct
     let args = List.map (fun nm -> <:ctyp< $lid:nm$ >>) args in
     <:ctyp< $uid:nm$ of $Ast.tySta_of_list args$>>
 
+  and rewrite_node (nm, cl) =
+    <:class_str_item<
+
+        method $lid:String.lowercase nm$ =
+          function $List.map rewrite_clause cl |> Ast.mcOr_of_list$
+
+    >>
+
+ and rewrite_clause (l,r) = <:match_case< $tup:paTree l$ -> $tup:exTree r$>>
+
+ and paTree = function
+ | Tree.Tree (nm, lst) -> <:patt< $uid:nm$ $List.map paTree lst |> Ast.paCom_of_list$>>
+ | Tree.Var nm -> <:patt< $lid:nm$ >>
+ | Tree.Const (Tree.String str) -> <:patt<$str:str$>>
+ | Tree.Const (Tree.Int i) -> <:patt<$int:string_of_int i$>>
+
+ and exTree = function
+ | Tree.Tree (nm, lst) -> <:expr< $uid:nm$ $List.map exTree lst |> Ast.exCom_of_list$>>
+ | Tree.Var nm -> <:expr< $lid:nm$ >>
+ | Tree.Const (Tree.String str) -> <:expr<$str:str$>>
+ | Tree.Const (Tree.Int i) -> <:expr<$int:string_of_int i$>>
 end
 
 let output_program file program =
