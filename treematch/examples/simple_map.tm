@@ -10,5 +10,6 @@ List: Cons Integer List
 Integer: int
 }
 
-map treeify : ListA => ListB {
+map double : ListA => ListB {
+ List: Cons x xs => Cons x (Cons x xs)
 }
