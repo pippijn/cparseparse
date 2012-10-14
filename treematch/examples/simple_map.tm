@@ -1,12 +1,12 @@
 ast ListA {
 List: Cons Integer List
-      Nil
+      | Nil
 Integer: int
 }
 
 ast ListB {
 List: Cons Integer List
-      Nil
+      | Nil
 Integer: int
 }
 
