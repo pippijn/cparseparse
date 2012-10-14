@@ -22,20 +22,23 @@ with sexp
 
 open ExtFormat
 
+let f = fprintf
+
 class print = object (self : 'a)
-  method program = ()
-  method definition = function
-    Ast (nm, nodes) -> ()
+  method program pp = f pp "@[<v>%a@]@;@." (pp_list self # definition pp_space_sep)
+  method definition pp x =
+    match x with
+    Ast (nm, nodes) -> f pp "@[<v>@[<h>ast@ %s@]@;{@[<v 2>@;@[<v>%a@]@]@;}@]@;" nm (pp_list self # ast_node pp_space_sep) nodes
   | Map (nm, types, nodes) -> ()
-  method ast_node ((nm, node) : (unit * unit)) = ()
-  method rewrite_node ((nm, clauses) : (unit * unit))  = ()
-  method rewrite_clause ((ltree, rtree) : (unit * unit)) = ()
-  method node = function
-    CustomNode clauses -> ()
-  | NativeNode name -> ()
-  method type_decl (lst : unit) = ()
-  method ast_clause (trees : unit) = ()
-  method topl_tree (constr : unit) = ()
+  method ast_node pp (nm, node) = f pp "@[<hov>%s:@ %a@]" nm self # node node
+  method rewrite_node () ((nm, clauses) : (unit * unit))  = ()
+  method rewrite_clause () ((ltree, rtree) : (unit * unit)) = ()
+  method node pp = function
+    CustomNode clauses -> f pp "%a" (pp_list self # ast_clause pp_newline_bar_sep) clauses
+  | NativeNode name -> pp_print_string pp name
+  method type_decl () (lst : unit) = ()
+  method ast_clause = self # topl_tree
+  method topl_tree = (new Constr.print) # constr
 end
 
 let output_program channel s =
