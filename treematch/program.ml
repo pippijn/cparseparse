@@ -20,6 +20,8 @@ and ast_clause = topl_tree
 and topl_tree = Constr.t
 with sexp
 
+open ExtFormat
+
 class print = object (self : 'a)
   method program = ()
   method definition = function
