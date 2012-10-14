@@ -35,6 +35,11 @@ Executable cpapa
         MainIs:                 cpapa.ml
         CompiledObject:         native
 
+Executable treematch
+        Path:                   treematch
+        BuildTools:             ocamlbuild
+        MainIs:                 treematch.ml
+        CompiledObject:         native
 
 Executable runtests
         Path:                   testsuite
