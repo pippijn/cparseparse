@@ -24,7 +24,7 @@
 %token TOK_SEMICOLON
 %token TOK_BAR
 
-%token TOK_AST
+%token TOK_AST TOK_MAP
 
 %token <string> TOK_INT_LITERAL
 %token <string> TOK_CHAR_LITERAL
@@ -43,6 +43,8 @@ program
 definition
 : TOK_AST nm=TOK_UIDENT TOK_LBRACE nds=list(ast_node) TOK_RBRACE
                                                       { Program.Ast (nm, nds) }
+| TOK_MAP nm=TOK_LIDENT TOK_COLON ty=type_decl TOK_LBRACE TOK_RBRACE
+                                                    { Program.Map (nm, ty, []) }
 
 ast_node
 : nm=TOK_LABEL option(TOK_BAR) node=node { nm, node }
@@ -57,6 +59,8 @@ ast_clause
 constr
 : c=nonempty_list(TOK_UIDENT)                          { List.hd c, List.tl c }
 
+type_decl
+: t=separated_nonempty_list(TOK_BIARROW,TOK_UIDENT)                       { t }
 topl_tree
 : nm=TOK_UIDENT tree=list(tree)                         { Tree.Tree (nm,tree) }
 | TOK_LPAREN tree=topl_tree TOK_RPAREN                                 { tree }
