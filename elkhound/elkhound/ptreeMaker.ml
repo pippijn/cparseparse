@@ -87,7 +87,7 @@ let nonterms nonterms =
   Array.map nonterminal nonterms
 
 
-(* XXX: if this function changes its output, EmitCode.production_types probably
+(* XXX: if this function changes its output, EmitPtree.production_types probably
  * also needs to change *)
 let prods_by_lhs prods_by_lhs =
   Array.map (fun prods ->
