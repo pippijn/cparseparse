@@ -49,6 +49,7 @@ rule token = parse
 | "..."                                                         { TOK_ELLIPSIS }
 | "_"                                                           { TOK_ELLIPSIS }
 | ";"                                                           { TOK_SEMICOLON }
+| "|"                                                           { TOK_BAR }
 
 (* C++ comments *)
 | "//" [^ '\n']*                                                { token lexbuf }
