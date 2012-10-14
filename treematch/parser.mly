@@ -43,11 +43,15 @@ program
 definition
 : TOK_AST nm=TOK_UIDENT TOK_LBRACE nds=list(ast_node) TOK_RBRACE
                                                       { Program.Ast (nm, nds) }
-| TOK_MAP nm=TOK_LIDENT TOK_COLON ty=type_decl TOK_LBRACE TOK_RBRACE
-                                                    { Program.Map (nm, ty, []) }
+| TOK_MAP nm=TOK_LIDENT TOK_COLON ty=type_decl
+  TOK_LBRACE nds=list(rewrite_node) TOK_RBRACE
+                                                  { Program.Map (nm, ty, nds) }
 
 ast_node
 : nm=TOK_LABEL option(TOK_BAR) node=node { nm, node }
+
+rewrite_node
+: nm=TOK_LABEL option(TOK_BAR) l=separated_list(TOK_BAR,rewrite_clause) {nm, l}
 
 node
 : clauses=separated_list(TOK_BAR,ast_clause)     { Program.CustomNode clauses }
@@ -56,15 +60,20 @@ node
 ast_clause
 : t=constr { t }
 
+rewrite_clause
+: l=topl_tree TOK_BIARROW r=topl_tree                                   { l,r }
+
 constr
 : c=nonempty_list(TOK_UIDENT)                          { List.hd c, List.tl c }
 
 type_decl
 : t=separated_nonempty_list(TOK_BIARROW,TOK_UIDENT)                       { t }
+
 topl_tree
 : nm=TOK_UIDENT tree=list(tree)                         { Tree.Tree (nm,tree) }
 | TOK_LPAREN tree=topl_tree TOK_RPAREN                                 { tree }
 
 tree
 : TOK_LPAREN nm=TOK_UIDENT tree=list(tree) TOK_RPAREN  { Tree.Tree (nm, tree) }
-| nm=TOK_UIDENT                                                 { Tree.Var nm }
+| nm=TOK_UIDENT                                          { Tree.Tree (nm, []) }
+| nm=TOK_LIDENT                                                 { Tree.Var nm }
