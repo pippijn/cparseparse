@@ -30,10 +30,15 @@ let files =
   let single name =
     Printf.printf "***** Processing %s\n" name;
     let lexbuf = Lexing.from_channel (open_in name) in
-    let tokens = tokenise [] Lexer.token lexbuf in
-    List.iter (print_endline |- Token.to_string) tokens;
-    Printf.printf "***** End of %s\n" name;
-    flush stdout
+    if Options._dump_tokens then (
+      Printf.printf "***** Processing %s\n" name;
+      let tokens = tokenise [] Lexer.token lexbuf in
+      List.iter (print_endline |- Token.to_string) tokens;
+      Printf.printf "***** End of %s\n" name;
+      flush stdout)
+    else (
+      Parser.program Lexer.token lexbuf
+    )
   in
   List.iter single
 
