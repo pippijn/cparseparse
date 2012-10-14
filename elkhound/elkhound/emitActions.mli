@@ -4,7 +4,7 @@ open GrammarType
 val make_ml_action_code :
   terminal array ->
   nonterminal array ->
-  production array ->
+  production list array ->
   (production array -> production) ->
   Ast.sig_item list ->
   Ast.str_item list ->

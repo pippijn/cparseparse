@@ -44,10 +44,13 @@ let emit_parse_tree name prods_by_lhs =
   OCamlPrinter.print_implem ~output_file:out impl;
   (* TODO: with sexp *)
   ignore (Sys.command ("sed -i -e 's/type t = string;;/type t = string with sexp;;/' " ^ out));
+  ignore (Sys.command ("sed -i -e 's/type t = \\(\\w\\+\\)\\.t;;/type t = \\1.t with sexp;;/' " ^ out));
+  ignore (Sys.command ("sed -i -e 's/\\.t list;;/.t list with sexp;;/' " ^ out));
+  ignore (Sys.command ("sed -i -e 's/\\.t option;;/.t option with sexp;;/' " ^ out));
   ignore (Sys.command ("sed -i -e 's/ | SEXP;;/ with sexp;;/' " ^ out))
 
 
-let emit_user_actions name terms nonterms prods final_prod verbatims impl_verbatims =
+let emit_user_actions name terms nonterms prods_by_lhs final_prod verbatims impl_verbatims =
   (* Actions *)
   let dcl = name ^ "Actions.mli" in
   let out = name ^ "Actions.ml" in
@@ -55,7 +58,7 @@ let emit_user_actions name terms nonterms prods final_prod verbatims impl_verbat
     EmitActions.make_ml_action_code
       terms
       nonterms
-      prods
+      prods_by_lhs
       final_prod verbatims impl_verbatims
   in
 
@@ -65,13 +68,13 @@ let emit_user_actions name terms nonterms prods final_prod verbatims impl_verbat
   ignore (Sys.command ("sed -i -e 's/\\.true/.True/;s/\\.false/.False/' " ^ out))
 
 
-let emit_ptree_actions name terms nonterms prods final_prod verbatims impl_verbatims =
+let emit_ptree_actions name terms nonterms prods_by_lhs final_prod verbatims impl_verbatims =
   (* Parse Tree Actions *)
   emit_user_actions
       (name ^ "Ptree")
       terms
       (PtreeMaker.nonterms nonterms)
-      (PtreeMaker.prods prods)
+      (PtreeMaker.prods_by_lhs prods_by_lhs)
       final_prod verbatims impl_verbatims
 
 
@@ -102,11 +105,11 @@ let emit_tables name tables =
  * :: Main entry point
  ************************************************)
 
-let emit_ml name terms nonterms prods prods_by_lhs verbatims impl_verbatims tables =
+let emit_ml name terms nonterms prods_by_lhs verbatims impl_verbatims tables =
   let final_prod prods = prods.(tables.ParseTablesType.finalProductionIndex) in
 
   emit_tokens name terms;
   emit_parse_tree name prods_by_lhs;
-  emit_user_actions name terms nonterms prods final_prod verbatims impl_verbatims;
-  emit_ptree_actions name terms nonterms prods final_prod verbatims impl_verbatims;
+  emit_user_actions name terms nonterms prods_by_lhs final_prod verbatims impl_verbatims;
+  emit_ptree_actions name terms nonterms prods_by_lhs final_prod verbatims impl_verbatims;
   emit_tables name tables

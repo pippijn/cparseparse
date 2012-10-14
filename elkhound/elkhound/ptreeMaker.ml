@@ -7,6 +7,46 @@ let (|>) = BatPervasives.(|>)
 let _loc = Loc.ghost
 
 
+(* yield all tagged symbols *)
+let symbols_of_production prod =
+  List.fold_right (fun sym syms ->
+    match sym with
+    | Terminal (tag, _)
+    | Nonterminal (tag, _) when tag <> "" -> sym :: syms
+
+    | _ -> syms
+  ) prod.right []
+
+
+let is_tail_of tail head_tail =
+  let tail_syms = symbols_of_production tail in
+  let head_tail_syms = symbols_of_production head_tail in
+
+  match tail_syms, head_tail_syms with
+  (* possibly empty list *)
+  | [], [_; _] -> true
+  (* non-empty list *)
+  | [tail1], [_; tail2] -> tail1 = tail2
+  | _ -> false
+
+
+let is_left_recursion head_tail =
+  match symbols_of_production head_tail with
+  | [Nonterminal (_, nonterm); _] -> nonterm == head_tail.left
+  | _ -> false
+
+
+(* checks whether a nonterminal produces a list of another symbol *)
+let is_list_nonterminal tail head_tail =
+  is_tail_of tail head_tail
+  && is_left_recursion head_tail
+
+
+let is_option_nonterminal none some =
+  none.right = []
+  && List.length (symbols_of_production some) = 1
+
+
 let merge name = function
   | None -> None
   | Some { params = [l; r] as params } ->
@@ -47,68 +87,90 @@ let nonterms nonterms =
   Array.map nonterminal nonterms
 
 
-let counts fold_left iter prods =
-  let max_nt_index =
-    fold_left (fun max_nt_index prod ->
-      max max_nt_index prod.left.nt_index
-    ) 0 prods
-  in
-
-  let counts = Array.make (max_nt_index + 1) 0 in
-  iter (fun prod ->
-    let i = prod.left.nt_index in
-    counts.(i) <- counts.(i) + 1
-  ) prods;
-
-  counts
-
-let counts_of_array = counts Array.fold_left Array.iter
-let counts_of_list  = counts List.fold_left List.iter
-
-
 (* XXX: if this function changes its output, EmitCode.production_types probably
  * also needs to change *)
-let prods prods =
-  let counts = counts_of_array prods in
+let prods_by_lhs prods_by_lhs =
+  Array.map (fun prods ->
+    let has_merge =
+      match prods with
+      | { left = { merge = Some _ } } :: _ -> true
+      | _ -> false
+    in
 
-  Array.map (function
+    match prods with
     (* nonterminal with a single production that is a tagged terminal *)
-    | { left = { nt_index }; right = [Terminal (tag, _)] } as prod
-          when tag <> "" && counts.(nt_index) = 1 ->
-        { prod with action = Some <:expr<$lid:tag$>> }
+    | [{ right = [Terminal (tag, _) | Nonterminal (tag, _)] } as prod] when tag <> "" && not has_merge ->
+        [{ prod with action = Some <:expr<$lid:tag$>> }]
 
-    | prod ->
-        let left = nonterminal prod.left in
-        let right = List.map symbol prod.right in
+    | [tail; head_tail] when is_list_nonterminal tail head_tail && not has_merge ->
+        begin match symbols_of_production tail, symbols_of_production head_tail with
+        (* possibly empty list *)
+        | [], [head2; tail2] ->
+            let head2_tag = GrammarUtil.tag_of_symbol head2 in
+            let tail2_tag = GrammarUtil.tag_of_symbol tail2 in
+            [
+              { tail with action = Some <:expr<[]>> };
+              { head_tail with action = Some <:expr<$lid:tail2_tag$ :: $lid:head2_tag$>> };
+            ]
+        (* non-empty list *)
+        | [tail1], [head2; tail2] ->
+            let tail1_tag = GrammarUtil.tag_of_symbol tail1 in
+            let head2_tag = GrammarUtil.tag_of_symbol head2 in
+            let tail2_tag = GrammarUtil.tag_of_symbol tail2 in
+            [
+              { tail with action = Some <:expr<[$lid:tail1_tag$]>> };
+              { head_tail with action = Some <:expr<$lid:tail2_tag$ :: $lid:head2_tag$>> };
+            ]
 
-        let action =
-          (* production 0 is the synthesised start symbol *)
-          if prod.prod_index = 0 then (
-            <:expr<top>>
-          ) else (
-            let prod_name =
-              match prod.prod_name with
-              | None      -> "P" ^ string_of_int prod.prod_index
-              | Some name -> assert (name <> ""); name
-            in
+        | _ -> failwith "error in is_list_nonterminal"
+        end
 
-            let prod_variant =
-              <:expr<$uid:Config.module_name ^ "Ptree"$.$uid:left.nbase.name$.$uid:prod_name$>>
-            in
+    | [none; some] when is_option_nonterminal none some && not has_merge ->
+        begin match symbols_of_production some with
+        | [some_sym] ->
+            let some_tag = GrammarUtil.tag_of_symbol some_sym in
+            [
+              { none with action = Some <:expr<None>> };
+              { some with action = Some <:expr<Some $lid:some_tag$>> };
+            ]
 
-            List.fold_left (fun ctor sym ->
-              match sym with
-              | Nonterminal ("", _)
-              | Terminal ("", _) ->
-                  (* nothing to do for untagged symbols *)
-                  ctor
+        | _ -> failwith "error in is_option_nonterminal"
+        end
 
-              | Nonterminal (tag, _)
-              | Terminal (tag, _) ->
-                  <:expr<$ctor$ $lid:tag$>>
-            ) prod_variant prod.right
-          )
-        in
+    | prods ->
+        List.map (fun prod ->
+          let left = nonterminal prod.left in
+          let right = List.map symbol prod.right in
 
-        { prod with left; right; action = Some action; }
-  ) prods
+          let action =
+            (* production 0 is the synthesised start symbol *)
+            if prod.prod_index = 0 then (
+              <:expr<top>>
+            ) else (
+              let prod_name =
+                match prod.prod_name with
+                | None      -> "P" ^ string_of_int prod.prod_index
+                | Some name -> assert (name <> ""); name
+              in
+
+              let prod_variant =
+                <:expr<$uid:Config.module_name ^ "Ptree"$.$uid:left.nbase.name$.$uid:prod_name$>>
+              in
+
+              List.fold_left (fun ctor sym ->
+                match sym with
+                | Nonterminal ("", _)
+                | Terminal ("", _) ->
+                    (* nothing to do for untagged symbols *)
+                    ctor
+
+                | Nonterminal (tag, _)
+                | Terminal (tag, _) ->
+                    <:expr<$ctor$ $lid:tag$>>
+              ) prod_variant prod.right
+            )
+          in
+
+          { prod with left; right; action = Some action; }
+        ) prods
+  ) prods_by_lhs

@@ -17,6 +17,11 @@ let name_of_symbol = function
   | Terminal (_, term) -> name_of_terminal term
 
 
+let tag_of_symbol = function
+  | Nonterminal (tag, _)
+  | Terminal (tag, _) -> tag
+
+
 (* symbol equality ignores tags *)
 let equal_symbol a b =
   match a, b with

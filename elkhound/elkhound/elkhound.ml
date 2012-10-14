@@ -63,13 +63,12 @@ let emit_code (env, tables) =
   let open AnalysisEnvType in
   let terms = env.indexed_terms in
   let nonterms = env.indexed_nonterms in
-  let prods = env.indexed_prods in
   let prods_by_lhs = env.prods_by_lhs in
   let verbatims = env.verbatims in
   let impl_verbatims = env.impl_verbatims in
 
   if Array.length Sys.argv > 1 then
-    Timing.progress "emitting ML code" (EmitCode.emit_ml "ccparse/gr/cc" terms nonterms prods prods_by_lhs verbatims impl_verbatims) tables
+    Timing.progress "emitting ML code" (EmitCode.emit_ml "ccparse/gr/cc" terms nonterms prods_by_lhs verbatims impl_verbatims) tables
 
 
 let main () =

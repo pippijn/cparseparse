@@ -31,6 +31,13 @@ let ctyp_of_symbol = function
   | Terminal    (_,    term) -> ctyp_of_terminal term
 
 
+let ctyp_of_right_symbol head_tail =
+  PtreeMaker.symbols_of_production head_tail
+  |> List.rev
+  |> List.hd
+  |> ctyp_of_symbol
+
+
 (* XXX: if this function changes its output, PtreeMaker.prods probably
  * also needs to change *)
 let production_types has_merge prods =
@@ -42,14 +49,22 @@ let production_types has_merge prods =
   in
 
   match prods with
-  (* nonterminal with a single production that is a tagged terminal *)
-  | [{ right = [Terminal (tag, term)] }] when tag <> "" ->
-      assert (not has_merge);
-      let semtype = ctyp_of_terminal term in
-      let ty_dcl = Ast.TyDcl (_loc, "t", [], semtype, []) in
+  (* nonterminal with a single production that is a tagged symbol
+   * (and there is no merge) *)
+  | [{ right = [Terminal (tag, _) | Nonterminal (tag, _) as sym] }] when tag <> "" && not has_merge ->
+      let semtype = ctyp_of_symbol sym in
+      <:sig_item<type t = ($semtype$)>>,
+      <:str_item<type t = ($semtype$)>>
 
-      Ast.SgTyp (_loc, ty_dcl),
-      Ast.StTyp (_loc, ty_dcl)
+  | [tail; head_tail] when PtreeMaker.is_list_nonterminal tail head_tail && not has_merge ->
+      let semtype = ctyp_of_right_symbol head_tail in
+      <:sig_item<type t = ($semtype$ list)>>,
+      <:str_item<type t = ($semtype$ list)>>
+
+  | [none; some] when PtreeMaker.is_option_nonterminal none some && not has_merge ->
+      let semtype = ctyp_of_right_symbol some in
+      <:sig_item<type t = ($semtype$ option)>>,
+      <:str_item<type t = ($semtype$ option)>>
 
   | prods ->
       let types =
@@ -95,7 +110,7 @@ let production_types has_merge prods =
       let types = Ast.tyOr_of_list (merge_types @ types) in
 
       (* TODO: with sexp *)
-      <:sig_item<type t = $types$>>,
+      <:sig_item<type t = $types$ | SEXP>>,
       <:str_item<type t = $types$ | SEXP>>
 
 

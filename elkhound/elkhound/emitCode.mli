@@ -5,7 +5,6 @@ val emit_ml :
   string ->
   terminal array ->
   nonterminal array ->
-  production array ->
   production list array ->
   Ast.sig_item list ->
   Ast.str_item list -> ParseTablesType.t -> unit

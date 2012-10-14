@@ -158,16 +158,8 @@ nonterm TypeName {
 nonterm TranslationUnit {
   fun dup(n) { n }    // prevent multi-yield
 
-  -> empty
-       [Empty] { [] }
-
-  // destructive action on 't'
-  -> head:TranslationUnit tail:Declaration
-       [List] { tail :: head }
-
-  // arg!  Mozilla is littered with toplevel semicolons..
-  -> head:TranslationUnit ";"
-       [Unit] { head }
+  -> empty                                      { [] }
+  -> head:TranslationUnit tail:Declaration      { tail :: head }
 }
 
 // ------ A.4 Expressions ------
@@ -389,7 +381,7 @@ nonterm ExpressionList {
 
   -> a:AssignmentExpression
        { unimplemented 63 }
-  -> a:AssignmentExpression "," e:ExpressionList
+  -> e:ExpressionList "," a:AssignmentExpression
        { unimplemented 64 }
 }
 
@@ -899,6 +891,7 @@ nonterm ForInitStatement {
 //}
 
 nonterm Declaration {
+  -> e:EmptyDeclaration        { C0.ToNil }
   -> d:BlockDeclaration        { C0.ToNil }
   -> f:FunctionDefinition      { f }
   -> t:TemplateDeclaration     { C0.ToNil }
@@ -910,6 +903,11 @@ nonterm Declaration {
   -> a:AsmDefinition           { C0.ToNil }
   -> n:NamespaceDefinition     { C0.ToNil }
   -> n:NamespaceDecl           { C0.ToNil }
+}
+
+nonterm EmptyDeclaration {
+  // arg!  Mozilla is littered with toplevel semicolons..
+  -> ";"                       { unimplemented 206 }
 }
 
 nonterm BlockDeclaration {
@@ -2154,10 +2152,10 @@ nonterm TemplateId {
 }
 
 nonterm TemplateArgumentList {
-  -> a:TemplateArgument
+  -> head:TemplateArgument
        { unimplemented 507 }
 
-  -> a:TemplateArgument "," tail:TemplateArgumentList
+  -> tail:TemplateArgumentList "," head:TemplateArgument
        { unimplemented 507 }
 }
 
