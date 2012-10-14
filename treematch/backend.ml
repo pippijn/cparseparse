@@ -11,7 +11,8 @@ module Emit = struct
     |> Ast.stSem_of_list
 
   and definition =
-    function Program.Ast (name, nodes) ->
+    function
+    | Program.Ast (name, nodes) ->
       let first_type :: rest_types = List.map ast_node nodes in
       <:str_item<
 
@@ -21,7 +22,10 @@ module Emit = struct
         end
 
       >>
+    | Program.Map _ ->
+      <:str_item<
 
+      >>
   and ast_node (nm, nd) =
     match nd with
     | Program.CustomNode clauses ->
