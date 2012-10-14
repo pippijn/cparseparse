@@ -59,6 +59,8 @@ rule token = parse
 | "/*" ([^ '*']| "*"* [^ '*' '/'])* "*"*                        { failwith "unterminated comment" }
 
 (* identifier *)
+| "ast"                                                         { TOK_AST }
+| identifier ":"                                                { TOK_LABEL (Lexing.lexeme lexbuf) }
 | identifier                                                    { TOK_IDENT (Lexing.lexeme lexbuf) }
 
 | d+                                                            { TOK_INT_LITERAL (Lexing.lexeme lexbuf) }
