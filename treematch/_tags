@@ -1,2 +1,2 @@
 # sexplib
-"ast.ml": syntax_camlp4o, pkg_sexplib.syntax
+<{program,tree,constr}.ml>: syntax_camlp4o, pkg_sexplib.syntax
