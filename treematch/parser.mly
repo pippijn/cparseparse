@@ -30,23 +30,36 @@
 %token <string> TOK_CHAR_LITERAL
 %token <string> TOK_STRING_LITERAL
 %token <string> TOK_LABEL
-%token <string> TOK_IDENT
+%token <string> TOK_LIDENT TOK_UIDENT
 
 %token TOK_EOF
-%start<Ast.program> program
+
+%start<Program.t> program
 %%
 
 program
 : definitions=list(definition) TOK_EOF { definitions }
 
 definition
-: TOK_AST nm=TOK_IDENT TOK_LBRACE nds=list(ast_node) TOK_RBRACE { Ast.Ast (nm, nds) }
+: TOK_AST nm=TOK_UIDENT TOK_LBRACE nds=list(ast_node) TOK_RBRACE { Program.Ast (nm, nds) }
 
 ast_node
-: nm=TOK_LABEL option(TOK_BAR) clauses=separated_list(TOK_BAR,ast_clause) { nm, clauses }
+: nm=TOK_LABEL option(TOK_BAR) node=node { nm, node }
+
+node
+: clauses=separated_list(TOK_BAR,ast_clause)  { Program.CustomNode clauses }
+| nm=TOK_LIDENT { Program.NativeNode nm }
 
 ast_clause
-: t=node_tag { t }
+: t=constr { t }
 
-node_tag
-: t=list(TOK_IDENT) { t }
+constr
+: c=nonempty_list(TOK_UIDENT) { List.hd c, List.tl c }
+
+topl_tree
+: nm=TOK_UIDENT tree=list(tree) { Tree.Tree (nm,tree) }
+| TOK_LPAREN tree=topl_tree TOK_RPAREN { tree }
+
+tree
+: TOK_LPAREN nm=TOK_UIDENT tree=list(tree) TOK_RPAREN { Tree.Tree (nm, tree) }
+| nm=TOK_UIDENT { Tree.Var nm }
