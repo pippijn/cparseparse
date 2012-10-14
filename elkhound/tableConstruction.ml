@@ -73,7 +73,7 @@ let compute_actions state terminal allow_ambig sr rr =
     ConflictResolution.resolve_conflicts state terminal shift_dest reductions allow_ambig sr rr
   in
 
-  if Config.trace_conflict then (
+  if Options._trace_conflict then (
     if sr_old <> !sr || rr_old <> !rr then
       Printf.printf "%d / %d\n" !sr !rr;
   );
@@ -84,7 +84,7 @@ let compute_actions state terminal allow_ambig sr rr =
 let compute_cell_action tables state shift_dest reductions terminal =
   let open GrammarType in
 
-  if Config.trace_table then (
+  if Options._trace_table then (
     Printf.printf "state %d, on terminal %d (\"%s\") "
       (int_of_state_id state.state_id)
       terminal.term_index
@@ -99,7 +99,7 @@ let compute_cell_action tables state shift_dest reductions terminal =
       let shift_action =
         match shift_dest with
         | Some shift_dest ->
-            if Config.trace_table then (
+            if Options._trace_table then (
               Printf.printf " [shift token %d, to state %d"
                 terminal.term_index
                 (int_of_state_id shift_dest.state_id);
@@ -111,7 +111,7 @@ let compute_cell_action tables state shift_dest reductions terminal =
 
       let reduce_actions =
         List.map (fun prod ->
-          if Config.trace_table then (
+          if Options._trace_table then (
             Printf.printf "; reduce by %d"
               prod.prod_index;
           );
@@ -119,7 +119,7 @@ let compute_cell_action tables state shift_dest reductions terminal =
         ) reductions
       in
 
-      if Config.trace_table then (
+      if Options._trace_table then (
         print_string "]";
       );
 
@@ -128,14 +128,14 @@ let compute_cell_action tables state shift_dest reductions terminal =
 
       TableEncoding.encode_ambig tables set state.state_id
     ) else (
-      if Config.trace_table then (
+      if Options._trace_table then (
         print_string "(unambig)";
       );
       (* single action *)
       match shift_dest with
       | Some shift_dest ->
           assert (reductions = []);
-          if Config.trace_table then (
+          if Options._trace_table then (
             Printf.printf " shift token %d, to state %d"
               terminal.term_index
               (int_of_state_id shift_dest.state_id);
@@ -144,12 +144,12 @@ let compute_cell_action tables state shift_dest reductions terminal =
       | None ->
           match reductions with
           | [] ->
-              if Config.trace_table then (
+              if Options._trace_table then (
                 Printf.printf " error";
               );
               TableEncoding.encode_error tables
           | [prod] ->
-              if Config.trace_table then (
+              if Options._trace_table then (
                 Printf.printf " reduce by %d"
                   prod.prod_index;
               );
@@ -158,7 +158,7 @@ let compute_cell_action tables state shift_dest reductions terminal =
               failwith "logic error"
     )
   in
-  if Config.trace_table then (
+  if Options._trace_table then (
     print_newline ();
   );
   cell_action
@@ -205,7 +205,7 @@ let encode_action tables nonterms allow_ambig sr rr state terminal =
 
 
 let compute_action_row env tables nonterms terms allow_ambig sr rr state =
-  if Config.trace_conflict then (
+  if Options._trace_conflict then (
     if false then (
       PrintAnalysisEnv.print_item_set env state;
     );

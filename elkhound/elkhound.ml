@@ -72,7 +72,7 @@ let emit_code (env, tables) =
 
 
 let main () =
-  ["ccparse/gr/c++1998.gr"; "ccparse/gr/c++2011.gr"; "ccparse/gr/kandr.gr"; "ccparse/gr/gnu.gr"]
+  Options.inputs
   |> parse
   |> merge
   |> tree_parse

@@ -55,7 +55,7 @@ let make_ml_tables dat tables =
   <:sig_item<
     val parseTables : ParseTablesType.t
   >>,
-  if Config.use_table_dump then (
+  if Options._use_table_dump then (
     Some <:str_item<
       let parseTables : ParseTablesType.t =
         input_value (open_in_bin "_build/ccparse/gr/ccTables.dat")
