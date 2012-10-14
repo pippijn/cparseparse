@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: ae2f92ba50a1f0aae200185fa1a9963d) *)
+(* DO NOT EDIT (digest: 636df0f36032c30be992b30894e96a8d) *)
 module OASISGettext = struct
 # 21 "/tmp/oasis-0.3.0/src/oasis/OASISGettext.ml"
 
@@ -494,6 +494,7 @@ let package_default =
        ];
      includes =
        [
+          ("treematch", ["baselib"]);
           ("glr", ["baselib"]);
           ("elkhound", ["baselib"; "glr"]);
           ("cpapa", ["ast"; "ccparse"; "ccparse/gr"]);
@@ -505,7 +506,7 @@ let package_default =
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default package_default;;
 
-# 509 "myocamlbuild.ml"
+# 510 "myocamlbuild.ml"
 (* OASIS_STOP *)
 let tokens = [
   "ccparse/tok/c++1998.tok";
