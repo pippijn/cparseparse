@@ -31,12 +31,15 @@ let rec tokenise tokens token lexbuf =
 (* |                             Process files                             | *)
 (* +=====~~~-------------------------------------------------------~~~=====+ *)
 
+
 let files =
   let single name =
-    let lexbuf = Lexing.from_channel (open_in name) in
-    let parse () = Parser.program Lexer.token lexbuf in
+    let parse () =
+      let lexbuf = Lexing.from_channel (open_in name) in
+      Parser.program Lexer.token lexbuf in
     if Options._dump_tokens then (
       Printf.printf "***** Processing %s\n" name;
+      let lexbuf = Lexing.from_channel (open_in name) in
       let tokens = tokenise [] Lexer.token lexbuf in
       List.iter (print_endline -| Token.to_string) tokens;
       Printf.printf "***** End of %s\n" name;
@@ -47,7 +50,11 @@ let files =
     if not Options._no_emit then (
       parse () |> Backend.output_program "/dev/stdout"
     );
-
+    if Options._infer then (
+      let p = new Program.print in
+      parse () |> p # program Format.std_formatter;
+      ()
+    )
   in
   List.iter single
 
