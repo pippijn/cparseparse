@@ -3,6 +3,7 @@
 (* +=====~~~-------------------------------------------------------~~~=====+ *)
 
 let (|-) f g x = f (g x)
+let (|>) x f = f x
 
 let run f =
   Printexc.record_backtrace true;
@@ -33,6 +34,7 @@ let rec tokenise tokens token lexbuf =
 let files =
   let single name =
     let lexbuf = Lexing.from_channel (open_in name) in
+    let parse () = Parser.program Lexer.token lexbuf in
     if Options._dump_tokens then (
       Printf.printf "***** Processing %s\n" name;
       let tokens = tokenise [] Lexer.token lexbuf in
@@ -40,8 +42,12 @@ let files =
       Printf.printf "***** End of %s\n" name;
       flush stdout);
     if Options._dump_ast then (
-      Program.output_program stdout (Parser.program Lexer.token lexbuf)
-    )
+      parse () |> Program.output_program stdout
+    );
+    if not Options._no_emit then (
+      parse () |> Backend.output_program "/dev/stdout"
+    );
+
   in
   List.iter single
 
