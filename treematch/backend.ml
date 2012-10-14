@@ -1,10 +1,9 @@
 open Camlp4.PreCast
 
+let (|>) = BatPervasives.(|>)
 let _loc = Loc.ghost
 
 module OCamlPrinter = Printers.OCaml
-
-let (|>) x f = f x
 
 module Emit = struct
   let rec program definitions =

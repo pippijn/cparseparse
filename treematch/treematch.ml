@@ -1,9 +1,9 @@
+let (|>) = BatPervasives.(|>)
+let (-|) = BatPervasives.(-|)
+
 (* +=====~~~-------------------------------------------------------~~~=====+ *)
 (* |                      Some good runtime defaults                       | *)
 (* +=====~~~-------------------------------------------------------~~~=====+ *)
-
-let (|-) f g x = f (g x)
-let (|>) x f = f x
 
 let run f =
   Printexc.record_backtrace true;
@@ -38,7 +38,7 @@ let files =
     if Options._dump_tokens then (
       Printf.printf "***** Processing %s\n" name;
       let tokens = tokenise [] Lexer.token lexbuf in
-      List.iter (print_endline |- Token.to_string) tokens;
+      List.iter (print_endline -| Token.to_string) tokens;
       Printf.printf "***** End of %s\n" name;
       flush stdout);
     if Options._dump_ast then (
