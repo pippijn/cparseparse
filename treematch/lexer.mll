@@ -61,6 +61,7 @@ rule token = parse
 
 (* identifier *)
 | "ast"                                                         { TOK_AST }
+| "map"                                                         { TOK_MAP }
 | uident as nm ":"                                              { TOK_LABEL nm }
 | uident                                                        { TOK_UIDENT (Lexing.lexeme lexbuf) }
 | lident                                                        { TOK_LIDENT (Lexing.lexeme lexbuf) }

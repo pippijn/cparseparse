@@ -29,6 +29,7 @@ let to_string = function
 | TOK_SEMICOLON -> "TOK_SEMICOLON"
 | TOK_BAR -> "TOK_BAR"
 | TOK_AST -> "TOK_AST"
+| TOK_MAP -> "TOK_MAP"
 | TOK_INT_LITERAL s -> Printf.sprintf "TOK_INT_LITERAL(%s)" s
 | TOK_CHAR_LITERAL s -> Printf.sprintf "TOK_CHAR_LITERAL(%s)" s
 | TOK_STRING_LITERAL s -> Printf.sprintf "TOK_STRING_LITERAL(%s)" s
