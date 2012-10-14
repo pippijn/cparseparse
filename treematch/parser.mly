@@ -33,20 +33,20 @@
 %token <string> TOK_IDENT
 
 %token TOK_EOF
-%start<unit> program
+%start<Ast.program> program
 %%
 
 program
-: definitions=list(definition) TOK_EOF { }
+: definitions=list(definition) TOK_EOF { definitions }
 
 definition
-: TOK_AST nm=TOK_IDENT TOK_LBRACE list(ast_node) TOK_RBRACE { }
+: TOK_AST nm=TOK_IDENT TOK_LBRACE nds=list(ast_node) TOK_RBRACE { Ast.Ast (nm, nds) }
 
 ast_node
-: TOK_LABEL option(TOK_BAR) clauses=ast_clauses { }
+: nm=TOK_LABEL option(TOK_BAR) clauses=separated_list(TOK_BAR,ast_clause) { nm, clauses }
 
-ast_clauses
-: separated_list(TOK_BAR,node_tag) { }
+ast_clause
+: t=node_tag { t }
 
 node_tag
-: list(TOK_IDENT) {}
+: t=list(TOK_IDENT) { t }
