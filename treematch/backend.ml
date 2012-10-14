@@ -36,7 +36,7 @@ module Emit = struct
     | Program.CustomNode clauses ->
         <:ctyp<
 
-        $lid:nm$ = $List.map ast_clause clauses |> Ast.tyOr_of_list$
+        $lid:String.lowercase nm$ = $List.map ast_clause clauses |> Ast.tyOr_of_list$
 
         >>
     | Program.NativeNode name ->
