@@ -36,7 +36,7 @@ let files =
       Printf.printf "***** End of %s\n" name;
       flush stdout);
     if Options._dump_ast then (
-      Ast.output_program stdout (Parser.program Lexer.token lexbuf)
+      Program.output_program stdout (Parser.program Lexer.token lexbuf)
     )
   in
   List.iter single
