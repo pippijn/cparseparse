@@ -5,14 +5,14 @@
 let (|-) f g x = f (g x)
 
 let run f =
-  (* Gc.set { *)
-  (*   (Gc.get ()) with *)
-  (*   Gc.minor_heap_size = 8 * 1024 * 1024; *)
-  (* }; *)
   Printexc.record_backtrace true;
   Printexc.print f Options.inputs
 
 open Options
+
+(* +=====~~~-------------------------------------------------------~~~=====+ *)
+(* |                         Return list of tokens                         | *)
+(* +=====~~~-------------------------------------------------------~~~=====+ *)
 
 let rec tokenise tokens token lexbuf =
   let next = token lexbuf in
@@ -25,6 +25,10 @@ let rec tokenise tokens token lexbuf =
   ) else (
     tokenise (next :: tokens) token lexbuf
   )
+
+(* +=====~~~-------------------------------------------------------~~~=====+ *)
+(* |                             Process files                             | *)
+(* +=====~~~-------------------------------------------------------~~~=====+ *)
 
 let files =
   let single name =
@@ -40,5 +44,9 @@ let files =
     )
   in
   List.iter single
+
+(* +=====~~~-------------------------------------------------------~~~=====+ *)
+(* |                             Run our tool                              | *)
+(* +=====~~~-------------------------------------------------------~~~=====+ *)
 
 let () = run files

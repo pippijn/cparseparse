@@ -1,4 +1,9 @@
 open Parser
+
+(* +=====~~~-------------------------------------------------------~~~=====+ *)
+(* |                      Printable version of token                       | *)
+(* +=====~~~-------------------------------------------------------~~~=====+ *)
+
 let to_string = function
 | TOK_LPAREN -> "TOK_LPAREN"
 | TOK_RPAREN -> "TOK_RPAREN"
