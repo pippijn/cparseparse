@@ -16,4 +16,4 @@ let _i = !Priv._i
 let _infer = !Priv._infer
 let _dump_ast = !Priv._dump_ast
 
-let inputs = !Priv.inputs
+let inputs = List.rev !Priv.inputs
