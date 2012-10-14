@@ -20,6 +20,22 @@ and ast_clause = topl_tree
 and topl_tree = Constr.t
 with sexp
 
+class print = object (self : 'a)
+  method program = ()
+  method definition = function
+    Ast (nm, nodes) -> ()
+  | Map (nm, types, nodes) -> ()
+  method ast_node ((nm, node) : (unit * unit)) = ()
+  method rewrite_node ((nm, clauses) : (unit * unit))  = ()
+  method rewrite_clause ((ltree, rtree) : (unit * unit)) = ()
+  method node = function
+    CustomNode clauses -> ()
+  | NativeNode name -> ()
+  method type_decl (lst : unit) = ()
+  method ast_clause (trees : unit) = ()
+  method topl_tree (constr : unit) = ()
+end
+
 let output_program channel s =
   Sexplib.Sexp.output_hum channel (sexp_of_program s);
   output_char channel '\n'
