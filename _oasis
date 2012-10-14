@@ -38,7 +38,7 @@ Executable cpapa
 Executable treematch
         Path:                   treematch
         BuildTools:             ocamlbuild
-        BuildDepends:           sexplib
+        BuildDepends:           sexplib,camlp4,camlp4.lib
         MainIs:                 treematch.ml
         CompiledObject:         native
 
