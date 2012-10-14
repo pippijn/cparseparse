@@ -67,10 +67,16 @@ module Emit = struct
  | Tree.Const (Tree.Int i) -> <:patt<$int:string_of_int i$>>
 
  and exTree t = function
- | Tree.Tree (nm, lst) -> <:expr< $uid:t$ . $uid:nm$ $List.map (exTree t) lst |> Ast.exCom_of_list$>>
+ | Tree.Tree (nm, lst) -> constr t (nm, lst)
  | Tree.Var nm -> <:expr< $lid:nm$ >>
  | Tree.Const (Tree.String str) -> <:expr<$str:str$>>
  | Tree.Const (Tree.Int i) -> <:expr<$int:string_of_int i$>>
+
+ and constr t (nm, lst) =
+   let e = List.map (exTree t) lst |> Ast.exCom_of_list in
+   List.fold_left (fun e1 e2 -> <:expr< $e1$ $e2$ >>) <:expr< $uid:t$ . $uid:nm$>>
+     (Ast.list_of_expr e [])
+
 end
 
 let output_program file program =
