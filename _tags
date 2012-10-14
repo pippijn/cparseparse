@@ -1,6 +1,0 @@
-# tags
-"glr": include
-"tok": include
-<*.ml{,i}>: syntax_camlp4o, pkg_sexplib.syntax, package(dyp)
-<main.*>: package(dyp)
-"oink-stack": -traverse
