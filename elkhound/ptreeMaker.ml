@@ -87,6 +87,12 @@ let nonterms nonterms =
   Array.map nonterminal nonterms
 
 
+let check_noname prod =
+  match prod.prod_name with
+  | None -> ()
+  | Some name -> failwith ("uselessly defined production name \"" ^ name ^ "\"")
+
+
 (* XXX: if this function changes its output, EmitPtree.production_types probably
  * also needs to change *)
 let prods_by_lhs prods_by_lhs =
@@ -100,9 +106,12 @@ let prods_by_lhs prods_by_lhs =
     match prods with
     (* nonterminal with a single production that is a tagged terminal *)
     | [{ right = [Terminal (tag, _) | Nonterminal (tag, _)] } as prod] when tag <> "" && not has_merge ->
+        check_noname prod;
         [{ prod with action = Some <:expr<$lid:tag$>> }]
 
     | [tail; head_tail] when is_list_nonterminal tail head_tail && not has_merge ->
+        check_noname tail;
+        check_noname head_tail;
         begin match symbols_of_production tail, symbols_of_production head_tail with
         (* possibly empty list *)
         | [], [head2; tail2] ->
