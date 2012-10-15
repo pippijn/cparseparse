@@ -1,4 +1,4 @@
-open Batteries_uni
+open BatPervasives
 open GrammarAst
 open GrammarType
 open Merge
@@ -132,7 +132,7 @@ let spec_func funcs name formal_count =
       List.find (fun (SpecFunc (fname, _, _)) -> fname = name) funcs
     in
 
-    if not (List.memq (List.length params) formal_count) then
+    if List.length params <> formal_count then
       failwith ("incorrect number of formal parameters for '" ^ name ^ "' function");
 
     let code = expr_of_string _loc code in
@@ -171,16 +171,14 @@ let collect_terminals decls types precs =
         tbase = {
           name;
           semtype;
-          dup = spec_func funcs "dup" [1];
-          (* not specified is ok, since it means the 'del' function
-           * doesn't use its parameter *)
-          del = spec_func funcs "del" [0; 1];
+          dup = spec_func funcs "dup" 1;
+          del = spec_func funcs "del" 1;
           reachable = false;
         };
         alias;
         precedence;
         associativity;
-        classify = spec_func funcs "classify" [1];
+        classify = spec_func funcs "classify" 1;
         term_index = code;
       } in
 
@@ -193,14 +191,14 @@ let collect_terminals decls types precs =
   (* track what terminals have codes *)
   let has_code = BitSet.create (max_code + 1) in
   List.iter (fun (TermDecl (code, _, _)) ->
-    BitSet.set has_code code;
+    BitSet.add has_code code;
   ) decls;
 
   let terminals =
     (* fill in any gaps in the code space; this is required because
      * later analyses assume the terminal code space is dense *)
-    Enum.fold (fun terminals i ->
-      if BitSet.is_set has_code i then
+    BatEnum.fold (fun terminals i ->
+      if BitSet.mem has_code i then
         terminals
       else
         let dummy_name = "__dummy_filler_token" ^ string_of_int i in
@@ -211,7 +209,7 @@ let collect_terminals decls types precs =
           }
         } in
         StringMap.add dummy_name dummy terminals
-    ) terminals (Enum.seq 1 ((+) 1) ((>=) max_code))
+    ) terminals (1 -- max_code)
   in
 
   terminals
@@ -239,13 +237,13 @@ let collect_nonterminals nonterms term_count =
             nbase = {
               name;
               semtype = BatOption.map (ctyp_of_string _loc) semtype;
-              dup = spec_func funcs "dup" [1];
-              del = spec_func funcs "del" [0; 1];
+              dup = spec_func funcs "dup" 1;
+              del = spec_func funcs "del" 1;
               reachable = false;
             };
-            merge = spec_func funcs "merge" [2];
-            keep  = spec_func funcs "keep"  [1];
-            maximal = (match spec_func funcs "maximal" [0] with None -> false | Some _ -> true);
+            merge = spec_func funcs "merge" 2;
+            keep  = spec_func funcs "keep"  1;
+            maximal = (match spec_func funcs "maximal" 0 with None -> false | Some _ -> true);
             (* we simply store the (validated) string references here, because
              * it is very hard to have cyclic immutable data structures *)
             subset_names = subsets;
