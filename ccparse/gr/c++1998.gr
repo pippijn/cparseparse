@@ -127,7 +127,7 @@ impl_verbatim {
 
 
 nonterm(C0.topl list) File {
-  -> t:TranslationUnit [Unit] { List.rev t }
+  -> t:TranslationUnit { List.rev t }
 }
 
 // 4/20/04: Removed long-since defunct EnterScope and LeaveScope
@@ -345,29 +345,25 @@ nonterm PostfixExpression {
 nonterm CtorExpressionType {
   //-> ColonColonOpt NestedNameSpecifier "template" TemplateId;
 
-  -> n:PQTypeName        { unimplemented 46 }
-  -> "char"              { unimplemented 47 }
-  -> "wchar_t"           { unimplemented 48 }
-  -> "bool"              { unimplemented 49 }
-  -> "short"             { unimplemented 50 }
-  -> "int"               { unimplemented 51 }
-  -> "long"              { unimplemented 52 }
-  -> "signed"            { unimplemented 53 }
-  -> "unsigned"          { unimplemented 54 }
-  -> "float"             { unimplemented 55 }
-  -> "double"            { unimplemented 56 }
-
-  // std has this, but I don't think it makes sense
-  //
-  // 2005-04-16: but it is used in real code, e.g., in/k0043.cc
-  -> "void"              { unimplemented 57 }
+  -> n:PQTypeName        [TypeName] { unimplemented 46 }
+  -> "char"              [Char] { unimplemented 47 }
+  -> "wchar_t"           [WCharT] { unimplemented 48 }
+  -> "bool"              [Bool] { unimplemented 49 }
+  -> "short"             [Short] { unimplemented 50 }
+  -> "int"               [Int] { unimplemented 51 }
+  -> "long"              [Long] { unimplemented 52 }
+  -> "signed"            [Signed] { unimplemented 53 }
+  -> "unsigned"          [Unsigned] { unimplemented 54 }
+  -> "float"             [Float] { unimplemented 55 }
+  -> "double"            [Double] { unimplemented 56 }
+  -> "void"              [Void] { unimplemented 57 }
 }
 
 nonterm CastKeyword {
-  -> "dynamic_cast"      { unimplemented 58 }
-  -> "static_cast"       { unimplemented 59 }
-  -> "reinterpret_cast"  { unimplemented 60 }
-  -> "const_cast"        { unimplemented 61 }
+  -> "dynamic_cast"      [DynamicCast] { unimplemented 58 }
+  -> "static_cast"       [StaticCast] { unimplemented 59 }
+  -> "reinterpret_cast"  [ReinterpretCast] { unimplemented 60 }
+  -> "const_cast"        [ConstCast] { unimplemented 61 }
 }
 
 // here, and everywhere else that FakeList is used, I use right
@@ -891,18 +887,18 @@ nonterm ForInitStatement {
 //}
 
 nonterm Declaration {
-  -> e:EmptyDeclaration        { C0.ToNil }
-  -> d:BlockDeclaration        { C0.ToNil }
-  -> f:FunctionDefinition      { f }
-  -> t:TemplateDeclaration     { C0.ToNil }
-  -> d:ExplicitInstantiation   { C0.ToNil }
+  -> e:EmptyDeclaration        [Empty] { C0.ToNil }
+  -> d:BlockDeclaration        [Block] { C0.ToNil }
+  -> f:FunctionDefinition      [Function] { f }
+  -> t:TemplateDeclaration     [Template] { C0.ToNil }
+  -> d:ExplicitInstantiation   [ExplInst] { C0.ToNil }
   //-> ExplicitSpecialization  // folded into TemplateDeclaration
-  -> s:LinkageSpecification    { C0.ToNil }
+  -> s:LinkageSpecification    [LinkageSpec] { C0.ToNil }
 
   // substituted from BlockDeclaration
-  -> a:AsmDefinition           { C0.ToNil }
-  -> n:NamespaceDefinition     { C0.ToNil }
-  -> n:NamespaceDecl           { C0.ToNil }
+  -> a:AsmDefinition           [Asm] { C0.ToNil }
+  -> n:NamespaceDefinition     [NamespaceDefn] { C0.ToNil }
+  -> n:NamespaceDecl           [NamespaceDecl] { C0.ToNil }
 }
 
 nonterm EmptyDeclaration {
@@ -975,11 +971,11 @@ nonterm DeclSpecifier {
   -> m1:UberModifierSeq n:PQTypeName m2:UberModifierSeqOpt
        [PreModName] { unimplemented 212 }
 
-  // TS_simple: triggered by UberTypeKeyword
-  -> k1:UberTypeKeyword m2:UberTypeAndModifierSeqOpt
+  // TS_simple: triggered by SimpleTypeSpecifier
+  -> k1:SimpleTypeSpecifier m2:UberTypeAndModifierSeqOpt
        [SimpleName] { unimplemented 213 }
 
-  -> m1:UberModifierSeq k1:UberTypeKeyword m2:UberTypeAndModifierSeqOpt
+  -> m1:UberModifierSeq k1:SimpleTypeSpecifier m2:UberTypeAndModifierSeqOpt
        [PreModSimpleName] { unimplemented 214 }
 
   // TS_elaborated, TS_classSpec, TS_enumSpec:
@@ -1020,7 +1016,7 @@ nonterm UberModifierSeqOpt {
 nonterm UberTypeAndModifierSeqOpt {
   -> empty                                          [Empty] { unimplemented 0 }
   -> s:UberTypeAndModifierSeqOpt u:UberModifier     [ModSeq] { unimplemented 0 }
-  -> s:UberTypeAndModifierSeqOpt u:UberTypeKeyword  [TypeSeq] { unimplemented 0 }
+  -> s:UberTypeAndModifierSeqOpt u:SimpleTypeSpecifier  [TypeSeq] { unimplemented 0 }
 }
 
 
@@ -1039,7 +1035,7 @@ nonterm UberCVQualifierSeqOpt {
 nonterm UberTypeAndCVQualifierSeqOpt {
   -> empty                                             { unimplemented 231 }
   -> s:UberTypeAndCVQualifierSeqOpt u:UberCVQualifier  { unimplemented 232 }
-  -> s:UberTypeAndCVQualifierSeqOpt u:UberTypeKeyword  { unimplemented 233 }
+  -> s:UberTypeAndCVQualifierSeqOpt u:SimpleTypeSpecifier  { unimplemented 233 }
 }
 
 
@@ -1073,28 +1069,28 @@ nonterm UberCVQualifier {
 }
 
 // keywords that name a type, or part of one
-nonterm UberTypeKeyword {
-  -> "char"      { unimplemented 248 }
-  -> "wchar_t"   { unimplemented 249 }
-  -> "bool"      { unimplemented 250 }
-  -> "short"     { unimplemented 251 }
-  -> "int"       { unimplemented 252 }
-  -> "long"      { unimplemented 253 }
-  -> "signed"    { unimplemented 254 }
-  -> "unsigned"  { unimplemented 255 }
-  -> "float"     { unimplemented 256 }
-  -> "double"    { unimplemented 257 }
-  -> "void"      { unimplemented 258 }
+nonterm SimpleTypeSpecifier {
+  -> "char"              [Char] { unimplemented 47 }
+  -> "wchar_t"           [WCharT] { unimplemented 48 }
+  -> "bool"              [Bool] { unimplemented 49 }
+  -> "short"             [Short] { unimplemented 50 }
+  -> "int"               [Int] { unimplemented 51 }
+  -> "long"              [Long] { unimplemented 52 }
+  -> "signed"            [Signed] { unimplemented 53 }
+  -> "unsigned"          [Unsigned] { unimplemented 54 }
+  -> "float"             [Float] { unimplemented 55 }
+  -> "double"            [Double] { unimplemented 56 }
+  -> "void"              [Void] { unimplemented 57 }
 }
 
 
 nonterm ElaboratedTypeSpecifier {
-  -> k:ClassKey n:PQTypeName    { unimplemented 259 }
-  -> "enum" n:PQTypeName        { unimplemented 260 }
+  -> k:ClassKey n:PQTypeName    [Class] { unimplemented 259 }
+  -> "enum" n:PQTypeName        [Enum] { unimplemented 260 }
 
   // cppstd grammar ensures "typename" is only applied to qualified
   // names, but I find that more natural to enforce during typechecking
-  -> "typename" n:PQTypeName    { unimplemented 261 }
+  -> "typename" n:PQTypeName    [Typename] { unimplemented 261 }
 }
 
 
@@ -1110,10 +1106,10 @@ nonterm TypeSpecifier {
        { unimplemented 263 }
 
   // TS_simple
-  -> k1:UberTypeKeyword m2:UberTypeAndCVQualifierSeqOpt
+  -> k1:SimpleTypeSpecifier m2:UberTypeAndCVQualifierSeqOpt
        { unimplemented 264 }
 
-  -> m1:UberCVQualifierSeq k1:UberTypeKeyword m2:UberTypeAndCVQualifierSeqOpt
+  -> m1:UberCVQualifierSeq k1:SimpleTypeSpecifier m2:UberTypeAndCVQualifierSeqOpt
        { unimplemented 265 }
 
   // TS_elaborated, TS_classSpec, TS_enumSpec
@@ -1500,10 +1496,10 @@ nonterm DirectAbstractDeclarator {
 
 
 nonterm ParameterDeclarationClause {
-  -> p:ParameterDeclarationList              // some args
-       { unimplemented 345 }
   -> empty                                   // no args
        { unimplemented 346 }
+  -> p:ParameterDeclarationList              // some args
+       { unimplemented 345 }
 }
 
 // little bending over backwards here to accomodate FakeList
@@ -1595,13 +1591,13 @@ nonterm FunctionDefinition {
   // ordinary function:
   // return type      name/params   body
   -> r:DeclSpecifier  d:FDDeclarator  b:FunctionBody
-       { C0.ToDef
+       [Ordinary] { C0.ToDef
          ((), C0.DfFun ((), C0.TyId ((), "test"), C0.AnNil, "func", C0.TaNil, C0.BlNil), C0.ToNil) }
 
   // 2005-03-09: I didn't even realize this was possible for non-ctors
   // return type      name/params            body            handlers
   -> r:DeclSpecifier  d:FDDeclarator  "try"  b:FunctionBody  h:HandlerSeq
-       { C0.ToNil }
+       [OrdinaryTry] { C0.ToNil }
 
   // I've now substituted the RHSs of CDtorModifierOpt, to eliminiate
   // a few s/r conflicts at the toplevel of parsing (where they are
@@ -1610,16 +1606,16 @@ nonterm FunctionDefinition {
   // constructor, destructor or conversion operator
   // "explicit"?         name/params     member inits          body
   -> m:CDtorModifierSeq  d:FDDeclarator  c:CtorInitializerOpt  b:FunctionBody
-       { C0.ToNil }
+       [CDtorMod] { C0.ToNil }
   -> /*no modifier*/     d:FDDeclarator  c:CtorInitializerOpt  b:FunctionBody
-       { C0.ToNil }
+       [CDtor] { C0.ToNil }
 
   // ctor with a try block
   // "explicit"?         name/params          member inits         body           handlers
   -> e:CDtorModifierSeq  d:FDDeclarator "try" c:CtorInitializerOpt b:FunctionBody h:HandlerSeq
-       { C0.ToNil }
+       [CDtorTryMod] { C0.ToNil }
   -> /*no modifier*/     d:FDDeclarator "try" c:CtorInitializerOpt b:FunctionBody h:HandlerSeq
-       { C0.ToNil }
+       [CDtorTry] { C0.ToNil }
 }
 
 // function definition declarator; must have D_func at the
@@ -1628,7 +1624,7 @@ nonterm FunctionDefinition {
 nonterm FDDeclarator {
   fun keep(d) { true }
 
-  -> d:Declarator    [Decl] { d }
+  -> d:Declarator    { d }
 }
 
 nonterm FunctionBody -> s:CompoundStatement
@@ -1676,9 +1672,9 @@ nonterm ClassHeadName {
 }
 
 nonterm ClassKey {
-  -> "class"       { unimplemented 381 }
-  -> "struct"      { unimplemented 382 }
-  -> "union"       { unimplemented 383 }
+  -> "class"       [Class] { unimplemented 381 }
+  -> "struct"      [Struct] { unimplemented 382 }
+  -> "union"       [Union] { unimplemented 383 }
 }
 
 
@@ -2212,18 +2208,23 @@ nonterm UnqualifiedDeclarator {
 
 
 nonterm ThrowExpression {
-  -> "throw"                         { unimplemented 523 }
-  -> "throw" e:AssignmentExpression  { unimplemented 524 }
+  -> "throw"                         [ReThrow] { unimplemented 523 }
+  -> "throw" e:AssignmentExpression  [Throw] { unimplemented 524 }
 }
 
 
 nonterm ExceptionSpecificationOpt {
   -> empty
        { unimplemented 525 }
+  -> s:ExceptionSpecification
+       { unimplemented 525 }
+}
+
+nonterm ExceptionSpecification {
   -> "throw" "(" ")"
-       { unimplemented 526 }
+       [NoThrow] { unimplemented 526 }
   -> "throw" "(" list:TypeIdList ")"
-       { unimplemented 527 }
+       [Throw] { unimplemented 527 }
 }
 
 nonterm TypeIdList {

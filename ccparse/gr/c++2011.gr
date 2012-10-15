@@ -40,7 +40,7 @@ nonterm Literal {
 }
 
 // new character types
-nonterm UberTypeKeyword {
+nonterm SimpleTypeSpecifier {
   -> "char16_t"      { unimplemented 248 }
   -> "char32_t"      { unimplemented 248 }
 }
@@ -64,13 +64,12 @@ nonterm NoexceptExpression {
   -> "noexcept" "(" e:ParenthesizedExpression ")";
 }
 
-nonterm ExceptionSpecificationOpt {
+nonterm ExceptionSpecification {
   -> s:NoexceptSpecification;
 }
 
 nonterm NoexceptSpecification {
-  -> "noexcept" { () }
-  -> "noexcept" "(" e:ConstantExpression ")";
+  -> "noexcept" [NoExcept] { () }
 }
 
 // variadic templates

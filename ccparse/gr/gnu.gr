@@ -469,7 +469,7 @@ nonterm Statement {
 // ----------- gcc/C99 complex/imaginary ----------
 // http://gcc.gnu.org/onlinedocs/gcc-3.1/gcc/Complex.html
 // C99 6.2.5p11, 6.7.2, Annex G
-nonterm UberTypeKeyword {
+nonterm SimpleTypeSpecifier {
   -> "_Complex"      { unimplemented 606 }
   -> "_Imaginary"    { unimplemented 607 }
 }
