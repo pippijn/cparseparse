@@ -184,26 +184,26 @@ nonterm CompoundStatement {
   //   if (0) gronk: printf("hello\n");
   // The then branch would only contain the gronk label, whereas, at
   // least in gcc, it also includes the printf() call.
-  -> seq:CompoundStmtHelper lesl:LabeledEmptyStatementList "}"
+  -> "{" seq:CompoundStmtHelper lesl:LabelledEmptyStatementList "}"
        { unimplemented 562 }
 }
 
 // a sequence of labels with no statement following, not even a skip
-nonterm LabeledEmptyStatementList {
-  -> n:LabelAndColon s:LabeledEmptyStatementListOpt
+nonterm LabelledEmptyStatementList {
+  -> n:LabelAndColon s:LabelledEmptyStatementListOpt
        { unimplemented 563 }
-  -> "case" e:ConstantExpression ":" s:LabeledEmptyStatementListOpt
+  -> "case" e:ConstantExpression ":" s:LabelledEmptyStatementListOpt
        { unimplemented 564 }
-  -> "case" e:ConstantExpression "..." e2:ConstantExpression ":" s:LabeledEmptyStatementListOpt
+  -> "case" e:ConstantExpression "..." e2:ConstantExpression ":" s:LabelledEmptyStatementListOpt
        { unimplemented 565 }
-  -> "default" ":" s:LabeledEmptyStatementListOpt
+  -> "default" ":" s:LabelledEmptyStatementListOpt
        { unimplemented 566 }
 }
 
-nonterm LabeledEmptyStatementListOpt {
+nonterm LabelledEmptyStatementListOpt {
   -> empty
        { unimplemented 567 }
-  -> s:LabeledEmptyStatementList
+  -> s:LabelledEmptyStatementList
        { unimplemented 568 }
 }
 
@@ -241,8 +241,8 @@ nonterm TypeofTypeSpecifier {
   // type (of a type) called 'x'
   fun merge(l,r) { unimplemented 573 }
 
-  -> e:TypeofExpr       { unimplemented 574 }
-  -> t:TypeofType       { unimplemented 575 }
+  -> e:TypeofExpr       [TypeofExpr] { unimplemented 574 }
+  -> t:TypeofType       [TypeofType] { unimplemented 575 }
 }
 
 
@@ -810,7 +810,7 @@ nonterm NamespaceDecl {
   contexts in which the modified construct would appear, so I could
   better predict the effect of the modifications.
 
-    * right after ":" in labeled statement (did this with LabelAndColon)
+    * right after ":" in labelled statement (did this with LabelAndColon)
 
     * after ClassKey and "enum" where they occur
 
@@ -891,20 +891,20 @@ nonterm NamespaceDecl {
 
     added attr to UberModifier                                 75   176
 
-    removed attr after labeled statements                      75   110
+    removed attr after labelled statements                     75   110
 
     added attr to UberCVQualifier                              84   114
 
     added attr after "," in InitDeclarator                     84   114
 
-    added attr after ":" in LabeledEmptyStatementList          84   116
+    added attr after ":" in LabelledEmptyStatementList         84   116
 
-    removed attr after ":" in LabeledEmptyStatementList        84   114
+    removed attr after ":" in LabelledEmptyStatementList       84   114
 
     created LabelAndColon in cc.gr                             81   108
     added attrs after LabelAndColon                            83   108
     added attrs after LabelAndColon with high precedence       82   108
-    added LabelAndColon to the LabeledEmptyStatementList       82   108
+    added LabelAndColon to the LabelledEmptyStatementList      82   108
 
 */
 

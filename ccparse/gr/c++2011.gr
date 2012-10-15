@@ -19,8 +19,8 @@ nonterm TypeSpecifier {
 nonterm DecltypeTypeSpecifier {
   fun merge(l,r) { unimplemented 0 }
 
-  -> e:DecltypeExpr;
-  -> t:DecltypeType;
+  -> e:DecltypeExpr [DeclTypeExpr];
+  -> t:DecltypeType [DeclTypeType];
 }
 
 
@@ -41,23 +41,23 @@ nonterm Literal {
 
 // new character types
 nonterm SimpleTypeSpecifier {
-  -> "char16_t"      { unimplemented 248 }
-  -> "char32_t"      { unimplemented 248 }
+  -> "char16_t"      [Char16T] { unimplemented 248 }
+  -> "char32_t"      [Char32T] { unimplemented 248 }
 }
 
 // constexpr
 nonterm UberModifier {
-  -> "constexpr"     { unimplemented 248 }
+  -> "constexpr"     [Constexpr] { unimplemented 248 }
 }
 
 nonterm CDtorModifier {
   // TODO: this gives 19 RR conflicts
-  -> "constexpr"     { unimplemented 248 }
+  -> "constexpr"     [Constexpr] { unimplemented 248 }
 }
 
 // noexcept
 nonterm UnaryExpression {
-  -> e:NoexceptExpression;
+  -> e:NoexceptExpression [NoExcept];
 }
 
 nonterm NoexceptExpression {

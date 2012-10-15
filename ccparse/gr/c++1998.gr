@@ -55,7 +55,7 @@
 
 
 // expected statistics
-option shift_reduce_conflicts 50;
+option shift_reduce_conflicts 49;
 option reduce_reduce_conflicts 73;
 option unreachable_nonterminals 1;
 option unreachable_terminals 8;
@@ -752,7 +752,7 @@ nonterm LabelAndColon {
        { unimplemented 171 }
 }
 
-// labeled-statement
+// labelled-statement
 nonterm Statement {
   // ambiguous:
   //   x(y);
@@ -760,68 +760,57 @@ nonterm Statement {
   // or a BlockDeclaration (declare variable y, of type x)
   fun merge(l,r) { unimplemented 172 }
 
-  -> n:LabelAndColon s:Statement
-       { unimplemented 173 }
+  -> n:LabelAndColon s:Statement [Label] { unimplemented 173 }
 
-  -> "case" e:ConstantExpression ":" s:Statement
-       { unimplemented 174 }
+  -> "case" e:ConstantExpression ":" s:Statement [Case] { unimplemented 174 }
 
-  -> "default" ":" s:Statement
-       { unimplemented 175 }
+  -> "default" ":" s:Statement [Default] { unimplemented 175 }
 
   // expression-statement
-  -> s:ExpressionStatement
-       { unimplemented 176 }
+  -> s:ExpressionStatement [Expr] { unimplemented 176 }
 
   // compound-statement
-  -> s:CompoundStatement
-       { unimplemented 177 }
+  -> s:CompoundStatement [Compound] { unimplemented 177 }
 
   // selection-statement
   // (prefer to shift "else" over reducing by this rule)
-  -> "if" "(" e:Condition ")" s:Statement     precedence(TOK_PREFER_SHIFT)
-       { unimplemented 178 }
+  -> "if" "(" e:Condition ")" s:Statement     precedence(TOK_PREFER_SHIFT) [If] { unimplemented 178 }
 
   // if-then-else preferred over if-then when ambiguous
-  -> "if" "(" e:Condition ")" s1:Statement "else" s2:Statement
-       { unimplemented 179 }
+  -> "if" "(" e:Condition ")" s1:Statement "else" s2:Statement [IfElse] { unimplemented 179 }
 
-  -> "switch" "(" e:Condition ")" s:Statement
-       { unimplemented 180 }
+  -> "switch" "(" e:Condition ")" s:Statement [Switch] { unimplemented 180 }
 
-  -> "while" "(" e:Condition ")" s:Statement
-       { unimplemented 181 }
+  -> "while" "(" e:Condition ")" s:Statement [While] { unimplemented 181 }
 
-  -> "do" s:Statement "while" "(" e:Expression ")" ";"
-       { unimplemented 182 }
+  -> "do" s:Statement "while" "(" e:Expression ")" ";" [DoWhile] { unimplemented 182 }
 
   // I might like to rework this so both semicolons appear here instead
   // of buried in ForInitStatement; it's this way now because that is how
   // the standard does it.
-  -> "for" "(" s1:ForInitStatement c:ConditionOpt ";" e:ExpressionOpt ")" s2:Statement
-       { unimplemented 183 }
+  -> "for" "(" s1:ForInitStatement c:ConditionOpt ";" e:ExpressionOpt ")" s2:Statement [For] { unimplemented 183 }
 
-  -> "break" ";"                        { unimplemented 184 }
+  -> "break" ";"                        [Break] { unimplemented 184 }
 
-  -> "continue" ";"                     { unimplemented 185 }
+  -> "continue" ";"                     [Continue] { unimplemented 185 }
 
-  -> "return" e:Expression ";"          { unimplemented 186 }
+  -> "return" e:Expression ";"          [ReturnExpr] { unimplemented 186 }
 
-  -> "return" ";"                       { unimplemented 187 }
+  -> "return" ";"                       [ReturnVoid] { unimplemented 187 }
 
-  -> "goto" n:Identifier ";"            { unimplemented 188 }
+  -> "goto" n:Identifier ";"            [Goto] { unimplemented 188 }
 
   // declaration-statement
-  -> d:BlockDeclaration                 { unimplemented 189 }
+  -> d:BlockDeclaration                 [Decl] { unimplemented 189 }
 
   // try-block
-  -> s:TryBlock                         { unimplemented 190 }
+  -> s:TryBlock                         [Try] { unimplemented 190 }
 
   // assembly statement
-  -> a:AsmDefinition                    { unimplemented 191 }
+  -> a:AsmDefinition                    [Asm] { unimplemented 191 }
 
   // namespace declaration
-  -> n:NamespaceDecl                    { unimplemented 192 }
+  -> n:NamespaceDecl                    [Namespace] { unimplemented 192 }
 }
 
 nonterm ExpressionStatement {
@@ -830,7 +819,7 @@ nonterm ExpressionStatement {
 }
 
 nonterm CompoundStatement {
-  -> seq:CompoundStmtHelper "}"
+  -> "{" seq:CompoundStmtHelper "}"
        { unimplemented 195 }
 }
 
@@ -839,7 +828,7 @@ nonterm CompoundStmtHelper {
   // its location, instead of the location of the first statement inside
   // (and in fact since 'empty' has no location, I wouldn't even have
   // been able to get that..)
-  -> "{" empty
+  -> empty
        { unimplemented 196 }
   -> c:CompoundStmtHelper s:Statement a:AnnotationOpt
        { unimplemented 197 }
@@ -1042,30 +1031,30 @@ nonterm UberTypeAndCVQualifierSeqOpt {
 // modifiers
 nonterm UberModifier {
   // storage-class-specifier
-  -> "auto"      { unimplemented 234 }
-  -> "register"  { unimplemented 235 }
-  -> "static"    { unimplemented 236 }
-  -> "extern"    { unimplemented 237 }
-  -> "mutable"   { unimplemented 238 }
+  -> "auto"      [Auto] { unimplemented 234 }
+  -> "register"  [Register] { unimplemented 235 }
+  -> "static"    [Static] { unimplemented 236 }
+  -> "extern"    [Extern] { unimplemented 237 }
+  -> "mutable"   [Mutable] { unimplemented 238 }
 
   // function-specifier
-  -> "inline"    { unimplemented 239 }
-  -> "virtual"   { unimplemented 240 }
-  //-> "explicit"  { unimplemented 241 }    // can only appear in CDtorModifier
+  -> "inline"    [Inline] { unimplemented 239 }
+  -> "virtual"   [Virtual] { unimplemented 240 }
+  //-> "explicit"  { unimplemented 241 }    // can only appear in CDtorModifie[Explicit] r
 
   // decl-specifier terminals
-  -> "friend"    { unimplemented 242 }
-  -> "typedef"   { unimplemented 243 }
+  -> "friend"    [Friend] { unimplemented 242 }
+  -> "typedef"   [Typedef] { unimplemented 243 }
 
   // cv-qualifier
-  -> "const"     { unimplemented 244 }
-  -> "volatile"  { unimplemented 245 }
+  -> "const"     [Const] { unimplemented 244 }
+  -> "volatile"  [Volatile] { unimplemented 245 }
 }
 
 // just the cv-qualifiers
 nonterm UberCVQualifier {
-  -> "const"     { unimplemented 246 }
-  -> "volatile"  { unimplemented 247 }
+  -> "const"     [Const] { unimplemented 246 }
+  -> "volatile"  [Volatile] { unimplemented 247 }
 }
 
 // keywords that name a type, or part of one
@@ -1432,8 +1421,8 @@ nonterm CVQualifierSeq {
 }
 
 nonterm CVQualifier {
-  -> "const"                 { "const" }
-  -> "volatile"              { "volatile" }
+  -> "const"                 [Const] { "const" }
+  -> "volatile"              [Volatile] { "volatile" }
 }
 
 
@@ -1806,12 +1795,12 @@ nonterm IdentifierOpt {
 // the set of flags here must not include "static" or "typedef"; see
 // the action function associated with MemberDeclaration's first production
 nonterm CDtorModifier {
-  -> "explicit"    { unimplemented 408 }
-  -> "virtual"     { unimplemented 409 }
-  -> "inline"      { unimplemented 410 }
+  -> "explicit"    [Explicit] { unimplemented 408 }
+  -> "virtual"     [Virtual] { unimplemented 409 }
+  -> "inline"      [Inline] { unimplemented 410 }
 
   // (in/t0527.cc) this is to allow befriending another class's constructor
-  -> "friend"      { unimplemented 411 }
+  -> "friend"      [Friend] { unimplemented 411 }
 }
 
 nonterm CDtorModifierSeq {
