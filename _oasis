@@ -65,7 +65,7 @@ Library ccparse
                                 Options,
                                 Ulexer
         CompiledObject:         native
-#        NativeOpt:              -inline 999 -unsafe -noassert -nodynlink
+#        NativeOpt:              -inline 999 -unsafe -noassert
 
 
 Library glr
@@ -82,7 +82,7 @@ Library glr
                                 PtreeNode,
                                 UserActions
         CompiledObject:         native
-#        NativeOpt:              -inline 0 -unsafe -noassert -nodynlink
+#        NativeOpt:              -inline 999 -unsafe -noassert
 
 Library ast
         Path:                   ast
@@ -93,6 +93,7 @@ Library ast
                                 Lit,
                                 Loc
         CompiledObject:         native
+#        NativeOpt:              -inline 999 -unsafe -noassert
 
 
 Library baselib
@@ -104,14 +105,18 @@ Library baselib
                                 CompressedBitSet,
                                 HashStack,
                                 ListUtil,
+                                Sched,
                                 SexpMap,
                                 SexpSet,
                                 StringMap,
                                 StringSet,
                                 Timing,
                                 Valgrind
-        CSources:               ml_BitSet.c, ml_Valgrind.c
+        CSources:               ml_BitSet.c,
+                                ml_Sched.c,
+                                ml_Valgrind.c
         CCLib:                  -lstdc++
+#        NativeOpt:              -inline 999 -unsafe -noassert
 
 
 Test runtests

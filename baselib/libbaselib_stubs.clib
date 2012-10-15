@@ -1,5 +1,6 @@
 # OASIS_START
-# DO NOT EDIT (digest: 66f61a6e312ebc23d8c3739beafd0153)
+# DO NOT EDIT (digest: 9ee45c6448aec3a8fefd88321d8bcf38)
 ml_BitSet.o
+ml_Sched.o
 ml_Valgrind.o
 # OASIS_STOP
