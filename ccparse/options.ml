@@ -12,6 +12,7 @@ module Priv = struct
   let _trivial = ref false
   let _timing = ref false
   let _xc = ref false
+  let _rt = ref false
 
   let inputs = ref []
 end
@@ -32,6 +33,7 @@ let () =
     "-trivial",		Set Priv._trivial,		" use trivial user actions";
     "-timing",		Set Priv._timing,		" output timing details";
     "-xc",		Set Priv._xc,			" parse code as C, not as C++ (implicit if any input file name ends with .c)";
+    "-rt",		Set Priv._rt,			" set real-time scheduling policy with highest priority";
   ]) (fun input -> Priv.inputs := input :: !Priv.inputs) "Usage: cxxparse [option...] <file...>");
 
   if !Priv._dumptoks || !Priv._tokens then
@@ -57,5 +59,6 @@ let _stats = !Priv._stats
 let _trivial = !Priv._trivial
 let _timing = !Priv._timing
 let _xc = !Priv._xc
+let _rt = !Priv._rt
 
 let inputs = List.rev !Priv.inputs

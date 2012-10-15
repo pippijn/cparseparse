@@ -224,6 +224,9 @@ let elkmain inputs =
 
 
 let main inputs =
+  if Options._rt then
+    Sched.(setscheduler 0 FIFO { priority = 20 });
+
   try
     elkmain inputs
   with ExitStatus status ->
