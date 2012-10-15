@@ -43,7 +43,7 @@ let is_list_nonterminal tail head_tail =
 
 
 let is_option_nonterminal none some =
-  none.right = []
+  symbols_of_production none = []
   && List.length (symbols_of_production some) = 1
 
 
