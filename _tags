@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 6afabf19ea69e5e480a4b3e610b3799b)
+# DO NOT EDIT (digest: 39e419ee2b006c20124ed88082b7aca5)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -13,11 +13,6 @@
 ".git": not_hygienic
 "_darcs": -traverse
 "_darcs": not_hygienic
-# Executable runtests
-"testsuite/runtests.native": pkg_batteries
-"testsuite/runtests.native": pkg_unix
-<testsuite/*.ml{,i}>: pkg_batteries
-<testsuite/*.ml{,i}>: pkg_unix
 # Library ast
 "ast/ast.cmxs": use_ast
 <ast/*.ml{,i}>: pkg_sexplib
@@ -34,6 +29,8 @@
 <baselib/*.ml{,i}>: pkg_batteries
 "baselib/ml_BitSet.c": pkg_sexplib
 "baselib/ml_BitSet.c": pkg_batteries
+"baselib/ml_Sched.c": pkg_sexplib
+"baselib/ml_Sched.c": pkg_batteries
 "baselib/ml_Valgrind.c": pkg_sexplib
 "baselib/ml_Valgrind.c": pkg_batteries
 # Library glr
@@ -78,6 +75,15 @@
 <cpapa/*.ml{,i}>: pkg_batteries
 <cpapa/*.ml{,i}>: pkg_unix
 <cpapa/*.ml{,i}>: pkg_sexplib.syntax
+# Executable runtests
+"testsuite/runtests.native": use_baselib
+"testsuite/runtests.native": pkg_sexplib
+"testsuite/runtests.native": pkg_batteries
+"testsuite/runtests.native": pkg_unix
+<testsuite/*.ml{,i}>: use_baselib
+<testsuite/*.ml{,i}>: pkg_sexplib
+<testsuite/*.ml{,i}>: pkg_batteries
+<testsuite/*.ml{,i}>: pkg_unix
 # Executable treematch
 "treematch/treematch.native": use_baselib
 "treematch/treematch.native": pkg_sexplib
@@ -115,7 +121,3 @@ true: use_menhir
 true: annot
 "testsuite": -traverse
 "wip": -traverse
-
-# XXX: oasis dependencies should do this
-"baselib": include
-"glr": include
