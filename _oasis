@@ -45,7 +45,7 @@ Executable treematch
 Executable runtests
         Path:                   testsuite
         BuildTools:             ocamlbuild
-        BuildDepends:           unix,batteries
+        BuildDepends:           unix,batteries,baselib
         MainIs:                 runtests.ml
         CompiledObject:         native
 

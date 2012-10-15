@@ -1,9 +1,21 @@
+module Options = struct
+  let test_suffixes = [".cc"; ".c"; ".ii"; ".i"; ".tm"]
+  let tool_opts = StringMap.of_list [
+    "cpapa", "-trivial";
+  ]
+  let dirs = [
+    "treematch", "testsuite/treematch";
+    "cpapa", "testsuite/ccparse";
+    "cpapa", "testsuite/in";
+  ]
+end
+
+
 (* +=====~~~-------------------------------------------------------~~~=====+ *)
 (* |                          Colours for terminal output                  | *)
 (* +=====~~~-------------------------------------------------------~~~=====+ *)
 
-let array_mem x = Array.fold_left (fun result elt -> result || elt = x) false
-let colourise = not (array_mem "--no-colour" Sys.argv)
+let colourise = not (BatArray.mem "--no-colour" Sys.argv)
 let if_colour s = if colourise then s else ""
 
 let green = if_colour "[1;32m"
@@ -25,33 +37,8 @@ let execute cmd =
 (* |                             Helper functions                          | *)
 (* +=====~~~-------------------------------------------------------~~~=====+ *)
 
-let isdigit = function
-  | '0' .. '9' -> true
-  | _ -> false
 
-let without_prefix prefix name =
-  let plen = String.length prefix in
-  let nlen = String.length name in
-  if plen <= nlen && String.sub name 0 (nlen - plen) = prefix then
-    Some (String.sub name plen (nlen - plen))
-  else
-    None
-
-let without_suffix suffix name =
-  let slen = String.length suffix in
-  let nlen = String.length name in
-  if slen <= nlen && String.sub name (nlen - slen) slen = suffix then
-    Some (String.sub name 0 (nlen - slen))
-  else
-    None
-
-
-let without_suffixes suffixes name =
-  List.fold_left (fun result suffix ->
-    match without_suffix suffix name with
-    | Some _ as result -> result
-    | None -> result
-  ) None suffixes
+let (/) a b = a ^ "/" ^ b
 
 
 let output_newline out =
@@ -111,28 +98,27 @@ let string_of_process_status = let open Unix in function
 (* |                             Execute tests                             | *)
 (* +=====~~~-------------------------------------------------------~~~=====+ *)
 
-let run_test error_log (pass, fail, total_time) source reference =
+let run_test error_log tool (pass, fail, total_time) source reference =
+  (* Retrieve common command line options *)
+  let tool_opts =
+    StringMap.find_default "" tool Options.tool_opts
+  in
+
   (* Retrieve command line options from file *)
   let opts =
     let stream = open_in source in
     let line = input_line stream in
     close_in stream;
 
-    match without_prefix "//+" line with
+    match ExtString.without_prefix "//+" line with
     | Some opts -> opts
-    | None -> ""
-  in
-
-  let _xc =
-    match without_suffix ".c" source with
-    | Some _ -> "-xc"
     | None -> ""
   in
 
   (* Parse the file *)
   let start = Unix.gettimeofday () in
 
-  let cmd = Printf.sprintf "_build/cpapa/cpapa.native -trivial %s %s %s 2>&1" _xc opts source in
+  let cmd = Printf.sprintf "./%s.native %s %s %s 2>&1" tool tool_opts opts source in
   let stream = Unix.open_process_in cmd in
   let produced = read_all stream in
   let status = Unix.close_process_in stream in
@@ -182,13 +168,13 @@ let run_test error_log (pass, fail, total_time) source reference =
   )
 
 
-let run error_log base_dir result test =
-  match without_suffixes [".cc"; ".c"; ".ii"; ".i"] test with
+let run error_log tool base_dir result test =
+  match ExtString.without_suffixes Options.test_suffixes test with
   | Some basename ->
-      let source    = base_dir ^ "/" ^ test in
-      let reference = base_dir ^ "/" ^ basename ^ ".ref" in
+      let source    = base_dir / test in
+      let reference = base_dir / basename ^ ".ref" in
 
-      let result = run_test error_log result source reference in
+      let result = run_test error_log tool result source reference in
       flush stdout;
       result
 
@@ -196,21 +182,36 @@ let run error_log base_dir result test =
       result
 
 
-let () =
-  let dirs = [
-    "testsuite/ccparse";
-    "testsuite/in/c";
-    "testsuite/in/c99";
-    "testsuite/in/extension";
-    "testsuite/in/gnu/bugs";
-    "testsuite/in/gnu/cil";
-    "testsuite/in/gnu";
-    "testsuite/in/kandr";
-    "testsuite/in/msvc";
-    "testsuite/in/std";
-    "testsuite/in";
-  ] in
+let rec run_tests error_log result (tool, base_dir) =
+  let contents = Sys.readdir base_dir in
+  (* Sort the tests lexicograpically *)
+  Array.sort String.compare contents;
+  (* Separate them into dirs/files *)
+  let dirs  =
+    BatArray.filter (fun file ->
+      Unix.((stat (base_dir / file)).st_kind = S_DIR)
+    ) contents
+  in
+  let files =
+    BatArray.filter (fun file ->
+      (* Do not process expected-output files *)
+      not (ExtString.ends_with ".ref" file)
+      && Unix.((stat (base_dir / file)).st_kind = S_REG)
+    ) contents
+  in
+  (* Run the tests from this dir *)
+  let result = Array.fold_left (run error_log tool base_dir) result files in
+  (* Run the tests from each subdir *)
+  let result =
+    Array.fold_left (fun result dir ->
+      run_tests error_log result (tool, base_dir / dir)
+    ) result dirs
+  in
 
+  result
+
+
+let main () =
   with_out "testsuite.rst" (fun error_log ->
     begin
       let open Unix in
@@ -226,13 +227,7 @@ let () =
     end;
 
     let pass, fail, time =
-      List.fold_left (fun result base_dir ->
-        let contents = Sys.readdir base_dir in
-        (* Sort the tests lexicograpically *)
-        Array.sort String.compare contents;
-        (* Run the tests *)
-        Array.fold_left (run error_log base_dir) result contents
-      ) (0, 0, 0.0) dirs
+      List.fold_left (run_tests error_log) (0, 0, 0.0) Options.dirs
     in
 
     output_string error_log "\nSummary";
@@ -255,3 +250,8 @@ let () =
     print_string msg;
     print_newline (); output_underline '-' stdout msg; print_newline ();
   )
+
+
+let () =
+  Printexc.record_backtrace true;
+  Printexc.print main ()

@@ -1,0 +1,12 @@
+module ListA =
+  struct type t = | list = Cons of Integer * List | Nil and Integer = int;;
+  end;;
+module ListB =
+  struct type t = | list = Cons of Integer * List | Nil and Integer = int;;
+  end;;
+class double =
+  object ((self : 'a))
+    method list =
+      function
+      | (ListA.Cons (x, xs)) -> (ListB.Cons (x, (ListB.Cons (x, xs))))
+  end;;
