@@ -356,7 +356,7 @@ nonterm Declarator {
        { (  ), C0.AnNil, d }
 
   // asm label + attributes ...
-  -> d:DirectDeclarator "asm" "(" StringLiteral ")" /*DROPPED*/AttributeSpecifierList
+  -> d:DirectDeclarator "asm" "(" StringLiteral ")" attr:AttributeSpecifierList
        { (  ), C0.AnNil, d }
 }
 
@@ -494,7 +494,7 @@ nonterm PrimaryExpression {
 // between associating the attrs with the label and associating
 // them with the next declaration.
 nonterm LabelAndColon {
-  -> n:Identifier ":" /*DROPPED*/AttributeSpecifierList     precedence(TOK_PREFER_REDUCE)
+  -> n:Identifier ":" attr:AttributeSpecifierList     precedence(TOK_PREFER_REDUCE)
        { unimplemented 610 }
 }
 
@@ -507,7 +507,7 @@ nonterm LabelAndColon {
 
 
 nonterm ElaboratedTypeSpecifier {
-  -> k:ClassKey /*DROPPED*/AttributeSpecifier n:PQTypeName    { unimplemented 612 }
+  -> k:ClassKey attr:AttributeSpecifier n:PQTypeName    { unimplemented 612 }
 }
 
 nonterm ClassSpecifier {
@@ -517,18 +517,18 @@ nonterm ClassSpecifier {
 
 // attributes after "enum"
 nonterm ElaboratedTypeSpecifier {
-  -> "enum" /*DROPPED*/AttributeSpecifierList n:PQTypeName
+  -> "enum" attr:AttributeSpecifierList n:PQTypeName
        { unimplemented 614 }
 }
 
 nonterm EnumSpecifier {
-  -> "enum" /*DROPPED*/AttributeSpecifierList "{" list:EnumeratorListOpt "}"
+  -> "enum" attr:AttributeSpecifierList "{" list:EnumeratorListOpt "}"
        { unimplemented 615 }
 
   // Adding this adds one S/R conflict... it was 3 until I changed
   // Identifier to PQTypeName.  I think cc.gr should similarly use
   // PQName instead of Identifier, and catch qualifiers in tcheck...
-  -> "enum" /*DROPPED*/AttributeSpecifierList n:PQTypeName "{" list:EnumeratorListOpt "}"
+  -> "enum" attr:AttributeSpecifierList n:PQTypeName "{" list:EnumeratorListOpt "}"
        { unimplemented 616 }
 }
 
@@ -559,8 +559,8 @@ nonterm UberCVQualifier {
 
 // attribute after the "," in a sequence of declarators
 nonterm InitDeclaratorList {
-  -> d:InitDeclarator "," /*DROPPED*/AttributeSpecifierList list:InitDeclaratorList
-       { unimplemented 619 }
+  -> d:InitDeclarator "," attr:AttributeSpecifierList list:InitDeclaratorList
+       [AttrDecls] { unimplemented 619 }
 }
 
 
@@ -584,7 +584,7 @@ nonterm CVQualAttr {
 nonterm Declarator {
   // "*", then some cv, then *one* __attribute__, which causes the
   // parser to commit to this production, then cv+attr seq
-  -> "*" cv:CVQualifierSeqOpt /*DROPPED*/AttributeSpecifier cv2:CVQualAttrSeqOpt d:Declarator
+  -> "*" cv:CVQualifierSeqOpt attr:AttributeSpecifier cv2:CVQualAttrSeqOpt d:Declarator
        { (  ), C0.AnNil, (  ) }
 
   // perhaps attributes should be allowed after "&" and "C::*"?
@@ -612,7 +612,7 @@ nonterm AbstractDeclarator {
 }
 
 nonterm DirectAbstractDeclarator {
-  -> "(" /*DROPPED*/AttributeSpecifierList d:AbstractDeclarator ")"
+  -> "(" attr:AttributeSpecifierList d:AbstractDeclarator ")"
        { unimplemented 631 }
 }
 
@@ -623,19 +623,19 @@ nonterm DirectAbstractDeclarator {
 // case above is that the bitfield syntax doesn't explicitly refer
 // to the Declarator nonterminal
 nonterm MemberDeclarator {
-  -> n:IdentifierOpt ":" e:ConstantExpression /*DROPPED*/AttributeSpecifierList    // bitfield
+  -> n:IdentifierOpt ":" e:ConstantExpression attr:AttributeSpecifierList    // bitfield
        // this body is an exact copy of the cc.gr one without attributes
        { unimplemented 632 }
 }
 
 // dsw: from Taras Glek, tglek at mozilla dot com
 nonterm CDtorModifier {
- -> /*DROPPED*/AttributeSpecifier      { unimplemented 633 }
+ -> attr:AttributeSpecifier      { unimplemented 633 }
 }
 
 // 2007-09-15: This is in the gcc-4.2.1 headers.
 nonterm NamespaceDefinition {
-  -> "namespace" n:IdentifierOpt /*DROPPED*/AttributeSpecifierList "{" unit:TranslationUnit "}"
+  -> "namespace" n:IdentifierOpt attr:AttributeSpecifierList "{" unit:TranslationUnit "}"
        { unimplemented 634 }
 }
 

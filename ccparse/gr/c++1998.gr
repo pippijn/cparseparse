@@ -918,11 +918,11 @@ nonterm SimpleDeclaration {
   // destructive action on 'spec'
   //e.g.: int                x                  ;
   -> spec:DeclSpecifier list:InitDeclaratorList ";"
-       { unimplemented 208 }
+       [Defn] { unimplemented 208 }
 
   // a bare specifier is a type definition or forward declaration
   -> spec:DeclSpecifier ";"
-       { unimplemented 209 }
+       [Decl] { unimplemented 209 }
 
 }
 
@@ -1214,9 +1214,9 @@ nonterm LinkageSpecification {
 
 nonterm InitDeclaratorList {
   -> d:InitDeclarator
-       { unimplemented 291 }
+       [Decl] { unimplemented 291 }
   -> d:InitDeclarator "," list:InitDeclaratorList
-       { unimplemented 292 }
+       [Decls] { unimplemented 292 }
 }
 
 // obsolete now that I've substituted it into SimpleDeclaration
