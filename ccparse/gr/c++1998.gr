@@ -287,15 +287,15 @@ nonterm PostfixExpression {
   fun merge(l,r) { unimplemented 33 }
 
   -> e:PrimaryExpression
-       { unimplemented 34 }
+       [P] { unimplemented 34 }
 
   // array access
   -> a:PostfixExpression "[" e:Expression "]"
-       { unimplemented 35 }
+       [ArrayAcc] { unimplemented 35 }
 
   // fn call
   -> f:PostfixExpression a:ArgumentList
-       { unimplemented 36 }
+       [FunCall] { unimplemented 36 }
 
   // cppstd has two things with "typename", but I can't find anyplace
   // where their semantics are spelled out.. I have some code from
@@ -315,28 +315,28 @@ nonterm PostfixExpression {
   // almost always be ambiguous with function call, so the distinction
   // will have to be delayed until typechecking
   -> spec:CtorExpressionType a:ArgumentList
-       { unimplemented 38 }
+       [CtorCall] { unimplemented 38 }
 
   // field access (includes pseudo-destructor)
   -> p:PostfixExpression "." n:NameAfterDot
-       { unimplemented 39 }
+       [MemberAcc] { unimplemented 39 }
 
   // deref + field access
   -> p:PostfixExpression "->" n:NameAfterDot
-       { unimplemented 40 }
+       [PtrAcc] { unimplemented 40 }
 
   -> p:PostfixExpression "++"
-       { unimplemented 41 }
+       [PostInc] { unimplemented 41 }
   -> p:PostfixExpression "--"
-       { unimplemented 42 }
+       [PostDec] { unimplemented 42 }
 
   -> k:CastKeyword "<" t:TypeId ">" "(" e:Expression ")"
-       { unimplemented 43 }
+       [Cast] { unimplemented 43 }
 
   -> "typeid" "(" e:Expression ")"
-       { unimplemented 44 }
+       [TypeidExpr] { unimplemented 44 }
   -> "typeid" "(" t:TypeId ")"
-       { unimplemented 45 }
+       [TypeidType] { unimplemented 45 }
 }
 
 // the std calls this SimpleTypeSpecifier, but then also uses that
@@ -376,9 +376,9 @@ nonterm ExpressionList {
   fun merge(l,r) { unimplemented 62 }
 
   -> a:AssignmentExpression
-       { unimplemented 63 }
+       [Head] { unimplemented 63 }
   -> e:ExpressionList "," a:AssignmentExpression
-       { unimplemented 64 }
+       [Tail] { unimplemented 64 }
 }
 
 nonterm ExpressionListOpt {
@@ -397,30 +397,30 @@ nonterm UnaryExpression {
   // size of a type called 'x'
   fun merge(l,r) { unimplemented 67 }
 
-  -> e:PostfixExpression         { unimplemented 68 }
+  -> e:PostfixExpression         [P] { unimplemented 68 }
 
-  -> "++" e:CastExpression       { unimplemented 69 }
-  -> "--" e:CastExpression       { unimplemented 70 }
+  -> "++" e:CastExpression       [PreInc] { unimplemented 69 }
+  -> "--" e:CastExpression       [PreDec] { unimplemented 70 }
 
   // size of expression
-  -> "sizeof" e:UnaryExpression  { unimplemented 71 }
+  -> "sizeof" e:UnaryExpression  [SizeofExpr] { unimplemented 71 }
 
-  -> e:DeleteExpression          { unimplemented 72 }
+  -> e:DeleteExpression          [Delete] { unimplemented 72 }
 
   // dereference, addrof
-  -> "*" e:CastExpression        { unimplemented 73 }
-  -> "&" e:CastExpression        { unimplemented 74 }
+  -> "*" e:CastExpression        [Deref] { unimplemented 73 }
+  -> "&" e:CastExpression        [Addr] { unimplemented 74 }
 
   // other unary operators
-  -> "+" e:CastExpression        { unimplemented 75 }
-  -> "-" e:CastExpression        { unimplemented 76 }
-  -> "!" e:CastExpression        { unimplemented 77 }
-  -> "~" e:CastExpression        { unimplemented 78 }
+  -> "+" e:CastExpression        [Identity] { unimplemented 75 }
+  -> "-" e:CastExpression        [Negate] { unimplemented 76 }
+  -> "!" e:CastExpression        [Not] { unimplemented 77 }
+  -> "~" e:CastExpression        [Compl] { unimplemented 78 }
 
   // size of type
-  -> "sizeof" "(" t:TypeId ")"   { unimplemented 79 }
+  -> "sizeof" "(" t:TypeId ")"   [SizeofType] { unimplemented 79 }
 
-  -> e:NewExpression             { unimplemented 80 }
+  -> e:NewExpression             [New] { unimplemented 80 }
 }
 
 
@@ -570,9 +570,9 @@ nonterm CastExpression {
   fun merge(l,r) { unimplemented 117 }
 
   -> e:UnaryExpression
-       { unimplemented 118 }
+       [P] { unimplemented 118 }
   -> "(" t:TypeId ")" e:CastExpression
-       { unimplemented 119 }
+       [Cast] { unimplemented 119 }
 }
 
 // ---- binary operator expression ----
@@ -584,18 +584,18 @@ nonterm BinExp_high {
   // it could be negation of expression y, cast to type x
   fun merge(l,r) { unimplemented 120 }
 
-  -> e:CastExpression                          { unimplemented 121 }
+  -> e:CastExpression                          [P] { unimplemented 121 }
 
-  -> left:BinExp_high ".*"  right:BinExp_high  { unimplemented 122 }
-  -> left:BinExp_high "->*" right:BinExp_high  { unimplemented 123 }
+  -> left:BinExp_high ".*"  right:BinExp_high  [MemPtrAccess] { unimplemented 122 }
+  -> left:BinExp_high "->*" right:BinExp_high  [MemPtrPtrAccess] { unimplemented 123 }
 
-  -> left:BinExp_high "*"  right:BinExp_high   { unimplemented 124 }
-  -> left:BinExp_high "/"  right:BinExp_high   { unimplemented 125 }
-  -> left:BinExp_high "%"  right:BinExp_high   { unimplemented 126 }
-  -> left:BinExp_high "+"  right:BinExp_high   { unimplemented 127 }
-  -> left:BinExp_high "-"  right:BinExp_high   { unimplemented 128 }
-  -> left:BinExp_high "<<" right:BinExp_high   { unimplemented 129 }
-  -> left:BinExp_high ">>" right:BinExp_high   { unimplemented 130 }
+  -> left:BinExp_high "*"  right:BinExp_high   [Mul] { unimplemented 124 }
+  -> left:BinExp_high "/"  right:BinExp_high   [Div] { unimplemented 125 }
+  -> left:BinExp_high "%"  right:BinExp_high   [Mod] { unimplemented 126 }
+  -> left:BinExp_high "+"  right:BinExp_high   [Add] { unimplemented 127 }
+  -> left:BinExp_high "-"  right:BinExp_high   [Sub] { unimplemented 128 }
+  -> left:BinExp_high "<<" right:BinExp_high   [LeftShift] { unimplemented 129 }
+  -> left:BinExp_high ">>" right:BinExp_high   [RightShift] { unimplemented 130 }
 }
 
 // binary exprs with same precedence as ">"
@@ -613,15 +613,15 @@ nonterm BinExp_mid {
   // object (E_constructor), depending on whether 'x' names a type
   fun merge(l,r) { unimplemented 131 }
 
-  -> e:BinExp_high                             { unimplemented 132 }
+  -> e:BinExp_high                             [P] { unimplemented 132 }
 
   // must express associativity directly; since these are all
   // left-associative, we require that there not be any reduced
   // ">" operators in the right context
-  -> left:BinExp_mid "<"  right:BinExp_high    { unimplemented 133 }
-  -> left:BinExp_mid ">"  right:BinExp_high    { unimplemented 134 }
-  -> left:BinExp_mid "<=" right:BinExp_high    { unimplemented 135 }
-  -> left:BinExp_mid ">=" right:BinExp_high    { unimplemented 136 }
+  -> left:BinExp_mid "<"  right:BinExp_high    [Less] { unimplemented 133 }
+  -> left:BinExp_mid ">"  right:BinExp_high    [Greater] { unimplemented 134 }
+  -> left:BinExp_mid "<=" right:BinExp_high    [LessEq] { unimplemented 135 }
+  -> left:BinExp_mid ">=" right:BinExp_high    [GreaterEq] { unimplemented 136 }
 }
 
 // binary exprs with lower precedence than ">"
@@ -632,16 +632,16 @@ nonterm BinaryExpression {
   // it could be the address of expression y, cast to type x
   fun merge(l,r) { unimplemented 137 }
 
-  -> e:BinExp_mid                                        { unimplemented 138 }
+  -> e:BinExp_mid                                        [P] { unimplemented 138 }
 
-  -> left:BinaryExpression "==" right:BinaryExpression   { unimplemented 139 }
-  -> left:BinaryExpression "!=" right:BinaryExpression   { unimplemented 140 }
-  -> left:BinaryExpression "&"  right:BinaryExpression   { unimplemented 141 }
-  -> left:BinaryExpression "^"  right:BinaryExpression   { unimplemented 142 }
-  -> left:BinaryExpression "|"  right:BinaryExpression   { unimplemented 143 }
+  -> left:BinaryExpression "==" right:BinaryExpression   [Equals] { unimplemented 139 }
+  -> left:BinaryExpression "!=" right:BinaryExpression   [NotEquals] { unimplemented 140 }
+  -> left:BinaryExpression "&"  right:BinaryExpression   [BitAnd] { unimplemented 141 }
+  -> left:BinaryExpression "^"  right:BinaryExpression   [Xor] { unimplemented 142 }
+  -> left:BinaryExpression "|"  right:BinaryExpression   [BitOr] { unimplemented 143 }
 
-  -> left:BinaryExpression "&&" right:BinaryExpression   { unimplemented 144 }
-  -> left:BinaryExpression "||" right:BinaryExpression   { unimplemented 145 }
+  -> left:BinaryExpression "&&" right:BinaryExpression   [Or] { unimplemented 144 }
+  -> left:BinaryExpression "||" right:BinaryExpression   [And] { unimplemented 145 }
 }
 
 
@@ -650,24 +650,26 @@ nonterm ConditionalExpression {
   fun merge(l,r) { unimplemented 146 }
 
   -> e:BinaryExpression
-       { unimplemented 147 }
+       [P] { unimplemented 147 }
 
   -> cond:BinaryExpression "?" th:Expression ":" el:AssignmentExpression
-       { unimplemented 148 }
+       [Conditional] { unimplemented 148 }
 }
 
 // why is conditional not allowed on left side of = ?  can I confirm
 // that in another language spec?  clearly both alternatives would have
 // to be like-typed lvalues, but...
 nonterm AssignmentExpression {
+  fun merge(l,r) { l }
+
   -> e:ConditionalExpression
-       { unimplemented 149 }
+       [P] { unimplemented 149 }
 
   -> e1:BinaryExpression op:AssignmentOperator e2:AssignmentExpression
-       { unimplemented 150 }
+       [Assign] { unimplemented 150 }
 
   -> e:ThrowExpression
-       { unimplemented 151 }
+       [Throw] { unimplemented 151 }
 }
 
 nonterm AssignmentOperator {
@@ -700,10 +702,10 @@ nonterm Expression {
   fun merge(l,r) { unimplemented 163 }
 
   -> ae:AssignmentExpression
-       { unimplemented 164 }
+       [Head] { unimplemented 164 }
 
   -> e:Expression "," ae:AssignmentExpression
-       { unimplemented 165 }
+       [List] { unimplemented 165 }
 }
 
 nonterm ExpressionOpt {
@@ -801,7 +803,7 @@ nonterm Statement {
   -> "goto" n:Identifier ";"            [Goto] { unimplemented 188 }
 
   // declaration-statement
-  -> d:BlockDeclaration                 [Decl] { unimplemented 189 }
+  -> d:BlockDeclaration                 [DeclStmt] { unimplemented 189 }
 
   // try-block
   -> s:TryBlock                         [Try] { unimplemented 190 }
@@ -820,7 +822,7 @@ nonterm ExpressionStatement {
 
 nonterm CompoundStatement {
   -> "{" seq:CompoundStmtHelper "}"
-       { unimplemented 195 }
+       [CompoundStmt] { unimplemented 195 }
 }
 
 nonterm CompoundStmtHelper {
@@ -830,8 +832,13 @@ nonterm CompoundStmtHelper {
   // been able to get that..)
   -> empty
        { unimplemented 196 }
-  -> c:CompoundStmtHelper s:Statement a:AnnotationOpt
+  -> c:CompoundStmtHelper s:AnnotatedStatement
        { unimplemented 197 }
+}
+
+nonterm AnnotatedStatement {
+  -> s:Statement a:AnnotationOpt
+       [Stmt] { () }
 }
 
 
@@ -843,11 +850,11 @@ nonterm Condition {
   fun merge(l,r) { unimplemented 198 }
 
   -> e:Expression
-       { unimplemented 199 }
+       [ExprCond] { unimplemented 199 }
 
   // variable declaration in the condition clause
   -> spec:TypeSpecifier decl:Declarator "=" e:AssignmentExpression
-       { unimplemented 200 }
+       [DeclCond] { unimplemented 200 }
 }
 
 nonterm ConditionOpt {
@@ -876,6 +883,8 @@ nonterm ForInitStatement {
 //}
 
 nonterm Declaration {
+  fun merge(l,r) { unimplemented 0 }
+
   -> e:EmptyDeclaration        [Empty] { C0.ToNil }
   -> d:BlockDeclaration        [Block] { C0.ToNil }
   -> f:FunctionDefinition      [Function] { f }
@@ -913,6 +922,7 @@ nonterm BlockDeclaration {
 // ok, why is the InitDeclaratorList optional?
 //   for declaring classes and enums
 nonterm SimpleDeclaration {
+  fun merge(l,r) { unimplemented 0 }
   fun keep(d) { true }
 
   // destructive action on 'spec'
@@ -1170,6 +1180,8 @@ nonterm EnumSpecifier {
 // lookahead whether this is the last enumerator definition; this
 // allows an optional comma at the end, on purpose
 nonterm EnumeratorListOpt {
+  fun merge(l,r) { l }
+
   -> empty
        { unimplemented 283 }
   -> def:EnumeratorDefinition
@@ -1213,10 +1225,12 @@ nonterm LinkageSpecification {
 // a declarator is the "x" in a declaration like "int x"
 
 nonterm InitDeclaratorList {
+  fun merge(l,r) { unimplemented 0 }
+
   -> d:InitDeclarator
-       [Decl] { unimplemented 291 }
+       [InitDecl] { unimplemented 291 }
   -> d:InitDeclarator "," list:InitDeclaratorList
-       [Decls] { unimplemented 292 }
+       [InitDecls] { unimplemented 292 }
 }
 
 // obsolete now that I've substituted it into SimpleDeclaration
@@ -1243,19 +1257,21 @@ nonterm InitDeclarator {
   // the latter surrounded by a redundant set of parens
   fun merge(l,r) { unimplemented 295 }
 
-  -> d:Declarator                       // (int)  x
-       { unimplemented 296 }
+  -> d:Declarator i:InitializerOpt      // (int)  x
+       [Decl] { unimplemented 296 }
+}
 
-  -> d:Declarator i:Initializer         // (int)  x = 5
-       { unimplemented 297 }
+nonterm InitializerOpt {
+  -> empty { () }
+  -> i:Initializer { () }
 }
 
 nonterm Initializer {
   -> "=" i:SimpleInitializerClause
-       { unimplemented 298 }
+       [Init] { unimplemented 298 }
 
   -> "(" args:ExpressionList ")"
-       { unimplemented 299 }
+       [CtorInit] { unimplemented 299 }
 
   // NOTE: there is no alternative for "(" ")"!
   // see [cppstd. sec. 8.5 para 8]
@@ -1263,24 +1279,24 @@ nonterm Initializer {
 
 nonterm SimpleInitializerClause {
   -> e:AssignmentExpression              // scalar
-       { unimplemented 300 }
+       [Expr] { unimplemented 300 }
   -> c:CompoundInitializer               // array/structure initializer
-       { unimplemented 301 }
+       [Compound] { unimplemented 301 }
 }
 
 // this nonterminal exists so that extensions can augment it with
 // possibilities for designated initializers
 nonterm InitializerClause {
   -> init:SimpleInitializerClause
-    { unimplemented 302 }
+       { unimplemented 302 }
 }
 
 nonterm CompoundInitializer {
-  // array/structure initializer
-  -> "{" list:InitializerList CommaOpt "}"  { unimplemented 303 }
-
   // zero whatever it is
   -> "{" "}"  { unimplemented 304 }
+
+  // array/structure initializer
+  -> "{" list:InitializerList CommaOpt "}"  { unimplemented 303 }
 }
 
 // useful syntactic quirk
@@ -1493,6 +1509,8 @@ nonterm ParameterDeclarationClause {
 
 // little bending over backwards here to accomodate FakeList
 nonterm ParameterDeclarationList {
+  fun merge(l,r) { l }
+
   // last (and perhaps only) arg is "..."
   -> "..."
        { unimplemented 347 }
@@ -1574,6 +1592,7 @@ nonterm FunctionDefinition {
   // parameter type.  So I will cancel any FunctionDefinition whose
   // declarator doesn't have a D_func at the bottom.
   fun keep(f) { true }
+  fun merge(l,r) { l }
 
   // destructive action on 'r'
 
@@ -1670,6 +1689,7 @@ nonterm ClassKey {
 // I'm using an encapsulated ASTList to avoid right recursion,
 // since there are often many members of classes
 nonterm MemberDeclarationSeqOpt {
+  fun merge(l,r) { l }
   fun dup(m) { unimplemented 384 }       // prevent multi-yield
 
   -> empty
@@ -1700,6 +1720,7 @@ nonterm AccessSpecifier {
 }
 
 nonterm MemberDeclaration {
+  fun merge(l,r) { l }
   fun keep(m) { true }
 
   // destructive action on 'spec'
@@ -1822,6 +1843,8 @@ nonterm BaseClauseOpt {
 }
 
 nonterm BaseSpecifierList {
+  fun merge(l,r) { l }
+
   -> b:BaseSpecifier
        { unimplemented 418 }
   -> b:BaseSpecifier "," list:BaseSpecifierList
@@ -1993,6 +2016,7 @@ nonterm Operator {
 //}
 
 nonterm TemplateDeclaration {
+  fun merge(l,r) { l }
   fun keep(d) { true }
 
   // these are the std's rules for template declarations and specializations:
@@ -2058,6 +2082,8 @@ nonterm TemplateParameterList {
 }
 
 nonterm TypeParameter {
+  fun merge(l,r) { unimplemented 0 }
+
   // non-template type parameter
   -> ClassOrTypename i:IdentifierOpt t:DefaultTypeOpt { () }
 
@@ -2126,11 +2152,13 @@ nonterm TemplateId {
 }
 
 nonterm TemplateArgumentList {
+  fun merge(l,r) { unimplemented 0 }
+
   -> x:TemplateArgument
-       { unimplemented 507 }
+       [Head] { unimplemented 507 }
 
   -> xs:TemplateArgumentList "," x:TemplateArgument
-       { unimplemented 507 }
+       [Tail] { unimplemented 507 }
 }
 
 nonterm TemplateArgument {
@@ -2141,10 +2169,10 @@ nonterm TemplateArgument {
   fun keep(n) { true }
 
   -> typeid:TypeId
-     { unimplemented 511 }
+     [Type] { unimplemented 511 }
 
   -> e:AssignmentExpression
-     { unimplemented 512 }
+     [Expr] { unimplemented 512 }
 
   // is this for template args that are templates, or what?
   //-> IdExpression;
