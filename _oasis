@@ -53,7 +53,7 @@ Executable runtests
 Library ccparse
         Path:                   ccparse
         BuildTools:             ocamlbuild
-        BuildDepends:           glr,ast,baselib,ulex,unix
+        BuildDepends:           glr,ast,baselib,unix
         Modules:                gr/CcActions,
                                 gr/CcPtree,
                                 gr/CcPtreeActions,
@@ -62,8 +62,7 @@ Library ccparse
                                 Ccparse,
                                 Cc_keywords,
                                 Lexer,
-                                Options,
-                                Ulexer
+                                Options
         CompiledObject:         native
 #        NativeOpt:              -inline 999 -unsafe -noassert
 

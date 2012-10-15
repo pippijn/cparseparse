@@ -6,6 +6,11 @@
   open Cc_keywords
 
   let line = ref 1
+
+  let return lexbuf token =
+    Lexing.lexeme_start_p lexbuf,
+    Lexing.lexeme_end_p lexbuf,
+    token
 }
 
 
@@ -42,64 +47,64 @@ let u = ['\x80'-'\xbf']
 
 rule token = parse
 (* whitespace *)
-| '\n'                                                          { line := !line + 1; token lexbuf }
+| '\n'                                                          { Lexing.new_line lexbuf; token lexbuf }
 | [' ' '\t' '\r']+                                              { token lexbuf }
 
 (* keywords, operators *)
 | "__extension__"                                               { token lexbuf }
-| "("                                                           { TOK_LPAREN }
-| ")"                                                           { TOK_RPAREN }
-| "[" | "<:"                                                    { TOK_LBRACKET }
-| "]" | ":>"                                                    { TOK_RBRACKET }
-| "{" | "<%"                                                    { TOK_LBRACE }
-| "}" | "%>"                                                    { TOK_RBRACE }
-| "->"                                                          { TOK_ARROW }
-| "::"                                                          { TOK_COLONCOLON }
-| "."                                                           { TOK_DOT }
-| "!"                                                           { TOK_BANG }
-| "~"                                                           { TOK_TILDE }
-| "+"                                                           { TOK_PLUS }
-| "-"                                                           { TOK_MINUS }
-| "++"                                                          { TOK_PLUSPLUS }
-| "--"                                                          { TOK_MINUSMINUS }
-| "&"                                                           { TOK_AND }
-| "*"                                                           { TOK_STAR }
-| ".*"                                                          { TOK_DOTSTAR }
-| "->*"                                                         { TOK_ARROWSTAR }
-| "/"                                                           { TOK_SLASH }
-| "%"                                                           { TOK_PERCENT }
-| "<<"                                                          { TOK_LEFTSHIFT }
-| ">>"                                                          { TOK_RIGHTSHIFT }
-| "<"                                                           { TOK_LESSTHAN }
-| "<="                                                          { TOK_LESSEQ }
-| ">"                                                           { TOK_GREATERTHAN }
-| ">="                                                          { TOK_GREATEREQ }
-| "=="                                                          { TOK_EQUALEQUAL }
-| "!="                                                          { TOK_NOTEQUAL }
-| "^"                                                           { TOK_XOR }
-| "|"                                                           { TOK_OR }
-| "&&"                                                          { TOK_ANDAND }
-| "||"                                                          { TOK_OROR }
-| "?"                                                           { TOK_QUESTION }
-| ":"                                                           { TOK_COLON }
-| "="                                                           { TOK_EQUAL }
-| "*="                                                          { TOK_STAREQUAL }
-| "/="                                                          { TOK_SLASHEQUAL }
-| "%="                                                          { TOK_PERCENTEQUAL }
-| "+="                                                          { TOK_PLUSEQUAL }
-| "-="                                                          { TOK_MINUSEQUAL }
-| "&="                                                          { TOK_ANDEQUAL }
-| "^="                                                          { TOK_XOREQUAL }
-| "|="                                                          { TOK_OREQUAL }
-| "<<="                                                         { TOK_LEFTSHIFTEQUAL }
-| ">>="                                                         { TOK_RIGHTSHIFTEQUAL }
-| ","                                                           { TOK_COMMA }
-| "..."                                                         { TOK_ELLIPSIS }
-| ";"                                                           { TOK_SEMICOLON }
+| "("                                                           { return lexbuf TOK_LPAREN }
+| ")"                                                           { return lexbuf TOK_RPAREN }
+| "[" | "<:"                                                    { return lexbuf TOK_LBRACKET }
+| "]" | ":>"                                                    { return lexbuf TOK_RBRACKET }
+| "{" | "<%"                                                    { return lexbuf TOK_LBRACE }
+| "}" | "%>"                                                    { return lexbuf TOK_RBRACE }
+| "->"                                                          { return lexbuf TOK_ARROW }
+| "::"                                                          { return lexbuf TOK_COLONCOLON }
+| "."                                                           { return lexbuf TOK_DOT }
+| "!"                                                           { return lexbuf TOK_BANG }
+| "~"                                                           { return lexbuf TOK_TILDE }
+| "+"                                                           { return lexbuf TOK_PLUS }
+| "-"                                                           { return lexbuf TOK_MINUS }
+| "++"                                                          { return lexbuf TOK_PLUSPLUS }
+| "--"                                                          { return lexbuf TOK_MINUSMINUS }
+| "&"                                                           { return lexbuf TOK_AND }
+| "*"                                                           { return lexbuf TOK_STAR }
+| ".*"                                                          { return lexbuf TOK_DOTSTAR }
+| "->*"                                                         { return lexbuf TOK_ARROWSTAR }
+| "/"                                                           { return lexbuf TOK_SLASH }
+| "%"                                                           { return lexbuf TOK_PERCENT }
+| "<<"                                                          { return lexbuf TOK_LEFTSHIFT }
+| ">>"                                                          { return lexbuf TOK_RIGHTSHIFT }
+| "<"                                                           { return lexbuf TOK_LESSTHAN }
+| "<="                                                          { return lexbuf TOK_LESSEQ }
+| ">"                                                           { return lexbuf TOK_GREATERTHAN }
+| ">="                                                          { return lexbuf TOK_GREATEREQ }
+| "=="                                                          { return lexbuf TOK_EQUALEQUAL }
+| "!="                                                          { return lexbuf TOK_NOTEQUAL }
+| "^"                                                           { return lexbuf TOK_XOR }
+| "|"                                                           { return lexbuf TOK_OR }
+| "&&"                                                          { return lexbuf TOK_ANDAND }
+| "||"                                                          { return lexbuf TOK_OROR }
+| "?"                                                           { return lexbuf TOK_QUESTION }
+| ":"                                                           { return lexbuf TOK_COLON }
+| "="                                                           { return lexbuf TOK_EQUAL }
+| "*="                                                          { return lexbuf TOK_STAREQUAL }
+| "/="                                                          { return lexbuf TOK_SLASHEQUAL }
+| "%="                                                          { return lexbuf TOK_PERCENTEQUAL }
+| "+="                                                          { return lexbuf TOK_PLUSEQUAL }
+| "-="                                                          { return lexbuf TOK_MINUSEQUAL }
+| "&="                                                          { return lexbuf TOK_ANDEQUAL }
+| "^="                                                          { return lexbuf TOK_XOREQUAL }
+| "|="                                                          { return lexbuf TOK_OREQUAL }
+| "<<="                                                         { return lexbuf TOK_LEFTSHIFTEQUAL }
+| ">>="                                                         { return lexbuf TOK_RIGHTSHIFTEQUAL }
+| ","                                                           { return lexbuf TOK_COMMA }
+| "..."                                                         { return lexbuf TOK_ELLIPSIS }
+| ";"                                                           { return lexbuf TOK_SEMICOLON }
 
 (* GNU *)
-| ">?"								{ TOK_MAX_OP }
-| "<?"								{ TOK_MIN_OP }
+| ">?"								{ return lexbuf TOK_MAX_OP }
+| "<?"								{ return lexbuf TOK_MIN_OP }
 
 (* C++ comments *)
 | "//" [^ '\n']*                                                { token lexbuf }
@@ -109,29 +114,29 @@ rule token = parse
 | "/*" ([^ '*']| "*"* [^ '*' '/'])* "*"*                        { failwith "unterminated comment" }
 
 (* identifier *)
-| identifier                                                    { classify (Lexing.lexeme lexbuf) }
+| identifier as id                                              { return lexbuf (classify id) }
 
 (* integers *)
 | xh h+ is?
 | xb b+ is?
 | '0'o+ is?
-| d+    is?                                                     { TOK_INT_LITERAL (Lexing.lexeme lexbuf) }
+| d+    is? as i                                                { return lexbuf (TOK_INT_LITERAL i) }
 
 (* floats *)
 | d+e            fs?
 | d*'.'d+e?      fs?
 | d+'.'d*e?      fs?
 | xh h*p h*      fs?
-| xh h*'.'h*p h* fs?                                            { TOK_FLOAT_LITERAL (Lexing.lexeme lexbuf) }
+| xh h*'.'h*p h* fs? as f                                       { return lexbuf (TOK_FLOAT_LITERAL f) }
 
 (* strings *)
-| 'L'?sstring                                                   { TOK_CHAR_LITERAL (Lexing.lexeme lexbuf) }
-| 'L'?dstring                                                   { TOK_STRING_LITERAL (Lexing.lexeme lexbuf) }
+| 'L'?sstring as c                                              { return lexbuf (TOK_CHAR_LITERAL c) }
+| 'L'?dstring as s                                              { return lexbuf (TOK_STRING_LITERAL s) }
 
 | "#pragma" [^'\n']+                                            { token lexbuf }
 
 
-| eof                                                           { TOK_EOF }
+| eof                                                           { return lexbuf TOK_EOF }
 
 | _ as c                                                        { failwith (Char.escaped c) }
 

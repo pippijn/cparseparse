@@ -1,7 +1,7 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: 636df0f36032c30be992b30894e96a8d) *)
+(* DO NOT EDIT (digest: 9a2efa8446b480620594a9b6c018bb27) *)
 module OASISGettext = struct
-# 21 "/tmp/oasis-0.3.0/src/oasis/OASISGettext.ml"
+(* # 21 "/tmp/oasis-0.3.0/src/oasis/OASISGettext.ml" *)
 
   let ns_ str =
     str
@@ -24,7 +24,7 @@ module OASISGettext = struct
 end
 
 module OASISExpr = struct
-# 21 "/tmp/oasis-0.3.0/src/oasis/OASISExpr.ml"
+(* # 21 "/tmp/oasis-0.3.0/src/oasis/OASISExpr.ml" *)
 
 
 
@@ -116,7 +116,7 @@ end
 
 # 117 "myocamlbuild.ml"
 module BaseEnvLight = struct
-# 21 "/tmp/oasis-0.3.0/src/base/BaseEnvLight.ml"
+(* # 21 "/tmp/oasis-0.3.0/src/base/BaseEnvLight.ml" *)
 
   module MapString = Map.Make(String)
 
@@ -214,7 +214,7 @@ end
 
 # 215 "myocamlbuild.ml"
 module MyOCamlbuildFindlib = struct
-# 21 "/tmp/oasis-0.3.0/src/plugins/ocamlbuild/MyOCamlbuildFindlib.ml"
+(* # 21 "/tmp/oasis-0.3.0/src/plugins/ocamlbuild/MyOCamlbuildFindlib.ml" *)
 
   (** OCamlbuild extension, copied from 
     * http://brion.inria.fr/gallium/index.php/Using_ocamlfind_with_ocamlbuild
@@ -323,7 +323,7 @@ module MyOCamlbuildFindlib = struct
 end
 
 module MyOCamlbuildBase = struct
-# 21 "/tmp/oasis-0.3.0/src/plugins/ocamlbuild/MyOCamlbuildBase.ml"
+(* # 21 "/tmp/oasis-0.3.0/src/plugins/ocamlbuild/MyOCamlbuildBase.ml" *)
 
   (** Base functions for writing myocamlbuild.ml
       @author Sylvain Le Gall
@@ -339,7 +339,7 @@ module MyOCamlbuildBase = struct
   type name = string 
   type tag = string 
 
-# 56 "/tmp/oasis-0.3.0/src/plugins/ocamlbuild/MyOCamlbuildBase.ml"
+(* # 56 "/tmp/oasis-0.3.0/src/plugins/ocamlbuild/MyOCamlbuildBase.ml" *)
 
   type t =
       {
@@ -490,11 +490,57 @@ let package_default =
           (["oasis_library_baselib_cclib"; "link"],
             [(OASISExpr.EBool true, S [A "-cclib"; A "-lstdc++"])]);
           (["oasis_library_baselib_cclib"; "ocamlmklib"; "c"],
-            [(OASISExpr.EBool true, S [A "-lstdc++"])])
+            [(OASISExpr.EBool true, S [A "-lstdc++"])]);
+          (["oasis_library_baselib_native"; "ocaml"; "link"; "native"],
+            [
+               (OASISExpr.EBool true,
+                 S [A "-inline"; A "999"; A "-unsafe"; A "-noassert"])
+            ]);
+          (["oasis_library_baselib_native"; "ocaml"; "ocamldep"; "native"],
+            [
+               (OASISExpr.EBool true,
+                 S [A "-inline"; A "999"; A "-unsafe"; A "-noassert"])
+            ]);
+          (["oasis_library_baselib_native"; "ocaml"; "compile"; "native"],
+            [
+               (OASISExpr.EBool true,
+                 S [A "-inline"; A "999"; A "-unsafe"; A "-noassert"])
+            ]);
+          (["oasis_library_glr_native"; "ocaml"; "link"; "native"],
+            [
+               (OASISExpr.EBool true,
+                 S [A "-inline"; A "999"; A "-unsafe"; A "-noassert"])
+            ]);
+          (["oasis_library_glr_native"; "ocaml"; "ocamldep"; "native"],
+            [
+               (OASISExpr.EBool true,
+                 S [A "-inline"; A "999"; A "-unsafe"; A "-noassert"])
+            ]);
+          (["oasis_library_glr_native"; "ocaml"; "compile"; "native"],
+            [
+               (OASISExpr.EBool true,
+                 S [A "-inline"; A "999"; A "-unsafe"; A "-noassert"])
+            ]);
+          (["oasis_library_ccparse_native"; "ocaml"; "link"; "native"],
+            [
+               (OASISExpr.EBool true,
+                 S [A "-inline"; A "999"; A "-unsafe"; A "-noassert"])
+            ]);
+          (["oasis_library_ccparse_native"; "ocaml"; "ocamldep"; "native"],
+            [
+               (OASISExpr.EBool true,
+                 S [A "-inline"; A "999"; A "-unsafe"; A "-noassert"])
+            ]);
+          (["oasis_library_ccparse_native"; "ocaml"; "compile"; "native"],
+            [
+               (OASISExpr.EBool true,
+                 S [A "-inline"; A "999"; A "-unsafe"; A "-noassert"])
+            ])
        ];
      includes =
        [
           ("treematch", ["baselib"]);
+          ("testsuite", ["baselib"]);
           ("glr", ["baselib"]);
           ("elkhound", ["baselib"; "glr"]);
           ("cpapa", ["ast"; "ccparse"; "ccparse/gr"]);
@@ -506,7 +552,7 @@ let package_default =
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default package_default;;
 
-# 510 "myocamlbuild.ml"
+# 556 "myocamlbuild.ml"
 (* OASIS_STOP *)
 let tokens = [
   "ccparse/tok/c++1998.tok";

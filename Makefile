@@ -2,8 +2,6 @@ CONFIGUREFLAGS ?= --enable-tests
 
 default: setup.native
 	_build/setup.native -build
-	_build/setup.native -doc
-	_build/setup.native -test
 
 # OASIS_START
 # DO NOT EDIT (digest: bc1e05bfc8b39b664f29dae8dbd3ebbb)
@@ -53,11 +51,11 @@ setup.ml: _oasis
 check: default
 	_build/runtests.native
 
-check-elkhound: elkhound/elkhound.native
+check-elkhound: default
 	_build/elkhound/elkhound.native | sed -e 's/\[[^m]*m//g' > o.txt
 
-check-ccparse: ccparse/ccparse.native
-	_build/ccparse/ccparse.native -ptree testsuite/c++11.ii
+check-cpapa: default
+	./cpapa.native -ptree testsuite/c++11.ii
 
 
 CALLGRIND = valgrind --tool=callgrind			\
@@ -67,8 +65,8 @@ CALLGRIND = valgrind --tool=callgrind			\
 	--collect-jumps=yes				\
 	--instr-atstart=no
 
-profile-elkhound: elkhound/elkhound.native
+profile-elkhound: default
 	cd _build && $(CALLGRIND) elkhound/elkhound.native
 
-profile-ccparse: ccparse/ccparse.native
-	$(CALLGRIND) _build/ccparse/ccparse.native -pp -utf8 -trivial testsuite/profile.cc
+profile-cpapa: default
+	$(CALLGRIND) ./cpapa.native -pp -trivial testsuite/profile.cc

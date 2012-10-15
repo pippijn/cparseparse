@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 39e419ee2b006c20124ed88082b7aca5)
+# DO NOT EDIT (digest: 225709263e5d258cd92599e27f04f2ad)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -24,6 +24,11 @@
 "baselib/dllbaselib_stubs.dll": oasis_library_baselib_cclib
 "baselib/libbaselib_stubs.a": oasis_library_baselib_cclib
 "baselib/dllbaselib_stubs.so": oasis_library_baselib_cclib
+<baselib/baselib.{cma,cmxa}>: oasis_library_baselib_native
+<baselib/*.ml{,i}>: oasis_library_baselib_native
+"baselib/ml_BitSet.c": oasis_library_baselib_native
+"baselib/ml_Sched.c": oasis_library_baselib_native
+"baselib/ml_Valgrind.c": oasis_library_baselib_native
 <baselib/baselib.{cma,cmxa}>: use_libbaselib_stubs
 <baselib/*.ml{,i}>: pkg_sexplib
 <baselib/*.ml{,i}>: pkg_batteries
@@ -35,16 +40,20 @@
 "baselib/ml_Valgrind.c": pkg_batteries
 # Library glr
 "glr/glr.cmxs": use_glr
+"glr/glr.cmxa": oasis_library_glr_native
+<glr/*.ml{,i}>: oasis_library_glr_native
 <glr/*.ml{,i}>: use_baselib
 <glr/*.ml{,i}>: pkg_sexplib
 <glr/*.ml{,i}>: pkg_batteries
 # Library ccparse
 "ccparse/ccparse.cmxs": use_ccparse
+"ccparse/ccparse.cmxa": oasis_library_ccparse_native
+<ccparse/*.ml{,i}>: oasis_library_ccparse_native
+<ccparse/gr/*.ml{,i}>: oasis_library_ccparse_native
 <ccparse/*.ml{,i}>: use_ast
 <ccparse/*.ml{,i}>: use_glr
 <ccparse/*.ml{,i}>: use_baselib
 <ccparse/*.ml{,i}>: pkg_sexplib
-<ccparse/*.ml{,i}>: pkg_ulex
 <ccparse/*.ml{,i}>: pkg_batteries
 <ccparse/*.ml{,i}>: pkg_unix
 <ccparse/*.ml{,i}>: pkg_sexplib.syntax
@@ -52,7 +61,6 @@
 <ccparse/gr/*.ml{,i}>: use_glr
 <ccparse/gr/*.ml{,i}>: use_baselib
 <ccparse/gr/*.ml{,i}>: pkg_sexplib
-<ccparse/gr/*.ml{,i}>: pkg_ulex
 <ccparse/gr/*.ml{,i}>: pkg_batteries
 <ccparse/gr/*.ml{,i}>: pkg_unix
 <ccparse/gr/*.ml{,i}>: pkg_sexplib.syntax
@@ -62,7 +70,6 @@
 "cpapa/cpapa.native": use_glr
 "cpapa/cpapa.native": use_baselib
 "cpapa/cpapa.native": pkg_sexplib
-"cpapa/cpapa.native": pkg_ulex
 "cpapa/cpapa.native": pkg_batteries
 "cpapa/cpapa.native": pkg_unix
 "cpapa/cpapa.native": pkg_sexplib.syntax
@@ -71,7 +78,6 @@
 <cpapa/*.ml{,i}>: use_glr
 <cpapa/*.ml{,i}>: use_baselib
 <cpapa/*.ml{,i}>: pkg_sexplib
-<cpapa/*.ml{,i}>: pkg_ulex
 <cpapa/*.ml{,i}>: pkg_batteries
 <cpapa/*.ml{,i}>: pkg_unix
 <cpapa/*.ml{,i}>: pkg_sexplib.syntax

@@ -3,7 +3,6 @@ module Priv = struct
   let _tptree = ref false
   let _print = ref false
   let _print_lousy_ast = ref false
-  let _utf8 = ref false
   let _pp = ref false
   let _tokens = ref false
   let _dumptoks = ref false
@@ -24,7 +23,6 @@ let () =
     "-tptree",		Set Priv._tptree,		" build strongly typed parse tree";
     "-print",		Set Priv._print,		" print tree";
     "-print-lousy-ast", Set Priv._print_lousy_ast,	" print lousy ast";
-    "-utf8",		Set Priv._utf8,			" assume source file is in UTF-8 encoding";
     "-pp",		Set Priv._pp,			" fully tokenise before parsing";
     "-tokens",		Set Priv._tokens,		" tokenise only; do not parse (implies -pp)";
     "-dumptoks",	Set Priv._dumptoks,		" dump tokens to file (implies -pp)";
@@ -50,7 +48,6 @@ let _ptree = !Priv._ptree
 let _tptree = !Priv._tptree
 let _print = !Priv._print
 let _print_lousy_ast = !Priv._print_lousy_ast
-let _utf8 = !Priv._utf8
 let _pp = !Priv._pp
 let _tokens = !Priv._tokens
 let _dumptoks = !Priv._dumptoks

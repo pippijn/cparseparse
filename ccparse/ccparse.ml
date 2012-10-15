@@ -1,17 +1,7 @@
-type ('lexbuf, 'token) lexer = {
-  from_channel : in_channel -> 'lexbuf;
-  lexeme : 'lexbuf -> string;
-  lexeme_start : 'lexbuf -> int;
-
-  lex : 'lexbuf -> 'token;
-  line : int ref;
-}
-
-
 let cc_lexer = Lexerint.({
-  token = (fun () -> CcTokens.TOK_EOF);
-  index = CcTokens.index;
-  sval  = CcTokens.sval;
+  token = (fun () -> Lexing.dummy_pos, Lexing.dummy_pos, CcTokens.TOK_EOF);
+  index = (fun (_, _, next) -> CcTokens.index next);
+  sval  = (fun (_, _, next) -> CcTokens.sval next);
 })
 
 
@@ -55,24 +45,24 @@ let glrparse glr lexer =
 
 
 let rec tokenise tokens token lexbuf =
-  let next = token lexbuf in
-  if next == CcTokens.TOK_EOF then (
-    if false then (
-      Printf.printf "%d tokens\n" (List.length tokens);
-      flush stdout;
-    );
-    List.rev (next :: tokens)
-  ) else (
-    tokenise (next :: tokens) token lexbuf
-  )
+  match token lexbuf with
+  | _, _, CcTokens.TOK_EOF as next ->
+      if false then (
+        Printf.printf "%d tokens\n" (List.length tokens);
+        flush stdout;
+      );
+      List.rev (next :: tokens)
+  | next ->
+      tokenise (next :: tokens) token lexbuf
+
 
 let lexer_from_list tokens =
   let tokens = ref tokens in
   Lexerint.({ cc_lexer with
     token = (fun () ->
-      let token = List.hd !tokens in
+      let next = List.hd !tokens in
       tokens := List.tl !tokens;
-      token
+      next
     )
   })
 
@@ -82,23 +72,23 @@ let lexer_from_dump input =
   lexer_from_list tokens
 
 
-let lexer_from_lexing lexing lexbuf =
+let lexer_from_lexing lexbuf =
   Lexerint.({ cc_lexer with
     token = (fun () ->
-      lexing.lex lexbuf
+      Lexer.token lexbuf
     )
   })
 
 
-let lexer_from_file input lexing =
+let lexer_from_file input =
   (* FIXME: this is never closed *)
   let cin = Unix.open_process_in ("gcc -I /usr/include/qt4 -xc++ -E -P " ^ input) in
 
-  let lexbuf = lexing.from_channel cin in
+  let lexbuf = Lexing.from_channel cin in
 
   assert (not Options._loadtoks);
   if Options._pp then (
-    let tokens = Timing.time "lexing" (tokenise [] lexing.lex) lexbuf in
+    let tokens = Timing.time "lexing" (tokenise [] Lexer.token) lexbuf in
     if Options._dumptoks then (
       if Options._loadtoks then
         failwith "-dumptoks and -loadtoks are mutually exclusive";
@@ -108,16 +98,16 @@ let lexer_from_file input lexing =
     lexer_from_list tokens
   ) else (
     assert (not Options._dumptoks);
-    lexer_from_lexing lexing lexbuf
+    lexer_from_lexing lexbuf
   )
 
 
-let parse glr actions input lexing =
+let parse_file glr actions input =
   let lexer =
     if Options._loadtoks then
       lexer_from_dump input
     else
-      lexer_from_file input lexing
+      lexer_from_file input
   in
 
   let lexer =
@@ -133,37 +123,8 @@ let parse glr actions input lexing =
     match glrparse glr lexer with
     | Some _ as result -> result
     | None ->
-        Printf.printf "near line %d\n" !(lexing.line);
+        Printf.printf "near line %d\n" 0;
         None
-
-
-let parse_utf8 glr actions input =
-  parse glr actions input {
-    from_channel = Ulexing.from_utf8_channel;
-    lexeme = Ulexing.utf8_lexeme;
-    lexeme_start = Ulexing.lexeme_start;
-
-    lex = Ulexer.token;
-    line = Ulexer.line;
-  }
-
-
-let parse_ascii glr actions input =
-  parse glr actions input {
-    from_channel = Lexing.from_channel;
-    lexeme = Lexing.lexeme;
-    lexeme_start = Lexing.lexeme_start;
-
-    lex = Lexer.token;
-    line = Lexer.line;
-  }
-
-
-let parse_file glr actions input =
-  if Options._utf8 then
-    parse_utf8 glr actions input
-  else
-    parse_ascii glr actions input
 
 
 let parse_files actions tables inputs =
