@@ -31,11 +31,17 @@ let () =
     "-stats",		Set Priv._stats,		" print parsing statistics";
     "-trivial",		Set Priv._trivial,		" use trivial user actions";
     "-timing",		Set Priv._timing,		" output timing details";
-    "-xc",		Set Priv._xc,			" parse code as C, not as C++";
+    "-xc",		Set Priv._xc,			" parse code as C, not as C++ (implicit if any input file name ends with .c)";
   ]) (fun input -> Priv.inputs := input :: !Priv.inputs) "Usage: cxxparse [option...] <file...>");
 
   if !Priv._dumptoks || !Priv._tokens then
-    Priv._pp := true
+    Priv._pp := true;
+  begin try
+    ignore (List.find (ExtString.ends_with ".c") !Priv.inputs);
+    Priv._xc := true
+  with Not_found ->
+    ()
+  end
 
 
 let _ptree = !Priv._ptree
