@@ -1,8 +1,5 @@
 CONFIGUREFLAGS ?= --enable-tests
 
-default: setup.native
-	_build/setup.native -build
-
 # OASIS_START
 # DO NOT EDIT (digest: bc1e05bfc8b39b664f29dae8dbd3ebbb)
 
@@ -41,20 +38,21 @@ setup.data:
 .PHONY: build doc test all install uninstall reinstall clean distclean configure
 
 # OASIS_STOP
-%.native: setup.data
+SETUP = _build/setup.native
+
+setup.native: setup.ml
 	ocamlbuild $@
 
-setup.data: setup.ml
+setup.data: setup.native
 setup.ml: _oasis
 	oasis setup
 
-check: default
-	_build/runtests.native
+check: test
 
-check-elkhound: default
-	_build/elkhound/elkhound.native | sed -e 's/\[[^m]*m//g' > o.txt
+check-elkhound: build
+	./elkhound.native | sed -e 's/\[[^m]*m//g' > o.txt
 
-check-cpapa: default
+check-cpapa: build
 	./cpapa.native -ptree testsuite/c++11.ii
 
 
@@ -65,8 +63,8 @@ CALLGRIND = valgrind --tool=callgrind			\
 	--collect-jumps=yes				\
 	--instr-atstart=no
 
-profile-elkhound: default
+profile-elkhound: build
 	cd _build && $(CALLGRIND) elkhound/elkhound.native
 
-profile-cpapa: default
+profile-cpapa: build
 	$(CALLGRIND) ./cpapa.native -pp -trivial testsuite/profile.cc
