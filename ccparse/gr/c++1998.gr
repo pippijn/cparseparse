@@ -55,7 +55,7 @@
 
 
 // expected statistics
-option shift_reduce_conflicts 52;
+option shift_reduce_conflicts 50;
 option reduce_reduce_conflicts 73;
 option unreachable_nonterminals 1;
 option unreachable_terminals 8;
@@ -159,7 +159,7 @@ nonterm TranslationUnit {
   fun dup(n) { n }    // prevent multi-yield
 
   -> empty                                      { [] }
-  -> head:TranslationUnit tail:Declaration      { tail :: head }
+  -> xs:TranslationUnit x:Declaration           { x :: xs }
 }
 
 // ------ A.4 Expressions ------
@@ -194,8 +194,8 @@ nonterm PreprocString {
 
 // a string literal, with all concatenated parts
 nonterm StringLiteral {
-  -> tail:PreprocString                        { [tail] }
-  -> head:StringLiteral tail:PreprocString     { tail :: head }
+  -> x:PreprocString                        { [x] }
+  -> xs:StringLiteral x:PreprocString       { x :: xs }
 }
 
 
@@ -1325,19 +1325,16 @@ nonterm InitializerList {
 //
 // regex for this nonterm: (PtrOperator)* DirectDeclarator
 nonterm Declarator {
-  -> "*" cv:CVQualifierSeqOpt d:Declarator
-       { (  ), cv, (  ) }
-  // dsw: I could have just allowed 'restrict' here instead of
-  // allowing any CVQualifierSeqOpt after a "&" but it would mean
-  // duplicating the parsing rule three times (there are three
-  // occurances of "&" with this meaning in the grammar) and moving it
-  // to gnu.gr; perhaps Scott will prefer that more specific solution.
-  -> "&" cv:CVQualifierSeqOpt /*dsw: discarded; can be 'restrict' */ d:Declarator
-       { (  ), cv, (  ) }
-  -> n:PtrToMemberName "*" cv:CVQualifierSeqOpt d:Declarator
-       { (  ), cv, (  ) }
+  -> p:PrefixDeclarator d:Declarator
+       { (  ), p, (  ) }
   -> d:DirectDeclarator
        [Direct] { (  ), C0.AnNil, (  ) }
+}
+
+nonterm PrefixDeclarator {
+  -> "*" cv:CVQualifierSeqOpt { cv }
+  -> "&" cv:CVQualifierSeqOpt { cv }
+  -> n:PtrToMemberName "*" cv:CVQualifierSeqOpt { cv }
 }
 
 nonterm DirectDeclarator {
@@ -1435,7 +1432,7 @@ nonterm CVQualifierSeqOpt {
 
 nonterm CVQualifierSeq {
   -> q:CVQualifier                       { C0.AnId (((*loc*)), q, C0.AnNil) }
-  -> q:CVQualifier s:CVQualifierSeq      { C0.AnId (((*loc*)), q, s) }
+  -> s:CVQualifierSeq q:CVQualifier      { C0.AnId (((*loc*)), q, s) }
 }
 
 nonterm CVQualifier {
@@ -1459,12 +1456,8 @@ nonterm AbstractDeclaratorOpt {
 
 // an abstract declarator (not opt) must have *some* ground syntax in it
 nonterm AbstractDeclarator {
-  -> "*" cv:CVQualifierSeqOpt d:AbstractDeclaratorOpt
+  -> p:PrefixDeclarator d:AbstractDeclaratorOpt
        { unimplemented 336 }
-  -> "&" cv:CVQualifierSeqOpt /*dsw: discarded; can be 'restrict' */ d:AbstractDeclaratorOpt
-       { unimplemented 337 }
-  -> n:PtrToMemberName "*" cv:CVQualifierSeqOpt d:AbstractDeclaratorOpt
-       { unimplemented 338 }
   -> d:DirectAbstractDeclarator
        { unimplemented 339 }
 }
@@ -1902,12 +1895,8 @@ nonterm ConversionDeclaratorOpt {
   -> empty                             precedence(TOK_PREFER_SHIFT)
        { unimplemented 431 }
 
-  -> "*" cv:CVQualifierSeqOpt d:ConversionDeclaratorOpt
+  -> p:PrefixDeclarator d:ConversionDeclaratorOpt
        { unimplemented 432 }
-  -> "&" cv:CVQualifierSeqOpt /*dsw: discarded; can be 'restrict' */ d:ConversionDeclaratorOpt
-       { unimplemented 433 }
-  -> n:PtrToMemberName "*" cv:CVQualifierSeqOpt d:ConversionDeclaratorOpt
-       { unimplemented 434 }
 }
 
 
@@ -2152,10 +2141,10 @@ nonterm TemplateId {
 }
 
 nonterm TemplateArgumentList {
-  -> head:TemplateArgument
+  -> x:TemplateArgument
        { unimplemented 507 }
 
-  -> tail:TemplateArgumentList "," head:TemplateArgument
+  -> xs:TemplateArgumentList "," x:TemplateArgument
        { unimplemented 507 }
 }
 
@@ -2190,7 +2179,7 @@ nonterm TryBlock {
 
 nonterm HandlerSeq {
   -> h:Handler                 { unimplemented 516 }
-  -> h:Handler seq:HandlerSeq  { unimplemented 517 }
+  -> seq:HandlerSeq h:Handler  { unimplemented 517 }
 }
 
 nonterm Handler {

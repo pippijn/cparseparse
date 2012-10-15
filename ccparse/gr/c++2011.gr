@@ -88,17 +88,8 @@ nonterm TemplateArgument {
 }
 
 // rvalue references
-nonterm AbstractDeclarator {
-  -> "&&" cv:CVQualifierSeqOpt /*dsw: discarded; can be 'restrict' */ d:AbstractDeclaratorOpt
-       { unimplemented 337 }
+/*
+nonterm PrefixDeclarator {
+  -> "&&" cv:CVQualifierSeqOpt { cv }
 }
-
-nonterm Declarator {
-  -> "&&" cv:CVQualifierSeqOpt /*dsw: discarded; can be 'restrict' */ d:Declarator
-       { (  ), cv, (  ) }
-}
-
-nonterm ConversionDeclaratorOpt {
-  -> "&&" cv:CVQualifierSeqOpt /*dsw: discarded; can be 'restrict' */ d:ConversionDeclaratorOpt
-       { unimplemented 433 }
-}
+*/
