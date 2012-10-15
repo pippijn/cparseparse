@@ -1032,9 +1032,13 @@ nonterm UberCVQualifierSeqOpt {
 }
 
 nonterm UberTypeAndCVQualifierSeqOpt {
-  -> empty                                             { unimplemented 231 }
-  -> s:UberTypeAndCVQualifierSeqOpt u:UberCVQualifier  { unimplemented 232 }
-  -> s:UberTypeAndCVQualifierSeqOpt u:SimpleTypeSpecifier  { unimplemented 233 }
+  -> empty                                                      { unimplemented 231 }
+  -> s:UberTypeAndCVQualifierSeqOpt u:UberTypeAndCVQualifier    { unimplemented 232 }
+}
+
+nonterm UberTypeAndCVQualifier {
+  -> u:UberCVQualifier [CV];
+  -> u:SimpleTypeSpecifier [TypeSpec];
 }
 
 
@@ -1099,24 +1103,24 @@ nonterm ElaboratedTypeSpecifier {
 nonterm TypeSpecifier {
   // TS_name
   -> n:PQTypeName cv2:UberCVQualifierSeqOpt
-       { unimplemented 262 }
+       [Name] { unimplemented 262 }
 
   -> cv1:UberCVQualifierSeq n:PQTypeName cv2:UberCVQualifierSeqOpt
-       { unimplemented 263 }
+       [QualName] { unimplemented 263 }
 
   // TS_simple
   -> k1:SimpleTypeSpecifier m2:UberTypeAndCVQualifierSeqOpt
-       { unimplemented 264 }
+       [Simple] { unimplemented 264 }
 
   -> m1:UberCVQualifierSeq k1:SimpleTypeSpecifier m2:UberTypeAndCVQualifierSeqOpt
-       { unimplemented 265 }
+       [QualSimple] { unimplemented 265 }
 
   // TS_elaborated, TS_classSpec, TS_enumSpec
   -> e:ElaboratedOrSpecifier m2:UberCVQualifierSeqOpt
-       { unimplemented 266 }
+       [Elab] { unimplemented 266 }
 
   -> m1:UberCVQualifierSeq e:ElaboratedOrSpecifier m2:UberCVQualifierSeqOpt
-       { unimplemented 267 }
+       [QualElab] { unimplemented 267 }
 }
 
 
@@ -1327,15 +1331,15 @@ nonterm InitializerList {
 // regex for this nonterm: (PtrOperator)* DirectDeclarator
 nonterm Declarator {
   -> p:PrefixDeclarator d:Declarator
-       { (  ), p, (  ) }
+       [Prefix] { (  ), p, (  ) }
   -> d:DirectDeclarator
        [Direct] { (  ), C0.AnNil, (  ) }
 }
 
 nonterm PrefixDeclarator {
-  -> "*" cv:CVQualifierSeqOpt { cv }
-  -> "&" cv:CVQualifierSeqOpt { cv }
-  -> n:PtrToMemberName "*" cv:CVQualifierSeqOpt { cv }
+  -> "*" cv:CVQualifierSeqOpt [Ptr] { cv }
+  -> "&" cv:CVQualifierSeqOpt [Re] { cv }
+  -> n:PtrToMemberName "*" cv:CVQualifierSeqOpt [MemPtr] { cv }
 }
 
 nonterm DirectDeclarator {
@@ -1513,20 +1517,20 @@ nonterm ParameterDeclarationList {
 
   // last (and perhaps only) arg is "..."
   -> "..."
-       { unimplemented 347 }
+       [VarArg] { unimplemented 347 }
 
   // last arg is "...", and 2nd-to-last is not separated by
   // a comma from the "..."
   -> d:ParameterDeclaration "..."
-       { unimplemented 348 }
+       [NamedVarArg] { unimplemented 348 }
 
   // last arg is not "..."
   -> d:ParameterDeclaration
-       { unimplemented 349 }
+       [Param] { unimplemented 349 }
 
   // argument then "," then arg or "..." or list
   -> d:ParameterDeclaration "," list:ParameterDeclarationList
-       { unimplemented 350 }
+       [Params] { unimplemented 350 }
 }
 
 nonterm ParameterDeclaration {
@@ -1535,11 +1539,11 @@ nonterm ParameterDeclaration {
   // NOTE: The 'register' keyword is simply ignored.
 
   -> s:TypeSpecifier pd:ParameterDeclarator
-       { unimplemented 352 }
+       [Parm] { unimplemented 352 }
   -> "register" s:TypeSpecifier pd:ParameterDeclarator
-       { unimplemented 353 }
+       [RegParm1] { unimplemented 353 }
   -> s:TypeSpecifier "register" pd:ParameterDeclarator
-       { unimplemented 354 }
+       [RegParm2] { unimplemented 354 }
 }
 
 nonterm ParameterDeclarator {
@@ -1552,15 +1556,16 @@ nonterm ParameterDeclarator {
   // see D_name_tcheck in tcheck.cc for resolution
   fun merge(l,r) { unimplemented 355 }
 
-  -> d:UnqualifiedDeclarator
-       { unimplemented 356 }
-  -> d:UnqualifiedDeclarator "=" e:AssignmentExpression
-       { unimplemented 357 }
+  -> d:UnqualifiedDeclarator e:DefaultValueOpt
+       [Decl] { unimplemented 357 }
 
-  -> d:AbstractDeclaratorOpt
-       { unimplemented 358 }
-  -> d:AbstractDeclaratorOpt "=" e:AssignmentExpression
-       { unimplemented 359 }
+  -> d:AbstractDeclaratorOpt e:DefaultValueOpt
+       [AbstractDecl] { unimplemented 359 }
+}
+
+nonterm DefaultValueOpt {
+  -> empty { () }
+  -> "=" e:AssignmentExpression { () }
 }
 
 
