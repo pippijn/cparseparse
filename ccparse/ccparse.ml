@@ -171,16 +171,6 @@ let elkmain inputs =
     let trees = parse_files actions tables inputs in
     List.iter (function None | Some () -> ()) trees
 
-  ) else (
-
-    let trees = parse_files actions tables inputs in
-    List.iter (function
-      | None -> ()
-      | Some lst ->
-          (* Print our AST *)
-          List.iter (C0.output_program Pervasives.stderr) lst
-    ) trees
-
   )
 
 

@@ -126,7 +126,7 @@ impl_verbatim {
 }
 
 
-nonterm(C0.topl list) File {
+nonterm(unit) File {
   -> t:TranslationUnit { List.rev t }
 }
 
@@ -885,18 +885,18 @@ nonterm ForInitStatement {
 nonterm Declaration {
   fun merge(l,r) { unimplemented 0 }
 
-  -> e:EmptyDeclaration        [Empty] { C0.ToNil }
-  -> d:BlockDeclaration        [Block] { C0.ToNil }
+  -> e:EmptyDeclaration        [Empty] { }
+  -> d:BlockDeclaration        [Block] { }
   -> f:FunctionDefinition      [Function] { f }
-  -> t:TemplateDeclaration     [Template] { C0.ToNil }
-  -> d:ExplicitInstantiation   [ExplInst] { C0.ToNil }
+  -> t:TemplateDeclaration     [Template] { }
+  -> d:ExplicitInstantiation   [ExplInst] { }
   //-> ExplicitSpecialization  // folded into TemplateDeclaration
-  -> s:LinkageSpecification    [LinkageSpec] { C0.ToNil }
+  -> s:LinkageSpecification    [LinkageSpec] { }
 
   // substituted from BlockDeclaration
-  -> a:AsmDefinition           [Asm] { C0.ToNil }
-  -> n:NamespaceDefinition     [NamespaceDefn] { C0.ToNil }
-  -> n:NamespaceDecl           [NamespaceDecl] { C0.ToNil }
+  -> a:AsmDefinition           [Asm] { }
+  -> n:NamespaceDefinition     [NamespaceDefn] { }
+  -> n:NamespaceDecl           [NamespaceDecl] { }
 }
 
 nonterm EmptyDeclaration {
@@ -1333,7 +1333,7 @@ nonterm Declarator {
   -> p:PrefixDeclarator d:Declarator
        [Prefix] { (  ), p, (  ) }
   -> d:DirectDeclarator
-       [Direct] { (  ), C0.AnNil, (  ) }
+       [Direct] { }
 }
 
 nonterm PrefixDeclarator {
@@ -1431,13 +1431,13 @@ nonterm PtrToMemberName {
 
 
 nonterm CVQualifierSeqOpt {
-  -> empty                       { C0.AnNil }
+  -> empty                       { }
   -> s:CVQualifierSeq            { s }
 }
 
 nonterm CVQualifierSeq {
-  -> q:CVQualifier                       { C0.AnId (((*loc*)), q, C0.AnNil) }
-  -> s:CVQualifierSeq q:CVQualifier      { C0.AnId (((*loc*)), q, s) }
+  -> q:CVQualifier                       { }
+  -> s:CVQualifierSeq q:CVQualifier      { }
 }
 
 nonterm CVQualifier {
@@ -1604,13 +1604,12 @@ nonterm FunctionDefinition {
   // ordinary function:
   // return type      name/params   body
   -> r:DeclSpecifier  d:FDDeclarator  b:FunctionBody
-       [Ordinary] { C0.ToDef
-         ((), C0.DfFun ((), C0.TyId ((), "test"), C0.AnNil, "func", C0.TaNil, C0.BlNil), C0.ToNil) }
+       [Ordinary] { }
 
   // 2005-03-09: I didn't even realize this was possible for non-ctors
   // return type      name/params            body            handlers
   -> r:DeclSpecifier  d:FDDeclarator  "try"  b:FunctionBody  h:HandlerSeq
-       [OrdinaryTry] { C0.ToNil }
+       [OrdinaryTry] { }
 
   // I've now substituted the RHSs of CDtorModifierOpt, to eliminiate
   // a few s/r conflicts at the toplevel of parsing (where they are
@@ -1619,16 +1618,16 @@ nonterm FunctionDefinition {
   // constructor, destructor or conversion operator
   // "explicit"?         name/params     member inits          body
   -> m:CDtorModifierSeq  d:FDDeclarator  c:CtorInitializerOpt  b:FunctionBody
-       [CDtorMod] { C0.ToNil }
+       [CDtorMod] { }
   -> /*no modifier*/     d:FDDeclarator  c:CtorInitializerOpt  b:FunctionBody
-       [CDtor] { C0.ToNil }
+       [CDtor] { }
 
   // ctor with a try block
   // "explicit"?         name/params          member inits         body           handlers
   -> e:CDtorModifierSeq  d:FDDeclarator "try" c:CtorInitializerOpt b:FunctionBody h:HandlerSeq
-       [CDtorTryMod] { C0.ToNil }
+       [CDtorTryMod] { }
   -> /*no modifier*/     d:FDDeclarator "try" c:CtorInitializerOpt b:FunctionBody h:HandlerSeq
-       [CDtorTry] { C0.ToNil }
+       [CDtorTry] { }
 }
 
 // function definition declarator; must have D_func at the
