@@ -126,8 +126,8 @@ impl_verbatim {
 }
 
 
-nonterm(unit list) File {
-  -> t:TranslationUnit { List.rev t }
+nonterm(unit) File {
+  -> t:TranslationUnit { () }
 }
 
 // 4/20/04: Removed long-since defunct EnterScope and LeaveScope
@@ -136,7 +136,7 @@ nonterm(unit list) File {
 // ------------- identifiers -------------------
 // simple string of characters
 nonterm Identifier {
-  -> n:TOK_NAME          { }
+  -> n:TOK_NAME          { () }
 }
 
 // another name that comes up in a few places; it's supposed
@@ -158,8 +158,8 @@ nonterm TypeName {
 nonterm TranslationUnit {
   fun dup(n) { n }    // prevent multi-yield
 
-  -> empty                                      { [] }
-  -> xs:TranslationUnit x:Declaration           { x :: xs }
+  -> empty                                      { () }
+  -> xs:TranslationUnit x:Declaration           { () }
 }
 
 // ------ A.4 Expressions ------
@@ -194,8 +194,8 @@ nonterm PreprocString {
 
 // a string literal, with all concatenated parts
 nonterm StringLiteral {
-  -> x:PreprocString                        { [x] }
-  -> xs:StringLiteral x:PreprocString       { x :: xs }
+  -> x:PreprocString                        { () }
+  -> xs:StringLiteral x:PreprocString       { () }
 }
 
 
@@ -838,7 +838,7 @@ nonterm CompoundStmtHelper {
 
 nonterm AnnotatedStatement {
   -> s:Statement a:AnnotationOpt
-       [Stmt] { }
+       [Stmt] { () }
 }
 
 
@@ -885,18 +885,18 @@ nonterm ForInitStatement {
 nonterm Declaration {
   fun merge(l,r) { unimplemented 0 }
 
-  -> e:EmptyDeclaration        [Empty] { }
-  -> d:BlockDeclaration        [Block] { }
-  -> f:FunctionDefinition      [Function] { }
-  -> t:TemplateDeclaration     [Template] { }
-  -> d:ExplicitInstantiation   [ExplInst] { }
+  -> e:EmptyDeclaration        [Empty] { () }
+  -> d:BlockDeclaration        [Block] { () }
+  -> f:FunctionDefinition      [Function] { () }
+  -> t:TemplateDeclaration     [Template] { () }
+  -> d:ExplicitInstantiation   [ExplInst] { () }
   //-> ExplicitSpecialization  // folded into TemplateDeclaration
-  -> s:LinkageSpecification    [LinkageSpec] { }
+  -> s:LinkageSpecification    [LinkageSpec] { () }
 
   // substituted from BlockDeclaration
-  -> a:AsmDefinition           [Asm] { }
-  -> n:NamespaceDefinition     [NamespaceDefn] { }
-  -> n:NamespaceDecl           [NamespaceDecl] { }
+  -> a:AsmDefinition           [Asm] { () }
+  -> n:NamespaceDefinition     [NamespaceDefn] { () }
+  -> n:NamespaceDecl           [NamespaceDecl] { () }
 }
 
 nonterm EmptyDeclaration {
@@ -1305,8 +1305,8 @@ nonterm CompoundInitializer {
 
 // useful syntactic quirk
 nonterm CommaOpt {
-  -> empty { }
-  -> "," { }
+  -> empty { () }
+  -> "," { () }
 }
 
 nonterm InitializerList {
@@ -1331,15 +1331,15 @@ nonterm InitializerList {
 // regex for this nonterm: (PtrOperator)* DirectDeclarator
 nonterm Declarator {
   -> p:PrefixDeclarator d:Declarator
-       [Prefix] { }
+       [Prefix] { () }
   -> d:DirectDeclarator
-       [Direct] { }
+       [Direct] { () }
 }
 
 nonterm PrefixDeclarator {
-  -> "*" cv:CVQualifierSeqOpt [Ptr] { }
-  -> "&" cv:CVQualifierSeqOpt [Re] { }
-  -> n:PtrToMemberName "*" cv:CVQualifierSeqOpt [MemPtr] { }
+  -> "*" cv:CVQualifierSeqOpt [Ptr] { () }
+  -> "&" cv:CVQualifierSeqOpt [Re] { () }
+  -> n:PtrToMemberName "*" cv:CVQualifierSeqOpt [MemPtr] { () }
 }
 
 nonterm DirectDeclarator {
@@ -1431,18 +1431,18 @@ nonterm PtrToMemberName {
 
 
 nonterm CVQualifierSeqOpt {
-  -> empty                       { }
-  -> s:CVQualifierSeq            { }
+  -> empty                       { () }
+  -> s:CVQualifierSeq            { () }
 }
 
 nonterm CVQualifierSeq {
-  -> q:CVQualifier                       { }
-  -> s:CVQualifierSeq q:CVQualifier      { }
+  -> q:CVQualifier                       { () }
+  -> s:CVQualifierSeq q:CVQualifier      { () }
 }
 
 nonterm CVQualifier {
-  -> "const"                 [Const] { }
-  -> "volatile"              [Volatile] { }
+  -> "const"                 [Const] { () }
+  -> "volatile"              [Volatile] { () }
 }
 
 
@@ -1564,8 +1564,8 @@ nonterm ParameterDeclarator {
 }
 
 nonterm DefaultValueOpt {
-  -> empty { }
-  -> "=" e:AssignmentExpression { }
+  -> empty { () }
+  -> "=" e:AssignmentExpression { () }
 }
 
 
@@ -1604,12 +1604,12 @@ nonterm FunctionDefinition {
   // ordinary function:
   // return type      name/params   body
   -> r:DeclSpecifier  d:FDDeclarator  b:FunctionBody
-       [Ordinary] { }
+       [Ordinary] { () }
 
   // 2005-03-09: I didn't even realize this was possible for non-ctors
   // return type      name/params            body            handlers
   -> r:DeclSpecifier  d:FDDeclarator  "try"  b:FunctionBody  h:HandlerSeq
-       [OrdinaryTry] { }
+       [OrdinaryTry] { () }
 
   // I've now substituted the RHSs of CDtorModifierOpt, to eliminiate
   // a few s/r conflicts at the toplevel of parsing (where they are
@@ -1618,16 +1618,16 @@ nonterm FunctionDefinition {
   // constructor, destructor or conversion operator
   // "explicit"?         name/params     member inits          body
   -> m:CDtorModifierSeq  d:FDDeclarator  c:CtorInitializerOpt  b:FunctionBody
-       [CDtorMod] { }
+       [CDtorMod] { () }
   -> /*no modifier*/     d:FDDeclarator  c:CtorInitializerOpt  b:FunctionBody
-       [CDtor] { }
+       [CDtor] { () }
 
   // ctor with a try block
   // "explicit"?         name/params          member inits         body           handlers
   -> e:CDtorModifierSeq  d:FDDeclarator "try" c:CtorInitializerOpt b:FunctionBody h:HandlerSeq
-       [CDtorTryMod] { }
+       [CDtorTryMod] { () }
   -> /*no modifier*/     d:FDDeclarator "try" c:CtorInitializerOpt b:FunctionBody h:HandlerSeq
-       [CDtorTry] { }
+       [CDtorTry] { () }
 }
 
 // function definition declarator; must have D_func at the
@@ -1636,7 +1636,7 @@ nonterm FunctionDefinition {
 nonterm FDDeclarator {
   fun keep(d) { true }
 
-  -> d:Declarator    { }
+  -> d:Declarator    { () }
 }
 
 nonterm FunctionBody -> s:CompoundStatement
@@ -2095,7 +2095,7 @@ nonterm TypeParameter {
   -> p:ParameterDeclaration;
 
   // template type parameter
-  -> "template" "<" pl:TemplateParameterList ">" "class" i:IdentifierOpt t:DefaultTemplateOpt { }
+  -> "template" "<" pl:TemplateParameterList ">" "class" i:IdentifierOpt t:DefaultTemplateOpt { () }
 }
 
 // what comes after a template paramter: nothing, or else
@@ -2108,8 +2108,8 @@ nonterm TemplateParameterListContinuation {
 }
 
 nonterm ClassOrTypename {
-  -> "class" [Class] { }
-  -> "typename" [Typename] { }
+  -> "class" [Class] { () }
+  -> "typename" [Typename] { () }
 }
 
 nonterm DefaultTypeOpt {
