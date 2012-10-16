@@ -126,8 +126,8 @@ impl_verbatim {
 }
 
 
-nonterm(unit) File {
-  -> t:TranslationUnit { () }
+nonterm(unit list) File {
+  -> t:TranslationUnit { [()] }
 }
 
 // 4/20/04: Removed long-since defunct EnterScope and LeaveScope
@@ -156,7 +156,7 @@ nonterm TypeName {
 
 // ------ A.3 Basic Concepts ------
 nonterm TranslationUnit {
-  fun dup(n) { n }    // prevent multi-yield
+  fun dup(n) { () }    // prevent multi-yield
 
   -> empty                                      { () }
   -> xs:TranslationUnit x:Declaration           { () }

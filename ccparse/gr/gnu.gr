@@ -353,11 +353,11 @@ nonterm AsmDefinition {
 nonterm Declarator {
   // Asm Labels after declarators; see in/gnu/asm01.c
   -> d:DirectDeclarator "asm" "(" StringLiteral ")"
-       { }
+       { () }
 
   // asm label + attributes ...
   -> d:DirectDeclarator "asm" "(" StringLiteral ")" attr:AttributeSpecifierList
-       { }
+       { () }
 }
 
 
@@ -397,7 +397,7 @@ nonterm Designator {
 
 // ----------- C99 restrict keyword -----------
 nonterm CVQualifier {
-  -> "restrict"              [Restrict] { "restrict" }
+  -> "restrict"              [Restrict] { () }
 }
 
 nonterm UberModifier {
@@ -585,7 +585,7 @@ nonterm Declarator {
   // "*", then some cv, then *one* __attribute__, which causes the
   // parser to commit to this production, then cv+attr seq
   -> "*" cv:CVQualifierSeqOpt attr:AttributeSpecifier cv2:CVQualAttrSeqOpt d:Declarator
-       { }
+       { () }
 
   // perhaps attributes should be allowed after "&" and "C::*"?
 
@@ -593,7 +593,7 @@ nonterm Declarator {
   // attributes just inside the ")" of a D_grouping, whereas gcc
   // doesn't
   -> d:DirectDeclarator attr:AttributeSpecifierList
-       { }
+       { () }
 }
 
 

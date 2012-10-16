@@ -10,8 +10,8 @@
 
 // only allow K&R func defns at toplevel
 nonterm Declaration {
-  -> k:KandRFunctionDefinition             { }
-  -> k:KandRFunctionDefinition_implInt     { }
+  -> k:KandRFunctionDefinition             { () }
+  -> k:KandRFunctionDefinition_implInt     { () }
 }
 
 nonterm KandRFunctionDefinition {
@@ -229,14 +229,14 @@ nonterm ImplIntFunctionDefinition {
 nonterm Declaration {
   fun keep(x) { true }
 
-  fun merge(l,r) { }
+  fun merge(l,r) { () }
 
   // only allow implicit-int func defns at toplevel
   -> f:ImplIntFunctionDefinition
-    { }
+    { () }
 
   -> m1:UberModifierSeqOpt /*implicit-int*/ list:InitDeclaratorList ";"
-    { }
+    { () }
 }
 
 

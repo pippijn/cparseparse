@@ -171,6 +171,14 @@ let elkmain inputs =
     let trees = parse_files actions tables inputs in
     List.iter (function None | Some () -> ()) trees
 
+  ) else (
+
+    let trees = parse_files actions tables inputs in
+    List.iter (function
+      | None -> ()
+      | Some lst -> ()
+    ) trees
+
   )
 
 
