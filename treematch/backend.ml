@@ -61,14 +61,14 @@ module Emit = struct
  and rewrite_clause (st,dt) (l,r) = <:match_case< $tup:paTree st l$ -> $tup:exTree dt r$>>
 
  and paTree t = function
- | Tree.Tree (nm, lst) -> <:patt< $uid:t$ . $uid:nm$ $List.map (paTree t) lst |> Ast.paCom_of_list$>>
- | Tree.Var nm -> <:patt< $lid:nm$ >>
+ | Tree.Tree (_,(nm, lst)) -> <:patt< $uid:t$ . $uid:nm$ $List.map (paTree t) lst |> Ast.paCom_of_list$>>
+ | Tree.Var (_,nm) -> <:patt< $lid:nm$ >>
  | Tree.Const (Tree.String str) -> <:patt<$str:str$>>
  | Tree.Const (Tree.Int i) -> <:patt<$int:string_of_int i$>>
 
  and exTree t = function
- | Tree.Tree (nm, lst) -> constr t (nm, lst)
- | Tree.Var nm -> <:expr< $lid:nm$ >>
+ | Tree.Tree (_,(nm, lst)) -> constr t (nm, lst)
+ | Tree.Var (_,nm) -> <:expr< $lid:nm$ >>
  | Tree.Const (Tree.String str) -> <:expr<$str:str$>>
  | Tree.Const (Tree.Int i) -> <:expr<$int:string_of_int i$>>
 

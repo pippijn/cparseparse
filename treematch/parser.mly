@@ -34,7 +34,7 @@
 
 %token TOK_EOF
 
-%start<Program.t> program
+%start<Program.untyped_program> program
 %%
 
 program
@@ -70,10 +70,11 @@ type_decl
 : t=separated_nonempty_list(TOK_BIARROW,TOK_UIDENT)                       { t }
 
 topl_tree
-: nm=TOK_UIDENT tree=list(tree)                         { Tree.Tree (nm,tree) }
+: nm=TOK_UIDENT tree=list(tree)                   { Tree.Tree ((), (nm,tree)) }
 | TOK_LPAREN tree=topl_tree TOK_RPAREN                                 { tree }
 
 tree
-: TOK_LPAREN nm=TOK_UIDENT tree=list(tree) TOK_RPAREN  { Tree.Tree (nm, tree) }
-| nm=TOK_UIDENT                                          { Tree.Tree (nm, []) }
-| nm=TOK_LIDENT                                                 { Tree.Var nm }
+: TOK_LPAREN nm=TOK_UIDENT tree=list(tree) TOK_RPAREN
+                                                  { Tree.Tree ((),(nm, tree)) }
+| nm=TOK_UIDENT                                    { Tree.Tree ((), (nm, [])) }
+| nm=TOK_LIDENT                                            { Tree.Var ((),nm) }

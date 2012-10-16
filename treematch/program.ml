@@ -4,14 +4,14 @@ open Sexplib.Conv
 (* |                           Definition of AST                           | *)
 (* +=====~~~-------------------------------------------------------~~~=====+ *)
 
-type t = program
-and program = definition list
-and definition =
+type 'a t = 'a program
+and 'a program = 'a definition list
+and 'a definition =
     Ast of string * ast_node list
-  | Map of string * type_decl * rewrite_node list
+  | Map of string * type_decl * 'a rewrite_node list
 and ast_node = string * node
-and rewrite_node = string * rewrite_clause list
-and rewrite_clause = Tree.t * Tree.t
+and 'a rewrite_node = string * 'a rewrite_clause list
+and 'a rewrite_clause = 'a Tree.t * 'a Tree.t
 and node =
     CustomNode of ast_clause list
   | NativeNode of string
@@ -20,12 +20,15 @@ and ast_clause = topl_tree
 and topl_tree = Constr.t
 with sexp
 
+type untyped_program = unit program
+with sexp
+
 open ExtFormat
 let f = fprintf
 
 let pp_biarrow_sep pp () = f pp "@ =>@ "
 
-class print = object (self : 'a)
+class ['a] print = object (self : 'a)
   method program pp = f pp "@[<v>%a@]@;@." (pp_list self # definition pp_space_sep)
   method definition pp x =
     match x with
@@ -51,5 +54,5 @@ class print = object (self : 'a)
 end
 
 let output_program channel s =
-  Sexplib.Sexp.output_hum channel (sexp_of_program s);
+  Sexplib.Sexp.output_hum channel (sexp_of_untyped_program s);
   output_char channel '\n'
