@@ -7,6 +7,8 @@
 /setup.log
 /setup.ml
 /wip
-
-_build
+/_build
+META
+*.mllib
+*.bak
 callgrind.out.*
