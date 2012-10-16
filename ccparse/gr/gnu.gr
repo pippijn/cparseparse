@@ -142,12 +142,12 @@ nonterm ConditionalExpression {
 // http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Nested-Functions.html
 nonterm Statement {
   -> f:FunctionDefinition
-       { unimplemented 558 }
+       [NestedFunc] { unimplemented 558 }
   // quarl 2006-06-15
   //    nested K&R functions; unimplemented for now but I guess we just need
   //    to do the same as above?  see in/gnu/k0010.c
   -> k:KandRFunctionDefinition
-       { unimplemented 559 }
+       [NestedKandRFunc] { unimplemented 559 }
 }
 
 
@@ -163,7 +163,7 @@ nonterm ExplicitInstantiation {
 // http://gcc.gnu.org/onlinedocs/gcc-3.4.1/gcc/Case-Ranges.html
 nonterm Statement {
   -> "case" e:ConstantExpression "..." e2:ConstantExpression ":" s:Statement
-       { unimplemented 561 }
+       [CaseRange] { unimplemented 561 }
 }
 
 
@@ -263,15 +263,15 @@ nonterm TypeofType {
 // http://gcc.gnu.org/onlinedocs/gcc-3.1/gcc/Min-and-Max.html
 nonterm BinExp_mid {
   -> left:BinExp_mid "<?" right:BinExp_high
-       { unimplemented 578 }
+       [Min] { unimplemented 578 }
   -> left:BinExp_mid ">?" right:BinExp_high
-       { unimplemented 579 }
+       [Max] { unimplemented 579 }
 }
 
 // it turns out gcc lets users overload them too (in/gnu/k0004.cc)
 nonterm Operator {
-  -> "<?"    { unimplemented 580 }
-  -> ">?"    { unimplemented 581 }
+  -> "<?"    [Min] { unimplemented 580 }
+  -> ">?"    [Max] { unimplemented 581 }
 }
 
 
@@ -397,15 +397,15 @@ nonterm Designator {
 
 // ----------- C99 restrict keyword -----------
 nonterm CVQualifier {
-  -> "restrict"              { "restrict" }
+  -> "restrict"              [Restrict] { "restrict" }
 }
 
 nonterm UberModifier {
-  -> "restrict"              { unimplemented 598 }
+  -> "restrict"              [Restrict] { unimplemented 598 }
 }
 
 nonterm UberCVQualifier {
-  -> "restrict"              { unimplemented 599 }
+  -> "restrict"              [Restrict] { unimplemented 599 }
 }
 
 
@@ -457,12 +457,12 @@ nonterm BuggyGccTypeModifier {
 // http://gcc.gnu.org/onlinedocs/gcc-3.1/gcc/Labels-as-Values.html
 nonterm UnaryExpression {
   -> "&&" n:Identifier
-       { unimplemented 604 }
+       [LabelAddr] { unimplemented 604 }
 }
 
 nonterm Statement {
   -> "goto" "*" e:Expression ";"
-       { unimplemented 605 }
+       [ComputedGoto] { unimplemented 605 }
 }
 
 
@@ -470,8 +470,8 @@ nonterm Statement {
 // http://gcc.gnu.org/onlinedocs/gcc-3.1/gcc/Complex.html
 // C99 6.2.5p11, 6.7.2, Annex G
 nonterm SimpleTypeSpecifier {
-  -> "_Complex"      { unimplemented 606 }
-  -> "_Imaginary"    { unimplemented 607 }
+  -> "_Complex"      [Complex] { unimplemented 606 }
+  -> "_Imaginary"    [Imaginary] { unimplemented 607 }
 }
 
 // The gcc manual says the syntax is "__real__" Expression, but I'll
@@ -483,9 +483,9 @@ nonterm SimpleTypeSpecifier {
 // in that these are component accesses.
 nonterm PrimaryExpression {
   -> "__real__" e:PrimaryExpression
-     { unimplemented 608 }
+     [Real] { unimplemented 608 }
   -> "__imag__" e:PrimaryExpression
-     { unimplemented 609 }
+     [Imag] { unimplemented 609 }
 }
 
 

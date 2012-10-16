@@ -594,8 +594,8 @@ nonterm BinExp_high {
   -> left:BinExp_high "%"  right:BinExp_high   [Mod] { unimplemented 126 }
   -> left:BinExp_high "+"  right:BinExp_high   [Add] { unimplemented 127 }
   -> left:BinExp_high "-"  right:BinExp_high   [Sub] { unimplemented 128 }
-  -> left:BinExp_high "<<" right:BinExp_high   [LeftShift] { unimplemented 129 }
-  -> left:BinExp_high ">>" right:BinExp_high   [RightShift] { unimplemented 130 }
+  -> left:BinExp_high "<<" right:BinExp_high   [Lsh] { unimplemented 129 }
+  -> left:BinExp_high ">>" right:BinExp_high   [Rsh] { unimplemented 130 }
 }
 
 // binary exprs with same precedence as ">"
@@ -618,10 +618,10 @@ nonterm BinExp_mid {
   // must express associativity directly; since these are all
   // left-associative, we require that there not be any reduced
   // ">" operators in the right context
-  -> left:BinExp_mid "<"  right:BinExp_high    [Less] { unimplemented 133 }
-  -> left:BinExp_mid ">"  right:BinExp_high    [Greater] { unimplemented 134 }
-  -> left:BinExp_mid "<=" right:BinExp_high    [LessEq] { unimplemented 135 }
-  -> left:BinExp_mid ">=" right:BinExp_high    [GreaterEq] { unimplemented 136 }
+  -> left:BinExp_mid "<"  right:BinExp_high    [Lt] { unimplemented 133 }
+  -> left:BinExp_mid ">"  right:BinExp_high    [Gt] { unimplemented 134 }
+  -> left:BinExp_mid "<=" right:BinExp_high    [Le] { unimplemented 135 }
+  -> left:BinExp_mid ">=" right:BinExp_high    [Ge] { unimplemented 136 }
 }
 
 // binary exprs with lower precedence than ">"
@@ -634,14 +634,14 @@ nonterm BinaryExpression {
 
   -> e:BinExp_mid                                        [P] { unimplemented 138 }
 
-  -> left:BinaryExpression "==" right:BinaryExpression   [Equals] { unimplemented 139 }
-  -> left:BinaryExpression "!=" right:BinaryExpression   [NotEquals] { unimplemented 140 }
-  -> left:BinaryExpression "&"  right:BinaryExpression   [BitAnd] { unimplemented 141 }
+  -> left:BinaryExpression "==" right:BinaryExpression   [Eq] { unimplemented 139 }
+  -> left:BinaryExpression "!=" right:BinaryExpression   [Neq] { unimplemented 140 }
+  -> left:BinaryExpression "&"  right:BinaryExpression   [And] { unimplemented 141 }
   -> left:BinaryExpression "^"  right:BinaryExpression   [Xor] { unimplemented 142 }
-  -> left:BinaryExpression "|"  right:BinaryExpression   [BitOr] { unimplemented 143 }
+  -> left:BinaryExpression "|"  right:BinaryExpression   [Or] { unimplemented 143 }
 
-  -> left:BinaryExpression "&&" right:BinaryExpression   [Or] { unimplemented 144 }
-  -> left:BinaryExpression "||" right:BinaryExpression   [And] { unimplemented 145 }
+  -> left:BinaryExpression "&&" right:BinaryExpression   [BoolOr] { unimplemented 144 }
+  -> left:BinaryExpression "||" right:BinaryExpression   [BoolAnd] { unimplemented 145 }
 }
 
 
@@ -673,17 +673,17 @@ nonterm AssignmentExpression {
 }
 
 nonterm AssignmentOperator {
-  -> "*="  { unimplemented 152 }
-  -> "/="  { unimplemented 153 }
-  -> "%="  { unimplemented 154 }
-  -> "+="  { unimplemented 155 }
-  -> "-="  { unimplemented 156 }
-  -> ">>=" { unimplemented 157 }
-  -> "<<=" { unimplemented 158 }
-  -> "&="  { unimplemented 159 }
-  -> "^="  { unimplemented 160 }
-  -> "|="  { unimplemented 161 }
-  -> "="   { unimplemented 162 }
+  -> "*="  [MulAssign] { unimplemented 152 }
+  -> "/="  [DivAssign] { unimplemented 153 }
+  -> "%="  [ModAssign] { unimplemented 154 }
+  -> "+="  [AddAssign] { unimplemented 155 }
+  -> "-="  [SubAssign] { unimplemented 156 }
+  -> ">>=" [RshAssign] { unimplemented 157 }
+  -> "<<=" [LshAssign] { unimplemented 158 }
+  -> "&="  [AndAssign] { unimplemented 159 }
+  -> "^="  [XorAssign] { unimplemented 160 }
+  -> "|="  [OrAssign] { unimplemented 161 }
+  -> "="   [Assign] { unimplemented 162 }
 }
 
 
@@ -1955,60 +1955,60 @@ nonterm Operator {
   // lookahead token is "["
 
   -> "new"                    precedence(TOK_PREFER_SHIFT)
-       { unimplemented 440 }
+       [New] { unimplemented 440 }
   -> "delete"                 precedence(TOK_PREFER_SHIFT)
-       { unimplemented 441 }
+       [Delete] { unimplemented 441 }
   -> "new" "[" "]"
-       { unimplemented 442 }
+       [NewArray] { unimplemented 442 }
   -> "delete" "[" "]"
-       { unimplemented 443 }
+       [DeleteArray] { unimplemented 443 }
 
-  -> "!"     { unimplemented 444 }
-  -> "~"     { unimplemented 445 }
+  -> "!"     [Not] { unimplemented 444 }
+  -> "~"     [Compl] { unimplemented 445 }
 
-  -> "++"    { unimplemented 446 }
-  -> "--"    { unimplemented 447 }
+  -> "++"    [Inc] { unimplemented 446 }
+  -> "--"    [Dec] { unimplemented 447 }
 
-  -> "+"     { unimplemented 448 }
-  -> "-"     { unimplemented 449 }
-  -> "*"     { unimplemented 450 }
+  -> "+"     [Add] { unimplemented 448 }
+  -> "-"     [Sub] { unimplemented 449 }
+  -> "*"     [Star] { unimplemented 450 }
 
-  -> "/"     { unimplemented 451 }
-  -> "%"     { unimplemented 452 }
-  -> "<<"    { unimplemented 453 }
-  -> ">>"    { unimplemented 454 }
-  -> "&"     { unimplemented 455 }
-  -> "^"     { unimplemented 456 }
-  -> "|"     { unimplemented 457 }
+  -> "/"     [Div] { unimplemented 451 }
+  -> "%"     [Mod] { unimplemented 452 }
+  -> "<<"    [Lsh] { unimplemented 453 }
+  -> ">>"    [Rsh] { unimplemented 454 }
+  -> "&"     [And] { unimplemented 455 }
+  -> "^"     [Xor] { unimplemented 456 }
+  -> "|"     [Or] { unimplemented 457 }
 
-  -> "="     { unimplemented 458 }
-  -> "+="    { unimplemented 459 }
-  -> "-="    { unimplemented 460 }
-  -> "*="    { unimplemented 461 }
-  -> "/="    { unimplemented 462 }
-  -> "%="    { unimplemented 463 }
-  -> "<<="   { unimplemented 464 }
-  -> ">>="   { unimplemented 465 }
-  -> "&="    { unimplemented 466 }
-  -> "^="    { unimplemented 467 }
-  -> "|="    { unimplemented 468 }
+  -> "="     [Assign] { unimplemented 458 }
+  -> "+="    [AddAssign] { unimplemented 459 }
+  -> "-="    [SubAssign] { unimplemented 460 }
+  -> "*="    [MulAssign] { unimplemented 461 }
+  -> "/="    [DivAssign] { unimplemented 462 }
+  -> "%="    [ModAssign] { unimplemented 463 }
+  -> "<<="   [LshAssign] { unimplemented 464 }
+  -> ">>="   [RshAssign] { unimplemented 465 }
+  -> "&="    [AndAssign] { unimplemented 466 }
+  -> "^="    [XorAssign] { unimplemented 467 }
+  -> "|="    [OrAssign] { unimplemented 468 }
 
-  -> "=="    { unimplemented 469 }
-  -> "!="    { unimplemented 470 }
-  -> "<"     { unimplemented 471 }
-  -> ">"     { unimplemented 472 }
-  -> "<="    { unimplemented 473 }
-  -> ">="    { unimplemented 474 }
+  -> "=="    [Eq] { unimplemented 469 }
+  -> "!="    [Neq] { unimplemented 470 }
+  -> "<"     [Lt] { unimplemented 471 }
+  -> ">"     [Gt] { unimplemented 472 }
+  -> "<="    [Le] { unimplemented 473 }
+  -> ">="    [Ge] { unimplemented 474 }
 
-  -> "&&"    { unimplemented 475 }
-  -> "||"    { unimplemented 476 }
+  -> "&&"    [BoolAnd] { unimplemented 475 }
+  -> "||"    [BoolOr] { unimplemented 476 }
 
-  -> "->"    { unimplemented 477 }
-  -> "->*"   { unimplemented 478 }
+  -> "->"    [Arrow] { unimplemented 477 }
+  -> "->*"   [ArrowStar] { unimplemented 478 }
 
-  -> "[" "]" { unimplemented 479 }
-  -> "(" ")" { unimplemented 480 }
-  -> ","     { unimplemented 481 }
+  -> "[" "]" [Bracket] { unimplemented 479 }
+  -> "(" ")" [Parens] { unimplemented 480 }
+  -> ","     [Comma] { unimplemented 481 }
 }
 
 
@@ -2063,15 +2063,15 @@ nonterm TemplatePreamble {
 
   // template declaration
   -> "template" "<" plist:TemplateParameterList ">"
-       { unimplemented 486 }
+       [Temlate] { unimplemented 486 }
   -> "export" "template" "<" plist:TemplateParameterList ">"
-       { unimplemented 487 }
+       [ExportTemplate] { unimplemented 487 }
 
   // explicit specialization
   -> "template" "<" ">"
-       { unimplemented 488 }
+       [ExplSpecTemplate] { unimplemented 488 }
   -> "export" "template" "<" ">"
-       { unimplemented 489 }
+       [ExplSpecExportTemplate] { unimplemented 489 }
 }
 
 nonterm TemplateParameterList {
@@ -2109,8 +2109,8 @@ nonterm TemplateParameterListContinuation {
 }
 
 nonterm ClassOrTypename {
-  -> "class" { () }
-  -> "typename"{ () }
+  -> "class" [Class] { () }
+  -> "typename" [Typename] { () }
 }
 
 nonterm DefaultTypeOpt {
