@@ -66,6 +66,10 @@ let production_types has_merge prods =
       <:sig_item<type t = ($semtype$ option)>>,
       <:str_item<type t = ($semtype$ option)>>
 
+  | [none; some] when PtreeMaker.is_boolean_nonterminal none some && not has_merge ->
+      <:sig_item<type t = bool>>,
+      <:str_item<type t = bool>>
+
   | prods ->
       let types =
         List.map (fun prod ->

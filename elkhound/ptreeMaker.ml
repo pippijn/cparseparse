@@ -47,6 +47,11 @@ let is_option_nonterminal none some =
   && List.length (symbols_of_production some) = 1
 
 
+let is_boolean_nonterminal none some =
+  none.right = []
+  && symbols_of_production some = []
+
+
 let merge name = function
   | None -> None
   | Some { params = [l; r] as params } ->
@@ -145,6 +150,12 @@ let prods_by_lhs prods_by_lhs =
 
         | _ -> failwith "error in is_option_nonterminal"
         end
+
+    | [none; some] when is_boolean_nonterminal none some && not has_merge ->
+        [
+          { none with action = Some <:expr<false>> };
+          { some with action = Some <:expr<true>> };
+        ]
 
     | prods ->
         List.map (fun prod ->

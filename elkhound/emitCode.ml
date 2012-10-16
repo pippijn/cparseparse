@@ -43,10 +43,7 @@ let emit_parse_tree name prods_by_lhs =
 
   OCamlPrinter.print_implem ~output_file:out impl;
   (* TODO: with sexp *)
-  ignore (Sys.command ("sed -i -e 's/type t = string;;/type t = string with sexp;;/' " ^ out));
-  ignore (Sys.command ("sed -i -e 's/type t = \\(\\w\\+\\)\\.t;;/type t = \\1.t with sexp;;/' " ^ out));
-  ignore (Sys.command ("sed -i -e 's/\\.t list;;/.t list with sexp;;/' " ^ out));
-  ignore (Sys.command ("sed -i -e 's/\\.t option;;/.t option with sexp;;/' " ^ out));
+  ignore (Sys.command ("sed -i -e 's/type t = \\([^;|]*\\);;/type t = \\1 with sexp;;/' " ^ out));
   ignore (Sys.command ("sed -i -e 's/ | SEXP;;/ with sexp;;/' " ^ out))
 
 
