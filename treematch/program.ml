@@ -66,6 +66,7 @@ end
 
 class print = object (self : 'a)
   inherit [unit] base_print
+  (* This could be done by passing the object and setting up a type constraint *)
   method rewrite_clause pp (ltree, rtree) =
     f pp "@[<hov 2>%a@ =>@ %a@]" (new Tree.print) # tree ltree (new Tree.print) # tree rtree
 end
