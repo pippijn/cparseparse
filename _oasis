@@ -99,11 +99,13 @@ Library baselib
                                 StringMap,
                                 StringSet,
                                 Timing,
-                                Valgrind
+                                Valgrind,
+                                Zlib
         CSources:               ml_BitSet.c,
                                 ml_Sched.c,
-                                ml_Valgrind.c
-        CCLib:                  -lstdc++
+                                ml_Valgrind.c,
+                                ml_Zlib.c
+        CCLib:                  -lstdc++ -lz
 #        NativeOpt:              -inline 999 -unsafe -noassert
 
 

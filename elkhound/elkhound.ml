@@ -72,12 +72,16 @@ let emit_code (env, tables) =
 
 
 let main () =
-  Options.inputs
-  |> parse
-  |> merge
-  |> tree_parse
-  |> analyse
-  |> emit_code
+  try
+    Options.inputs
+    |> parse
+    |> merge
+    |> tree_parse
+    |> analyse
+    |> emit_code
+  with Diagnostics.Diagnostic (severity, msg) ->
+    Printf.printf "%s: %s\n" (Diagnostics.string_of_severity severity) msg;
+    exit 1
 
 
 let () =

@@ -13,8 +13,8 @@ let parse_string syntax default _loc str =
       try
         CamlSyntax.Gram.parse_string syntax _loc str
       with Loc.Exc_located (loc, Stream.Error msg) ->
-        Format.eprintf "%a@.  while parsing \"%s\": %s" Loc.print loc str msg;
-        exit 1
+        Format.fprintf Format.str_formatter "%a\n  while parsing \"%s\": %s" Loc.print loc str msg;
+        Diagnostics.error (Format.flush_str_formatter ())
 
 let ctyp_of_string     _loc = parse_string CamlSyntax.ctyp     <:ctyp<unit>> _loc
 let expr_of_string     _loc = parse_string CamlSyntax.expr     <:expr<()>>   _loc

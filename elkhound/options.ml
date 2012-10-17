@@ -10,6 +10,8 @@ module Priv = struct
 
   let _dump_automaton = ref false
   let _use_table_dump = ref true
+  let _inline_table_dump = ref true
+  let _compress_table_dump = ref true
 
   let _trace_closure = ref false
   let _trace_lrsets = ref false
@@ -38,6 +40,8 @@ let () =
 
     "-dump-automaton",		Set Priv._dump_automaton,	" dump automaton to a file after LR item set construction";
     "-use-table-dump",		Set Priv._use_table_dump,	" load serialised tables instead of emitting arrays in code";
+    "-inline-table-dump",	Set Priv._inline_table_dump,	" inline serialised tables into the Tables module as string";
+    "-compress-table-dump",	Set Priv._compress_table_dump,	" compress serialised tables with zlib";
 
     "-trace-closure",		Set Priv._trace_closure,	" output details during LR item set closure";
     "-trace-lrsets",		Set Priv._trace_lrsets,		" output details during LR item set construction";
@@ -62,6 +66,8 @@ let _use_LALR1 = !Priv._use_LALR1
 
 let _dump_automaton = !Priv._dump_automaton
 let _use_table_dump = !Priv._use_table_dump
+let _inline_table_dump = !Priv._inline_table_dump
+let _compress_table_dump = !Priv._compress_table_dump
 
 let _trace_closure = !Priv._trace_closure
 let _trace_lrsets = !Priv._trace_lrsets
