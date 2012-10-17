@@ -25,6 +25,8 @@ with sexp
 
 type untyped_program = unit program
 with sexp
+type typed_program = string program
+with sexp
 
 open ExtFormat
 let f = fprintf
@@ -56,6 +58,10 @@ class ['a] print = object (self : 'a)
   method topl_tree = (new Constr.print) # constr
 end
 
-let output_program channel s =
+let output_untyped_program channel s =
   Sexplib.Sexp.output_hum channel (sexp_of_untyped_program s);
+  output_char channel '\n'
+
+let output_typed_program channel s =
+  Sexplib.Sexp.output_hum channel (sexp_of_typed_program s);
   output_char channel '\n'
