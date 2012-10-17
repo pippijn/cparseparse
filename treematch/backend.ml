@@ -22,7 +22,7 @@ module Emit = struct
         end
 
       >>
-    | Program.Map (name, [st;dt], nodes) ->
+    | Program.Map (name, (st,dt), nodes) ->
       let methods = List.map (rewrite_node (st,dt)) nodes in
       <:str_item<
 

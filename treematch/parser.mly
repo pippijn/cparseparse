@@ -67,7 +67,7 @@ constr
 : c=nonempty_list(TOK_UIDENT)                          { List.hd c, List.tl c }
 
 type_decl
-: t=separated_nonempty_list(TOK_BIARROW,TOK_UIDENT)                       { t }
+: s=TOK_UIDENT TOK_BIARROW d=TOK_UIDENT                                 { s,d }
 
 topl_tree
 : nm=TOK_UIDENT tree=list(tree)                   { Tree.Tree ((), (nm,tree)) }

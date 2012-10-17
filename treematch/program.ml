@@ -15,7 +15,7 @@ and 'a rewrite_clause = 'a Tree.t * 'a Tree.t
 and node =
     CustomNode of ast_clause list
   | NativeNode of string
-and type_decl = string list
+and type_decl = string * string
 and ast_clause = topl_tree
 and topl_tree = Constr.t
 and location = string * tag
@@ -52,8 +52,8 @@ class ['a] print = object (self : 'a)
   method node pp = function
     CustomNode clauses -> f pp "%a" (pp_list self # ast_clause pp_newline_bar_sep) clauses
   | NativeNode name -> pp_print_string pp name
-  method type_decl pp lst =
-    f pp "@[<hov 2>%a@]" (pp_list pp_print_string pp_biarrow_sep) lst
+  method type_decl pp (s,d) =
+    f pp "@[<hov 2>%a@]" (pp_list pp_print_string pp_biarrow_sep) [s;d]
   method ast_clause = self # topl_tree
   method topl_tree = (new Constr.print) # constr
 end

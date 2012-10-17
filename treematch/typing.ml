@@ -63,7 +63,7 @@ module Annotate = struct
   let rec program p =
     let types = Collect.program p in
     let definition = function
-    | P.Map (nm, [s;d], nodes) ->
+    | P.Map (nm, (s,d), nodes) ->
         let collected = List.assoc s types in
         let constr nm = TreeMap.find nm collected in
         let node (nm, clauses) =
@@ -76,7 +76,7 @@ module Annotate = struct
             in
             visit l, visit r) clauses
         in
-        P.Map (nm,[s;d], List.map node nodes)
+        P.Map (nm, (s,d), List.map node nodes)
     | P.Ast (a,b) -> P.Ast (a,b)
     in
     List.map definition p
