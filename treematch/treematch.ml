@@ -1,3 +1,4 @@
+open Typing
 let (|>) = BatPervasives.(|>)
 let (-|) = BatPervasives.(-|)
 
@@ -52,7 +53,9 @@ let files =
     );
     if Options._infer then (
       let p = new Program.print in
-      parse () |> p # program Format.std_formatter;
+      let program = parse () in
+      program |> p # program Format.std_formatter;
+      Typing.print Format.std_formatter "ListB" program;
       ()
     )
   in
