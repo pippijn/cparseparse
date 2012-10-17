@@ -18,6 +18,9 @@ and node =
 and type_decl = string list
 and ast_clause = topl_tree
 and topl_tree = Constr.t
+and location = string * tag
+and tag = string
+and arg = int
 with sexp
 
 type untyped_program = unit program
