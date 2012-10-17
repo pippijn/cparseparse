@@ -10,6 +10,10 @@ module TreeMap = Map.Make(struct
   let compare = Pervasives.compare
 end)
 
+(* +=====~~~-------------------------------------------------------~~~=====+ *)
+(* |                  Collect types from AST definitions                   | *)
+(* +=====~~~-------------------------------------------------------~~~=====+ *)
+
 let rec nodes program =
   BatList.filter_map definition program
   |> List.map
@@ -33,6 +37,10 @@ and definition = function
     in
     Some (name, nodes)
 | _ -> None
+
+(* +=====~~~-------------------------------------------------------~~~=====+ *)
+(* |           Print the collected types for debugging purposes            | *)
+(* +=====~~~-------------------------------------------------------~~~=====+ *)
 
 let print pp ast_name program =
   nodes program |> List.iter
