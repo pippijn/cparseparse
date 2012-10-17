@@ -10,5 +10,6 @@
 /_build
 META
 *.mllib
+*.clib
 *.bak
 callgrind.out.*

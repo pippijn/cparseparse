@@ -177,17 +177,23 @@ let prods_by_lhs prods_by_lhs =
                 <:expr<$uid:Options._module_prefix ^ "Ptree"$.$uid:left.nbase.name$.$uid:prod_name$>>
               in
 
-              List.fold_left (fun ctor sym ->
-                match sym with
-                | Nonterminal ("", _)
-                | Terminal ("", _) ->
-                    (* nothing to do for untagged symbols *)
-                    ctor
+              let args =
+                List.fold_left (fun args -> function
+                  | Nonterminal ("", _)
+                  | Terminal ("", _) ->
+                      (* nothing to do for untagged symbols *)
+                      args
 
-                | Nonterminal (tag, _)
-                | Terminal (tag, _) ->
-                    <:expr<$ctor$ $lid:tag$>>
-              ) prod_variant prod.right
+                  | Nonterminal (tag, _)
+                  | Terminal (tag, _) ->
+                      <:expr<$lid:tag$>> :: args
+                ) [ <:expr<(start_p, end_p)>> ] prod.right
+                |> List.rev
+              in
+
+              List.fold_left (fun ctor arg ->
+                <:expr<$ctor$ $arg$>>
+              ) prod_variant args
             )
           in
 

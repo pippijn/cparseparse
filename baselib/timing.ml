@@ -1,4 +1,4 @@
-let trace_progress = true
+let trace_progress = ref true
 
 let start = Unix.gettimeofday ()
 
@@ -8,7 +8,7 @@ let progress desc f x =
   let result = f x in
   let finish = Unix.gettimeofday () in
 
-  if trace_progress then (
+  if !trace_progress then (
     print_string "%%% ";
     Printf.printf "[+%fs = %fs] %s\n" (finish -. localstart) (finish -. start) desc;
     flush stdout;
@@ -22,7 +22,7 @@ let time desc f x =
   let result = f x in
   let finish = Unix.gettimeofday () in
 
-  if trace_progress then (
+  if !trace_progress then (
     print_string "%%% ";
     Printf.printf "%s took %fs\n" desc (finish -. start);
     flush stdout;

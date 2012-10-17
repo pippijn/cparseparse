@@ -34,13 +34,14 @@ let () =
     "-rt",		Set Priv._rt,			" set real-time scheduling policy with highest priority";
   ]) (fun input -> Priv.inputs := input :: !Priv.inputs) "Usage: cxxparse [option...] <file...>");
 
-  if !Priv._dumptoks || !Priv._tokens then
-    Priv._pp := true;
-  begin try
-    ignore (List.find (ExtString.ends_with ".c") !Priv.inputs);
-    Priv._xc := true
-  with Not_found ->
-    ()
+  begin
+    Timing.trace_progress := !Priv._timing;
+
+    if !Priv._dumptoks || !Priv._tokens then
+      Priv._pp := true;
+
+    if List.filter (ExtString.ends_with ".c") !Priv.inputs <> [] then
+      Priv._xc := true;
   end
 
 

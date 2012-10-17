@@ -80,7 +80,8 @@ let production_types has_merge prods =
           );
 
           let prod_type =
-            List.map (fun sym ->
+            [ <:ctyp<SourceLocation.t>> ]
+            :: List.map (fun sym ->
               match sym with
               | Nonterminal ("", _)
               | Terminal ("", _) ->
@@ -102,9 +103,7 @@ let production_types has_merge prods =
           in
 
           let prod_variant =
-            match prod_type with
-            | <:ctyp<>> -> <:ctyp<$uid:prod_name$>>
-            | _	      -> <:ctyp<$uid:prod_name$ of $prod_type$>>
+            <:ctyp<$uid:prod_name$ of $prod_type$>>
           in
 
           <:ctyp<$prod_variant$>>
