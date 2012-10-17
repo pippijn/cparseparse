@@ -55,11 +55,21 @@ let tree_parse topforms =
   grammar
 
 
+let grammar_graph grammar =
+  Timing.progress "writing grammar graph" GrammarGraph.visualise grammar;
+  grammar
+
+
 let analyse grammar =
   GrammarAnalysis.run_analyses grammar
 
 
-let emit_code (env, tables) =
+let state_graph (_, states, _ as env) =
+  Timing.progress "writing automaton graph" StateGraph.visualise states;
+  env
+
+
+let emit_code (env, states, tables) =
   let open AnalysisEnvType in
   let terms = env.indexed_terms in
   let nonterms = env.indexed_nonterms in
@@ -67,9 +77,11 @@ let emit_code (env, tables) =
   let verbatims = env.verbatims in
   let impl_verbatims = env.impl_verbatims in
 
-  if Array.length Sys.argv > 1 then
-    Timing.progress "emitting ML code" (EmitCode.emit_ml "ccparse/gr/cc" terms nonterms prods_by_lhs verbatims impl_verbatims) tables
+  Timing.progress "emitting ML code"
+    (EmitCode.emit_ml "ccparse/gr/cc" terms nonterms prods_by_lhs verbatims impl_verbatims) tables
 
+
+let optional enabled f x = if enabled then f x else x
 
 let main () =
   try
@@ -77,7 +89,9 @@ let main () =
     |> parse
     |> merge
     |> tree_parse
+    |> optional Options._graph_grammar grammar_graph
     |> analyse
+    |> optional Options._graph_automaton state_graph
     |> emit_code
   with Diagnostics.Diagnostic (severity, msg) ->
     Printf.printf "%s: %s\n" (Diagnostics.string_of_severity severity) msg;
