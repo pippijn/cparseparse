@@ -46,7 +46,7 @@ let files =
       Printf.printf "***** End of %s\n" name;
       flush stdout);
     if Options._dump_ast then (
-      parse () |> Program.output_program stdout
+      parse () |> Program.output_untyped_program stdout
     );
     if not Options._no_emit then (
       parse () |> Backend.output_program "/dev/stdout"
@@ -55,7 +55,8 @@ let files =
       let p = new Program.print in
       let program = parse () in
       program |> p # program Format.std_formatter;
-      Typing.print Format.std_formatter "ListB" program;
+      Typing.Collect.print Format.std_formatter "ListB" program;
+      program |> Typing.Annotate.program |> Program.output_typed_program stdout;
       ()
     )
   in
