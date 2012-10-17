@@ -27,7 +27,7 @@ let make_actions underlying tables : PtreeNode.t UserActions.t =
 
     (* action to perform upon performing a reduction *)
     reductionAction = (
-      fun prodId svals ->
+      fun prodId svals start_p end_p ->
         (* production info *)
         let rhsLen = ParseTables.getProdInfo_rhsLen tables prodId in
         let lhsIndex = ParseTables.getProdInfo_lhsIndex tables prodId in

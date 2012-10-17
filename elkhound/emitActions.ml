@@ -152,7 +152,7 @@ let make_ml_actions prods =
 
       let fun_body = fold_bindings result bindings in
       
-      <:expr<fun svals -> $fun_body$>>
+      <:expr<fun svals start_p end_p -> $fun_body$>>
     ) prods
 
     |> Array.to_list
@@ -283,8 +283,8 @@ let make_ml_action_code terms nonterms prods_by_lhs final_prod verbatims impl_ve
     let userFunctions : UserActions.functions = { $closures$ }
 
     (* main action function; uses the array emitted above *)
-    let reductionAction (productionId : int) (svals : SemanticValue.t array) : SemanticValue.t =
-      userFunctions.reductionActionArray.(productionId) svals
+    let reductionAction (productionId : int) (svals : SemanticValue.t array) (start_p : Lexing.position) (end_p : Lexing.position) : SemanticValue.t =
+      userFunctions.reductionActionArray.(productionId) svals start_p end_p
 
     (* dup *)
     let duplicateNontermValue (nontermId : int) (sval : SemanticValue.t) : SemanticValue.t =

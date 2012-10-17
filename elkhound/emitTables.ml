@@ -56,10 +56,36 @@ let make_ml_tables dat tables =
     val parseTables : ParseTablesType.t
   >>,
   if Options._use_table_dump then (
-    Some <:str_item<
-      let parseTables : ParseTablesType.t =
-        input_value (open_in_bin "_build/ccparse/gr/ccTables.dat")
-    >>
+    if Options._inline_table_dump then (
+      let data = Marshal.to_string tables [Marshal.No_sharing] in
+
+      if Options._compress_table_dump then (
+        let len = String.length data in
+
+        let compressed = Zlib.compress data in
+
+        Some <:str_item<
+          let parseTables : ParseTablesType.t =
+            Marshal.from_string
+              (Zlib.uncompress
+                $str:String.escaped compressed$
+                $int:string_of_int len$) 0
+        >>
+      ) else (
+        Some <:str_item<
+          let parseTables : ParseTablesType.t =
+            Marshal.from_string $str:String.escaped data$ 0
+        >>
+      )
+    ) else (
+      if Options._compress_table_dump then
+        failwith "zlib compression is only supported for inline table dumps";
+
+      Some <:str_item<
+        let parseTables : ParseTablesType.t =
+          input_value (open_in_bin "_build/ccparse/gr/ccTables.dat")
+      >>
+    )
   ) else (
     if true then
       None

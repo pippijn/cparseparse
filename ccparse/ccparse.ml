@@ -2,6 +2,7 @@ let cc_lexer = Lexerint.({
   token = (fun () -> Lexing.dummy_pos, Lexing.dummy_pos, CcTokens.TOK_EOF);
   index = (fun (_, _, next) -> CcTokens.index next);
   sval  = (fun (_, _, next) -> CcTokens.sval next);
+  sloc  = (fun (s, e, _   ) -> s, e);
 })
 
 
@@ -22,10 +23,7 @@ let handle_return = function
 
 let glrparse glr lexer =
   let tree =
-    if Options._timing then
-      Timing.time "parsing" (Glr.glrParse glr) lexer
-    else
-      Glr.glrParse glr lexer
+    Timing.time "parsing" (Glr.glrParse glr) lexer
   in
 
   (* print accounting statistics from glr.ml *)

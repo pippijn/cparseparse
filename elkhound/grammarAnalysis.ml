@@ -19,14 +19,17 @@ let compute_grammar_properties env grammar =
 
 
 let compute_lr_tables env =
-  let tables =
+  let states =
     Timing.progress "LR item set construction" LrItemSets.construct_lr_item_sets env
     |> Timing.progress "renumbering states" (Renumbering.renumber_states env)
     |> Timing.progress "BFS tree on state graph" (BfsTree.compute_bfs_tree env)
+  in
+  let tables =
+    states
     |> Timing.progress "parse table construction" (TableConstruction.compute_parse_tables env (*~allow_ambig:*)true)
   in
 
-  tables
+  states, tables
 
 
 let run_analyses grammar =
@@ -34,7 +37,7 @@ let run_analyses grammar =
 
   compute_grammar_properties env grammar;
 
-  let tables = compute_lr_tables env in
+  let states, tables = compute_lr_tables env in
 
   begin
     let unr_nonterms =
@@ -60,4 +63,4 @@ let run_analyses grammar =
     Warnings.report_unexpected unr_terms env.options.expectedUNRTerms "unreachable terminals";
   end;
 
-  env, tables
+  env, states, tables

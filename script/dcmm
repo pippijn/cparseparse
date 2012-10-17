@@ -14,7 +14,8 @@ my $N = "\e[0m";
 my @keywords = qw/let store data if seq app load function try catch raise extcall assign with alloc exit loop/;
 my @types = qw/int addr unit string skip byte/;
 
-my $cmd = "ocamlopt -dcmm -c -I _build/glr -I _build/baselib -o _build/glr/glr.cmx glr/glr.ml 2>&1";
+my $src = $ARGV[0] or die "Usage: dcmm <basename>\n  where basename is a .ml file without .ml suffix";
+my $cmd = "ocamlopt -dcmm -c -I _build/glr -I _build/baselib -o _build/$ARGV[0].cmx $ARGV[0].ml 2>&1";
 
 sub clear {
    my ($text) = @_;

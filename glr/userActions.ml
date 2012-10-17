@@ -8,7 +8,7 @@
 
 
 type functions = {
-  reductionActionArray          : (SemanticValue.t array -> SemanticValue.t) array;
+  reductionActionArray          : (SemanticValue.t array -> Lexing.position -> Lexing.position -> SemanticValue.t) array;
   duplicateTerminalValueArray   : (SemanticValue.t -> SemanticValue.t) array;
   duplicateNontermValueArray    : (SemanticValue.t -> SemanticValue.t) array;
   deallocateTerminalValueArray  : (SemanticValue.t -> unit) array;
@@ -41,10 +41,11 @@ type 'result t = {
    *    value is an owner pointer *)
   reductionAction :
     (*context?*)
-    int ->                     (* production being used to reduce *)
-    SemanticValue.t array ->   (* array of svals for RHS symbols *)
-    (*loc?*)
-    SemanticValue.t;           (* sval for the reduction *)
+    int ->                      (* production being used to reduce *)
+    SemanticValue.t array ->    (* array of svals for RHS symbols *)
+    Lexing.position ->          (* start position *)
+    Lexing.position ->          (* end position *)
+    SemanticValue.t;            (* sval for the reduction *)
 
   (* duplication of semantic values:
    *  - the given 'sval' is about to be passed to a reduction action
@@ -138,7 +139,7 @@ type 'result t = {
 
 
 let make_trivial (underlying : 'a t) : unit t = { underlying with
-  reductionAction = (fun _ _ -> SemanticValue.null);
+  reductionAction = (fun _ _ _ _ -> SemanticValue.null);
   duplicateTerminalValue = (fun _ a -> a);
   duplicateNontermValue = (fun _ a -> a);
   deallocateTerminalValue = (fun _ _ -> ());

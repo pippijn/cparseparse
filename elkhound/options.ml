@@ -8,8 +8,15 @@ module Priv = struct
   let _use_LR1 = ref false
   let _use_LALR1 = ref true
 
+  let _graph_grammar = ref false
+  let _graph_automaton = ref false
   let _dump_automaton = ref false
+
+  let _output_menhir = ref true
+
   let _use_table_dump = ref true
+  let _inline_table_dump = ref true
+  let _compress_table_dump = ref true
 
   let _trace_closure = ref false
   let _trace_lrsets = ref false
@@ -36,8 +43,15 @@ let () =
     "-use-lr1",			Set Priv._use_LR1,		" generate an LR(1) automaton";
     "-use-lalr1",		Set Priv._use_LALR1,		" generate an LALR(1) automaton";
 
+    "-graph-grammar",		Set Priv._graph_grammar,	" visualise grammar as graph";
+    "-graph-automaton",		Set Priv._graph_automaton,	" visualise LR automaton as graph";
     "-dump-automaton",		Set Priv._dump_automaton,	" dump automaton to a file after LR item set construction";
+
+    "-output-menhir",		Set Priv._output_menhir,	" output combined grammar in Menhir format";
+
     "-use-table-dump",		Set Priv._use_table_dump,	" load serialised tables instead of emitting arrays in code";
+    "-inline-table-dump",	Set Priv._inline_table_dump,	" inline serialised tables into the Tables module as string";
+    "-compress-table-dump",	Set Priv._compress_table_dump,	" compress serialised tables with zlib";
 
     "-trace-closure",		Set Priv._trace_closure,	" output details during LR item set closure";
     "-trace-lrsets",		Set Priv._trace_lrsets,		" output details during LR item set construction";
@@ -60,8 +74,15 @@ let _use_SLR1 = !Priv._use_SLR1
 let _use_LR1 = !Priv._use_LR1
 let _use_LALR1 = !Priv._use_LALR1
 
+let _graph_grammar = !Priv._graph_grammar
+let _graph_automaton = !Priv._graph_automaton
 let _dump_automaton = !Priv._dump_automaton
+
+let _output_menhir = !Priv._output_menhir
+
 let _use_table_dump = !Priv._use_table_dump
+let _inline_table_dump = !Priv._inline_table_dump
+let _compress_table_dump = !Priv._compress_table_dump
 
 let _trace_closure = !Priv._trace_closure
 let _trace_lrsets = !Priv._trace_lrsets
