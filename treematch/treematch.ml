@@ -56,7 +56,7 @@ let files =
       let program = parse () in
       program |> p # program Format.std_formatter;
       Typing.Collect.print Format.std_formatter "ListB" program;
-      program |> Typing.Annotate.program |> Program.output_typed_program stdout;
+      program |> Typing.program |> Program.output_typed_program stdout;
       ()
     )
   in

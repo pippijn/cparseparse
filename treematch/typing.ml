@@ -59,7 +59,7 @@ end
 (* |                     Give constructors annotations                     | *)
 (* +=====~~~-------------------------------------------------------~~~=====+ *)
 
-module Annotate = struct
+module Constr = struct
   let rec program p =
     let types = Collect.program p in
     let definition = function
@@ -81,3 +81,46 @@ module Annotate = struct
     in
     List.map definition p
 end
+
+(* +=====~~~-------------------------------------------------------~~~=====+ *)
+(* |                      Give variables annotations                       | *)
+(* +=====~~~-------------------------------------------------------~~~=====+ *)
+
+module Vars = struct
+  let rec program p =
+    let types = Collect.program p in
+    let definition = function
+    | P.Map (nm, (s,d), nodes) ->
+        let collected = List.assoc s types in
+        let constr nm = TreeMap.find nm collected in
+        let annot (ty, tr) =
+          match tr with
+        | T.Tree (_, a) -> T.Tree (ty, a)
+        | T.Var (_,x) -> T.Var (ty, x)
+        | x -> x
+        in
+        let unify node tree =
+          match tree with
+          | T.Tree (ty, (x, args')) ->
+              let _,args = constr (node,x) in
+              T.Tree (ty, (x,List.map annot (List.combine args args')))
+          | x -> x
+        in
+        let node (nm, clauses) =
+          nm, List.map (fun (l,r) ->
+            let rec visit ty = function
+            | T.Tree (x, (tag, tree)) ->
+                unify nm (T.Tree (x, (tag, List.map (visit tag) tree)))
+            | x -> unify nm x
+            in
+            visit nm l, visit nm r) clauses
+        in
+        P.Map (nm, (s,d), List.map node nodes)
+    | P.Ast (a,b) -> P.Ast (a,b)
+    in
+    List.map definition p
+end
+
+let program p =
+  Constr.program p
+  |> Vars.program
