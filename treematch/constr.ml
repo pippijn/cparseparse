@@ -16,3 +16,5 @@ class print = object (self : 'a)
   method constr pp (nm, l) =
     f pp "%s@ %a" nm (pp_list pp_print_string pp_space_sep) l
 end
+
+let name = fst
