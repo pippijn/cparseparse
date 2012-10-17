@@ -57,6 +57,7 @@ let files =
       program |> p # program Format.std_formatter;
       Typing.Collect.print Format.std_formatter "ListB" program;
       program |> Typing.program |> Program.output_typed_program stdout;
+      program |> Typing.program |> (new Program.typed_print)#program Format.std_formatter;
       ()
     )
   in
