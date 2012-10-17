@@ -69,9 +69,9 @@ module Annotate = struct
         let node (nm, clauses) =
           nm, List.map (fun (l,r) ->
             let rec visit = function
-            | T.Tree ((), (tag, tree)) ->
+            | T.Tree (_, (tag, tree)) ->
                 T.Tree (nm, (tag, List.map visit tree))
-            | T.Var ((), nm) -> T.Var ("#undef", nm)
+            | T.Var (_, nm) -> T.Var ("#undef", nm)
             | T.Const x -> T.Const x
             in
             visit l, visit r) clauses
