@@ -113,7 +113,7 @@ module Vars = struct
                 unify nm (T.Tree (x, (tag, List.map (visit tag) tree)))
             | x -> unify nm x
             in
-            visit nm l, visit nm r) clauses
+            visit nm l, r) clauses
         in
         P.Map (nm, (s,d), List.map node nodes)
     | P.Ast (a,b) -> P.Ast (a,b)
