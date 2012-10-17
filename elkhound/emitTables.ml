@@ -66,18 +66,15 @@ let make_ml_tables dat tables =
 
         Some <:str_item<
           let parseTables : ParseTablesType.t =
-            Timing.time "loading tables"
-              (Marshal.from_string
-                (Zlib.uncompress
-                  $str:String.escaped compressed$
-                  $int:string_of_int len$))
-              0
+            Marshal.from_string
+              (Zlib.uncompress
+                $str:String.escaped compressed$
+                $int:string_of_int len$) 0
         >>
       ) else (
         Some <:str_item<
           let parseTables : ParseTablesType.t =
-            Timing.time "loading tables"
-              (Marshal.from_string $str:String.escaped data$) 0
+            Marshal.from_string $str:String.escaped data$ 0
         >>
       )
     ) else (

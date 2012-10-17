@@ -64,9 +64,14 @@ let analyse grammar =
   GrammarAnalysis.run_analyses grammar
 
 
-let state_graph (_, states, _ as env) =
+let output_menhir (env, _, _ as tuple) =
+  OutputMenhir.output_grammar env;
+  tuple
+
+
+let state_graph (_, states, _ as tuple) =
   Timing.progress "writing automaton graph" StateGraph.visualise states;
-  env
+  tuple
 
 
 let emit_code (env, states, tables) =
@@ -91,6 +96,7 @@ let main () =
     |> tree_parse
     |> optional Options._graph_grammar grammar_graph
     |> analyse
+    |> optional Options._output_menhir output_menhir
     |> optional Options._graph_automaton state_graph
     |> emit_code
   with Diagnostics.Diagnostic (severity, msg) ->

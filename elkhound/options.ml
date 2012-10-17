@@ -12,6 +12,8 @@ module Priv = struct
   let _graph_automaton = ref false
   let _dump_automaton = ref false
 
+  let _output_menhir = ref true
+
   let _use_table_dump = ref true
   let _inline_table_dump = ref true
   let _compress_table_dump = ref true
@@ -45,6 +47,8 @@ let () =
     "-graph-automaton",		Set Priv._graph_automaton,	" visualise LR automaton as graph";
     "-dump-automaton",		Set Priv._dump_automaton,	" dump automaton to a file after LR item set construction";
 
+    "-output-menhir",		Set Priv._output_menhir,	" output combined grammar in Menhir format";
+
     "-use-table-dump",		Set Priv._use_table_dump,	" load serialised tables instead of emitting arrays in code";
     "-inline-table-dump",	Set Priv._inline_table_dump,	" inline serialised tables into the Tables module as string";
     "-compress-table-dump",	Set Priv._compress_table_dump,	" compress serialised tables with zlib";
@@ -73,6 +77,8 @@ let _use_LALR1 = !Priv._use_LALR1
 let _graph_grammar = !Priv._graph_grammar
 let _graph_automaton = !Priv._graph_automaton
 let _dump_automaton = !Priv._dump_automaton
+
+let _output_menhir = !Priv._output_menhir
 
 let _use_table_dump = !Priv._use_table_dump
 let _inline_table_dump = !Priv._inline_table_dump
