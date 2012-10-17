@@ -33,6 +33,10 @@ let f = fprintf
 
 let pp_biarrow_sep pp () = f pp "@ =>@ "
 
+(* +=====~~~-------------------------------------------------------~~~=====+ *)
+(* |                       This is our base printer                        | *)
+(* +=====~~~-------------------------------------------------------~~~=====+ *)
+
 class virtual ['a] base_print = object (self)
   method program pp p = f pp "@[<v>%a@]@;@." (pp_list self # definition pp_space_sep) p
   method definition pp (x : 'a definition) =
@@ -56,17 +60,26 @@ class virtual ['a] base_print = object (self)
   method topl_tree = (new Constr.print) # constr
 end
 
+(* +=====~~~-------------------------------------------------------~~~=====+ *)
+(* |                     Printer for untyped programs                      | *)
+(* +=====~~~-------------------------------------------------------~~~=====+ *)
+
 class print = object (self : 'a)
   inherit [unit] base_print
   method rewrite_clause pp (ltree, rtree) =
     f pp "@[<hov 2>%a@ =>@ %a@]" (new Tree.print) # tree ltree (new Tree.print) # tree rtree
 end
 
+(* +=====~~~-------------------------------------------------------~~~=====+ *)
+(* |                      Printer for typed programs                       | *)
+(* +=====~~~-------------------------------------------------------~~~=====+ *)
+
 class typed_print = object (self : 'a)
   inherit [string] base_print
   method rewrite_clause pp (ltree, rtree) =
     f pp "@[<hov 2>%a@ =>@ %a@]" (new Tree.typed_print) # tree ltree (new Tree.typed_print) # tree rtree
 end
+
 let output_untyped_program channel s =
   Sexplib.Sexp.output_hum channel (sexp_of_untyped_program s);
   output_char channel '\n'
