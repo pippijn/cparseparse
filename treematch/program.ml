@@ -33,9 +33,9 @@ let f = fprintf
 
 let pp_biarrow_sep pp () = f pp "@ =>@ "
 
-class ['a] print = object (self : 'a)
-  method program pp = f pp "@[<v>%a@]@;@." (pp_list self # definition pp_space_sep)
-  method definition pp x =
+class virtual ['a] base_print = object (self)
+  method program pp p = f pp "@[<v>%a@]@;@." (pp_list self # definition pp_space_sep) p
+  method definition pp (x : 'a definition) =
     match x with
     Ast (nm, nodes) ->
       f pp "@[<v>@[<h>ast@ %s@]@;{@[<v 2>@;@[<v>%a@]@]@;}@]@;"
@@ -47,8 +47,6 @@ class ['a] print = object (self : 'a)
   method ast_node pp (nm, node) = f pp "@[<hov>%s:@ %a@]" nm self # node node
   method rewrite_node pp (nm, clauses) =
     f pp "@[<hov>%s:@ %a@]" nm (pp_list self # rewrite_clause pp_newline_bar_sep) clauses
-  method rewrite_clause pp (ltree, rtree) =
-    f pp "@[<hov 2>%a@ =>@ %a@]" (new Tree.print) # tree ltree (new Tree.print) # tree rtree
   method node pp = function
     CustomNode clauses -> f pp "%a" (pp_list self # ast_clause pp_newline_bar_sep) clauses
   | NativeNode name -> pp_print_string pp name
@@ -58,6 +56,17 @@ class ['a] print = object (self : 'a)
   method topl_tree = (new Constr.print) # constr
 end
 
+class print = object (self : 'a)
+  inherit [unit] base_print
+  method rewrite_clause pp (ltree, rtree) =
+    f pp "@[<hov 2>%a@ =>@ %a@]" (new Tree.print) # tree ltree (new Tree.print) # tree rtree
+end
+
+class typed_print = object (self : 'a)
+  inherit [string] base_print
+  method rewrite_clause pp (ltree, rtree) =
+    f pp "@[<hov 2>%a@ =>@ %a@]" (new Tree.typed_print) # tree ltree (new Tree.typed_print) # tree rtree
+end
 let output_untyped_program channel s =
   Sexplib.Sexp.output_hum channel (sexp_of_untyped_program s);
   output_char channel '\n'
