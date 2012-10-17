@@ -49,7 +49,7 @@ let files =
       parse () |> Program.output_untyped_program stdout
     );
     if not Options._no_emit then (
-      parse () |> Backend.output_program "/dev/stdout"
+      parse () |> SimpleBackend.output_program "/dev/stdout"
     );
     if Options._infer then (
       let p = new Program.print in

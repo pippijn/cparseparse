@@ -1,3 +1,3 @@
 # sexplib
 <{program,tree,constr}.ml>: syntax_camlp4o, pkg_sexplib.syntax
-"backend.ml": camlp4of
+<*Backend.ml>: camlp4of
