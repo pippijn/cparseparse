@@ -14,6 +14,24 @@ let getActionEntry tables (state : state_id) (tok : term_index) =
 let getActionEntry_noError tables (state : state_id) (tok : term_index) =
   getActionEntry tables state tok
 
+let getStateSymbol tables (state : state_id) =
+  tables.stateSymbol.(state)
+
+let getAmbigEntry tables (entry : int) =
+  tables.ambigTable.(entry)
+
+let getNumProds tables =
+  tables.numProds
+
+let getNumTerms tables =
+  tables.numTerms
+
+let getFinalProductionIndex tables =
+  tables.finalProductionIndex
+
+let getStartState tables =
+  tables.startState
+
 
 let isShiftAction tables (code : action_entry) =
   code > 0 && code <= tables.numStates
@@ -90,11 +108,11 @@ let kind_of_action tables (code : action_entry) =
 
 let getAction tables (state : state_id) (tok : term_index) =
   let code = getActionEntry tables state tok in
-  if code < 0 then
+  if isReduceAction code then
     ReduceAction (decodeReduce code state)
-  else if code = 0 then
+  else if isErrorAction code then
     ErrorAction
-  else if code <= tables.numStates then
+  else if isShiftAction tables code then
     ShiftAction (decodeShift code tok)
   else
     AmbiguousAction (decodeAmbigAction tables code state)

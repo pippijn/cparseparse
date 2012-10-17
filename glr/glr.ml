@@ -101,8 +101,6 @@
  * Below, parse-tree building activity is marked "TREEBUILD".
  *)
 
-open ParseTablesType
-
 
 (* some random utilities *)
 let getSome = function
@@ -162,7 +160,7 @@ and 'result stack_node = {
   glr : 'result glr;
 
   (* LR parser state when this node is at the top *)
-  mutable state : state_id;
+  mutable state : ParseTablesType.state_id;
 
   (* pointers to adjacent (to the left) stack nodes *)
   (* possible TODO: put links into a pool so I can deallocate them *)
@@ -193,10 +191,10 @@ and 'result path = {
   mutable sibLinks : 'result sibling_link array;
 
   (* corresponding array of symbol ids to interpret svals *)
-  mutable symbols : symbol_id array;
+  mutable symbols : ParseTablesType.symbol_id array;
 
   (* rightmost state's id *)
-  mutable startStateId : state_id;
+  mutable startStateId : ParseTablesType.state_id;
 
   (* production we're going to reduce with *)
   mutable prodIndex : int;
@@ -351,6 +349,9 @@ let terminalName userAct tokType =
   userAct.terminalName tokType
 
 
+let cSTATE_INVALID = ParseTablesType.cSTATE_INVALID
+
+
 (* --------------------- SiblingLink ----------------------- *)
 (* NULL sibling link *)
 let cNULL_SIBLING_LINK : 'result sibling_link = Obj.magic ()
@@ -375,7 +376,7 @@ let make_stack_node glr = {
 
 
 let getNodeSymbol node =
-  node.glr.tables.stateSymbol.(node.state)
+  ParseTables.getStateSymbol node.glr.tables node.state
 
 
 let incRefCt node =
@@ -608,7 +609,7 @@ let makeGLR userAct tables =
      * here since going over the limit would be really hard to
      * debug, and this ctor is of course outside the main
      * parsing loop *)
-    for i = 0 to glr.tables.numProds - 1 do
+    for i = 0 to ParseTables.getNumProds glr.tables - 1 do
       let len = ParseTables.getProdInfo_rhsLen glr.tables i in
 
       if len > cMAX_RHSLEN then (
@@ -805,7 +806,6 @@ let rec rwlEnqueueReductions glr parsr action mustUseLink =
     1
   ) else if ParseTables.isReduceAction (*tables*) action then (
     rwlEnqueueReduceAction glr parsr action mustUseLink;
-
     1
   ) else if ParseTables.isErrorAction (*tables*) action then (
     (* parser just dies *)
@@ -813,11 +813,12 @@ let rec rwlEnqueueReductions glr parsr action mustUseLink =
   ) else (
     (* ambiguous; check for reductions in list of actions *)
     let firstEntry = ParseTables.decodeAmbigAction glr.tables action parsr.state in
-    let numEntries = glr.tables.ambigTable.(firstEntry) in
+    let numEntries = ParseTables.getAmbigEntry glr.tables firstEntry in
 
     for i = 1 to numEntries do
+      let entry = ParseTables.getAmbigEntry glr.tables (firstEntry + i) in
       (* ignore return value because I know it will be 1 *)
-      ignore (rwlEnqueueReductions glr parsr glr.tables.ambigTable.(firstEntry + i) mustUseLink);
+      ignore (rwlEnqueueReductions glr parsr entry mustUseLink);
     done;
 
     numEntries
@@ -1006,12 +1007,12 @@ let rwlFindShift tables tokType action state =
   ) else (
     (* nondeterministic *)
     let firstEntry = ParseTables.decodeAmbigAction tables action state in
-    let numEntries = tables.ambigTable.(firstEntry) in
+    let numEntries = ParseTables.getAmbigEntry tables firstEntry in
 
     let newState = ref cSTATE_INVALID in
     let i = ref 1 in
     while !i <> numEntries do
-      let action = tables.ambigTable.(firstEntry + !i) in
+      let action = ParseTables.getAmbigEntry tables (firstEntry + !i) in
       incr i;
       if ParseTables.isShiftAction tables action then (
         (* a shift was among the conflicted actions *)
@@ -1112,7 +1113,7 @@ let printParseErrorMessage glr tokType lastToDie =
   else begin
     if lastToDie <> cSTATE_INVALID then (
       Printf.printf "In state %d, I expected one of these tokens:\n" lastToDie;
-      for i = 0 to glr.tables.numTerms - 1 do
+      for i = 0 to ParseTables.getNumTerms glr.tables - 1 do
         let act = ParseTables.getActionEntry glr.tables lastToDie i in
         if not (ParseTables.isErrorAction (*tables*) act) then
           Printf.printf "  [%d] %s\n" i (terminalName glr.userAct i);
@@ -1458,7 +1459,8 @@ let cleanupAfterParse (glr : 'result glr) : 'result option =
     arr.(1) <- grabTopSval glr.userAct last;            (* EOF's sval *)
 
     (* reduce *)
-    let treeTop = SemanticValue.obj (reductionAction glr.userAct glr.tables.finalProductionIndex arr) in
+    let finalProductionIndex = ParseTables.getFinalProductionIndex glr.tables in
+    let treeTop = SemanticValue.obj (reductionAction glr.userAct finalProductionIndex arr) in
 
     (* before pool goes away.. *)
     Arraystack.iter decRefCt glr.topmostParsers;
@@ -1470,7 +1472,8 @@ let cleanupAfterParse (glr : 'result glr) : 'result option =
 let glrParse (glr : 'result glr) lexer : 'result option =
   glr.globalNodeColumn <- 0;
   begin
-    let first = makeStackNode glr glr.tables.startState in
+    let startState = ParseTables.getStartState glr.tables in
+    let first = makeStackNode glr startState in
     addTopmostParser glr first;
   end;
 
