@@ -6,17 +6,20 @@ open Camlp4.PreCast
 
 module CamlSyntax = Camlp4OCamlParser.Make(Camlp4OCamlRevisedParser.Make(Syntax))
 
-let parse_string syntax loc str =
-  try
-    CamlSyntax.Gram.parse_string syntax loc str
-  with Loc.Exc_located (loc, Stream.Error msg) ->
-    Format.eprintf "%a@.  while parsing \"%s\": %s" Loc.print loc str msg;
-    exit 1
+let parse_string syntax default _loc str =
+  match str with
+  | ""  -> default
+  | str ->
+      try
+        CamlSyntax.Gram.parse_string syntax _loc str
+      with Loc.Exc_located (loc, Stream.Error msg) ->
+        Format.eprintf "%a@.  while parsing \"%s\": %s" Loc.print loc str msg;
+        exit 1
 
-let ctyp_of_string     = parse_string CamlSyntax.ctyp
-let expr_of_string     = parse_string CamlSyntax.expr
-let sig_item_of_string = parse_string CamlSyntax.sig_item
-let str_item_of_string = parse_string CamlSyntax.str_item
+let ctyp_of_string     _loc = parse_string CamlSyntax.ctyp     <:ctyp<unit>> _loc
+let expr_of_string     _loc = parse_string CamlSyntax.expr     <:expr<()>>   _loc
+let sig_item_of_string _loc = parse_string CamlSyntax.sig_item <:sig_item<>> _loc
+let str_item_of_string _loc = parse_string CamlSyntax.str_item <:str_item<>> _loc
 
 let _loc = Loc.ghost
 

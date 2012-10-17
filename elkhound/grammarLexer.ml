@@ -1,4 +1,4 @@
-open Batteries_uni
+open BatPervasives
 open GrammarParser
 
 type automaton =
@@ -90,12 +90,14 @@ let remove_braces str =
   let startpos = String. index str '{' + 1 in
   let endpos   = String.rindex str '}' in
   String.sub str startpos (endpos - startpos)
+  |> BatString.trim
 
 
 let remove_parens str =
   let startpos = String. index str '(' + 1 in
   let endpos   = String.rindex str ')' in
   String.sub str startpos (endpos - startpos)
+  |> BatString.trim
 
 
 let rec verbatim state = lexer

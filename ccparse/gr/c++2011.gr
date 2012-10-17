@@ -5,14 +5,14 @@ option reduce_reduce_conflicts 18;
 
 // decltype
 nonterm DeclSpecifier {
-  -> te:DecltypeTypeSpecifier m2:UberModifierSeqOpt { () }
-  -> m1:UberModifierSeq te:DecltypeTypeSpecifier m2:UberModifierSeqOpt { () }
+  -> te:DecltypeTypeSpecifier m2:UberModifierSeqOpt { }
+  -> m1:UberModifierSeq te:DecltypeTypeSpecifier m2:UberModifierSeqOpt { }
 }
 
 
 nonterm TypeSpecifier {
-  -> te:DecltypeTypeSpecifier cv2:UberCVQualifierSeqOpt { () }
-  -> cv1:UberCVQualifierSeq te:DecltypeTypeSpecifier cv2:UberCVQualifierSeqOpt { () }
+  -> te:DecltypeTypeSpecifier cv2:UberCVQualifierSeqOpt { }
+  -> cv1:UberCVQualifierSeq te:DecltypeTypeSpecifier cv2:UberCVQualifierSeqOpt { }
 }
 
 
@@ -36,7 +36,7 @@ nonterm DecltypeType {
 
 // nullptr
 nonterm Literal {
-  -> "nullptr" { () }
+  -> "nullptr" { }
 }
 
 // new character types
@@ -69,16 +69,16 @@ nonterm ExceptionSpecification {
 }
 
 nonterm NoexceptSpecification {
-  -> "noexcept" [NoExcept] { () }
+  -> "noexcept" [NoExcept] { }
 }
 
 // variadic templates
 nonterm TypeParameter {
   // non-template type parameter
-  -> ClassOrTypename "..." i:IdentifierOpt t:DefaultTypeOpt { () }
+  -> ClassOrTypename "..." i:IdentifierOpt t:DefaultTypeOpt { }
 
   // template type parameter
-  -> "template" "<" pl:TemplateParameterList ">" "class" "..." i:IdentifierOpt { () }
+  -> "template" "<" pl:TemplateParameterList ">" "class" "..." i:IdentifierOpt { }
 }
 
 nonterm TemplateArgument {
