@@ -8,7 +8,7 @@ type: :task
 component: gramanl
 release: 
 reporter: Pippijn van Steenhoven <pippijn@xinutec.org>
-status: :unstarted
+status: :paused
 disposition: 
 creation_time: 2012-10-19 15:25:56.116487 Z
 references: []
@@ -18,4 +18,12 @@ log_events:
 - - 2012-10-19 15:25:58.599587 Z
   - Pippijn van Steenhoven <pippijn@xinutec.org>
   - created
+  - ""
+- - 2012-10-20 14:58:18.259117 Z
+  - Wojciech Meyer <wojciech.meyer@gmail.com>
+  - changed status from unstarted to in_progress
+  - ""
+- - 2012-10-20 14:58:26.711123 Z
+  - Wojciech Meyer <wojciech.meyer@gmail.com>
+  - changed status from in_progress to paused
   - ""
