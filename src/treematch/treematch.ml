@@ -48,8 +48,8 @@ let files =
         let tokens = tokenise [] Lexer.token lexbuf in
         List.iter (print_endline -| Token.to_string) tokens;
       end;
-      Printf.printf "***** End of %s\n" name);
-
+      Printf.printf "***** End of %s\n" name
+    );
 
     if Options._dump_ast () then (
       program |> Program.output_untyped_program stdout
@@ -68,7 +68,6 @@ let files =
         Typing.program |- Program.output_typed_program stdout;
         Typing.program |- (new Program.typed_print)#program Format.std_formatter;
       ]
-
     )
   in
   List.iter single
