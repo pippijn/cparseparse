@@ -47,7 +47,7 @@ let main =
     );
 
     if not (Options._no_emit ()) then (
-      program
+      Typing.program program
       |> if Options._special ()
          then SpecialBackend.output_program "/dev/stdout"
          else SimpleBackend.output_program "/dev/stdout"
