@@ -5,8 +5,8 @@ type: :bugfix
 component: infrastructure
 release: 
 reporter: Wojciech Meyer <wojciech.meyer@gmail.com>
-status: :unstarted
-disposition: 
+status: :closed
+disposition: :fixed
 creation_time: 2012-10-10 23:03:45.987136 Z
 references: []
 
@@ -16,3 +16,7 @@ log_events:
   - Wojciech Meyer <wojciech.meyer@gmail.com>
   - created
   - ""
+- - 2012-10-20 11:15:48.067081 Z
+  - Wojciech Meyer <wojciech.meyer@gmail.com>
+  - closed with disposition fixed
+  - We improved a lot build system since the issue was created. There are remainig problems (like Option.ml handling) but I think I am now happy how it all works.
