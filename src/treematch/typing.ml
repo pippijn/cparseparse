@@ -26,6 +26,7 @@ module Collect = struct
         List.fold_right
           (fun (k,v) set -> TreeMap.add k v set)
           lst TreeMap.empty
+
       )
   and definition = function
   | P.Ast (name, nodes) ->
@@ -59,7 +60,7 @@ end
 (* |                     Give constructors annotations                     | *)
 (* +=====~~~-------------------------------------------------------~~~=====+ *)
 
-module Constr = struct
+module Construct = struct
   let rec program p =
     let types = Collect.program p in
     let definition = function
@@ -70,8 +71,8 @@ module Constr = struct
           nm, List.map (fun (l,r) ->
             let rec visit = function
             | T.Tree (_, (tag, tree)) ->
-                T.Tree (nm, (tag, List.map visit tree))
-            | T.Var (_, nm) -> T.Var (Ident.ident "#undef", nm)
+                T.Tree (Constr.Tycon nm, (tag, List.map visit tree))
+            | T.Var (_, nm) -> T.Var (Constr.Tycon (Ident.uident "#undef"), nm)
             | T.Const x -> T.Const x
             in
             visit l, visit r) clauses
@@ -102,7 +103,7 @@ module Vars = struct
         let unify node tree =
           match tree with
           | T.Tree (ty, (x, args')) ->
-              let _,args = constr (node,x) in
+              let _, args = constr (node,x) in
               T.Tree (ty, (x,List.map annot (List.combine args args')))
           | x -> x
         in
@@ -263,31 +264,33 @@ module Default = struct
     | _ -> true
     in
 
-    let collect_simple (l,r) =
+    let collect_simple (l,_) =
       if is_simple l then
         match l with
-        | T.Tree (_, (nm,_)) ->
-            Some nm
+        | T.Tree (_, (nm,args)) ->
+            Some (nm, List.map Tree.type_of args)
         | _ -> None
       else None
     in
 
     let node defs (nm, clauses) =
       let to_tree (n, args) =
-        Tree.Tree (nm, (n, List.map (fun (ty,nm) -> Tree.Var (ty,Ident.lident_of_uident nm)) (List.combine args args))) in
+        Tree.Tree (nm, (n, List.map (fun ty -> Tree.Var (ty,nm)) args))
+      in
       let simple = BatList.filter_map collect_simple clauses in
-      let simple = List.map (fun x -> nm,x) simple in
-      let set = List.fold_right TreeMap.remove simple defs in
-      nm, TreeMap.fold (fun (node,name) constr acc ->
-        let t = to_tree constr in
-        ((t,t)) :: acc) set []
+      let simple = List.map (fun x -> nm, x) simple in
+      (* let set = List.fold_right TreeMap.remove simple defs in *)
+      nm,[]
+      (* nm, TreeMap.fold (fun (node, name) constr acc -> *)
+      (*   let t = to_tree constr in *)
+      (*   ((t,t)) :: acc) set [] *)
     in
     let definition = function
     | P.Map (nm, (s,d), nodes) ->
         begin try
           let nd = List.assoc s types in
-          let generated = (List.map (node nd) nodes) in
-          P.Map (nm, (s,d), nodes @ generated)
+          (* let generated = List.map (node nd) nodes in *)
+          P.Map (nm, (s,d), nodes (* @ generated *))
         with Not_found -> P.Map (nm, (s,d), nodes)
         end
     | x -> x
@@ -313,7 +316,7 @@ end
 (* end *)
 
 let program p =
-  Constr.program p
+  Construct.program p
   |> Vars.program
   |> Rename.program
   |> Unify.program
