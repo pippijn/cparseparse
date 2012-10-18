@@ -272,26 +272,41 @@ module Default = struct
         | _ -> None
       else None
     in
-
-    let node defs (nm, clauses) =
-      let to_tree (n, args) =
-        Tree.Tree (nm, (n, List.map (fun ty -> Tree.Var (ty,nm)) args))
-      in
+    let remove_defined defs (nm,clauses) =
       let simple = BatList.filter_map collect_simple clauses in
-      let simple = List.map (fun x -> nm, x) simple in
-      (* let set = List.fold_right TreeMap.remove simple defs in *)
-      nm,[]
-      (* nm, TreeMap.fold (fun (node, name) constr acc -> *)
-      (*   let t = to_tree constr in *)
-      (*   ((t,t)) :: acc) set [] *)
+      let simple = List.map (fun x ->  nm, x) simple in
+      List.fold_right
+        (fun (el,(nm,_)) set ->
+          TreeMap.remove (el, nm) set) simple defs
     in
+    let env node_name = List.assoc node_name types in
+    let node (node_name, constrs) =
+      node_name,
+      List.map (fun (constr_name, arguments) ->
+        let n = ref 0 in
+        let arguments = List.combine (List.map (fun (Constr.Tycon arg) -> incr(n); (Ident.string_of_uident arg^string_of_int !n)) arguments) arguments in
+        let tree = List.map (fun (name, ty) -> Tree.Var (ty, Ident.lident name)) arguments in
+        T.Tree (Constr.Tycon constr_name, (constr_name, tree)), T.Tree (Constr.Tycon (Ident.uident"ala"), (constr_name, tree))
+      ) constrs
+
+    in
+    let ast nm = List.hd (BatList.filter_map
+      (function P.Ast (name, nodes) when nm = name ->
+        Some (BatList.filter_map
+                (function (node_name, P.CustomNode constrs) ->
+                  Some (node_name, constrs)
+                | _ -> None) nodes)
+      | _ -> None) p) in
+
     let definition = function
-    | P.Map (nm, (s,d), nodes) ->
+    | P.Map (nm, (s,d), rewrite_nodes) ->
         begin try
-          let nd = List.assoc s types in
-          (* let generated = List.map (node nd) nodes in *)
-          P.Map (nm, (s,d), nodes (* @ generated *))
-        with Not_found -> P.Map (nm, (s,d), nodes)
+          (* let nd = List.assoc d types in *)
+          (* let nodes = List.map fst types in *)
+          let nodes = ast d in
+          let generated = List.map node nodes in
+          P.Map (nm, (s,d), rewrite_nodes @ generated)
+        with Not_found -> P.Map (nm, (s,d), rewrite_nodes)
         end
     | x -> x
     in
