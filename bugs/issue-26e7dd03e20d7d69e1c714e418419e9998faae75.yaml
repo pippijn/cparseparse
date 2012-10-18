@@ -21,3 +21,7 @@ log_events:
   - Pippijn van Steenhoven <pippijn@xinutec.org>
   - created
   - ""
+- - 2012-10-21 12:23:40.195086 Z
+  - Wojciech Meyer <wojciech.meyer@gmail.com>
+  - commented
+  - Now the ast part works. Type/AST inferences needs fixing (typing.ml), so not closing this down
