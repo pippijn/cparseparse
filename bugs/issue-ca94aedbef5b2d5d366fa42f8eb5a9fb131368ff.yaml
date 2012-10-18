@@ -7,8 +7,8 @@ type: :bugfix
 component: treematch
 release: 
 reporter: Pippijn van Steenhoven <pippijn@xinutec.org>
-status: :unstarted
-disposition: 
+status: :closed
+disposition: :fixed
 creation_time: 2012-10-21 06:48:35.362477 Z
 references: []
 
@@ -17,4 +17,8 @@ log_events:
 - - 2012-10-21 06:48:35.959617 Z
   - Pippijn van Steenhoven <pippijn@xinutec.org>
   - created
+  - ""
+- - 2012-10-21 11:06:12.731090 Z
+  - Wojciech Meyer <wojciech.meyer@gmail.com>
+  - closed with disposition fixed
   - ""
