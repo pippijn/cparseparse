@@ -1,6 +1,9 @@
 open Typing
+open Options
+
 let (|>) = BatPervasives.(|>)
 let (-|) = BatPervasives.(-|)
+let (|-) = BatPervasives.(|-)
 
 (* +=====~~~-------------------------------------------------------~~~=====+ *)
 (* |                      Some good runtime defaults                       | *)
@@ -10,7 +13,6 @@ let run f =
   Printexc.record_backtrace true;
   Printexc.print f Options.inputs
 
-open Options
 
 (* +=====~~~-------------------------------------------------------~~~=====+ *)
 (* |                         Return list of tokens                         | *)
@@ -38,26 +40,36 @@ let files =
     let parse () =
       let lexbuf = Lexing.from_channel (open_in name) in
       Parser.program Lexer.token lexbuf in
-    if Options._dump_tokens then (
+
+    if Options._dump_tokens () then (
       Printf.printf "***** Processing %s\n" name;
+
       let lexbuf = Lexing.from_channel (open_in name) in
       let tokens = tokenise [] Lexer.token lexbuf in
       List.iter (print_endline -| Token.to_string) tokens;
+
       Printf.printf "***** End of %s\n" name;
+
       flush stdout);
-    if Options._dump_ast then (
+
+    if Options._dump_ast () then (
       parse () |> Program.output_untyped_program stdout
     );
-    if not Options._no_emit then (
+
+    if not (Options._no_emit ()) then (
       parse () |> SimpleBackend.output_program "/dev/stdout"
     );
-    if Options._infer then (
-      let p = new Program.print in
+
+    if Options._infer () then (
+
       let program = parse () in
-      program |> p # program Format.std_formatter;
-      program |> Typing.program |> Program.output_typed_program stdout;
-      program |> Typing.program |> (new Program.typed_print)#program Format.std_formatter;
-      ()
+
+      List.iter ((|>) program) [
+        (new Program.print) # program Format.std_formatter;
+        Typing.program |- Program.output_typed_program stdout;
+        Typing.program |- (new Program.typed_print)#program Format.std_formatter
+      ]
+
     )
   in
   List.iter single
@@ -66,4 +78,4 @@ let files =
 (* |                             Run our tool                              | *)
 (* +=====~~~-------------------------------------------------------~~~=====+ *)
 
-let () = run files
+let () = Cmdline.run files
