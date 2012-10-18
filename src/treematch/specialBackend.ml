@@ -7,8 +7,12 @@ module OCamlPrinter = Printers.OCaml
 
 module Emit = struct
   let rec program definitions =
-    List.map definition definitions
-    |> Ast.stSem_of_list
+    <:str_item<
+
+      open Sexplib.Conv
+      $List.map definition definitions |> Ast.stSem_of_list$
+
+    >>
 
   and definition =
     function
@@ -36,7 +40,6 @@ module Emit = struct
     | Program.CustomNode clauses ->
 
         <:module_binding<
-
           $uid:Ident.string_of_uident nm$ :
           sig
             type t = $List.map ast_clause clauses |> Ast.tyOr_of_list$ | SEXP
