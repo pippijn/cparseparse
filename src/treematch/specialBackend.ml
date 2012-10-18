@@ -113,7 +113,15 @@ module Emit = struct
 
  and exTree t = function
  | Tree.Tree (_,(nm, lst)) -> constr t (nm, lst)
- | Tree.Var (Constr.Tycon ty,nm) -> <:expr< self # $lid:Ident.string_of_lident (Ident.lident_of_uident ty)$ $lid:Ident.string_of_lident nm$ >>
+ | Tree.Var (ty,nm) ->
+     let id str = Ident.string_of_lident (Ident.lident_of_uident str) in
+     let rec tycon = function
+     | Constr.List ty -> <:expr<List.map (fun $lid:Ident.string_of_lident nm$ -> $tycon ty$) $lid:Ident.string_of_lident nm$>>
+     | Constr.Option ty -> <:expr<(match $lid:Ident.string_of_lident nm$ with Some -> $tycon ty$ | None -> $lid:Ident.string_of_lident nm$)>>
+     | Constr.Tycon ty ->
+         <:expr< self # $lid:id ty$ $lid:Ident.string_of_lident nm$ >>
+     in
+     tycon ty
  | Tree.Const (Tree.String str) -> <:expr<$str:str$>>
  | Tree.Const (Tree.Int i) -> <:expr<$int:string_of_int i$>>
 
