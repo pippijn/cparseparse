@@ -71,20 +71,30 @@ module Emit = struct
 
         >>
 
-  and ast_clause (nm, args) =
-    let args =
-      let rec loop =
-        function
-        | Constr.Tycon nm ->
-            <:ctyp< $uid:(Ident.string_of_uident nm)$.t >>
-        | Constr.List ty ->
-            <:ctyp< $loop ty$ list >>
-        | Constr.Option ty ->
-            <:ctyp< $loop ty$ option >>
-      in
-      List.map loop args
+    | Program.AliasNode t ->
+        <:module_binding<
+
+          $uid:Ident.string_of_uident nm$ :
+          sig
+            type t = $tycon t$
+          end = struct
+            type t = $tycon t$
+          end
+        >>
+  and tycon args =
+    let rec loop =
+      function
+      | Constr.Tycon nm ->
+          <:ctyp< $uid:(Ident.string_of_uident nm)$.t >>
+      | Constr.List ty ->
+          <:ctyp< $loop ty$ list >>
+      | Constr.Option ty ->
+          <:ctyp< $loop ty$ option >>
     in
-    <:ctyp< $uid:Ident.string_of_uident nm$ of $Ast.tySta_of_list args$>>
+    loop args
+
+  and ast_clause (nm, args) =
+    <:ctyp< $uid:Ident.string_of_uident nm$ of $List.map tycon args |> Ast.tySta_of_list $>>
 
   and rewrite_node typing (nm, cl) =
     <:class_str_item<

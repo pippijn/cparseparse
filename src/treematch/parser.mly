@@ -57,6 +57,7 @@ rewrite_node
 node
 : clauses=separated_list(TOK_BAR,ast_clause)     { Program.CustomNode clauses }
 | nm=TOK_LIDENT                                       { Program.NativeNode nm }
+| TOK_EQUAL nm=tycon                                   { Program.AliasNode nm }
 
 ast_clause
 : t=constr                                                               {  t }

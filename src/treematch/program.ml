@@ -15,6 +15,7 @@ and 'a rewrite_clause = 'a Tree.t * 'a Tree.t
 and node =
     CustomNode of ast_clause list
   | NativeNode of Ident.lident
+  | AliasNode of Constr.tycon
 and type_decl = Ident.uident * Ident.uident
 and ast_clause = topl_tree
 and topl_tree = Constr.t
@@ -54,6 +55,7 @@ class virtual ['a] base_print = object (self)
   method node pp = function
     CustomNode clauses -> f pp "%a" (pp_list self # ast_clause pp_newline_bar_sep) clauses
   | NativeNode name -> Ident.pp_lident pp name
+  | AliasNode t -> (new Constr.print) # tycon pp t
   method type_decl pp (s,d) =
     f pp "@[<hov 2>%a@]" (pp_list Ident.pp_uident pp_biarrow_sep) [s;d]
   method ast_clause = self # topl_tree
