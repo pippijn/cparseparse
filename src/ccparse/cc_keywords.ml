@@ -153,7 +153,7 @@ let keywords = lazy (List.fold_left (fun map (kw, tok) -> StringMap.add kw tok m
     c89_keywords @ gnu_keywords @ cxx1998_keywords @ cxx2011_keywords
 ))
 
-let string_table = Hashtbl.create 1009
+let string_table = Hashtbl.create 16381
 
 let classify id =
   try

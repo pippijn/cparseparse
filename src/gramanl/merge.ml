@@ -184,7 +184,7 @@ let merge grammars =
 
                 | TF_nonterm (_, osemtype, ofuncs, oprods, osubsets), nt_index ->
                     if nsemtype <> osemtype then
-                      failwith "non-terminal types inconsistent; do not use type aliases";
+                      failwith ("non-terminal types for merged '" ^ name ^ "' inconsistent; do not use type aliases");
 
                     let funcs = merge_funcs nfuncs ofuncs in
                     let prods = merge_prods nprods oprods in

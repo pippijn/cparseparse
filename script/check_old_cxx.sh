@@ -6,7 +6,7 @@
 
 CXX=${CXX:-g++}
 
-${CXX} -x c++ - > /dev/null 2>&1 <<EOF
+${CXX} -x c++ -std=c++0x - > /dev/null 2>&1 <<EOF
 #include <vector>
 int main()
 {

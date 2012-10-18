@@ -24,22 +24,49 @@ let handle_return = function
       raise (ExitStatus 1)
 
 
-let glrparse glr lexer =
+let glrparse actions tables filename lexer =
+  let glr = GlrEngine.makeGLR actions tables in
+
   let tree =
-    Timing.time "parsing" (GlrEngine.glrParse glr) lexer
+    try
+      Some (Timing.time ~alloc:true "parsing" (GlrEngine.glrParse glr) lexer)
+    with GlrEngine.Located ((start_p, end_p), e, extra) ->
+      let open Lexing in
+      (* print source position *)
+      Printf.printf "\n%s:%d:%d: "
+        filename
+        (start_p.pos_lnum)
+        (start_p.pos_cnum - start_p.pos_bol + 1);
+
+      (* print exception info *)
+      begin match e with
+      | GlrEngine.ParseError (state, token) ->
+          Printf.printf "parse error near \"%s\" (state: %d, token: %d)\n"
+            extra state token
+      | Failure msg ->
+          Printf.printf "failure in user actions: %s\n\n" msg;
+          print_string extra
+      | e ->
+          Printf.printf "exception in user actions:\n  %s\n\n"
+            (Printexc.to_string e);
+          print_string extra
+      end;
+
+      None
   in
 
   (* print accounting statistics from glr.ml *)
-  if Options._stats () then (
+  if GlrOptions._accounting () then (
     let open GlrEngine in
+    let stats = stats_of_glr glr in
 
     Printf.printf "stack nodes: num=%d max=%d\n"
-      !GlrEngine.numStackNodesAllocd
-      !GlrEngine.maxStackNodesAllocd;
-    Printf.printf "detShift:     %d\n" glr.stats.detShift;
-    Printf.printf "detReduce:    %d\n" glr.stats.detReduce;
-    Printf.printf "nondetShift:  %d\n" glr.stats.nondetShift;
-    Printf.printf "nondetReduce: %d\n" glr.stats.nondetReduce;
+      stats.numStackNodesAllocd
+      stats.maxStackNodesAllocd;
+    Printf.printf "detShift:     %d\n" stats.detShift;
+    Printf.printf "detReduce:    %d\n" stats.detReduce;
+    Printf.printf "nondetShift:  %d\n" stats.nondetShift;
+    Printf.printf "nondetReduce: %d\n" stats.nondetReduce;
   );
 
   tree
@@ -69,8 +96,11 @@ let lexer_from_list tokens =
 
 
 let lexer_from_dump input =
-  let tokens = Marshal.from_channel (open_in_bin (input ^ ".tkd")) in
-  lexer_from_list tokens
+  let tokens =
+    BatStd.with_dispose ~dispose:close_in
+      input_value (open_in_bin (input ^ ".tkd"))
+  in
+  lexer_from_list tokens, BatPervasives.identity
 
 
 let lexer_from_lexing lexbuf =
@@ -82,30 +112,40 @@ let lexer_from_lexing lexbuf =
 
 
 let lexer_from_file input =
-  (* FIXME: this is never closed *)
   let cin = Unix.open_process_in ("gcc -I /usr/include/qt4 -xc++ -E -P " ^ input) in
 
   let lexbuf = Lexing.from_channel cin in
 
-  assert (not (Options._loadtoks ()));
-  if Options._pp () then (
-    let tokens = Timing.time "lexing" (tokenise [] Lexer.token) lexbuf in
-    if Options._dumptoks () then (
-      if Options._loadtoks () then
-        failwith "-dumptoks and -loadtoks are mutually exclusive";
-      Marshal.to_channel (open_out_bin (input ^ ".tkd")) tokens [Marshal.No_sharing];
-    );
-
-    lexer_from_list tokens
-  ) else (
-    assert (not (Options._dumptoks ()));
-    lexer_from_lexing lexbuf
-  )
-
-
-let parse_file glr actions input =
+  assert (not (Options._load_toks ()));
   let lexer =
-    if Options._loadtoks () then
+    if Options._pp () then (
+      let tokens =
+        Timing.time ~alloc:true "lexing" (tokenise [] Lexer.token) lexbuf
+      in
+
+      if Options._dump_toks () then (
+        if Options._load_toks () then
+          failwith "-dump-toks and -load-toks are mutually exclusive";
+        BatStd.with_dispose ~dispose:close_out
+          (fun out -> output_value out tokens) (open_out_bin (input ^ ".tkd"));
+      );
+
+      lexer_from_list tokens
+    ) else (
+      assert (not (Options._dump_toks ()));
+      lexer_from_lexing lexbuf
+    )
+  in
+
+  lexer, (fun () -> ignore (Unix.close_process_in cin))
+
+
+let parse_file actions tables input =
+  if Options._verbose () then
+    print_endline ("%%% processing " ^ input);
+
+  let lexer, cleanup =
+    if Options._load_toks () then
       lexer_from_dump input
     else
       lexer_from_file input
@@ -118,20 +158,40 @@ let parse_file glr actions input =
       lexer
   in
 
-  if Options._tokens () then
-    None
-  else
-    match glrparse glr lexer with
-    | Some _ as result -> result
-    | None ->
-        Printf.printf "near line %d\n" 0;
-        None
+  let tree =
+    if Options._tokens () then
+      None
+    else
+      glrparse actions tables input lexer
+  in
+
+  cleanup ();
+  tree
 
 
-let parse_files actions tables inputs =
-  let glr = GlrEngine.makeGLR actions tables in
+let dump_tree tree =
+  BatStd.with_dispose ~dispose:close_out
+    (fun out -> output_value out tree) (open_out_bin "result.bin")
 
-  List.map (parse_file glr actions) inputs
+
+let parse_files actions tables files =
+  let result = Timing.alloc "parsing all files" (List.rev_map (parse_file actions tables)) files in
+
+  if Options._sizeof_tree () then (
+    let size =
+      Timing.time "computing memory size of result"
+        Valgrind.sizeof result
+    in
+
+    Printf.printf "=> the returned data structure is %a\n"
+      Timing.output_memsize (float_of_int size);
+    flush stdout;
+  );
+
+  if Options._dump_tree () then
+    Timing.time "serialising tree" dump_tree result;
+
+  result
 
 
 let print_tptree tree =
@@ -194,7 +254,11 @@ let elkmain inputs =
     let trees = parse_files actions tables inputs in
     List.iter (function
       | None -> ()
-      | Some lst -> ()
+      | Some tu ->
+          if Options._print () then (
+            Sexplib.Sexp.output_hum stdout (Ccabs.Ast.sexp_of_translation_unit tu);
+            print_newline ()
+          )
     ) trees
 
   )

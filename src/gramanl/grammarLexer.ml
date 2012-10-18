@@ -38,11 +38,12 @@ let classify id =
   try
     snd (List.find (fun (name, token) -> id = name) keywords)
   with Not_found ->
-    TOK_NAME id
+    TOK_LNAME id
 
 let print = function
   | TOK_INTEGER i -> Printf.sprintf "TOK_INTEGER %d" i
-  | TOK_NAME id -> "TOK_NAME " ^ id
+  | TOK_UNAME id -> "TOK_UNAME " ^ id
+  | TOK_LNAME id -> "TOK_LNAME " ^ id
   | TOK_STRING id -> "TOK_STRING " ^ id
   | TOK_LIT_CODE id -> "TOK_LIT_CODE " ^ id
 
@@ -151,9 +152,8 @@ let rec normal state = lexer
 
 (* Comments *)
 | "//" [^ '\n']*						-> normal state lexbuf
-| "(*" ([^ '*']| "*"* [^ '*' ')'])* "*"+ ")"			-> normal state lexbuf
 | "/*" ([^ '*']| "*"* [^ '*' '/'])* "*"+ "/"			-> normal state lexbuf
-| "/*" ([^ '*']| "*"* [^ '*' '/'])* "*"*			-> failwith "unterminated comment"
+| "(*"								-> comment 0 state lexbuf
 
 (* State-switching keywords *)
 | "context_class"						-> state.automaton <- Verbatim; TOK_CONTEXT_CLASS
@@ -170,7 +170,11 @@ let rec normal state = lexer
     state.stack <- nextbuf :: state.stack;
     normal state nextbuf
 
+(* Handle this one specially, as it is a nonterminal *)
+| "empty"							-> TOK_UNAME "empty"
+
 (* Identifier *)
+| ['A'-'Z'] ['A'-'Z' 'a'-'z' '_' '0'-'9']*			-> TOK_UNAME (Ulexing.utf8_lexeme lexbuf)
 | ['A'-'Z' 'a'-'z' '_'] ['A'-'Z' 'a'-'z' '_' '0'-'9']*		-> classify (Ulexing.utf8_lexeme lexbuf)
 
 (* Integer *)
@@ -204,6 +208,12 @@ let rec normal state = lexer
 	normal state nextbuf
     | _ :: [] -> EOF
     | [] -> failwith "impossible: empty lexer stack"
+
+
+and comment level state = lexer
+| "(*"								-> comment (level + 1) state lexbuf
+| "*)"								-> if level > 0 then comment (level - 1) state lexbuf else normal state lexbuf
+| _								-> comment level state lexbuf
 
 
 let token state =

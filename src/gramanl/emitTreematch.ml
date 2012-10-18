@@ -31,27 +31,45 @@ let ctyp_of_symbol = function
   | Terminal    (_,    term) -> ctyp_of_terminal term
 
 
-let ctyp_of_right_symbol head_tail =
+let right_symbol head_tail =
   PtreeMaker.symbols_of_production head_tail
   |> List.rev
   |> List.hd
+
+
+let ctyp_of_right_symbol head_tail =
+  right_symbol head_tail
   |> ctyp_of_symbol
 
 
 (* XXX: if this function changes its output, PtreeMaker.prods probably
  * also needs to change *)
 let production_types term_mods left has_merge prods =
+  let add_term_mod = function
+    | Terminal (tag, { tbase = { name; semtype = Some semtype; } }) ->
+        assert (tag <> "");
+        if not (Hashtbl.mem term_mods name) then
+          Hashtbl.add term_mods name (CamlAst.string_of_ctyp semtype)
+    | _ -> ()
+  in
+
   match prods with
   | [prod] when PtreeMaker.is_singleton_nonterminal prod && not has_merge ->
-      let semtype = ctyp_of_right_symbol prod in
+      let right = right_symbol prod in
+      add_term_mod right;
+      let semtype = ctyp_of_symbol right in
       left ^ ": =" ^ semtype
 
   | [tail; head_tail] when PtreeMaker.is_list_nonterminal tail head_tail && not has_merge ->
-      let semtype = ctyp_of_right_symbol head_tail in
+      let right = right_symbol head_tail in
+      add_term_mod right;
+      let semtype = ctyp_of_symbol right in
       left ^ ": =[" ^ semtype ^ "]"
 
   | [none; some] when PtreeMaker.is_option_nonterminal none some && not has_merge ->
-      let semtype = ctyp_of_right_symbol some in
+      let right = right_symbol some in
+      add_term_mod right;
+      let semtype = ctyp_of_symbol right in
       left ^ ": =?" ^ semtype
 
   | [none; some] when PtreeMaker.is_boolean_nonterminal none some && not has_merge ->
@@ -68,14 +86,9 @@ let production_types term_mods left has_merge prods =
                   (* nothing to do for untagged symbols *)
                   []
 
-              | Nonterminal (_, nonterm) ->
-                  [ctyp_of_nonterminal nonterm]
-              | Terminal (_, ({ tbase = { name; semtype = Some semtype; } } as term)) ->
-                  if not (Hashtbl.mem term_mods name) then
-                    Hashtbl.add term_mods name (CamlAst.string_of_ctyp semtype);
-                  [ctyp_of_terminal term]
-
-              | _ -> failwith "bad"
+              | _ ->
+                  add_term_mod sym;
+                  [ctyp_of_symbol sym]
 
             ) prod.right
             |> List.concat

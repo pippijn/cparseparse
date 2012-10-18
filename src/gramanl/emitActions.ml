@@ -20,10 +20,14 @@ let fold_bindings =
  * :: Semantic type helpers
  ************************************************)
 
+let polytype sym =
+  <:ctyp<'$lid:"t" ^ sym.name$>>
+
+
 let semtype sym =
   match sym.semtype with
   | None ->
-      <:ctyp<'$lid:"t" ^ sym.name$>>
+      polytype sym
   | Some semtype ->
       semtype
 
@@ -62,7 +66,20 @@ let make_ml_actions prods =
 
       let make_binding tag index sym =
         assert (is_lid tag);
-        <:binding<$lid:tag$ = (SemanticValue.obj svals.($int:string_of_int index$) : $semtype sym$)>>
+        let semtype = semtype sym in
+        let polytype = polytype sym in
+        if semtype = polytype then
+          <:binding<
+            $lid:tag$ : $semtype$ =
+              (SemanticValue.obj svals.($int:string_of_int index$))
+          >>
+        else
+          <:binding<
+            (* explicitly state polymorphic type variable so the typing
+             * stays sound even when users specify types *)
+            $lid:tag$ : $semtype$ =
+              (SemanticValue.obj svals.($int:string_of_int index$) : $polytype$)
+          >>
       in
 
       (* iterate over RHS elements, emitting bindings for each with a tag *)

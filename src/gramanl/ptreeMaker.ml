@@ -124,7 +124,10 @@ end) = struct
   let check_noname prod =
     match prod.prod_name with
     | None -> ()
-    | Some name -> failwith ("uselessly defined production name \"" ^ name ^ "\"")
+    | Some name ->
+        failwith (
+          "uselessly defined production name \"" ^ name ^ "\"" ^
+          " in nonterminal \"" ^ prod.left.nbase.name ^ "\"")
 
 
   let map_prods reachable has_merge prods =
@@ -229,6 +232,7 @@ end) = struct
 
   let unit_prods =
     List.map (fun prod ->
+      check_noname prod;
       let left = nonterminal StringSet.empty prod.left in
       let right = List.map (symbol StringSet.empty) prod.right in
       { prod with left; right; action = Some <:expr<()>> }
