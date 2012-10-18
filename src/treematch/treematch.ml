@@ -58,8 +58,8 @@ let files =
     if not (Options._no_emit ()) then (
       program
       |> if Options._special ()
-         then SimpleBackend.output_program "/dev/stdout"
-         else assert false
+         then SpecialBackend.output_program "/dev/stdout"
+         else SimpleBackend.output_program "/dev/stdout"
     );
 
     if Options._infer () then (
