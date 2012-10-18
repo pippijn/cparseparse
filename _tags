@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 63b190f007dc1857afaeb035cf9c9a8b)
+# DO NOT EDIT (digest: 42eca172c58b528a24a94fa013278966)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -29,6 +29,8 @@
 "baselib/ml_Sched.c": pkg_batteries
 "baselib/ml_Valgrind.c": pkg_sexplib
 "baselib/ml_Valgrind.c": pkg_batteries
+"baselib/ml_Zlib.c": pkg_sexplib
+"baselib/ml_Zlib.c": pkg_batteries
 # Library glr
 "glr/glr.cmxs": use_glr
 <glr/*.ml{,i}>: use_baselib
@@ -83,6 +85,7 @@
 "elkhound/elkhound.native": use_glr
 "elkhound/elkhound.native": use_baselib
 "elkhound/elkhound.native": pkg_sexplib
+"elkhound/elkhound.native": pkg_ocamlgraph
 "elkhound/elkhound.native": pkg_ulex
 "elkhound/elkhound.native": pkg_menhirLib
 "elkhound/elkhound.native": pkg_batteries
@@ -92,6 +95,7 @@
 <elkhound/*.ml{,i}>: use_glr
 <elkhound/*.ml{,i}>: use_baselib
 <elkhound/*.ml{,i}>: pkg_sexplib
+<elkhound/*.ml{,i}>: pkg_ocamlgraph
 <elkhound/*.ml{,i}>: pkg_ulex
 <elkhound/*.ml{,i}>: pkg_menhirLib
 <elkhound/*.ml{,i}>: pkg_batteries

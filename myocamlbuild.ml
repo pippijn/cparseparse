@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: d5158807adf33361803ec687e7c7a481) *)
+(* DO NOT EDIT (digest: 8c1389c9117a4934fad312c413eaa9b3) *)
 module OASISGettext = struct
 # 21 "/tmp/oasis-0.3.0/src/oasis/OASISGettext.ml"
 
@@ -487,9 +487,12 @@ let package_default =
      flags =
        [
           (["oasis_library_baselib_cclib"; "link"],
-            [(OASISExpr.EBool true, S [A "-cclib"; A "-lstdc++"])]);
+            [
+               (OASISExpr.EBool true,
+                 S [A "-cclib"; A "-lstdc++"; A "-cclib"; A "-lz"])
+            ]);
           (["oasis_library_baselib_cclib"; "ocamlmklib"; "c"],
-            [(OASISExpr.EBool true, S [A "-lstdc++"])])
+            [(OASISExpr.EBool true, S [A "-lstdc++"; A "-lz"])])
        ];
      includes =
        [
@@ -506,7 +509,7 @@ let package_default =
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default package_default;;
 
-# 510 "myocamlbuild.ml"
+# 513 "myocamlbuild.ml"
 (* OASIS_STOP *)
 let tokens = [
   "ccparse/tok/c++1998.tok";
