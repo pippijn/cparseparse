@@ -39,10 +39,12 @@ module Emit = struct
 
           $uid:Ident.string_of_uident nm$ :
           sig
-            type t = $List.map ast_clause clauses |> Ast.tyOr_of_list$
+            type t = $List.map ast_clause clauses |> Ast.tyOr_of_list$ | SEXP
+            val sexp_of_t : t -> Sexplib.Sexp.t;;
+            val t_of_sexp : Sexplib.Sexp.t -> t;;
           end =
           struct
-            type t = $List.map ast_clause clauses |> Ast.tyOr_of_list$
+            type t = $List.map ast_clause clauses |> Ast.tyOr_of_list$ | SEXP
           end
 
         >>
