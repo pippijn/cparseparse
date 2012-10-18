@@ -119,6 +119,10 @@ module Emit = struct
      | Constr.List ty -> <:expr<List.map (fun $lid:Ident.string_of_lident nm$ -> $tycon ty$) $lid:Ident.string_of_lident nm$>>
      | Constr.Option ty -> <:expr<(match $lid:Ident.string_of_lident nm$ with Some -> $tycon ty$ | None -> $lid:Ident.string_of_lident nm$)>>
      | Constr.Tycon ty ->
+         match id ty with
+         | "string"|"int"|"int32"|"int64"|"bool"->
+         <:expr< $lid:Ident.string_of_lident nm$ >>
+         | _ ->
          <:expr< self # $lid:id ty$ $lid:Ident.string_of_lident nm$ >>
      in
      tycon ty
