@@ -2,6 +2,7 @@ module Options = struct
   let test_suffixes = [".cc"; ".c"; ".ii"; ".i"; ".tm"]
   let tool_opts = StringMap.of_list [
     "cpapa", "-trivial";
+    "treematch", "-special";
   ]
   let dirs = [
     "arith", "testsuite/elkhound/arith/tests";
