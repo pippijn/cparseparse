@@ -1,0 +1,18 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: Treematch backend
+desc: Implement a backend for treematch but transforming the grammar ast's to the treematch ones, and then compile it to ML using treematch.
+type: :task
+component: gramanl
+release: 
+reporter: Wojciech Meyer <wojciech.meyer@gmail.com>
+status: :unstarted
+disposition: 
+creation_time: 2012-10-20 11:18:34.147106 Z
+references: []
+
+id: ed993d53837d382d0edad11253ca2063ef5b1fe4
+log_events: 
+- - 2012-10-20 11:18:36.255062 Z
+  - Wojciech Meyer <wojciech.meyer@gmail.com>
+  - created
+  - ""
