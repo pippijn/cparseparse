@@ -5,5 +5,8 @@ val emit_ml :
   string ->
   AnalysisEnvType.index ->
   StateId.Production.t list NtArray.t ->
+  (string * GrammarType.nonterminal NtArray.t *
+            GrammarType.production ProdArray.t) list ->
+  StringSet.t ->
   Ast.sig_item list ->
   Ast.str_item list -> ParseTablesType.t -> unit
