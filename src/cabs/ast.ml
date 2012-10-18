@@ -36,11 +36,12 @@ type partial_basic_type =
   | BT_VaList		(** [__builtin_va_list] *)
   | BT_Ellipsis		(** [...] *)
   | BT_Void		(** [void] *)
+  with sexp
 
 
 (** {6 Basic types after normalisation} *)
 
-and basic_type =
+type basic_type =
   (* Integral types. *)
   | Bool		(** [_Bool] *)
   | Char		(** [char] *)
@@ -73,57 +74,64 @@ and basic_type =
   | Ellipsis		(** [...] *)
   | Void		(** [void] *)
   | WCharT		(** [wchar_t] *)
+  with sexp
 
 
 (** {6 User defined type tag kinds} *)
 
-and sue_kind =
+type sue_kind =
   | SUE_Struct		(** [struct] *)
   | SUE_Union		(** [union] *)
   | SUE_Enum		(** [enum] *)
+  with sexp
 
 
 (** {6 Numeric literal kinds} *)
 
-and integer_literal_kind =
+type integer_literal_kind =
   (* Integer *)
   | LIT_Bin		(** [0b01011] *)
   | LIT_Dec		(** [12345] *)
   | LIT_Hex		(** [0xdeadbeef] *)
   | LIT_Oct		(** [0755] *)
+  with sexp
 
 
-and floating_literal_kind =
+type floating_literal_kind =
   (* Floating point *)
   | LIT_Float		(** [1.0e+24] *)
   | LIT_HexFloat	(** [0x1.0p-500] *)
+  with sexp
 
 
 (** {6 Character literal kinds} *)
 
-and char_literal_kind =
+type char_literal_kind =
   (* Character *)
   | LIT_Char		(** ['c'] *)
   | LIT_WChar		(** [L'c'] *)
+  with sexp
 
 
 (** {6 String literal kinds} *)
 
-and string_literal_kind =
+type string_literal_kind =
   | LIT_String		(** ["string"] *)
   | LIT_WString		(** [L"string"] *)
+  with sexp
 
 
 (** {6 Ternary operators} *)
 
-and ternary_operator =
+type ternary_operator =
   (* Conditional expressions *)
   | OP_Conditional	(** [a ? b : c] *)
+  with sexp
 
 
 (** {6 Binary operators} *)
 
-and binary_operator =
+type binary_operator =
   (* Assignment expressions *)
   | OP_Assign		(** "[a = b]" *)
   | OP_MultiplyAssign	(** "[a *= b]" *)
@@ -158,11 +166,12 @@ and binary_operator =
   | OP_LogicalOr	(** "[a || b]" *)
   | OP_Ellipsis		(** "[a ... b]" *)
   | OP_Comma		(** "[a , b]" *)
+  with sexp
 
 
 (** {6 Unary operators} *)
 
-and unary_operator =
+type unary_operator =
   (* Unary expressions *)
   | OP_PostIncrement	(** "[a++]" *)
   | OP_PostDecrement	(** "[a--]" *)
@@ -177,11 +186,12 @@ and unary_operator =
   | OP_LogicalNot	(** "[!a]" *)
   | OP_Imag		(** "[imag a]" *)
   | OP_Real		(** "[real a]" *)
+  with sexp
 
 
 (** {6 Pseudo operators} *)
 
-and pseudo_operator =
+type pseudo_operator =
   | OP_HighestPrecedence	(** Pseudo-operator with a precedence higher than all other operators. *)
   | OP_LowestPrecedence		(** Pseudo-operator with a precedence lower than all other operators. *)
   | OP_FunctionCall		(** "[a (b)]" *)

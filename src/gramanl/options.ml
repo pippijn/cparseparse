@@ -72,9 +72,7 @@ let () =
       let point = String.rindex name '.' in
       let name = String.sub name slash (point - slash) in
 
-      name.[0] <- Char.uppercase name.[0];
-
-      _module_prefix := name
+      _module_prefix := String.capitalize name
     )
   )
 
