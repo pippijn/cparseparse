@@ -31,15 +31,14 @@ module Emit = struct
 
         end
       >>
-    | _ -> <:str_item< >>
-    (* | Program.Map (nm, (st,dt), nodes) -> *)
-    (*   let methods = List.map (rewrite_node (st,dt)) nodes in *)
-    (*   <:str_item< *)
+    | Program.Map (nm, (st,dt), nodes) ->
+      let methods = List.map (rewrite_node (st,dt)) nodes in
+      <:str_item<
 
-    (*     class $lid:Ident.string_of_lident nm$ = object (self : 'a) *)
-    (*         $methods |> Ast.crSem_of_list$ *)
-    (*     end *)
-    (*   >> *)
+        class $lid:Ident.string_of_lident nm$ = object (self : 'a)
+            $methods |> Ast.crSem_of_list$
+        end
+      >>
 
   and ast_node (nm, nd) =
     match nd with
