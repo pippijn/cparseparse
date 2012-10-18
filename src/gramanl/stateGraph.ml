@@ -6,7 +6,7 @@ module Dot = Graph.Graphviz.Dot(struct
     let graph_attributes _ = []
     let default_vertex_attributes _ = []
 
-    let vertex_name state = "S" ^ string_of_int (StateId.to_int state.state_id)
+    let vertex_name state = "S" ^ StateId.to_string state.state_id
     let vertex_attributes _ = []
 
     let get_subgraph _ = None

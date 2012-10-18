@@ -324,10 +324,10 @@ let merge_state env item_set sym in_done_list already dot_moved_items =
    * computed lookaheads with those in 'already' *)
   if merge_lookaheads_into already dot_moved_items.items then (
     if Options._trace_lrsets () then (
-      Printf.printf "from state %d, found that the transition on %s yielded a state similar to %d, but with different lookahead\n"
-        (StateId.to_int item_set.state_id)
+      Printf.printf "from state %a, found that the transition on %s yielded a state similar to %a, but with different lookahead\n"
+        StateId.print item_set.state_id
         (GrammarUtil.name_of_symbol sym)
-        (StateId.to_int already.state_id)
+        StateId.print already.state_id
     );
 
     (* this changed 'already'; recompute its closure *)
@@ -434,8 +434,8 @@ let process_item_set env =
 
   if Options._trace_lrsets () then (
     print_string "%%% ";
-    Printf.printf "state %d, %d kernel items and %d nonkernel items\n"
-      (StateId.to_int item_set.state_id)
+    Printf.printf "state %a, %d kernel items and %d nonkernel items\n"
+      StateId.print item_set.state_id
       (List.length item_set.kernel_items.items)
       (List.length item_set.nonkernel_items)
   );
