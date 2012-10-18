@@ -64,20 +64,20 @@ module Construct = struct
   let rec program p =
     let types = Collect.program p in
     let definition = function
-    | P.Map (nm, (s,d), nodes) ->
+    | P.Map (node_name, (s,d), nodes) ->
         let collected = List.assoc s types in
-        let constr nm = TreeMap.find nm collected in
+        let constr nm = fst (TreeMap.find nm collected) in
         let node (nm, clauses) =
           nm, List.map (fun (l,r) ->
             let rec visit = function
             | T.Tree (_, (tag, tree)) ->
-                T.Tree (Constr.Tycon nm, (tag, List.map visit tree))
+                T.Tree (Constr.Tycon (constr (d,nm)), (tag, List.map visit tree))
             | T.Var (_, nm) -> T.Var (Constr.Tycon (Ident.uident "#undef"), nm)
             | T.Const x -> T.Const x
             in
             visit l, visit r) clauses
         in
-        P.Map (nm, (s,d), List.map node nodes)
+        P.Map (node_name, (s,d), List.map node nodes)
     | P.Ast (a,b) -> P.Ast (a,b)
     in
     List.map definition p
@@ -292,9 +292,12 @@ module Default = struct
              )
              arguments)
           arguments in
-        let tree = List.map (fun (name, ty) -> Tree.Var (ty, Ident.lident name)) arguments in
-        T.Tree (Constr.Tycon constr_name, (constr_name, tree)),
-        T.Tree (Constr.Tycon constr_name, (constr_name, tree))
+        let tree =
+          List.map (fun (name, ty) ->
+            Tree.Var (ty, Ident.lident name)) arguments
+        in
+        T.Tree (Constr.Tycon node_name, (constr_name, tree)),
+        T.Tree (Constr.Tycon node_name, (constr_name, tree))
       ) constrs
 
     in

@@ -105,8 +105,11 @@ module Emit = struct
 
  and rewrite_clause (st,dt) (l,r) = <:match_case< $tup:paTree st l$ -> $tup:exTree dt r$>>
 
+ and paTy = function
+ | Constr.Tycon nm -> <:patt<$uid:Ident.string_of_uident nm$>>
+
  and paTree t = function
- | Tree.Tree (_,(nm, lst)) -> <:patt< $uid:Ident.string_of_uident t$ . $uid:Ident.string_of_uident nm$ $List.map (paTree t) lst |> Ast.paCom_of_list$>>
+ | Tree.Tree (Constr.Tycon ty,(nm, lst)) -> <:patt< $uid:Ident.string_of_uident t$. $uid:Ident.string_of_uident ty$ . $uid:Ident.string_of_uident nm$ $List.map (paTree t) lst |> Ast.paCom_of_list$>>
  | Tree.Var (_,nm) -> <:patt< $lid:Ident.string_of_lident nm$ >>
  | Tree.Const (Tree.String str) -> <:patt<$str:str$>>
  | Tree.Const (Tree.Int i) -> <:patt<$int:string_of_int i$>>
