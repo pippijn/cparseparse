@@ -25,7 +25,7 @@ with sexp
 
 type untyped_program = unit program
 with sexp
-type typed_program = Ident.uident program
+type typed_program = Constr.tycon program
 with sexp
 
 open ExtFormat
