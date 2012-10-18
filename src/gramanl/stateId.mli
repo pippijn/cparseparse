@@ -1,12 +1,36 @@
-include Sig.OrderedConvertibleType
+module State : sig
+  include GrammarSig.IntegralModuleType
 
-val to_int : t -> int
-val of_int : int -> t
+  val start : t
+  val is_start : t -> bool
+end
 
-val to_string : t -> string
-val print : out_channel -> t -> unit
-val sprint : unit -> t -> string
 
-val default : t
+(* nonterminals *)
+module Nonterminal : sig
+  include GrammarSig.IntegralModuleType
 
-val is_start : t -> bool
+  val empty : t
+  val is_empty : t -> bool
+
+  val start : t
+  val is_start : t -> bool
+end
+
+
+(* terminals *)
+module Terminal : sig
+  include GrammarSig.IntegralModuleType
+
+  val eof : t
+  val is_eof : t -> bool
+end
+
+
+(* productions *)
+module Production : sig
+  include GrammarSig.IntegralModuleType
+
+  val start : t
+  val is_start : t -> bool
+end

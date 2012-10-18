@@ -33,7 +33,7 @@ module M : GrammarSig.S with type t = item_set = struct
     nonterm_transition = [||];
     dots_at_end = [];
     state_symbol = None;
-    state_id = StateId.default;
+    state_id = StateId.State.default;
     bfs_parent = None;
   }
 
@@ -52,31 +52,31 @@ module Graph = Graph.Persistent.Digraph.ConcreteLabeled(M)(M)
 
 let transition_for_term item_set term =
   let open GrammarType in
-  item_set.term_transition.(term.term_index)
+  TermArray.get item_set.term_transition term.term_index
 
 let transition_for_nonterm item_set nonterm =
   let open GrammarType in
-  item_set.nonterm_transition.(nonterm.nt_index)
+  NtArray.get item_set.nonterm_transition nonterm.nt_index
 
 let transition item_set sym =
   let open GrammarType in
   match sym with
-  | Terminal (_, term) -> transition_for_term item_set term
+  | Terminal    (_,    term) -> transition_for_term    item_set    term
   | Nonterminal (_, nonterm) -> transition_for_nonterm item_set nonterm
 
 
 let set_transition_for_term from_set term to_set =
   let open GrammarType in
-  from_set.term_transition.(term.term_index) <- Some to_set
+  TermArray.set from_set.term_transition term.term_index (Some to_set)
 
 let set_transition_for_nonterm from_set nonterm to_set =
   let open GrammarType in
-  from_set.nonterm_transition.(nonterm.nt_index) <- Some to_set
+  NtArray.set from_set.nonterm_transition nonterm.nt_index (Some to_set)
 
 let set_transition from_set sym to_set =
   let open GrammarType in
   match sym with
-  | Terminal (_, term) -> set_transition_for_term from_set term to_set
+  | Terminal    (_,    term) -> set_transition_for_term    from_set    term to_set
   | Nonterminal (_, nonterm) -> set_transition_for_nonterm from_set nonterm to_set
 
 
@@ -109,7 +109,7 @@ let possible_reductions item_set lookahead =
       else (
         if Options._trace_reductions () then (
           Printf.printf "state %a, not reducing by "
-            StateId.print item_set.state_id;
+            StateId.State.print item_set.state_id;
           PrintGrammar.print_production prod;
           Printf.printf " because %s is not in follow of %s\n"
             lookahead.tbase.name
@@ -124,7 +124,7 @@ let possible_reductions item_set lookahead =
       if TerminalSet.mem lookahead.term_index item.lookahead then (
         if Options._trace_reductions () then (
           Printf.printf "state %a, reducing by "
-            StateId.print item_set.state_id;
+            StateId.State.print item_set.state_id;
           PrintGrammar.print_production prod;
           Printf.printf " because %s is in lookahead\n"
             lookahead.tbase.name;
@@ -133,7 +133,7 @@ let possible_reductions item_set lookahead =
       ) else (
         if Options._trace_reductions () then (
           Printf.printf "state %a, not reducing by "
-            StateId.print item_set.state_id;
+            StateId.State.print item_set.state_id;
           PrintGrammar.print_production prod;
           Printf.printf " because %s is not in lookahead\n"
             lookahead.tbase.name;
@@ -163,13 +163,13 @@ let inverse_transition terms nonterms source target =
   try
     Terminal ("",
       BatArray.find (fun term ->
-        eq_option target source.term_transition.(term.term_index)
+        eq_option target (transition_for_term source term)
       ) terms
     )
   with Not_found ->
     Nonterminal ("",
       BatArray.find (fun nonterm ->
-        eq_option target source.nonterm_transition.(nonterm.nt_index)
+        eq_option target (transition_for_nonterm source nonterm)
       ) nonterms
     )
 

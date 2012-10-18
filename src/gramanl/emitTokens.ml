@@ -86,7 +86,7 @@ let make_ml_tokens terms =
 
   let index_fn =
     make_ml_token_fn (fun term ->
-      <:expr<$int:string_of_int term.term_index$>>
+      <:expr<$int:StateId.Terminal.to_string term.term_index$>>
     ) terms
   in
 

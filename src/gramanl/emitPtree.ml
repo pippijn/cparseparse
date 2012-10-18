@@ -98,7 +98,7 @@ let production_types has_merge prods =
 
           let prod_name =
             match prod.prod_name with
-            | None      -> "P" ^ string_of_int prod.prod_index
+            | None      -> "P" ^ StateId.Production.to_string prod.prod_index
             | Some name -> assert (is_uid name); name
           in
 

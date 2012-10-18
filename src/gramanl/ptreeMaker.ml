@@ -64,7 +64,7 @@ let merge name = function
 
 let nonterminal nonterm =
   let semtype =
-    if nonterm.nt_index = 1 then
+    if StateId.Nonterminal.is_start nonterm.nt_index then
       (* synthesised start symbol *)
       <:ctyp<$uid:Options._module_prefix () ^ "Ptree"$.t>>
     else
@@ -164,12 +164,12 @@ let prods_by_lhs prods_by_lhs =
 
           let action =
             (* production 0 is the synthesised start symbol *)
-            if prod.prod_index = 0 then (
+            if StateId.Production.is_start prod.prod_index then (
               <:expr<top>>
             ) else (
               let prod_name =
                 match prod.prod_name with
-                | None      -> "P" ^ string_of_int prod.prod_index
+                | None      -> "P" ^ StateId.Production.to_string prod.prod_index
                 | Some name -> assert (name <> ""); name
               in
 

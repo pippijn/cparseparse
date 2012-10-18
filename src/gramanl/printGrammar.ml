@@ -15,7 +15,7 @@ let print_symbol ?(out=stdout) sym =
 
 
 let print_production ?(out=stdout) prod =
-  Printf.fprintf out "  [%d] %s ->" prod.prod_index prod.left.nbase.name;
+  Printf.fprintf out "  [%a] %s ->" StateId.Production.print prod.prod_index prod.left.nbase.name;
   if prod.right = [] then
     output_string out " empty"
   else

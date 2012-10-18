@@ -1,5 +1,7 @@
 open AnalysisEnvType
 
+module NonterminalSet = BitSet.Make(StateId.Nonterminal)
+
 let (--) = BatPervasives.(--)
 
 
@@ -7,19 +9,19 @@ let (--) = BatPervasives.(--)
  * when we reach a nonterminal that can't derive any others not
  * already in the order, we give its entry the latest ordinal
  * that isn't already taken ('next_ordinal') *)
-let rec topological_sort nonterm_count (* number of nonterminals in the grammar *)
+let rec topological_sort nonterms (* number of nonterminals in the grammar *)
                          derivable (* derivability graph *)
                          seen (* set of nonterminals we've already seen *)
                          order (* table we're filling with ordinals *)
                          next_ordinal (* latest ordinal not yet used *)
                          current (* current nonterminal to expand *)
                          =
-  if BitSet.mem seen current then (
+  if NonterminalSet.mem seen current then (
     (* already expanded this one *)
     next_ordinal
   ) else (
     (* don't expand this one again *)
-    BitSet.add seen current;
+    NonterminalSet.add seen current;
 
     (* look at all nonterminals this one can derive *)
     let next_ordinal =
@@ -28,14 +30,14 @@ let rec topological_sort nonterm_count (* number of nonterminals in the grammar 
           (* 'nt' can derive 'current'; expand 'nt' first, thus making
            * it later in the order, so we'll reduce to 'current' before
            * reducing to 'nt' (when token spans are equal) *)
-          topological_sort nonterm_count derivable seen order next_ordinal nt
+          topological_sort nonterms derivable seen order next_ordinal nt
         else
           next_ordinal
-      ) next_ordinal (0 -- (nonterm_count - 1))
+      ) next_ordinal (NtArray.range nonterms)
     in
 
     (* finally, put 'current' into the order *)
-    order.(current) <- next_ordinal;
+    NtArray.set order current next_ordinal;
     next_ordinal - 1
   )
 
@@ -45,13 +47,13 @@ let rec topological_sort nonterm_count (* number of nonterminals in the grammar 
 let topological_order derivable nonterms =
   let open GrammarType in
   let nonterm_count = Array.length nonterms in
-  let seen = BitSet.create nonterm_count in
+  let seen = NonterminalSet.create nonterm_count in
 
   let order = Array.make nonterm_count 0 in
   ignore (Array.fold_left (fun next_ordinal nonterm ->
     (* expand from 'nt' in case it's disconnected; this will be
      * a no-op if we've already 'seen' it *)
-    topological_sort nonterm_count derivable seen order next_ordinal nonterm.nt_index
+    topological_sort nonterms derivable seen order next_ordinal nonterm.nt_index
   ) (nonterm_count - 1) nonterms);
 
   order
@@ -90,9 +92,9 @@ let encode_ambig tables state terminal shift_dest reductions =
     match shift_dest with
     | Some shift_dest ->
         if Options._trace_table () then (
-          Printf.printf " [shift token %d, to state %a"
-            terminal.term_index
-            StateId.print shift_dest.state_id;
+          Printf.printf " [shift token %a, to state %a"
+            StateId.Terminal.print terminal.term_index
+            StateId.State.print shift_dest.state_id;
         );
         [TableEncoding.encode_shift tables shift_dest.state_id terminal.term_index]
     | None ->
@@ -102,8 +104,8 @@ let encode_ambig tables state terminal shift_dest reductions =
   let reduce_actions =
     List.map (fun prod ->
       if Options._trace_table () then (
-        Printf.printf "; reduce by %d"
-          prod.prod_index;
+        Printf.printf "; reduce by %a"
+          StateId.Production.print prod.prod_index;
       );
       TableEncoding.encode_reduce tables prod.prod_index state.state_id
     ) reductions
@@ -123,9 +125,9 @@ let encode_shift tables terminal shift_dest =
   let open GrammarType in
 
   if Options._trace_table () then (
-    Printf.printf "(unambig) shift token %d, to state %a"
-      terminal.term_index
-      StateId.print shift_dest.state_id;
+    Printf.printf "(unambig) shift token %a, to state %a"
+      StateId.Terminal.print terminal.term_index
+      StateId.State.print shift_dest.state_id;
   );
   TableEncoding.encode_shift tables shift_dest.state_id terminal.term_index
 
@@ -134,8 +136,8 @@ let encode_reduce tables state terminal prod =
   let open GrammarType in
 
   if Options._trace_table () then (
-    Printf.printf "(unambig) reduce by %d"
-      prod.prod_index;
+    Printf.printf "(unambig) reduce by %a"
+      StateId.Production.print prod.prod_index;
   );
   TableEncoding.encode_reduce tables prod.prod_index state.state_id
 
@@ -151,9 +153,9 @@ let compute_cell_action tables state shift_dest reductions terminal =
   let open GrammarType in
 
   if Options._trace_table () then (
-    Printf.printf "state %a, on terminal %d (\"%s\") "
-      StateId.print state.state_id
-      terminal.term_index
+    Printf.printf "state %a, on terminal %a (\"%s\") "
+      StateId.State.print state.state_id
+      StateId.Terminal.print terminal.term_index
       terminal.tbase.name;
   );
 
@@ -181,9 +183,12 @@ let compute_cell_action tables state shift_dest reductions terminal =
 
 
 let encode_symbol_id = let open GrammarType in function
-  | None -> 0
-  | Some (Terminal (_, term)) -> term.term_index + 1
-  | Some (Nonterminal (_, nonterm)) -> -nonterm.nt_index - 1
+  | None ->
+      0
+  | Some (Terminal    (_,    term)) ->
+      +(StateId.Terminal.to_int term.term_index) + 1
+  | Some (Nonterminal (_, nonterm)) ->
+      -(StateId.Nonterminal.to_int nonterm.nt_index) - 1
 
 
 let calls = ref 0
@@ -224,7 +229,7 @@ let compute_action_row env tables nonterms terms allow_ambig sr rr state =
     if false then (
       PrintAnalysisEnv.print_item_set env state;
     );
-    Printf.printf "------ state %a ------\n" StateId.print state.state_id;
+    Printf.printf "------ state %a ------\n" StateId.State.print state.state_id;
   );
 
   (* ---- fill in this row in the action table ---- *)
@@ -242,7 +247,7 @@ let compute_action_row env tables nonterms terms allow_ambig sr rr state =
   ) nonterms;
 
   (* get the state symbol *)
-  assert (StateId.to_int state.state_id < TableEncoding.num_states tables);
+  assert (StateId.State.to_int state.state_id < TableEncoding.num_states tables);
   TableEncoding.set_state_symbol tables state.state_id (encode_symbol_id state.state_symbol)
 
 

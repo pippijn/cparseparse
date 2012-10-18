@@ -3,7 +3,7 @@ open GrammarType
 
 
 let can_derive_i derivable left right =
-  Bit2d.is_set derivable left right
+  Derivable.is_set derivable left right
 
 let can_derive derivable left right =
   can_derive_i derivable left.nt_index right.nt_index
@@ -34,7 +34,7 @@ let add_derivable_i env left right =
    * only calls to this with left==right will be when the
    * derivability code detects a nonzero-length path. *)
   if left == right then (
-    let left = env.indexed_nonterms.(left) in (* == right *)
+    let left = NtArray.get env.indexed_nonterms left in (* == right *)
 
     if Options._trace_derivable () then (
       if not left.cyclic then (
@@ -56,7 +56,7 @@ let add_derivable_i env left right =
 
   (* we only made a change, and hence should return true,
    * if there was a 0 here before *)
-  not (Bit2d.test_and_set env.derivable left right)
+  not (Derivable.test_and_set env.derivable left right)
 
 (* convenience for the function above *)
 let add_derivable env left right =
@@ -65,12 +65,13 @@ let add_derivable env left right =
 
 let initial_derivable_relation nonterm_count =
   (* two-dimensional bit matrix to represent token derivabilities *)
-  let derivable = Bit2d.create nonterm_count nonterm_count in
+  let derivable = Derivable.create nonterm_count nonterm_count in
 
   for i = 0 to nonterm_count - 1 do
     (* every nonterminal can derive itself in 0 or more steps
      * (specifically, in 0 steps, at least) *)
-    Bit2d.set derivable i i
+    let i = StateId.Nonterminal.of_int i in
+    Derivable.set derivable i i
   done;
 
   derivable
@@ -185,22 +186,25 @@ let compute_derivability_closure env changes =
    * I don't consider edges (u,u) because it messes up my cyclicity
    * detection logic.  (But (u,v) and (v,u) is ok, and in fact is
    * what I want, for detecting cycles.) *)
-  let nonterm_count = Array.length env.indexed_nonterms in
+  let nonterm_count = NtArray.length env.indexed_nonterms in
   (* for each node u (except empty) *)
   for u = 1 to nonterm_count - 1 do
+    let u = StateId.Nonterminal.of_int u in
     (* for each edge (u,v) where u != v *)
     for v = 0 to nonterm_count - 1 do
+      let v = StateId.Nonterminal.of_int v in
       if u <> v && can_derive_i env.derivable u v then
         (* for each edge (v,w) where v != w *)
         for w = 0 to nonterm_count - 1 do
+          let w = StateId.Nonterminal.of_int w in
           if v <> w && can_derive_i env.derivable v w then
             (* add an edge (u,w), if there isn't one already *)
             if add_derivable_i env u w then (
               if Options._trace_derivable () then (
                 print_string "%%% derivable: ";
                 Printf.printf "discovered (by closure step): %s ->* %s\n"
-                  env.indexed_nonterms.(u).nbase.name
-                  env.indexed_nonterms.(w).nbase.name;
+                  (NtArray.get env.indexed_nonterms u).nbase.name
+                  (NtArray.get env.indexed_nonterms w).nbase.name;
               );
               incr changes
             )
@@ -232,4 +236,4 @@ let compute_derivability_relation env =
   done;
 
   if Options._trace_derivable () then
-    Bit2d.print env.derivable
+    Derivable.print env.derivable

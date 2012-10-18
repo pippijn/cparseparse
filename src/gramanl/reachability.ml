@@ -1,3 +1,4 @@
+open AnalysisEnvType
 open GrammarType
 
 
@@ -17,7 +18,7 @@ let rec compute_reachable_dfs prods_by_lhs nonterm =
             (* just mark terminals *)
             term.tbase.reachable <- true
       ) prod.right
-    ) prods_by_lhs.(nonterm.nt_index)
+    ) (NtArray.get prods_by_lhs nonterm.nt_index)
   )
 
 

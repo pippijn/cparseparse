@@ -7,3 +7,20 @@ module type S = sig
   include Graph.Sig.COMPARABLE          with type t := t
   include Graph.Sig.ORDERED_TYPE_DFT    with type t := t
 end
+
+
+module type IntegralModuleType = sig
+  type t
+
+  include Sig.OrderedConvertibleType	with type t := t
+  include Sig.IntegralType		with type t := t
+
+  val hash : t -> int
+  val equal : t -> t -> bool
+
+  val to_string : t -> string
+  val print : out_channel -> t -> unit
+  val sprint : unit -> t -> string
+
+  val default : t
+end
