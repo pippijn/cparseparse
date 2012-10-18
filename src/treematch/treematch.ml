@@ -53,13 +53,13 @@ let main =
          else SimpleBackend.output_program "/dev/stdout"
     );
 
-    (* if Options._infer () then ( *)
-    (*   List.iter ((|>) program) [ *)
-    (*     (new Program.print) # program Format.std_formatter; *)
-    (*     Typing.program |- Program.output_typed_program stdout; *)
-    (*     Typing.program |- (new Program.typed_print)#program Format.std_formatter; *)
-    (*   ] *)
-    (* ) *)
+    if Options._infer () then (
+      List.iter ((|>) program) [
+        (new Program.print) # program Format.std_formatter;
+        Typing.program |- Program.output_typed_program stdout;
+        Typing.program |- (new Program.typed_print)#program Format.std_formatter;
+      ]
+    )
   in
   List.iter single
 
