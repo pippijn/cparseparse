@@ -93,7 +93,10 @@ module Program =
             | SEXP;;
         end
     and Identifer : sig type t = string;; end = struct type t = string;; end
-    and Integer : sig type t = int;; end = struct type t = int;; end;;
+    and Integer : sig type t = int;; end = struct type t = int;; end
+    and
+      Foo : sig type t = (((Blah.t option) list) list) option;; end =
+        struct type t = (((Blah.t option) list) list) option;; end;;
     type t = Program.t;;
     let t_of_sexp = Program.t_of_sexp;;
     let sexp_of_t = Program.sexp_of_t;;
