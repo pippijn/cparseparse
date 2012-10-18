@@ -92,7 +92,7 @@ let encode_ambig tables state terminal shift_dest reductions =
         if Options._trace_table () then (
           Printf.printf " [shift token %d, to state %d"
             terminal.term_index
-            (int_of_state_id shift_dest.state_id);
+            (StateId.to_int shift_dest.state_id);
         );
         [TableEncoding.encode_shift tables shift_dest.state_id terminal.term_index]
     | None ->
@@ -125,7 +125,7 @@ let encode_shift tables terminal shift_dest =
   if Options._trace_table () then (
     Printf.printf "(unambig) shift token %d, to state %d"
       terminal.term_index
-      (int_of_state_id shift_dest.state_id);
+      (StateId.to_int shift_dest.state_id);
   );
   TableEncoding.encode_shift tables shift_dest.state_id terminal.term_index
 
@@ -152,7 +152,7 @@ let compute_cell_action tables state shift_dest reductions terminal =
 
   if Options._trace_table () then (
     Printf.printf "state %d, on terminal %d (\"%s\") "
-      (int_of_state_id state.state_id)
+      (StateId.to_int state.state_id)
       terminal.term_index
       terminal.tbase.name;
   );
@@ -224,7 +224,7 @@ let compute_action_row env tables nonterms terms allow_ambig sr rr state =
     if false then (
       PrintAnalysisEnv.print_item_set env state;
     );
-    Printf.printf "------ state %d ------\n" (int_of_state_id state.state_id);
+    Printf.printf "------ state %d ------\n" (StateId.to_int state.state_id);
   );
 
   (* ---- fill in this row in the action table ---- *)
@@ -242,7 +242,7 @@ let compute_action_row env tables nonterms terms allow_ambig sr rr state =
   ) nonterms;
 
   (* get the state symbol *)
-  assert (int_of_state_id state.state_id < TableEncoding.num_states tables);
+  assert (StateId.to_int state.state_id < TableEncoding.num_states tables);
   TableEncoding.set_state_symbol tables state.state_id (encode_symbol_id state.state_symbol)
 
 
