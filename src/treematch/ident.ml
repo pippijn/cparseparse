@@ -6,7 +6,7 @@ and lident = [`L] t
 and 'a ident = ([< `U|`L] as 'a) t
 
 let uident name =
-  if BatChar.is_uppercase name.[0] || name.[0] = '_' then
+  if BatChar.is_uppercase name.[0] then
     name
   else
     String.capitalize name
