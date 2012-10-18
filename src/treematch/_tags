@@ -1,5 +1,5 @@
 # sexplib
-<{program,tree,constr}.ml>: syntax_camlp4o, pkg_sexplib.syntax
+<{program,tree,constr,ident}.ml>: syntax_camlp4o, pkg_sexplib.syntax
 
 # ML code generation
 <*Backend.ml>: camlp4of
