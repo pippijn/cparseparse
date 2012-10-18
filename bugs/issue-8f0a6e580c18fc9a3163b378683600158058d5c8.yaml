@@ -10,8 +10,8 @@ type: :bugfix
 component: treematch
 release: 
 reporter: Pippijn van Steenhoven <pippijn@xinutec.org>
-status: :unstarted
-disposition: 
+status: :closed
+disposition: :fixed
 creation_time: 2012-10-20 11:08:26.505171 Z
 references: []
 
@@ -21,3 +21,11 @@ log_events:
   - Pippijn van Steenhoven <pippijn@xinutec.org>
   - created
   - ""
+- - 2012-10-20 14:52:30.203088 Z
+  - Wojciech Meyer <wojciech.meyer@gmail.com>
+  - closed with disposition fixed
+  - Now the Ident module is introduced, and propagates the case a camlp4 naming convention in type safe manner
+- - 2012-10-20 14:53:06.171105 Z
+  - Wojciech Meyer <wojciech.meyer@gmail.com>
+  - commented
+  - We should consider adding Ident module to baselib
