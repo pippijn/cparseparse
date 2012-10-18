@@ -1,0 +1,26 @@
+open Sexplib.Conv;;
+module ListA =
+  struct
+    module rec List :
+                 sig
+                   type t = | Cons of Integer.t * List.t | Nil | SEXP;;
+                   val sexp_of_t : t -> Sexplib.Sexp.t;;
+                   val t_of_sexp : Sexplib.Sexp.t -> t;;
+                 end =
+                 struct type t = | Cons of Integer.t * List.t | Nil | SEXP;;
+                 end
+    and Integer : sig type t = int;; end = struct type t = int;; end;;
+  end;;
+module ListB =
+  struct
+    module rec List :
+                 sig
+                   type t = | Cons of Integer.t * List.t | Nil | SEXP;;
+                   val sexp_of_t : t -> Sexplib.Sexp.t;;
+                   val t_of_sexp : Sexplib.Sexp.t -> t;;
+                 end =
+                 struct type t = | Cons of Integer.t * List.t | Nil | SEXP;;
+                 end
+    and Integer : sig type t = int;; end = struct type t = int;; end;;
+  end;;
+

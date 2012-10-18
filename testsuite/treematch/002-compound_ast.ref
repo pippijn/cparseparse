@@ -1,0 +1,75 @@
+open Sexplib.Conv;;
+module Program =
+  struct
+    module rec Program :
+                 sig
+                   type t = | Program of Definition.t list | End | SEXP;;
+                   val sexp_of_t : t -> Sexplib.Sexp.t;;
+                   val t_of_sexp : Sexplib.Sexp.t -> t;;
+                 end =
+                 struct
+                   type t = | Program of Definition.t list | End | SEXP;;
+                 end
+    and
+      Definition :
+        sig
+          type t = | Function of Function.t | Global of Global.t | SEXP;;
+          val sexp_of_t : t -> Sexplib.Sexp.t;;
+          val t_of_sexp : Sexplib.Sexp.t -> t;;
+        end =
+        struct
+          type t = | Function of Function.t | Global of Global.t | SEXP;;
+        end
+    and
+      Function :
+        sig
+          type t =
+            | Function of Identifer.t * (Identifier.t list) * Expression.t
+            | SEXP;;
+          val sexp_of_t : t -> Sexplib.Sexp.t;;
+          val t_of_sexp : Sexplib.Sexp.t -> t;;
+        end =
+        struct
+          type t =
+            | Function of Identifer.t * (Identifier.t list) * Expression.t
+            | SEXP;;
+        end
+    and
+      Expression :
+        sig
+          type t =
+            | Let of Identifer.t * Expression.t * Expression.t
+            | Operator of Operator.t * Expression.t * Expression.t
+            | Call of Name.t * (Expression.t list)
+            | Variable of Identifier.t
+            | Constant of Integer.t
+            | SEXP;;
+          val sexp_of_t : t -> Sexplib.Sexp.t;;
+          val t_of_sexp : Sexplib.Sexp.t -> t;;
+        end =
+        struct
+          type t =
+            | Let of Identifer.t * Expression.t * Expression.t
+            | Operator of Operator.t * Expression.t * Expression.t
+            | Call of Name.t * (Expression.t list)
+            | Variable of Identifier.t
+            | Constant of Integer.t
+            | SEXP;;
+        end
+    and
+      Operator :
+        sig
+          type t = | Plus | Minus | Mult | SEXP;;
+          val sexp_of_t : t -> Sexplib.Sexp.t;;
+          val t_of_sexp : Sexplib.Sexp.t -> t;;
+        end = struct type t = | Plus | Minus | Mult | SEXP;; end
+    and
+      Global :
+        sig
+          type t = | Global of Identifer.t | SEXP;;
+          val sexp_of_t : t -> Sexplib.Sexp.t;;
+          val t_of_sexp : Sexplib.Sexp.t -> t;;
+        end = struct type t = | Global of Identifer.t | SEXP;; end
+    and Identifer : sig type t = string;; end = struct type t = string;; end
+    and Integer : sig type t = int;; end = struct type t = int;; end;;
+  end;;
