@@ -23,6 +23,15 @@ module Emit = struct
       <:str_item<
 
         module $uid:Ident.string_of_uident name$ = struct
+          module SourceLocation = struct
+            module Lexing = struct
+              include Lexing
+              let sexp_of_position _ = sexp_of_int 0
+              let position_of_sexp _ = Lexing.dummy_pos
+            end
+            type t = Lexing.position * Lexing.position
+
+          end
             module rec $first_type$ and $Ast.mbAnd_of_list rest_types$
 
             type t = $uid:Ident.string_of_uident first_name$.t;;
@@ -37,6 +46,7 @@ module Emit = struct
 
         class $lid:Ident.string_of_lident nm$ = object (self : 'a)
             $methods |> Ast.crSem_of_list$
+          method sourceLocation x = x
         end
       >>
 
