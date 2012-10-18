@@ -17,17 +17,17 @@ let lident : string -> lident = fun name ->
   else
     String.uncapitalize name
 
-let ident : string -> 'a ident = fun name -> name
+let ident : string -> 'a ident = BatPervasives.identity
 
 let uident_of_sexp (Sexplib.Type.Atom name) = name
 let lident_of_sexp (Sexplib.Type.Atom name) = name
 let sexp_of_uident (name : uident) = Sexplib.Type.Atom name
 let sexp_of_lident (name : lident) = Sexplib.Type.Atom name
 
-let string_of_lident (ident : lident) = ident
-let string_of_uident (ident : uident) = ident
+let string_of_lident : lident -> string = BatPervasives.identity
+let string_of_uident : uident -> string = BatPervasives.identity
 
-let string_of_ident : 'a ident -> string = fun ident -> ident
+let string_of_ident : 'a ident -> string = BatPervasives.identity
 
 let uident_of_lident (ident : lident) = uident ident
 let lident_of_uident (ident : uident) = lident ident
