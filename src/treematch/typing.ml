@@ -284,26 +284,40 @@ module Default = struct
       node_name,
       List.map (fun (constr_name, arguments) ->
         let n = ref 0 in
-        let arguments = List.combine (List.map (fun (Constr.Tycon arg) -> incr(n); (Ident.string_of_uident arg^string_of_int !n)) arguments) arguments in
+        let arguments = List.combine
+          (List.map
+             (fun _ ->
+               incr(n);
+               "arg"^string_of_int !n
+             )
+             arguments)
+          arguments in
         let tree = List.map (fun (name, ty) -> Tree.Var (ty, Ident.lident name)) arguments in
-        T.Tree (Constr.Tycon constr_name, (constr_name, tree)), T.Tree (Constr.Tycon (Ident.uident"ala"), (constr_name, tree))
+        T.Tree (Constr.Tycon constr_name, (constr_name, tree)),
+        T.Tree (Constr.Tycon constr_name, (constr_name, tree))
       ) constrs
 
     in
-    let ast nm = List.hd (BatList.filter_map
-      (function P.Ast (name, nodes) when nm = name ->
+    let custom_node ast_name = List.hd (BatList.filter_map
+      (function P.Ast (name, nodes) when ast_name = name ->
         Some (BatList.filter_map
                 (function (node_name, P.CustomNode constrs) ->
                   Some (node_name, constrs)
                 | _ -> None) nodes)
       | _ -> None) p) in
-
+    (* let oter_node ast_name = List.hd (BatList.filter_map *)
+    (*   (function P.Ast (name, nodes) when ast_name = name -> *)
+    (*     Some (BatList.filter_map *)
+    (*             (function (node_name, P.CustomNode constrs) -> *)
+    (*               None *)
+    (*             | AliasNode s -> None) nodes) *)
+    (*   | _ -> None) p) in *)
     let definition = function
     | P.Map (nm, (s,d), rewrite_nodes) ->
         begin try
           (* let nd = List.assoc d types in *)
           (* let nodes = List.map fst types in *)
-          let nodes = ast d in
+          let nodes = custom_node d in
           let generated = List.map node nodes in
           P.Map (nm, (s,d), rewrite_nodes @ generated)
         with Not_found -> P.Map (nm, (s,d), rewrite_nodes)
