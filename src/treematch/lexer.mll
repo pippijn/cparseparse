@@ -29,8 +29,8 @@ rule token = parse
 (* keywords, operators *)
 | "("                                                           { TOK_LPAREN }
 | ")"                                                           { TOK_RPAREN }
-| "[" | "<:"                                                    { TOK_LBRACKET }
-| "]" | ":>"                                                    { TOK_RBRACKET }
+| "["                                                           { TOK_LBRACKET }
+| "]"                                                           { TOK_RBRACKET }
 | "{" | "<%"                                                    { TOK_LBRACE }
 | "}" | "%>"                                                    { TOK_RBRACE }
 | "->"                                                          { TOK_ARROW }

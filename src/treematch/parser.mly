@@ -59,13 +59,18 @@ node
 | nm=TOK_LIDENT                                       { Program.NativeNode nm }
 
 ast_clause
-: t=constr { t }
+: t=constr                                                               {  t }
 
 rewrite_clause
 : l=topl_tree TOK_BIARROW r=topl_tree                                   { l,r }
 
 constr
-: c=nonempty_list(TOK_UIDENT)                          { List.hd c, List.tl c }
+: tag=TOK_UIDENT tycons=list(tycon)                             { tag, tycons }
+
+tycon
+: nm=TOK_UIDENT                                             { Constr.Tycon nm }
+| TOK_LBRACKET t=tycon TOK_RBRACKET                           { Constr.List t }
+| TOK_QUESTION t=tycon                                      { Constr.Option t }
 
 type_decl
 : s=TOK_UIDENT TOK_BIARROW d=TOK_UIDENT                                 { s,d }
