@@ -29,8 +29,8 @@ end
 
 class typed_print = object (self : 'a)
   method tree pp = function
-  | Tree (ty, (nm, lst)) -> f pp "@[<hov>(%s@ @[<hov 2>%a@])@ : @ %s@]" nm (pp_list self # tree pp_space_sep) lst ty
-  | Var (_,nm) -> pp_print_string pp nm
+  | Tree (ty, (nm, lst)) -> f pp "@[<hov>((%s@ @[<hov 2>%a@])@ : @ %s)@]" nm (pp_list self # tree pp_space_sep) lst ty
+  | Var (ty,nm) -> f pp "@[<hov>(%s@ : @ %s)@]" nm ty
   | Const c -> f pp "%a" self#const c
   method const pp = function
   | Int i -> f pp "%d" i
