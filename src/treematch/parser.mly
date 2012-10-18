@@ -29,8 +29,9 @@
 %token <string> TOK_INT_LITERAL
 %token <string> TOK_CHAR_LITERAL
 %token <string> TOK_STRING_LITERAL
-%token <string> TOK_LABEL
-%token <string> TOK_LIDENT TOK_UIDENT
+%token <Ident.uident> TOK_LABEL
+%token <Ident.lident> TOK_LIDENT
+%token <Ident.uident> TOK_UIDENT
 
 %token TOK_EOF
 

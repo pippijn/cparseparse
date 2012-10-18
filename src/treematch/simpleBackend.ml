@@ -16,17 +16,17 @@ module Emit = struct
       let first_type :: rest_types = List.map ast_node nodes in
       <:str_item<
 
-        module $uid:name$ = struct
+        module $uid:Ident.string_of_uident name$ = struct
             type t = $first_type$
             and $rest_types |> Ast.tyAnd_of_list$
         end
 
       >>
-    | Program.Map (name, (st,dt), nodes) ->
+    | Program.Map (nm, (st,dt), nodes) ->
       let methods = List.map (rewrite_node (st,dt)) nodes in
       <:str_item<
 
-        class $lid:name$ = object (self : 'a)
+        class $lid:Ident.string_of_lident nm$ = object (self : 'a)
             $methods |> Ast.crSem_of_list$
         end
       >>
@@ -36,24 +36,24 @@ module Emit = struct
     | Program.CustomNode clauses ->
         <:ctyp<
 
-        $lid:String.lowercase nm$ = $List.map ast_clause clauses |> Ast.tyOr_of_list$
+        $lid:Ident.string_of_lident (Ident.lident_of_uident nm)$ = $List.map ast_clause clauses |> Ast.tyOr_of_list$
 
         >>
     | Program.NativeNode name ->
         <:ctyp<
 
-          $lid:nm$ = $lid:name$
+          $lid:Ident.string_of_lident (Ident.lident_of_uident nm)$ = $lid:Ident.string_of_lident name$
 
         >>
 
   and ast_clause (nm, args) =
-    let args = List.map (fun nm -> <:ctyp< $lid:nm$ >>) args in
-    <:ctyp< $uid:nm$ of $Ast.tySta_of_list args$>>
+    let args = List.map (fun nm -> <:ctyp< $lid:Ident.string_of_lident (Ident.lident_of_uident nm)$ >>) args in
+    <:ctyp< $uid:Ident.string_of_uident nm$ of $Ast.tySta_of_list args$>>
 
   and rewrite_node typing (nm, cl) =
     <:class_str_item<
 
-        method $lid:String.lowercase nm$ =
+        method $lid:Ident.string_of_lident (Ident.lident_of_uident nm)$ =
           function $List.map (rewrite_clause typing) cl |> Ast.mcOr_of_list$
 
     >>
@@ -61,20 +61,20 @@ module Emit = struct
  and rewrite_clause (st,dt) (l,r) = <:match_case< $tup:paTree st l$ -> $tup:exTree dt r$>>
 
  and paTree t = function
- | Tree.Tree (_,(nm, lst)) -> <:patt< $uid:t$ . $uid:nm$ $List.map (paTree t) lst |> Ast.paCom_of_list$>>
- | Tree.Var (_,nm) -> <:patt< $lid:nm$ >>
+ | Tree.Tree (_,(nm, lst)) -> <:patt< $uid:Ident.string_of_uident t$ . $uid:Ident.string_of_uident nm$ $List.map (paTree t) lst |> Ast.paCom_of_list$>>
+ | Tree.Var (_,nm) -> <:patt< $lid:Ident.string_of_lident nm$ >>
  | Tree.Const (Tree.String str) -> <:patt<$str:str$>>
  | Tree.Const (Tree.Int i) -> <:patt<$int:string_of_int i$>>
 
  and exTree t = function
  | Tree.Tree (_,(nm, lst)) -> constr t (nm, lst)
- | Tree.Var (_,nm) -> <:expr< $lid:nm$ >>
+ | Tree.Var (_,nm) -> <:expr< $lid:Ident.string_of_lident nm$ >>
  | Tree.Const (Tree.String str) -> <:expr<$str:str$>>
  | Tree.Const (Tree.Int i) -> <:expr<$int:string_of_int i$>>
 
  and constr t (nm, lst) =
    let e = List.map (exTree t) lst |> Ast.exCom_of_list in
-   List.fold_left (fun e1 e2 -> <:expr< $e1$ $e2$ >>) <:expr< $uid:t$ . $uid:nm$>>
+   List.fold_left (fun e1 e2 -> <:expr< $e1$ $e2$ >>) <:expr< $uid:Ident.string_of_uident t$ . $uid:Ident.string_of_uident nm$>>
      (Ast.list_of_expr e [])
 
 end

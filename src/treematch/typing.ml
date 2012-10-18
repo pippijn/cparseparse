@@ -16,7 +16,7 @@ end)
 (* +=====~~~-------------------------------------------------------~~~=====+ *)
 module Collect = struct
 
-  type t = (string * Constr.t TreeMap.t) list
+  type t = (Ident.lident * Constr.t TreeMap.t) list
 
   let rec program program =
     BatList.filter_map definition program
@@ -49,9 +49,9 @@ module Collect = struct
   let print pp ast_name p =
     program p |> List.iter
         (fun (name, nodes) ->
-          ExtFormat.fprintf pp "@[<v>%s\n" name;
+          ExtFormat.fprintf pp "@[<v>%a\n" Ident.pp_uident name;
           TreeMap.iter (fun (n,t) v ->
-            ExtFormat.fprintf pp "@[<h>\t%s::%s->%a@]@;" n t (new Constr.print)#constr v) nodes);
+            ExtFormat.fprintf pp "@[<h>\t%a::%a->%a@]@;" Ident.pp_uident n Ident.pp_uident t (new Constr.print)#constr v) nodes);
     ExtFormat.fprintf pp "@]@."
 end
 
@@ -71,7 +71,7 @@ module Constr = struct
             let rec visit = function
             | T.Tree (_, (tag, tree)) ->
                 T.Tree (nm, (tag, List.map visit tree))
-            | T.Var (_, nm) -> T.Var ("#undef", nm)
+            | T.Var (_, nm) -> T.Var (Ident.ident "#undef", nm)
             | T.Const x -> T.Const x
             in
             visit l, visit r) clauses
@@ -274,7 +274,7 @@ module Default = struct
 
     let node defs (nm, clauses) =
       let to_tree (n, args) =
-        Tree.Tree (nm, (n, List.map (fun (ty,nm) -> Tree.Var (ty,nm)) (List.combine args (List.map String.lowercase args)))) in
+        Tree.Tree (nm, (n, List.map (fun (ty,nm) -> Tree.Var (ty,Ident.lident_of_uident nm)) (List.combine args args))) in
       let simple = BatList.filter_map collect_simple clauses in
       let simple = List.map (fun x -> nm,x) simple in
       let set = List.fold_right TreeMap.remove simple defs in

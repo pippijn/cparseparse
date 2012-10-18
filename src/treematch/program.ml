@@ -7,25 +7,25 @@ open Sexplib.Conv
 type 'a t = 'a program
 and 'a program = 'a definition list
 and 'a definition =
-    Ast of string * ast_node list
-  | Map of string * type_decl * 'a rewrite_node list
-and ast_node = string * node
-and 'a rewrite_node = string * 'a rewrite_clause list
+    Ast of Ident.uident * ast_node list
+  | Map of Ident.lident * type_decl * 'a rewrite_node list
+and ast_node = Ident.uident * node
+and 'a rewrite_node = Ident.uident * 'a rewrite_clause list
 and 'a rewrite_clause = 'a Tree.t * 'a Tree.t
 and node =
     CustomNode of ast_clause list
-  | NativeNode of string
-and type_decl = string * string
+  | NativeNode of Ident.lident
+and type_decl = Ident.uident * Ident.uident
 and ast_clause = topl_tree
 and topl_tree = Constr.t
-and location = string * tag
-and tag = string
+and location = Ident.uident * tag
+and tag = Ident.uident
 and arg = int
 with sexp
 
 type untyped_program = unit program
 with sexp
-type typed_program = string program
+type typed_program = Ident.uident program
 with sexp
 
 open ExtFormat
@@ -42,20 +42,20 @@ class virtual ['a] base_print = object (self)
   method definition pp (x : 'a definition) =
     match x with
     Ast (nm, nodes) ->
-      f pp "@[<v>@[<h>ast@ %s@]@;{@[<v 2>@;@[<v>%a@]@]@;}@]@;"
-        nm (pp_list self # ast_node pp_space_sep) nodes
+      f pp "@[<v>@[<h>ast@ %a@]@;{@[<v 2>@;@[<v>%a@]@]@;}@]@;"
+        Ident.pp_uident nm (pp_list self # ast_node pp_space_sep) nodes
   | Map (nm, types, nodes) ->
-      f pp "@[<v>@[<h>map@ %s@ %a@]@;{@[<v 2>@;@[<v>%a@]@]@;}@]@;"
-        nm self # type_decl types
+      f pp "@[<v>@[<h>map@ %a@ %a@]@;{@[<v 2>@;@[<v>%a@]@]@;}@]@;"
+        Ident.pp_lident nm self # type_decl types
         (pp_list self # rewrite_node pp_space_sep) nodes
-  method ast_node pp (nm, node) = f pp "@[<hov>%s:@ %a@]" nm self # node node
+  method ast_node pp (nm, node) = f pp "@[<hov>%a:@ %a@]" Ident.pp_uident nm self # node node
   method rewrite_node pp (nm, clauses) =
-    f pp "@[<hov>%s:@ %a@]" nm (pp_list self # rewrite_clause pp_newline_bar_sep) clauses
+    f pp "@[<hov>%a:@ %a@]" Ident.pp_uident nm (pp_list self # rewrite_clause pp_newline_bar_sep) clauses
   method node pp = function
     CustomNode clauses -> f pp "%a" (pp_list self # ast_clause pp_newline_bar_sep) clauses
-  | NativeNode name -> pp_print_string pp name
+  | NativeNode name -> Ident.pp_lident pp name
   method type_decl pp (s,d) =
-    f pp "@[<hov 2>%a@]" (pp_list pp_print_string pp_biarrow_sep) [s;d]
+    f pp "@[<hov 2>%a@]" (pp_list Ident.pp_uident pp_biarrow_sep) [s;d]
   method ast_clause = self # topl_tree
   method topl_tree = (new Constr.print) # constr
 end
@@ -76,7 +76,7 @@ end
 (* +=====~~~-------------------------------------------------------~~~=====+ *)
 
 class typed_print = object (self : 'a)
-  inherit [string] base_print
+  inherit [Ident.uident] base_print
   method rewrite_clause pp (ltree, rtree) =
     f pp "@[<hov 2>%a@ =>@ %a@]" (new Tree.typed_print) # tree ltree (new Tree.typed_print) # tree rtree
 end

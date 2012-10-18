@@ -5,7 +5,7 @@ open Sexplib.Conv
 (* +=====~~~-------------------------------------------------------~~~=====+ *)
 
 type t = constr
-and constr = string * string list
+and constr = Ident.uident * Ident.uident list
 with sexp
 
 open ExtFormat
@@ -14,7 +14,7 @@ let f = fprintf
 
 class print = object (self : 'a)
   method constr pp (nm, l) =
-    f pp "%s@ %a" nm (pp_list pp_print_string pp_space_sep) l
+    f pp "%a@ %a" Ident.pp_uident nm (pp_list Ident.pp_uident pp_space_sep) l
 end
 
 let name = fst

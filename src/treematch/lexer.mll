@@ -62,9 +62,9 @@ rule token = parse
 (* identifier *)
 | "ast"                                                         { TOK_AST }
 | "map"                                                         { TOK_MAP }
-| uident as nm ":"                                              { TOK_LABEL nm }
-| uident                                                        { TOK_UIDENT (Lexing.lexeme lexbuf) }
-| lident                                                        { TOK_LIDENT (Lexing.lexeme lexbuf) }
+| uident as nm ":"                                              { TOK_LABEL (Ident.uident nm) }
+| uident                                                        { TOK_UIDENT (Ident.uident (Lexing.lexeme lexbuf)) }
+| lident                                                        { TOK_LIDENT (Ident.lident (Lexing.lexeme lexbuf)) }
 
 | d+                                                            { TOK_INT_LITERAL (Lexing.lexeme lexbuf) }
 

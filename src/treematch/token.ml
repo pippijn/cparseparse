@@ -33,7 +33,7 @@ let to_string = function
 | TOK_INT_LITERAL s -> Printf.sprintf "TOK_INT_LITERAL(%s)" s
 | TOK_CHAR_LITERAL s -> Printf.sprintf "TOK_CHAR_LITERAL(%s)" s
 | TOK_STRING_LITERAL s -> Printf.sprintf "TOK_STRING_LITERAL(%s)" s
-| TOK_LIDENT s -> Printf.sprintf "TOK_LIDENT(%s)" s
-| TOK_UIDENT s -> Printf.sprintf "TOK_UIDENT(%s)" s
-| TOK_LABEL s -> Printf.sprintf "TOK_LABEL(%s)" s
+| TOK_LIDENT s -> Printf.sprintf "TOK_LIDENT(%s)" (Ident.string_of_lident s)
+| TOK_UIDENT s -> Printf.sprintf "TOK_UIDENT(%s)" (Ident.string_of_uident s)
+| TOK_LABEL s -> Printf.sprintf "TOK_LABEL(%s)" (Ident.string_of_uident s)
 | TOK_EOF -> "TOK_EOF"
