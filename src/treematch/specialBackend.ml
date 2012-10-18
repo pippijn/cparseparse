@@ -70,7 +70,7 @@ module Emit = struct
       let rec loop =
         function
         | Constr.Tycon nm ->
-            <:ctyp< $lid:Ident.string_of_lident (Ident.lident_of_uident nm)$ >>
+            <:ctyp< $uid:(Ident.string_of_uident nm)$.t >>
         | Constr.List ty ->
             <:ctyp< $loop ty$ list >>
         | Constr.Option ty ->
