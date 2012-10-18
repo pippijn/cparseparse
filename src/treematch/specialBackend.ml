@@ -76,9 +76,9 @@ module Emit = struct
 
           $uid:Ident.string_of_uident nm$ :
           sig
-            type t = $tycon t$
+            type t = ($tycon t$)
           end = struct
-            type t = $tycon t$
+            type t = ($tycon t$)
           end
         >>
   and tycon args =
