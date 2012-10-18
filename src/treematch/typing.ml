@@ -298,28 +298,31 @@ module Default = struct
       ) constrs
 
     in
-    let custom_node ast_name = List.hd (BatList.filter_map
+    let custom_nodes ast_name = List.hd (BatList.filter_map
       (function P.Ast (name, nodes) when ast_name = name ->
         Some (BatList.filter_map
                 (function (node_name, P.CustomNode constrs) ->
                   Some (node_name, constrs)
                 | _ -> None) nodes)
       | _ -> None) p) in
-    (* let oter_node ast_name = List.hd (BatList.filter_map *)
-    (*   (function P.Ast (name, nodes) when ast_name = name -> *)
-    (*     Some (BatList.filter_map *)
-    (*             (function (node_name, P.CustomNode constrs) -> *)
-    (*               None *)
-    (*             | AliasNode s -> None) nodes) *)
-    (*   | _ -> None) p) in *)
+    let other_node ast_name = List.hd (BatList.filter_map
+      (function P.Ast (name, nodes) when ast_name = name ->
+        Some (BatList.filter_map
+                (function
+                | node_name, P.CustomNode constrs ->
+                  None
+                | node_name, P.AliasNode s -> let t = Tree.Var (s,Ident.lident "arg") in Some (node_name, [t,t])
+                | node_name, P.NativeNode s -> let t = Tree.Var (Constr.Tycon (Ident.uident_of_lident s),s) in Some (node_name, [t,t])
+                 ) nodes)
+      | _ -> None) p) in
     let definition = function
     | P.Map (nm, (s,d), rewrite_nodes) ->
         begin try
           (* let nd = List.assoc d types in *)
           (* let nodes = List.map fst types in *)
-          let nodes = custom_node d in
+          let nodes = custom_nodes d in
           let generated = List.map node nodes in
-          P.Map (nm, (s,d), rewrite_nodes @ generated)
+          P.Map (nm, (s,d), rewrite_nodes @ generated @ other_node d)
         with Not_found -> P.Map (nm, (s,d), rewrite_nodes)
         end
     | x -> x
