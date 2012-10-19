@@ -33,7 +33,7 @@ let make_item_set env kernel_items =
 let changed_items item_set =
   (* recompute dots_at_end *)
   item_set.dots_at_end <-
-    ListUtil.fold_left_many (fun dots_at_end item ->
+    ExtList.fold_left_many (fun dots_at_end item ->
       if LrItem.is_dot_at_end item then
         (* dot is at end *)
         item :: dots_at_end
@@ -273,7 +273,7 @@ let item_set_closure env item_set =
  * compute the closure *)
 let move_dot_no_closure dotted_prods source symbol =
   let kernel_items =
-    ListUtil.fold_left_many (fun kernel_items item ->
+    ExtList.fold_left_many (fun kernel_items item ->
       match LrItem.symbol_after_dot item with
       (* dot is already at end *)
       | None -> kernel_items

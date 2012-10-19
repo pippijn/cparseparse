@@ -62,14 +62,13 @@ let merge_funcs nfuncs ofuncs =
 
 let rhs_equal al bl =
   try
-    List.fold_left2 (fun equal a b ->
-      equal &&
-        match a, b with
-        | RH_name   (_, aname), RH_name   (_, bname) -> aname = bname
-        | RH_string (_, astr ), RH_string (_, bstr ) -> astr  = bstr
-        | RH_prec   (atok    ), RH_prec   (btok    ) -> atok  = btok
-        | _ -> false
-    ) true al bl
+    List.for_all2 (fun a b ->
+      match a, b with
+      | RH_name   (_, aname), RH_name   (_, bname) -> aname = bname
+      | RH_string (_, astr ), RH_string (_, bstr ) -> astr  = bstr
+      | RH_prec   (atok    ), RH_prec   (btok    ) -> atok  = btok
+      | _ -> false
+    ) al bl
   with Invalid_argument _ ->
     false
 

@@ -16,7 +16,7 @@ let can_sequence_derive_empty derivable seq =
   not (
     (* look through the sequence; if any members cannot derive
      * the empty string, fail *)
-    ListUtil.iter_until (function
+    ExtList.iter_until (function
       | Terminal _ ->
           true (* terminals can't derive the empty string *)
       | Nonterminal (_, nonterm) ->
@@ -85,26 +85,25 @@ let add_derivable_nonterminal env left right_nonterm after_right_sym =
    * must be able to derive empty (we've already verified by
    * now that every symbol to the *left* can derive empty) *)
   let rest_derive_empty =
-    List.fold_left (fun rest_derive_empty sym ->
-      (* if any symbol can't derive empty, then the sequence
-       * can't derive empty *)
-      rest_derive_empty &&
-        match sym with
-        | Terminal _ ->
-            (* if it's a terminal, it can't derive empty *)
-            if Options._trace_derivable () then (
-              print_endline "terminal can't derive empty";
-            );
-            false
-        | Nonterminal (_, nonterm) ->
-            (* this symbol can't derive empty string (or, we don't
-             * yet know that it can), so we conclude that prod.left
-             * can't derive right_sym *)
-            if Options._trace_derivable () then (
-              Printf.printf "nonterminal %s can derive empty?\n" nonterm.nbase.name;
-            );
-            can_derive_empty env.derivable nonterm
-    ) true after_right_sym
+    (* if any symbol can't derive empty, then the sequence
+     * can't derive empty *)
+    List.for_all (fun sym ->
+      match sym with
+      | Terminal _ ->
+          (* if it's a terminal, it can't derive empty *)
+          if Options._trace_derivable () then (
+            print_endline "terminal can't derive empty";
+          );
+          false
+      | Nonterminal (_, nonterm) ->
+          (* this symbol can't derive empty string (or, we don't
+           * yet know that it can), so we conclude that prod.left
+           * can't derive right_sym *)
+          if Options._trace_derivable () then (
+            Printf.printf "nonterminal %s can derive empty?\n" nonterm.nbase.name;
+          );
+          can_derive_empty env.derivable nonterm
+    ) after_right_sym
   in
 
   if Options._trace_derivable () then (
@@ -148,7 +147,7 @@ let add_derivable_relations env changes =
     | right ->
         (* iterate over RHS symbols, seeing if the LHS can derive that
          * RHS symbol (by itself) *)
-        ignore (ListUtil.fold_leftl (fun derives after_right_sym right_sym ->
+        ignore (ExtList.fold_leftl (fun derives after_right_sym right_sym ->
           derives &&
             match right_sym with
             | Terminal _ ->

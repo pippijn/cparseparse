@@ -5,7 +5,7 @@ open AnalysisEnvType
  ************************************************************)
 
 
-module M : S with type t = lr_item = struct
+module M : GrammarSig.S with type t = lr_item = struct
 
   type t = lr_item
 
@@ -35,6 +35,7 @@ module Table = Hashtbl.Make(M)
 module Map = SexpMap.Make(M)
 module Set = SexpSet.Make(M)
 module Stack = HashStack.Make(Table)
+module Graph = Graph.Imperative.Digraph.ConcreteLabeled(M)(M)
 
 
 (************************************************************

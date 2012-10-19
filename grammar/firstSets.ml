@@ -93,7 +93,7 @@ let compute_dprod_first derivable dotted_prods indexed_prods indexed_terms =
     for posn = 0 to rhs_length do
       let dprod = dotted_prods.(prod.prod_index).(posn) in
 
-      let right = ListUtil.nth_tl dprod.prod.right posn in
+      let right = ExtList.nth_tl dprod.prod.right posn in
 
       (* compute its first *)
       let first_of_rhs = first_of_sequence derivable right in

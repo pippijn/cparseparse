@@ -5,7 +5,7 @@ open GrammarType
  ************************************************************)
 
 
-module M : S with type t = terminal = struct
+module M : GrammarSig.S with type t = terminal = struct
 
   type t = terminal
 
@@ -32,3 +32,4 @@ module Table = Hashtbl.Make(M)
 module Map = SexpMap.Make(M)
 module Set = SexpSet.Make(M)
 module Stack = HashStack.Make(Table)
+module Graph = Graph.Imperative.Digraph.ConcreteLabeled(M)(M)

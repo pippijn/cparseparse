@@ -5,7 +5,7 @@ open AnalysisEnvType
  ************************************************************)
 
 
-module M : S with type t = item_set = struct
+module M : GrammarSig.S with type t = item_set = struct
 
   type t = item_set
 
@@ -44,6 +44,7 @@ module Table = Hashtbl.Make(M)
 module Map = SexpMap.Make(M)
 module Set = SexpSet.Make(M)
 module Stack = HashStack.Make(Table)
+module Graph = Graph.Imperative.Digraph.ConcreteLabeled(M)(M)
 
 
 (************************************************************
@@ -82,7 +83,7 @@ let set_transition from_set sym to_set =
 
 
 let has_extending_shift item_set nonterm term =
-  ListUtil.fold_left_many (fun result item ->
+  ExtList.fold_left_many (fun result item ->
     result || LrItem.is_extending_shift item nonterm term
   ) false [item_set.kernel_items.items; item_set.nonkernel_items]
 

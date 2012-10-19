@@ -7,9 +7,9 @@ let _use_SLR1 = ref false
 let _use_LR1 = ref false
 let _use_LALR1 = ref true
 
-let _graph_grammar = ref false
+let _graph_grammar = ref true
 let _graph_automaton = ref false
-let _dump_automaton = ref false
+let _dump_automaton = ref true
 
 let _print_merged = ref false
 let _output_menhir = ref true

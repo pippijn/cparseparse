@@ -5,7 +5,7 @@ open AnalysisEnvType
  ************************************************************)
 
 
-module M : S with type t = dotted_production = struct
+module M : GrammarSig.S with type t = dotted_production = struct
   type t = dotted_production
 
   let hash a =

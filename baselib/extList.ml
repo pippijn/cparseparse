@@ -62,3 +62,12 @@ let rec nth_tl l i =
     l
   else
     nth_tl (List.tl l) (i - 1)
+
+
+let foldl_until f x l =
+  List.fold_left (fun r e ->
+    if r <> x then
+      r
+    else
+      f e
+  ) x l

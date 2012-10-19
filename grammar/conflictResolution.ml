@@ -177,22 +177,18 @@ let subset_directive_resolution state sym reductions =
      * to subsets also in the list *)
     List.fold_left (fun reductions prod ->
       let remove =
-        List.fold_left (fun remove sub ->
-          if remove then (
+        ExtList.foldl_until (fun sub ->
+          if CompressedBitSet.mem sub.nt_index map then (
+            if Options._trace_prec () then (
+              Printf.printf "in state %d, R/R conflict on token %s, removed production yielding %s, because another yields subset %s\n"
+                (int_of_state_id state.state_id)
+                sym.tbase.name
+                prod.left.nbase.name
+                sub.nbase.name;
+            );
             true
           ) else (
-            if CompressedBitSet.mem sub.nt_index map then (
-              if Options._trace_prec () then (
-                Printf.printf "in state %d, R/R conflict on token %s, removed production yielding %s, because another yields subset %s\n"
-                  (int_of_state_id state.state_id)
-                  sym.tbase.name
-                  prod.left.nbase.name
-                  sub.nbase.name;
-              );
-              true
-            ) else (
-              false
-            )
+            false
           )
         ) false prod.left.subsets
       in

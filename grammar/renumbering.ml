@@ -37,14 +37,11 @@ let compare_by_outgoing syms transition_fn a b =
 
 
 let compare_by_reductions terms a b =
-  Array.fold_left (fun order term ->
-    if order <> 0 then
-      order
-    else
-      let red_a = List.sort compare (ItemSet.possible_reductions a term) in
-      let red_b = List.sort compare (ItemSet.possible_reductions b term) in
+  ExtArray.foldl_until (fun term ->
+    let red_a = List.sort compare (ItemSet.possible_reductions a term) in
+    let red_b = List.sort compare (ItemSet.possible_reductions b term) in
 
-      compare red_a red_b
+    compare red_a red_b
   ) 0 terms
 
 
@@ -127,10 +124,6 @@ let renumber_states env states =
     List.iter (fun state ->
       PrintAnalysisEnv.print_item_set env state;
     ) states;
-  );
-
-  if Options._dump_automaton () then (
-    List.iter (PrintAnalysisEnv.print_item_set ~out:(Pervasives.open_out "automaton.out") env) states;
   );
 
   states

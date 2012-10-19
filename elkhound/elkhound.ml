@@ -76,6 +76,12 @@ let state_graph (_, states, _ as tuple) =
   tuple
 
 
+let dump_automaton (env, states, _ as tuple) =
+  Timing.progress "dumping automaton to automaton.out"
+    (List.iter (PrintAnalysisEnv.print_item_set ~out:(Pervasives.open_out "automaton.out") env)) states;
+  tuple
+
+
 let emit_code (env, states, tables) =
   let open AnalysisEnvType in
 
@@ -101,6 +107,7 @@ let main inputs =
     |> analyse
     |> optional Options._output_menhir output_menhir
     |> optional Options._graph_automaton state_graph
+    |> optional Options._dump_automaton dump_automaton
     |> emit_code
   with Diagnostics.Diagnostic (severity, msg) ->
     Printf.printf "%s: %s\n" (Diagnostics.string_of_severity severity) msg;
@@ -109,4 +116,4 @@ let main inputs =
 
 let () =
   Printexc.record_backtrace true;
-  Printexc.print Cmdline.run main
+  Cmdline.run main
