@@ -41,7 +41,6 @@ let c89_keywords = [
 (* C99 *)
 let c99_keywords = [
   "_Bool",			TOK_BOOL;
-  "__func__",                   TOK___FUNCTION__; (* XXX: __FUNC__ *)
   "inline",                     TOK_INLINE;
   "restrict",                   TOK_RESTRICT;
   "_Complex",                   TOK_COMPLEX;

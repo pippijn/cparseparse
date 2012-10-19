@@ -77,7 +77,6 @@ nonterm PreprocString {
   // slightly subtle: ordinary strings are yielded *with quotes*,
   // whereas these special guys are not quoted; also note that
   // yielding of these token codes depends on lang.gccFuncBehavior
-  -> TOK___FUNC__                           { unimplemented 540 }
   -> TOK___FUNCTION__                       { unimplemented 540 }
   -> TOK___PRETTY_FUNCTION__                { unimplemented 541 }
 }
