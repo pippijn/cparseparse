@@ -27,6 +27,7 @@ let _trace_reductions = ref false
 let _trace_first = ref false
 let _trace_derivable = ref false
 let _trace_merge = ref false
+let _trace_rewrite = ref true
 
 
 let () =
@@ -60,6 +61,7 @@ let () =
     "-trace-first",		Set _trace_first,		" output details during First-set computation";
     "-trace-derivable",		Set _trace_derivable,		" output details during derivability relation computation";
     "-trace-merge",		Set _trace_merge,		" output details while merging grammar modules";
+    "-trace-rewrite",		Set _trace_rewrite,		" output details during symbolic reduction";
   ]))
 
 
@@ -92,3 +94,4 @@ let _trace_reductions () = !_trace_reductions
 let _trace_first () = !_trace_first
 let _trace_derivable () = !_trace_derivable
 let _trace_merge () = !_trace_merge
+let _trace_rewrite () = !_trace_rewrite

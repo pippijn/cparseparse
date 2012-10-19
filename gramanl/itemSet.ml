@@ -139,3 +139,26 @@ let possible_reductions item_set lookahead =
       failwith "no LR variant specified"
     )
   ) [] item_set.dots_at_end
+
+
+let eq_option a b =
+  match b with
+  | None -> false
+  | Some b -> a == b
+
+(* the inverse of transition: map a target state to the symbol that
+ * would transition to that state (from the given source state) *)
+let inverse_transition terms nonterms source target =
+  let open GrammarType in
+  try
+    Terminal ("",
+      BatArray.find (fun term ->
+        eq_option target source.term_transition.(term.term_index)
+      ) terms
+    )
+  with Not_found ->
+    Nonterminal ("",
+      BatArray.find (fun nonterm ->
+        eq_option target source.nonterm_transition.(nonterm.nt_index)
+      ) nonterms
+    )

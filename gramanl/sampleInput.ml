@@ -3,27 +3,6 @@ open AnalysisEnvType
 let (|>) = BatPervasives.(|>)
 
 
-let eq_option a b =
-  match b with
-  | None -> false
-  | Some b -> a == b
-
-let inverse_transition terms nonterms source target =
-  let open GrammarType in
-  try
-    Terminal ("",
-      BatArray.find (fun term ->
-        eq_option target source.term_transition.(term.term_index)
-      ) terms
-    )
-  with Not_found ->
-    Nonterminal ("",
-      BatArray.find (fun nonterm ->
-        eq_option target source.nonterm_transition.(nonterm.nt_index)
-      ) nonterms
-    )
-
-
 (* yield the left-context as a sequence of symbols *)
 let rec left_context terms nonterms syms state =
   (* since we have the BFS tree, generating sample input (at least, if
@@ -36,7 +15,7 @@ let rec left_context terms nonterms syms state =
   | Some parent ->
       (* find a symbol on which we would transition from the parent
        * to the current state *)
-      let sym = inverse_transition terms nonterms parent state in
+      let sym = ItemSet.inverse_transition terms nonterms parent state in
       left_context terms nonterms (sym :: syms) parent
 
 
@@ -52,28 +31,6 @@ let compare_priority a_dominant b_dominant a_recessive b_recessive =
     a_recessive - b_recessive
 
 
-let rhs_has_nonterm prod nonterm =
-  let open GrammarType in
-
-  try
-    ignore (List.find (function
-      | Terminal _ -> false
-      | Nonterminal (_, nt) -> nt == nonterm
-    ) prod.right);
-    true
-  with Not_found ->
-    false
-
-
-let num_rhs_nonterms prod =
-  let open GrammarType in
-
-  List.fold_left (fun count -> function
-    | Terminal    _ -> count
-    | Nonterminal _ -> count + 1
-  ) 0 prod.right
-
-
 (* for rewriting into sequences of terminals, we prefer rules with
  * fewer nonterminals on the RHS, and then (to break ties) rules with
  * fewer RHS symbols altogether; overriding all of this, if one
@@ -84,8 +41,8 @@ let compare_rewrite seen p1 p2 =
 
   let order =
     ExtList.foldl_until (fun prod ->
-      let a = if rhs_has_nonterm p1 prod.left then 1 else 0 in
-      let b = if rhs_has_nonterm p2 prod.left then 1 else 0 in
+      let a = if GrammarUtil.rhs_has_nonterm p1 prod.left then 1 else 0 in
+      let b = if GrammarUtil.rhs_has_nonterm p2 prod.left then 1 else 0 in
       a - b
     ) 0 seen
   in
@@ -94,34 +51,39 @@ let compare_rewrite seen p1 p2 =
     order
   else
     compare_priority
-      (num_rhs_nonterms p1)
-      (num_rhs_nonterms p2)
+      (GrammarUtil.num_rhs_nonterms p1)
+      (GrammarUtil.num_rhs_nonterms p2)
       (List.length p1.right)
       (List.length p2.right)
 
 
 (* nonterminal -> terminals *)
-let rec rewrite_nt_as_terminals prods output nonterm seen =
+let rec rewrite_nt_as_terminals prods_by_lhs output nonterm seen =
   let open GrammarType in
 
   (* get all of 'nonterminal's productions that are not recursive *)
   let candidates =
     List.filter (fun prod ->
-      prod.left == nonterm
       (* if 'prod' has 'nonterminal' on RHS, that would certainly
        * lead to looping (though it's not the only way -- consider
        * mutual recursion), so don't even consider it *)
-      && not (rhs_has_nonterm prod nonterm)
+      not (GrammarUtil.rhs_has_nonterm prod nonterm)
       (* if this production has already been used, don't use it again *)
       && not (List.memq prod seen)
-    ) prods
+    ) prods_by_lhs.(nonterm.nt_index)
   in
 
-  if candidates = [] then
+  if candidates = [] then (
     (* I don't expect this... either the NT doesn't have any rules,
      * or all of them are recursive (which means the language doesn't
      * have any finite sentences) *)
-    raise Not_found;
+    if Options._trace_rewrite () then (
+      Printf.printf "could not find any unused, non-recursive rules for %s\n"
+        nonterm.nbase.name
+    );
+
+    raise Not_found
+  );
 
   (* sort them into order of preference *)
   let candidates = List.sort (compare_rewrite seen) candidates in
@@ -133,7 +95,7 @@ let rec rewrite_nt_as_terminals prods output nonterm seen =
       try
         (* now, the chosen rule provides a RHS, which is a sequence of
          * terminals and nonterminals; recursively reduce that sequence *)
-        Some (rewrite_as_terminals prods output prod.right (prod :: seen))
+        Some (rewrite_as_terminals prods_by_lhs output prod.right (prod :: seen))
       with Not_found ->
         None
     ) None candidates
@@ -145,41 +107,39 @@ let rec rewrite_nt_as_terminals prods output nonterm seen =
 
 
 (* (nonterminals and terminals) -> terminals *)
-and rewrite_as_terminals prods output input seen =
+and rewrite_as_terminals prods_by_lhs output input seen =
   let open GrammarType in
 
   (* walk down the input list, creating the output list by copying
    * terminals and reducing nonterminals *)
   List.fold_left (fun output -> function
     | Terminal (_, term) -> term :: output
-    | Nonterminal (_, nonterm) -> rewrite_nt_as_terminals prods output nonterm seen
+    | Nonterminal (_, nonterm) -> rewrite_nt_as_terminals prods_by_lhs output nonterm seen
   ) output input
 
 
 (* given a sequence of symbols (terminals and nonterminals), use the
  * productions to rewrite it as a (hopefully minimal) sequence of
  * terminals only *)
-let rewrite_as_terminals prods input =
-  rewrite_as_terminals prods [] input []
+let rewrite_as_terminals prods_by_lhs input =
+  rewrite_as_terminals prods_by_lhs [] input []
 
 
 (* sample input (terminals only) that can lead to a state *)
-let generate terms nonterms prods state =
-  let prods = Array.to_list prods in
-
+let generate terms nonterms prods_by_lhs state =
   (* get left-context as terminals and nonterminals *)
   left_context terms nonterms [] state
 
   (* reduce the nonterminals to terminals *)
-  |> rewrite_as_terminals prods
+  |> rewrite_as_terminals prods_by_lhs
   |> List.rev
 
 
-let sample_input terms nonterms prods state =
+let sample_input terms nonterms prods_by_lhs state =
   let open GrammarType in
 
   try
-    generate terms nonterms prods state
+    generate terms nonterms prods_by_lhs state
     |> List.map GrammarUtil.name_of_terminal
     |> String.concat " "
 

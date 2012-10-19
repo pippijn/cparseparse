@@ -77,7 +77,7 @@ let state_graph (_, states, _ as tuple) =
 
 
 let dump_automaton (env, states, _ as tuple) =
-  Timing.progress "dumping automaton to automaton.out"
+  Timing.progress "dumping states to automaton.out"
     (List.iter (PrintAnalysisEnv.print_item_set ~out:(Pervasives.open_out "automaton.out") env)) states;
   tuple
 
