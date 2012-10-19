@@ -96,6 +96,7 @@ Library baselib
                                 Sched,
                                 SexpMap,
                                 SexpSet,
+                                Sig,
                                 StringMap,
                                 StringSet,
                                 Timing,

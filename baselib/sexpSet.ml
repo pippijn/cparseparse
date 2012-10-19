@@ -1,15 +1,13 @@
-open Sexplib
-
-module type Convertible = sig
-  include BatSet.OrderedType
-
-  val t_of_sexp : Sexp.t -> t
-  val sexp_of_t : t -> Sexp.t
+module type S = sig
+  include BatSet.S
+  include Sig.ConvertibleType with type t := t
 end
 
-module Make(T : Convertible) = struct
+module Make(T : Sig.ConvertibleType) : S with type elt = T.t = struct
+  open Sexplib
 
   include BatSet.Make(T)
+
 
   let t_of_sexp sexp =
     let elements =
