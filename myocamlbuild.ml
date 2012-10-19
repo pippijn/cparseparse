@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: 8c1389c9117a4934fad312c413eaa9b3) *)
+(* DO NOT EDIT (digest: 90b8828d2c36afdaa7761f0ec6532e00) *)
 module OASISGettext = struct
 # 21 "/tmp/oasis-0.3.0/src/oasis/OASISGettext.ml"
 
@@ -481,7 +481,8 @@ let package_default =
        [
           ("baselib", ["baselib"]);
           ("glr", ["glr"]);
-          ("ccparse", ["ccparse"; "ccparse/gr"])
+          ("ccparse", ["ccparse"; "ccparse/gr"]);
+          ("grammar", ["grammar"])
        ];
      lib_c = [("baselib", "baselib", [])];
      flags =
@@ -498,8 +499,9 @@ let package_default =
        [
           ("treematch", ["baselib"]);
           ("testsuite", ["baselib"]);
+          ("grammar", ["baselib"; "glr"]);
           ("glr", ["baselib"]);
-          ("elkhound", ["baselib"; "glr"]);
+          ("elkhound", ["grammar"]);
           ("cpapa", ["ccparse"; "ccparse/gr"]);
           ("ccparse/gr", ["baselib"; "ccparse"; "glr"]);
           ("ccparse", ["baselib"; "ccparse/gr"; "glr"])
@@ -509,7 +511,7 @@ let package_default =
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default package_default;;
 
-# 513 "myocamlbuild.ml"
+# 515 "myocamlbuild.ml"
 (* OASIS_STOP *)
 let tokens = [
   "ccparse/tok/c++1998.tok";
@@ -577,7 +579,7 @@ let dispatch_mine = function
           "elkhound/elkhound.native";
         ] @ grammars)
         begin fun env build ->
-          Cmd(S([A"elkhound/elkhound.native"] @ List.map (fun a -> A a) grammars))
+          Cmd(S([A"elkhound/elkhound.native"; A"-timing"] @ List.map (fun a -> A a) grammars))
         end;
 
 
@@ -612,7 +614,7 @@ let dispatch_mine = function
       (*     "elkhound/elkhound.native"; *)
       (*   ] *)
       (*   begin fun env build -> *)
-      (*     Cmd(S[A"elkhound/elkhound.native"; A(env "%.gr")]) *)
+      (*     Cmd(S[A"elkhound/elkhound.native"; A"-timing"; A(env "%.gr")]) *)
       (*   end; *)
 
   | _ ->
