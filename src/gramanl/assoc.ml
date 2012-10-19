@@ -8,16 +8,17 @@ type kind =
 
 
 let of_string = function
-  | "left" -> AK_LEFT
-  | "right" -> AK_RIGHT
-  | "nonassoc" -> AK_NONASSOC
-  | "prec" -> AK_NEVERASSOC
+  | "left"        -> AK_LEFT
+  | "right"       -> AK_RIGHT
+  | "nonassoc"    -> AK_NONASSOC
+  | "prec"        -> AK_NEVERASSOC
   | "assoc_split" -> AK_SPLIT
-  | s -> failwith s
+  | s             -> failwith s
+
 
 let to_string = function
-  | AK_LEFT -> "left"
-  | AK_RIGHT -> "right"
-  | AK_NONASSOC -> "nonassoc"
+  | AK_LEFT       -> "left"
+  | AK_RIGHT      -> "right"
+  | AK_NONASSOC   -> "nonassoc"
   | AK_NEVERASSOC -> "prec"
-  | AK_SPLIT -> "assoc_split"
+  | AK_SPLIT      -> "assoc_split"
