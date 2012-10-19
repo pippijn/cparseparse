@@ -6,10 +6,6 @@
 "merge.ml": syntax_camlp4o, pkg_sexplib.syntax
 "grammarLexer.ml": syntax_camlp4o, pkg_ulex.syntax
 
-# library import
-"../baselib": include
-"../glr": include
-
 # ML code parsing
 "grammarTreeParser.ml": use_camlp4_full
 
