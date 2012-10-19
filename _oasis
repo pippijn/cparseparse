@@ -1,7 +1,7 @@
 OASISFormat:                    0.3
 OCamlVersion:                   >= 3.12
 Name:                           elkhound
-Version:                        0.6
+Version:                        0.1
 Synopsis:                       Elkhound GLR Parser Generator
 Authors:                        Pippijn van Steenhoven
 License:                        GPL
@@ -22,10 +22,10 @@ SourceRepository head
 Executable elkhound
         Path:                   elkhound
         BuildTools:             ocamlbuild
-        BuildDepends:           grammar,menhirLib,batteries,ulex
+        BuildDepends:           grammar,                                # internal
+                                menhirLib,batteries,ulex                # external
         CompiledObject:         native
         MainIs:                 elkhound.ml
-
 
 Executable cpapa
         Path:                   cpapa
@@ -37,23 +37,29 @@ Executable cpapa
 Executable treematch
         Path:                   treematch
         BuildTools:             ocamlbuild
-        BuildDepends:           sexplib,camlp4,camlp4.lib,batteries,baselib
+        BuildDepends:           baselib,                                # internal
+                                camlp4,camlp4.lib,                      # core
+                                sexplib,batteries                       # external
         CompiledObject:         native
         MainIs:                 treematch.ml
 
 Executable runtests
         Path:                   testsuite
         BuildTools:             ocamlbuild
-        BuildDepends:           unix,batteries,baselib
+        BuildDepends:           baselib,                                # internal
+                                unix,                                   # core
+                                batteries                               # external
         CompiledObject:         native
         MainIs:                 runtests.ml
 
 
 Library grammar
         Path:                   grammar
-        Pack:			true
+        Pack:                   true
         BuildTools:             ocamlbuild,camlp4of
-        BuildDepends:           sexplib,ocamlgraph,ulex,batteries,glr,baselib,unix,camlp4,camlp4.lib
+        BuildDepends:           glr,baselib,                            # internal
+                                unix,camlp4,camlp4.lib,                 # core
+                                sexplib,ocamlgraph,ulex,batteries       # external
         CompiledObject:         native
 #        NativeOpt:              -inline 999 -unsafe -noassert
         Modules:                AnalysisEnv,
@@ -103,12 +109,12 @@ Library grammar
                                 TerminalSet,
                                 Warnings
 
-
 Library ccparse
         Path:                   ccparse
-        Pack:			true
+        Pack:                   true
         BuildTools:             ocamlbuild
-        BuildDepends:           glr,baselib,unix
+        BuildDepends:           glr,baselib,                            # internal
+                                unix                                    # core
         CompiledObject:         native
 #        NativeOpt:              -inline 999 -unsafe -noassert
         Modules:                gr/CcActions,
@@ -121,12 +127,11 @@ Library ccparse
                                 Parser,
                                 Options
 
-
 Library glr
         Path:                   glr
-        Pack:			true
+        Pack:                   true
         BuildTools:             ocamlbuild
-        BuildDepends:           baselib
+        BuildDepends:           baselib                                 # internal
         CompiledObject:         native
 #        NativeOpt:              -inline 999 -unsafe -noassert
         Modules:                Arraystack,
@@ -142,7 +147,7 @@ Library glr
 Library baselib
         Path:                   baselib
         BuildTools:             ocamlbuild
-        BuildDepends:           sexplib,batteries
+        BuildDepends:           sexplib,batteries                       # external
         CompiledObject:         native
 #        NativeOpt:              -inline 999 -unsafe -noassert
         CCLib:                  -lstdc++ -lz
