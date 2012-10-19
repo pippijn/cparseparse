@@ -1,6 +1,6 @@
 # includes
 "gr": include
 "tok": include
+
 # ulex
 "ulexer.ml": syntax_camlp4o
-<gr/*>: use_ast

@@ -1,4 +1,4 @@
-# with sexp
+# sexplib
 "ccPtree.ml": syntax_camlp4o, pkg_sexplib.syntax
 
 # pack
