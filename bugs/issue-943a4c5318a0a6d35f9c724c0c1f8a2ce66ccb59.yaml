@@ -4,7 +4,7 @@ desc: |-
   Find more errors in grammar specifications and give proper diagnostics about
   them.
 type: :task
-component: Parsgen
+component: gramanl
 release: 
 reporter: Pippijn van Steenhoven <pippijn@xinutec.org>
 status: :unstarted

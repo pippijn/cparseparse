@@ -5,10 +5,16 @@ components:
 - !ditz.rubyforge.org,2008-03-06/component 
   name: cxxparse
 - !ditz.rubyforge.org,2008-03-06/component 
-  name: Parser
+  name: parser
 - !ditz.rubyforge.org,2008-03-06/component 
-  name: Infrastructure
+  name: infrastructure
 - !ditz.rubyforge.org,2008-03-06/component 
-  name: Parsgen
+  name: gramanl
+- !ditz.rubyforge.org,2008-03-06/component 
+  name: treematch
+- !ditz.rubyforge.org,2008-03-06/component 
+  name: cabs
+- !ditz.rubyforge.org,2008-03-06/component 
+  name: baselib
 releases: []
 

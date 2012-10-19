@@ -2,7 +2,7 @@
 title: CST needs to be annotated with locations
 desc: We don't have location information inside CST
 type: :feature
-component: Parsgen
+component: gramanl
 release: 
 reporter: Wojciech Meyer <wojciech.meyer@gmail.com>
 status: :closed

@@ -5,7 +5,7 @@ desc: |-
   diagnostics emitted by parsgen. Currently, it does not include source
   locations and often no or very little information on the failure cause.
 type: :feature
-component: Parsgen
+component: gramanl
 release: 
 reporter: Pippijn van Steenhoven <pippijn@xinutec.org>
 status: :unstarted

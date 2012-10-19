@@ -4,7 +4,7 @@ desc: |-
   Add command line argument (Arg module) parsing to parsgen, so it no longer
   needs to hard-code the grammar file names.
 type: :task
-component: Parsgen
+component: gramanl
 release: 
 reporter: Pippijn van Steenhoven <pippijn@xinutec.org>
 status: :closed

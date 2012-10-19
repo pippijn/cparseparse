@@ -2,7 +2,7 @@
 title: Make PEG parser pass the testsuite
 desc: Make sure the PEG parser consumes everything what is in the testsuite without errors.
 type: :task
-component: Parser
+component: parser
 release: 
 reporter: Wojciech Meyer <wojciech.meyer@gmail.com>
 status: :unstarted

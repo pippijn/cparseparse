@@ -4,7 +4,7 @@ desc: |-
   Keep track of source locations in grammar files, especially for user action
   code blocks, so we can emit "#line"-directives in the resulting %Actions.ml.
 type: :feature
-component: Parsgen
+component: gramanl
 release: 
 reporter: Pippijn van Steenhoven <pippijn@xinutec.org>
 status: :closed

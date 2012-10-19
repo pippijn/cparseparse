@@ -2,7 +2,7 @@
 title: Build system is a bit mess
 desc: We need to establish root of the project, and prepare nice entry points, and some Makefile targets with well defined semantics.
 type: :bugfix
-component: Infrastructure
+component: infrastructure
 release: 
 reporter: Wojciech Meyer <wojciech.meyer@gmail.com>
 status: :unstarted
