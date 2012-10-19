@@ -23,7 +23,7 @@ Executable elkhound
         Path:                   elkhound
         BuildTools:             ocamlbuild
         BuildDepends:           gramanl,                                # internal
-                                menhirLib,batteries,ulex                # external
+                                batteries,menhirLib,ulex                # external
         CompiledObject:         native
         MainIs:                 elkhound.ml
 
@@ -39,7 +39,7 @@ Executable treematch
         BuildTools:             ocamlbuild
         BuildDepends:           baselib,                                # internal
                                 camlp4,camlp4.lib,                      # core
-                                sexplib,batteries                       # external
+                                batteries,sexplib                       # external
         CompiledObject:         native
         MainIs:                 treematch.ml
 
@@ -57,9 +57,9 @@ Library gramanl
         Path:                   gramanl
         Pack:                   true
         BuildTools:             ocamlbuild,camlp4of
-        BuildDepends:           glr,baselib,                            # internal
+        BuildDepends:           baselib,glr,                            # internal
                                 unix,camlp4,camlp4.lib,                 # core
-                                sexplib,ocamlgraph,ulex,batteries       # external
+                                batteries,sexplib,ocamlgraph,ulex       # external
         CompiledObject:         native
 #        NativeOpt:              -inline 999 -unsafe -noassert
         Modules:                AnalysisEnv,
@@ -116,7 +116,7 @@ Library ccparse
         Path:                   ccparse
         Pack:                   true
         BuildTools:             ocamlbuild
-        BuildDepends:           glr,baselib,                            # internal
+        BuildDepends:           baselib,glr,cabs,                       # internal
                                 unix                                    # core
         CompiledObject:         native
 #        NativeOpt:              -inline 999 -unsafe -noassert
@@ -129,6 +129,18 @@ Library ccparse
                                 Lexer,
                                 Parser,
                                 Options
+
+Library cabs
+        Path:                   cabs
+        Pack:                   true
+        BuildTools:             ocamlbuild
+        BuildDepends:           batteries,sexplib                       # external
+        CompiledObject:         native
+#        NativeOpt:              -inline 999 -unsafe -noassert
+        Modules:                Ast,
+                                Constant,
+                                Sclass,
+                                Tqual
 
 Library glr
         Path:                   glr
@@ -151,7 +163,7 @@ Library glr
 Library baselib
         Path:                   baselib
         BuildTools:             ocamlbuild
-        BuildDepends:           sexplib,batteries                       # external
+        BuildDepends:           batteries,sexplib                       # external
         CompiledObject:         native
 #        NativeOpt:              -inline 999 -unsafe -noassert
         CCLib:                  -lstdc++ -lz

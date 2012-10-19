@@ -396,7 +396,7 @@ nonterm Designator {
 
 // ----------- C99 restrict keyword -----------
 nonterm CVQualifier {
-  -> "restrict"              [Restrict] { }
+  -> "restrict"              [Restrict] { TQ_Restrict }
 }
 
 nonterm UberModifier {
@@ -404,7 +404,7 @@ nonterm UberModifier {
 }
 
 nonterm UberCVQualifier {
-  -> "restrict"              [Restrict] { unimplemented 599 }
+  -> "restrict"              [Restrict] { TQ_Restrict }
 }
 
 
@@ -552,7 +552,7 @@ nonterm UberModifier {
 }
 
 nonterm UberCVQualifier {
-  -> AttributeSpecifier      { unimplemented 618 }
+  -> AttributeSpecifier      { failwith "unimplemented 618" }
 }
 
 

@@ -122,6 +122,7 @@ terminals {
 
 
 impl_verbatim {
+  open Cabs.Tqual
   let unimplemented s = ()
 }
 
@@ -1037,8 +1038,8 @@ nonterm UberTypeAndCVQualifierSeqOpt {
 }
 
 nonterm UberTypeAndCVQualifier {
-  -> u:UberCVQualifier [CV];
-  -> u:SimpleTypeSpecifier [TypeSpec];
+  -> u:UberCVQualifier [CV] { }
+  -> u:SimpleTypeSpecifier [TypeSpec] { }
 }
 
 
@@ -1067,8 +1068,8 @@ nonterm UberModifier {
 
 // just the cv-qualifiers
 nonterm UberCVQualifier {
-  -> "const"     [Const] { unimplemented 246 }
-  -> "volatile"  [Volatile] { unimplemented 247 }
+  -> "const"     [Const] { TQ_Const }
+  -> "volatile"  [Volatile] { TQ_Volatile }
 }
 
 // keywords that name a type, or part of one
@@ -1441,8 +1442,8 @@ nonterm CVQualifierSeq {
 }
 
 nonterm CVQualifier {
-  -> "const"                 [Const] { }
-  -> "volatile"              [Volatile] { }
+  -> "const"                 [Const] { TQ_Const }
+  -> "volatile"              [Volatile] { TQ_Volatile }
 }
 
 
