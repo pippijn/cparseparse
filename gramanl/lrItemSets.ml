@@ -10,7 +10,7 @@ type env = {
   mutable next_item_set_id : int;
 
   item_sets_pending : item_set ItemList.Stack.t;
-  item_sets_done : item_set ItemList.Table.t;
+  item_sets_done    : item_set ItemList.Table.t;
 }
 
 
@@ -18,15 +18,11 @@ let make_item_set env kernel_items =
   let state_id = state_id_of_int env.next_item_set_id in
   env.next_item_set_id <- env.next_item_set_id + 1;
 
-  {
-    kernel_items = { items = kernel_items; hash = 0 };
-    nonkernel_items = [];
+  { ItemSet.M.default with
+    kernel_items = { items = kernel_items; hash = 0; };
     term_transition = Array.make env.term_count None;
     nonterm_transition = Array.make env.nonterm_count None;
-    dots_at_end = [];
-    state_symbol = None;
     state_id = state_id;
-    bfs_parent = None;
   }
 
 

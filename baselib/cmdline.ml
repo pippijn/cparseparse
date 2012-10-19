@@ -1,7 +1,7 @@
 let _trace_progress = ref false
 
 
-let specs = ref Arg.([
+let specs = let open Arg in ref ([
   "-timing",		Set _trace_progress,		" output timing details";
 ])
 let actions = ref []

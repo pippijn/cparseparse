@@ -16,10 +16,10 @@ let parse_string syntax default _loc str =
         Format.fprintf Format.str_formatter "%a\n  while parsing \"%s\": %s" Loc.print loc str msg;
         Diagnostics.error (Format.flush_str_formatter ())
 
-let ctyp_of_string     _loc = parse_string CamlSyntax.ctyp     <:ctyp<unit>> _loc
-let expr_of_string     _loc = parse_string CamlSyntax.expr     <:expr<()>>   _loc
-let sig_item_of_string _loc = parse_string CamlSyntax.sig_item <:sig_item<>> _loc
-let str_item_of_string _loc = parse_string CamlSyntax.str_item <:str_item<>> _loc
+let ctyp_of_string     _loc = parse_string CamlSyntax.ctyp      <:ctyp<unit>> _loc
+let expr_of_string     _loc = parse_string CamlSyntax.expr      <:expr<()>>   _loc
+let sig_item_of_string _loc = parse_string CamlSyntax.sig_items <:sig_item<>> _loc
+let str_item_of_string _loc = parse_string CamlSyntax.str_items <:str_item<>> _loc
 
 let _loc = Loc.ghost
 

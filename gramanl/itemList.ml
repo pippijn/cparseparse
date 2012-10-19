@@ -1,9 +1,8 @@
 open AnalysisEnvType
 
 (************************************************************
- * :: Common Operations
+ * :: Structure defining operations
  ************************************************************)
-
 
 module M : GrammarSig.S with type t = item_list = struct
 
@@ -51,7 +50,7 @@ module M : GrammarSig.S with type t = item_list = struct
 end
 
 module Table = Hashtbl.Make(M)
-module Map = SexpMap.Make(M)
-module Set = SexpSet.Make(M)
+module Map   = SexpMap.Make(M)
+module Set   = SexpSet.Make(M)
 module Stack = HashStack.Make(Table)
-module Graph = Graph.Imperative.Digraph.ConcreteLabeled(M)(M)
+module Graph = Graph.Persistent.Digraph.ConcreteLabeled(M)(M)

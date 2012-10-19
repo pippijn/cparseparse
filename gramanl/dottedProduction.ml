@@ -1,9 +1,8 @@
 open AnalysisEnvType
 
 (************************************************************
- * :: Common Operations
+ * :: Structure defining operations
  ************************************************************)
-
 
 module M : GrammarSig.S with type t = dotted_production = struct
   type t = dotted_production
@@ -23,22 +22,28 @@ module M : GrammarSig.S with type t = dotted_production = struct
   let sexp_of_t = sexp_of_dotted_production
   let t_of_sexp = dotted_production_of_sexp
 
-  let default = empty_dotted_production
+  let default = {
+    dprod_id = -1;
+    prod = GrammarType.empty_production;
+    dot = -1;
+    after_dot = None;
+    first_set = TerminalSet.empty;
+    can_derive_empty = false;
+    back_pointer = None;
+  }
 
 end
 
 module Table = Hashtbl.Make(M)
-module Map = SexpMap.Make(M)
-module Set = SexpSet.Make(M)
+module Map   = SexpMap.Make(M)
+module Set   = SexpSet.Make(M)
 module Stack = HashStack.Make(Table)
+module Graph = Graph.Persistent.Digraph.ConcreteLabeled(M)(M)
 
 
 (************************************************************
  * :: Functions
  ************************************************************)
-
-
-let empty = empty_dotted_production
 
 
 let get dotted_prods prod dot =

@@ -10,7 +10,6 @@ let _loc = Loc.ghost
  * :: Common helpers
  ************************************************)
 
-
 let fold_bindings =
   List.fold_left (fun code binding ->
     <:expr<let $binding$ in $code$>>
@@ -20,7 +19,6 @@ let fold_bindings =
 (************************************************
  * :: Semantic type helpers
  ************************************************)
-
 
 let semtype sym =
   match sym.semtype with
@@ -49,7 +47,6 @@ let final_semtype final_prod =
 (************************************************
  * :: User actions
  ************************************************)
-
 
 (* ------------------- actions ------------------ *)
 let make_ml_actions prods =

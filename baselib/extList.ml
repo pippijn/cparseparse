@@ -57,6 +57,10 @@ let fold_left_many f x ll =
   List.fold_left (List.fold_left f) x ll
 
 
+let exists_many f ll =
+  List.exists (List.exists f) ll
+
+
 let rec nth_tl l i =
   if i = 0 then
     l

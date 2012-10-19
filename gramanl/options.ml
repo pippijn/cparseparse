@@ -31,7 +31,7 @@ let _trace_rewrite = ref true
 
 
 let () =
-  Cmdline.register (Arg.([
+  Cmdline.register Arg.([
     "-module-prefix",		Set_string _module_prefix,	" prefix for generated modules (%Tables, %Actions, ...)";
 
     "-paranoid",		Set _paranoid,			" do more expensive internal checks";
@@ -62,7 +62,7 @@ let () =
     "-trace-derivable",		Set _trace_derivable,		" output details during derivability relation computation";
     "-trace-merge",		Set _trace_merge,		" output details while merging grammar modules";
     "-trace-rewrite",		Set _trace_rewrite,		" output details during symbolic reduction";
-  ]))
+  ])
 
 
 let _module_prefix () = !_module_prefix

@@ -1,9 +1,8 @@
 open AnalysisEnvType
 
 (************************************************************
- * :: Common Operations
+ * :: Structure defining operations
  ************************************************************)
-
 
 module M : GrammarSig.S with type t = item_set = struct
 
@@ -41,16 +40,15 @@ module M : GrammarSig.S with type t = item_set = struct
 end
 
 module Table = Hashtbl.Make(M)
-module Map = SexpMap.Make(M)
-module Set = SexpSet.Make(M)
+module Map   = SexpMap.Make(M)
+module Set   = SexpSet.Make(M)
 module Stack = HashStack.Make(Table)
-module Graph = Graph.Imperative.Digraph.ConcreteLabeled(M)(M)
+module Graph = Graph.Persistent.Digraph.ConcreteLabeled(M)(M)
 
 
 (************************************************************
- * :: Functions
+ * :: Transition functions
  ************************************************************)
-
 
 let transition_for_term item_set term =
   let open GrammarType in
@@ -82,11 +80,19 @@ let set_transition from_set sym to_set =
   | Nonterminal (_, nonterm) -> set_transition_for_nonterm from_set nonterm to_set
 
 
-let has_extending_shift item_set nonterm term =
-  ExtList.fold_left_many (fun result item ->
-    result || LrItem.is_extending_shift item nonterm term
-  ) false [item_set.kernel_items.items; item_set.nonkernel_items]
+(************************************************************
+ * :: Check whether shift on term extends over nonterm
+ ************************************************************)
 
+let has_extending_shift item_set nonterm term =
+  ExtList.exists_many (fun item ->
+    LrItem.is_extending_shift item nonterm term
+  ) [item_set.kernel_items.items; item_set.nonkernel_items]
+
+
+(************************************************************
+ * :: Yield possible reductions on terminal 'lookahead'
+ ************************************************************)
 
 let possible_reductions item_set lookahead =
   let open GrammarType in
@@ -141,6 +147,10 @@ let possible_reductions item_set lookahead =
   ) [] item_set.dots_at_end
 
 
+(************************************************************
+ * :: Inverse transition functions
+ ************************************************************)
+
 let eq_option a b =
   match b with
   | None -> false
@@ -162,3 +172,17 @@ let inverse_transition terms nonterms source target =
         eq_option target source.nonterm_transition.(nonterm.nt_index)
       ) nonterms
     )
+
+
+(************************************************************
+ * :: Compute transition graph over states
+ ************************************************************)
+
+let compute_graph states =
+  List.fold_left (fun g state ->
+    Array.fold_left (fun g -> function
+      | None -> g
+      | Some target ->
+          Graph.add_edge g state target
+    ) g state.nonterm_transition
+  ) Graph.empty states

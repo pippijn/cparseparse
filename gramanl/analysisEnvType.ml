@@ -160,15 +160,3 @@ type env = {
   verbatims                     : CamlAst.sig_item list;
   impl_verbatims                : CamlAst.str_item list;
 } with sexp
-
-
-
-let empty_dotted_production = {
-  dprod_id = -1;
-  prod = GrammarType.empty_production;
-  dot = -1;
-  after_dot = None;
-  first_set = TerminalSet.empty;
-  can_derive_empty = false;
-  back_pointer = None;
-}

@@ -1,9 +1,8 @@
 open AnalysisEnvType
 
 (************************************************************
- * :: Common Operations
+ * :: Structure defining operations
  ************************************************************)
-
 
 module M : GrammarSig.S with type t = lr_item = struct
 
@@ -25,17 +24,17 @@ module M : GrammarSig.S with type t = lr_item = struct
   let t_of_sexp = lr_item_of_sexp
 
   let default = {
-    dprod = empty_dotted_production;
+    dprod = DottedProduction.M.default;
     lookahead = TerminalSet.empty;
   }
 
 end
 
 module Table = Hashtbl.Make(M)
-module Map = SexpMap.Make(M)
-module Set = SexpSet.Make(M)
+module Map   = SexpMap.Make(M)
+module Set   = SexpSet.Make(M)
 module Stack = HashStack.Make(Table)
-module Graph = Graph.Imperative.Digraph.ConcreteLabeled(M)(M)
+module Graph = Graph.Persistent.Digraph.ConcreteLabeled(M)(M)
 
 
 (************************************************************

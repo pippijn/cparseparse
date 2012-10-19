@@ -1,9 +1,8 @@
 open GrammarType
 
 (************************************************************
- * :: Common Operations
+ * :: Structure defining operations
  ************************************************************)
-
 
 module M : GrammarSig.S with type t = nonterminal = struct
 
@@ -29,16 +28,15 @@ module M : GrammarSig.S with type t = nonterminal = struct
 end
 
 module Table = Hashtbl.Make(M)
-module Map = SexpMap.Make(M)
-module Set = SexpSet.Make(M)
+module Map   = SexpMap.Make(M)
+module Set   = SexpSet.Make(M)
 module Stack = HashStack.Make(Table)
 module Graph = Graph.Persistent.Digraph.ConcreteLabeled(M)(M)
 
 
 (************************************************************
- * :: Functions
+ * :: Compute graph over nonterminals
  ************************************************************)
-
 
 let compute_graph =
   (* fold over productions *)
