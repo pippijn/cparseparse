@@ -64,7 +64,7 @@ CALLGRIND = valgrind --tool=callgrind			\
 	--instr-atstart=no
 
 profile-elkhound: build
-	cd _build && $(CALLGRIND) elkhound/elkhound.native
+	cd _build && $(CALLGRIND) elkhound/elkhound.native ccparse/gr/c++1998.gr ccparse/gr/c++2011.gr ccparse/gr/kandr.gr ccparse/gr/gnu.gr
 
 profile-cpapa: build
 	$(CALLGRIND) ./cpapa.native -pp -trivial testsuite/profile.cc
