@@ -106,7 +106,7 @@ let rec rewrite_nt_as_terminals prods output nonterm seen =
 
   (* get all of 'nonterminal's productions that are not recursive *)
   let candidates =
-    BatArray.filter (fun prod ->
+    List.filter (fun prod ->
       prod.left == nonterm
       (* if 'prod' has 'nonterminal' on RHS, that would certainly
        * lead to looping (though it's not the only way -- consider
@@ -117,19 +117,19 @@ let rec rewrite_nt_as_terminals prods output nonterm seen =
     ) prods
   in
 
-  if Array.length candidates = 0 then
+  if candidates = [] then
     (* I don't expect this... either the NT doesn't have any rules,
      * or all of them are recursive (which means the language doesn't
      * have any finite sentences) *)
     raise Not_found;
 
   (* sort them into order of preference *)
-  Array.sort (compare_rewrite seen) candidates;
+  let candidates = List.sort (compare_rewrite seen) candidates in
 
   (* try each in turn until one succeeds; this effectively uses
    * backtracking when one fails *)
   let success =
-    ExtArray.foldl_until (fun prod ->
+    ExtList.foldl_until (fun prod ->
       try
         (* now, the chosen rule provides a RHS, which is a sequence of
          * terminals and nonterminals; recursively reduce that sequence *)
@@ -165,6 +165,8 @@ let rewrite_as_terminals prods input =
 
 (* sample input (terminals only) that can lead to a state *)
 let generate terms nonterms prods state =
+  let prods = Array.to_list prods in
+
   (* get left-context as terminals and nonterminals *)
   left_context terms nonterms [] state
 
