@@ -114,19 +114,6 @@ let getSome = function
  *)
 
 
-(* when true, print parse actions *)
-let traceParse  = false
-
-(* when true, keep some statistics useful for performance evaluation *)
-let accounting  = true
-
-(* when true, we call the user's keep() functions *)
-let use_keep    = true
-
-(* when true, use the mini LR core *)
-let use_mini_lr = true
-
-
 (* NOTE: in some cases, more detailed comments can be found in
  * elkhound/glr.h, as these data structures mirror the ones
  * defined there *)
@@ -349,7 +336,10 @@ let reclassifiedToken userAct lexer token =
 
 let terminalName userAct tokType =
   let open UserActions in
-  userAct.terminalName tokType
+  if GlrOptions._terminal_names () then
+    userAct.terminalName tokType
+  else
+    userAct.terminalAlias tokType
 
 
 let cSTATE_INVALID = ParseTablesType.cSTATE_INVALID
@@ -410,7 +400,7 @@ and deinitStackNode node =
 
   node.firstSib.sib <- cNULL_STACK_NODE;
 
-  if accounting then (
+  if GlrOptions._accounting () then (
     decr numStackNodesAllocd;
   )
 
@@ -439,7 +429,7 @@ let initStackNode node st =
   node.referenceCount <- 0;
   node.determinDepth <- 1;
 
-  if accounting then (
+  if GlrOptions._accounting () then (
     incr numStackNodesAllocd;
     if !numStackNodesAllocd > !maxStackNodesAllocd then
       maxStackNodesAllocd := !numStackNodesAllocd;
@@ -608,7 +598,7 @@ let makeGLR userAct tables =
 
   (* the ordinary GLR core doesn't have this limitation because
    * it uses a growable array *)
-  if use_mini_lr then
+  if GlrOptions._use_mini_lr () then
     (* make sure none of the productions have right-hand sides
      * that are too long; I think it's worth doing an iteration
      * here since going over the limit would be really hard to
@@ -868,7 +858,7 @@ let rwlShiftActive glr tokType leftSibling rightSibling lhsIndex sval =
 
       (* dead tree optimisation *)
       if not (canMakeProgress glr tokType rightSibling) then (
-        if traceParse then
+        if GlrOptions._trace_parse () then
           Printf.printf "avoided a merge by noticing the state was dead\n";
         deallocateSemanticValue glr.userAct (getNodeSymbol rightSibling) sval;
       ) else (
@@ -932,7 +922,7 @@ let rwlShiftNonterminal glr tokType leftSibling lhsIndex sval =
     ParseTables.getGoto glr.tables leftSibling.state lhsIndex
   in
 
-  if traceParse then
+  if GlrOptions._trace_parse () then
     Printf.printf "state %d, shift nonterm %d, to state %d\n" leftSibling.state lhsIndex rightSiblingState;
 
   (* is there already an active parser with this state? *)
@@ -953,14 +943,14 @@ let rwlProcessWorklist glr tokType tokSloc =
     let rhsLen   = ParseTables.getProdInfo_rhsLen   glr.tables path.prodIndex in
     let lhsIndex = ParseTables.getProdInfo_lhsIndex glr.tables path.prodIndex in
 
-    if traceParse then
+    if GlrOptions._trace_parse () then
       Printf.printf "state %d, reducing by production %d (rhsLen=%d), back to state %d\n"
                      path.startStateId
                      path.prodIndex
                      rhsLen
                      path.leftEdgeNode.state;
 
-    if accounting then
+    if GlrOptions._accounting () then
       glr.stats.nondetReduce <- glr.stats.nondetReduce + 1;
 
     (* record location of left edge; initially is location of
@@ -988,7 +978,7 @@ let rwlProcessWorklist glr tokType tokSloc =
     let sval = reductionAction glr.userAct path.prodIndex glr.toPass !leftEdge !rightEdge in
 
     (* did user want to keep? *)
-    if use_keep && not (keepNontermValue glr.userAct lhsIndex sval) then (
+    if GlrOptions._use_keep () && not (keepNontermValue glr.userAct lhsIndex sval) then (
       (* cancelled; drop on floor *)
     ) else (
       (* add source locations *)
@@ -1070,10 +1060,10 @@ let rwlShiftTerminals glr tokType tokSval tokSloc =
     if newState <> cSTATE_INVALID then (
       (* found a shift *)
 
-      if accounting then
+      if GlrOptions._accounting () then
         glr.stats.nondetShift <- glr.stats.nondetShift + 1;
 
-      if traceParse then
+      if GlrOptions._trace_parse () then
         Printf.printf "state %d, shift token %s, to state %d\n"
                        state
                        (terminalName glr.userAct tokType)
@@ -1159,7 +1149,7 @@ let nondeterministicParseToken glr tokType tokSval tokSloc =
     let actions = rwlEnqueueReductions glr parsr action None(*sibLink*) in
 
     if actions = 0 then (
-      if traceParse then
+      if GlrOptions._trace_parse () then
         Printf.printf "parser in state %d died\n" parsr.state;
       lastToDie := parsr.state
     )
@@ -1215,7 +1205,7 @@ let rec lrParseToken glr lr lexer token =
   if ParseTables.isReduceAction action then (
     (* can reduce unambiguously *)
     let prodIndex = ParseTables.decodeReduce action !parsr.state in
-    if accounting then
+    if GlrOptions._accounting () then
       lr.lrDetReduce <- lr.lrDetReduce + 1;
 
     let rhsLen = ParseTables.getProdInfo_rhsLen glr.tables prodIndex in
@@ -1263,7 +1253,7 @@ let rec lrParseToken glr lr lexer token =
 
         (* adjust a couple things about 'prev' reflecting
          * that it has been deallocated *)
-        if accounting then (
+        if GlrOptions._accounting () then (
           decr numStackNodesAllocd;
         );
         prev.firstSib.sib <- cNULL_STACK_NODE;
@@ -1279,7 +1269,7 @@ let rec lrParseToken glr lr lexer token =
         ParseTables.getGoto glr.tables !parsr.state lhsIndex
       in
 
-      if traceParse then (
+      if GlrOptions._trace_parse () then (
         Printf.printf "state %d, (unambig) reduce by %d (len=%d), back to %d then out to %d\n"
                       startStateId
                       prodIndex
@@ -1308,9 +1298,9 @@ let rec lrParseToken glr lr lexer token =
       assert (newNode.referenceCount = 1);
 
       (* does the user want to keep it? *)
-      if use_keep && not (keepNontermValue glr.userAct lhsIndex sval) then (
+      if GlrOptions._use_keep () && not (keepNontermValue glr.userAct lhsIndex sval) then (
         printParseErrorMessage glr tokType newNode.state;
-        if accounting then (
+        if GlrOptions._accounting () then (
           glr.stats.detShift  <- glr.stats.detShift  + lr.lrDetShift;
           glr.stats.detReduce <- glr.stats.detReduce + lr.lrDetReduce;
         );
@@ -1330,10 +1320,10 @@ let rec lrParseToken glr lr lexer token =
   ) else if ParseTables.isShiftAction glr.tables action then (
     (* can shift unambiguously *)
     let newState = ParseTables.decodeShift action tokType in
-    if accounting then
+    if GlrOptions._accounting () then
       lr.lrDetShift <- lr.lrDetShift + 1;
 
-    if traceParse then (
+    if GlrOptions._trace_parse () then (
       Printf.printf "state %d, (unambig) shift token %d, to state %d\n"
                     !parsr.state
                     tokType
@@ -1442,7 +1432,7 @@ let stackSummary glr =
 (* This function is the core of the parser, and its performance is
  * critical to the end-to-end performance of the whole system. *)
 let rec main_loop glr lr lexer token =
-  if traceParse then (
+  if GlrOptions._trace_parse () then (
     let open Lexerint in
     let tokType = lexer.index token in
 
@@ -1453,7 +1443,7 @@ let rec main_loop glr lr lexer token =
     flush stdout
   );
 
-  if use_mini_lr && Arraystack.length glr.topmostParsers = 1 then
+  if GlrOptions._use_mini_lr () && Arraystack.length glr.topmostParsers = 1 then
     (* try deterministic parsing *)
     main_loop glr lr lexer (lrParseToken glr lr lexer token)
   else
@@ -1478,7 +1468,7 @@ let grabTopSval userAct node =
 
 
 let cleanupAfterParse (glr : 'result glr) : 'result option =
-  if traceParse then
+  if GlrOptions._trace_parse () then
     Printf.printf "Parse succeeded!\n";
 
   if not (Arraystack.length glr.topmostParsers = 1) then (
@@ -1534,7 +1524,7 @@ let glrParse (glr : 'result glr) lexer : 'result option =
       None
 
   | End_of_file ->
-      if accounting then (
+      if GlrOptions._accounting () then (
         glr.stats.detShift  <- glr.stats.detShift  + lr.lrDetShift;
         glr.stats.detReduce <- glr.stats.detReduce + lr.lrDetReduce;
       );

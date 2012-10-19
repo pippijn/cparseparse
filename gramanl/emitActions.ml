@@ -51,34 +51,6 @@ let final_semtype final_prod =
  ************************************************)
 
 
-(* ------------------- description functions ------------------ *)
-let make_ml_descriptions terms nonterms =
-  (* emit a map of terminal ids to their names *)
-  let term_names_array =
-    let names =
-      Array.map (fun term -> <:expr<$str:term.tbase.name$>>) terms
-      |> Array.to_list
-      |> Ast.exSem_of_list
-    in
-    <:str_item<let termNamesArray : string array = [| $names$ |]>>
-  in
-
-  (* emit a map of nonterminal ids to their names *)
-  let nonterm_names_array =
-    let names =
-      Array.map (fun nonterm -> <:expr<$str:nonterm.nbase.name$>>) nonterms
-      |> Array.to_list
-      |> Ast.exSem_of_list
-    in
-    <:str_item<let nontermNamesArray : string array = [| $names$ |]>>
-  in
-
-  <:str_item<
-    $term_names_array$
-    $nonterm_names_array$
-  >>
-
-
 (* ------------------- actions ------------------ *)
 let make_ml_actions prods =
   (* iterate over productions, emitting action function closures *)
@@ -162,10 +134,10 @@ let make_ml_actions prods =
   <:rec_binding<reductionActionArray = [| $closures$ |]>>
 
 
-let make_ml_spec_func name semtype rettype kind func id =
+let make_ml_spec_func default semtype rettype kind func id =
   match func with
   | None ->
-      <:expr<$lid:"default_" ^ name$ $lid:kind ^ "NamesArray"$ ($int:string_of_int id$)>>
+      <:expr<$default$ ($int:string_of_int id$)>>
 
   | Some { params; code } ->
       let real_rettype =
@@ -202,22 +174,38 @@ let make_ml_spec_func name semtype rettype kind func id =
       ) fun_body untyped_params
 
 
+let array_expr_of_array array =
+  let exsem =
+    array
+    |> Array.to_list
+    |> Ast.exSem_of_list
+  in
+
+  <:expr<[| $exsem$ |]>>
+
+
+let make_spec_func_closures name rettype kind base func syms =
+  let namesModule = <:expr<$uid:Options._module_prefix () ^ "Names"$>> in
+  let default = <:expr<$lid:"default_" ^ name$ $namesModule$.$lid:kind ^ "NamesArray"$>> in
+
+  if BatArray.exists (fun sym -> func sym != None) syms then
+    Array.mapi (fun i sym ->
+      let paramtype = semtype (base sym) in
+      let rettype = BatOption.default paramtype rettype in
+      make_ml_spec_func default paramtype rettype kind (func sym) i
+    ) syms
+    |> array_expr_of_array
+  else
+    <:expr<Array.init $int:string_of_int (Array.length syms)$ (fun i -> $default$ i)>>
+
+
 let make_ml_dup_del_merge terms nonterms =
 
   let make sf_name a_name rettype kind base func syms =
-    let closures =
-      Array.mapi (fun i sym ->
-        let paramtype = semtype (base sym) in
-        let rettype = BatOption.default paramtype rettype in
-        make_ml_spec_func sf_name paramtype rettype kind (func sym) i
-      ) syms
-
-      |> Array.to_list
-      |> Ast.exSem_of_list
-    in
+    let closures = make_spec_func_closures sf_name rettype kind base func syms in
 
     assert (is_lid a_name);
-    <:rec_binding<$lid:a_name ^ "Array"$ = [| $closures$ |]>>
+    <:rec_binding<$lid:a_name ^ "Array"$ = $closures$>>
   in
 
   let make_nonterm sf_name a_name func rettype =
@@ -238,13 +226,13 @@ let make_ml_dup_del_merge terms nonterms =
 
   [
     (* ------------------- dup/del/merge/keep nonterminals ------------------ *)
-    make_nonterm "dup"   "duplicateNontermValue"  (fun nonterm -> nonterm.nbase.dup) None;
+    make_nonterm "dup"   "duplicateNontermValue"  (fun nonterm -> nonterm.nbase.dup) (None);
     make_nonterm "del"   "deallocateNontermValue" (fun nonterm -> nonterm.nbase.del) (Some <:ctyp<unit>>);
-    make_nonterm "merge" "mergeAlternativeParses" (fun nonterm -> nonterm.merge) 	   None;
-    make_nonterm "keep"  "keepNontermValue"       (fun nonterm -> nonterm.keep) 	   (Some <:ctyp<bool>>);
+    make_nonterm "merge" "mergeAlternativeParses" (fun nonterm -> nonterm.merge)     (None);
+    make_nonterm "keep"  "keepNontermValue"       (fun nonterm -> nonterm.keep)      (Some <:ctyp<bool>>);
 
     (* ------------------- dup/del/classify terminals ------------------ *)
-    make_term "dup"      "duplicateTerminalValue"  (fun term -> term.tbase.dup) None;
+    make_term "dup"      "duplicateTerminalValue"  (fun term -> term.tbase.dup) (None);
     make_term "del"      "deallocateTerminalValue" (fun term -> term.tbase.del) (Some <:ctyp<unit>>);
     make_term "classify" "reclassifyToken"         (fun term -> term.classify)  (Some <:ctyp<int>>);
   ]
@@ -263,6 +251,8 @@ let make_ml_action_code terms nonterms prods_by_lhs final_prod verbatims impl_ve
     |> Ast.rbSem_of_list
   in
 
+  let namesModule = <:expr<$uid:Options._module_prefix () ^ "Names"$>> in
+
   <:sig_item<
     (* insert the stand-alone verbatim sections *)
     $Ast.sgSem_of_list verbatims$
@@ -278,8 +268,6 @@ let make_ml_action_code terms nonterms prods_by_lhs final_prod verbatims impl_ve
 
     (* impl_verbatim sections *)
     $Ast.stSem_of_list impl_verbatims$
-
-    $make_ml_descriptions terms nonterms$
 
     let userFunctions : UserActions.functions = { $closures$ }
 
@@ -316,15 +304,17 @@ let make_ml_action_code terms nonterms prods_by_lhs final_prod verbatims impl_ve
      * ML: I could do something like this using Obj, but I'd rather
      * not abuse that interface unnecessarily. *)
     let terminalDescription (termId : int) (sval : SemanticValue.t) : string =
-      termNamesArray.(termId)
+      $namesModule$.termNamesArray.(termId)
     (* and a function to describe nonterminals also *)
     let nonterminalDescription (nontermId : int) (sval : SemanticValue.t) : string =
-      nontermNamesArray.(nontermId)
+      $namesModule$.nontermNamesArray.(nontermId)
     (* emit functions to get access to the static maps *)
     let terminalName (termId : int) : string =
-      termNamesArray.(termId)
+      $namesModule$.termNamesArray.(termId)
+    let terminalAlias (termId : int) : string =
+      $namesModule$.termAliasesArray.(termId)
     let nonterminalName (nontermId : int) : string =
-      nontermNamesArray.(nontermId)
+      $namesModule$.nontermNamesArray.(nontermId)
 
     (* wrap all the action stuff up as a record *)
     let userActions : $result_type$ UserActions.t = {
@@ -339,6 +329,7 @@ let make_ml_action_code terms nonterms prods_by_lhs final_prod verbatims impl_ve
       terminalDescription;
       nonterminalDescription;
       terminalName;
+      terminalAlias;
       nonterminalName;
     }
   >>

@@ -48,6 +48,20 @@ let emit_parse_tree name prods_by_lhs =
   ignore (Sys.command ("sed -i -e 's/ | SEXP;;/ with sexp;;/' " ^ out))
 
 
+let emit_symbol_names name terms nonterms =
+  (* Actions *)
+  let dcl = name ^ "Names.mli" in
+  let out = name ^ "Names.ml" in
+  let intf, impl =
+    EmitNames.make_ml_descriptions
+      terms
+      nonterms
+  in
+
+  OCamlPrinter.print_interf ~output_file:dcl intf;
+  OCamlPrinter.print_implem ~output_file:out impl
+
+
 let emit_user_actions name terms nonterms prods_by_lhs final_prod verbatims impl_verbatims =
   (* Actions *)
   let dcl = name ^ "Actions.mli" in
@@ -108,6 +122,7 @@ let emit_ml name terms nonterms prods_by_lhs verbatims impl_verbatims tables =
 
   emit_tokens name terms;
   emit_parse_tree name prods_by_lhs;
+  emit_symbol_names name terms nonterms;
   emit_user_actions name terms nonterms prods_by_lhs final_prod verbatims impl_verbatims;
   emit_ptree_actions name terms nonterms prods_by_lhs final_prod verbatims impl_verbatims;
   emit_tables name tables

@@ -134,6 +134,7 @@ type 'result t = {
 
   (* get static names for all of the symbols *)
   terminalName : int -> string;
+  terminalAlias : int -> string;
   nonterminalName : int -> string;
 }
 

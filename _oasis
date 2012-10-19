@@ -74,6 +74,7 @@ Library gramanl
                                 DottedProduction,
                                 EmitActions,
                                 EmitCode,
+                                EmitNames,
                                 EmitPtree,
                                 EmitTables,
                                 EmitTokens,
@@ -138,6 +139,7 @@ Library glr
 #        NativeOpt:              -inline 999 -unsafe -noassert
         Modules:                Arraystack,
                                 GlrEngine,
+                                GlrOptions,
                                 Lexerint,
                                 Objpool,
                                 ParseTables,
