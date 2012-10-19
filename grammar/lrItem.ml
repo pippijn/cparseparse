@@ -5,7 +5,7 @@ open AnalysisEnvType
  ************************************************************)
 
 
-module M = struct
+module M : S with type t = lr_item = struct
 
   type t = lr_item
 
@@ -23,6 +23,11 @@ module M = struct
 
   let sexp_of_t = sexp_of_lr_item
   let t_of_sexp = lr_item_of_sexp
+
+  let default = {
+    dprod = empty_dotted_production;
+    lookahead = TerminalSet.empty;
+  }
 
 end
 

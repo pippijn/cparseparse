@@ -27,7 +27,7 @@ let print_actions shift_dest reductions =
 let handle_shift_reduce_conflict state prod sym decision =
   let open GrammarType in
 
-  if Options._trace_prec then (
+  if Options._trace_prec () then (
     Printf.printf "    in state %d, S/R conflict on token %s with production "
       (int_of_state_id state.state_id)
       sym.tbase.name;
@@ -55,7 +55,7 @@ let handle_shift_reduce_conflict state prod sym decision =
 
   (* scannerless *)
   if shift_extends_super then (
-    if Options._trace_prec then (
+    if Options._trace_prec () then (
       print_endline "      => resolved in favor of SHIFT due to maximal munch";
     );
     (* remove reduction due to maximal munch disambiguation *)
@@ -63,21 +63,21 @@ let handle_shift_reduce_conflict state prod sym decision =
 
   (* precedence *)
   ) else if prod.prec = 0 || sym.precedence = 0 then (
-    if Options._trace_prec then (
+    if Options._trace_prec () then (
       print_endline "      => will SPLIT because no disambiguation spec available";
     );
     (* one of the two doesn't have a precedence specification,
      * so we can do nothing *)
     decision
   ) else if prod.prec > sym.precedence then (
-    if Options._trace_prec then (
+    if Options._trace_prec () then (
       print_endline "      => resolved in favor of REDUCE due to precedence";
     );
     (* production's precedence is higher, so we choose to reduce
      * instead of shift *)
     { decision with keep_shift = false }
   ) else if prod.prec < sym.precedence then (
-    if Options._trace_prec then (
+    if Options._trace_prec () then (
       print_endline "      => resolved in favor of SHIFT due to precedence";
     );
     (* symbol's precedence is higher, so we shift *)
@@ -88,17 +88,17 @@ let handle_shift_reduce_conflict state prod sym decision =
     let open Assoc in
     match sym.associativity with
     | AK_LEFT ->
-        if Options._trace_prec then (
+        if Options._trace_prec () then (
           print_endline "      => resolved in favor of REDUCE due to associativity";
         );
         { decision with keep_shift = false }
     | AK_RIGHT ->
-        if Options._trace_prec then (
+        if Options._trace_prec () then (
           print_endline "      => resolved in favor of SHIFT due to associativity";
         );
         { decision with keep_reduce = false }
     | AK_NONASSOC ->
-        if Options._trace_prec then (
+        if Options._trace_prec () then (
           print_endline "      => removed BOTH alternatives due to nonassociativity";
         );
         { decision with keep_shift = false; keep_reduce = false }
@@ -109,7 +109,7 @@ let handle_shift_reduce_conflict state prod sym decision =
           (* TODO *)"prod"
           (int_of_state_id state.state_id))
     | AK_SPLIT ->
-        if Options._trace_prec then (
+        if Options._trace_prec () then (
           print_endline "      => will SPLIT because user asked to";
         );
         (* the user does not want disambiguation of this *)
@@ -182,7 +182,7 @@ let subset_directive_resolution state sym reductions =
             true
           ) else (
             if CompressedBitSet.mem sub.nt_index map then (
-              if Options._trace_prec then (
+              if Options._trace_prec () then (
                 Printf.printf "in state %d, R/R conflict on token %s, removed production yielding %s, because another yields subset %s\n"
                   (int_of_state_id state.state_id)
                   sym.tbase.name
@@ -234,7 +234,7 @@ let try_resolve_conflicts state sym shift_dest reductions allow_ambig sr rr =
       (* remove any productions that are lower than 'highest_prec' *)
       List.fold_left (fun reductions prod ->
         if prod.prec <> 0 && prod.prec < highest_prec then (
-          if Options._trace_prec then (
+          if Options._trace_prec () then (
             Printf.printf "in state %d, R/R conflict on token %s, removed production "
               (int_of_state_id state.state_id)
               sym.tbase.name;
@@ -276,7 +276,7 @@ let try_resolve_conflicts state sym shift_dest reductions allow_ambig sr rr =
         rr := !rr + actions - 1 (* all reduces beyond first are r/r errors *)
     end;
 
-    if Options._trace_conflict then (
+    if Options._trace_conflict () then (
       let open GrammarType in
       Printf.printf "    conflict for symbol %s\n" sym.tbase.name;
       print_actions shift_dest reductions;
@@ -315,7 +315,7 @@ let resolve_conflicts state (* parse state in which the actions are possible *)
                       allow_ambig (* if false, always return at most 1 action *)
                       sr rr (* counts of S/R and R/R conflicts, resp. *) =
   let actions = actions shift_dest reductions in
-  if Options._trace_conflict then (
+  if Options._trace_conflict () then (
     if actions >= 1 then (
       let open GrammarType in
       print_string "%%% before conflict resolution";

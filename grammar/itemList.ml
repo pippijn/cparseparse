@@ -5,7 +5,7 @@ open AnalysisEnvType
  ************************************************************)
 
 
-module M = struct
+module M : S with type t = item_list = struct
 
   type t = item_list
 
@@ -42,6 +42,11 @@ module M = struct
 
   let sexp_of_t = sexp_of_item_list
   let t_of_sexp = item_list_of_sexp
+
+  let default = {
+    items = [];
+    hash = 0;
+  }
 
 end
 

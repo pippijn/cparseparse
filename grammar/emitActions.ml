@@ -269,10 +269,11 @@ let make_ml_action_code terms nonterms prods_by_lhs final_prod verbatims impl_ve
 
     (* all that goes into the interface is the name of the
      * UserActions.t object *)
-    val userActions : $result_type$ UserActions.t
+    val userActions : $result_type$ Glr.UserActions.t
   >>,
   <:str_item<
     (* Open module so record field labels are visible *)
+    open Glr
     open UserActions
 
     (* impl_verbatim sections *)

@@ -5,7 +5,7 @@ open AnalysisEnvType
  ************************************************************)
 
 
-module M = struct
+module M : S with type t = item_set = struct
 
   type t = item_set
 
@@ -26,6 +26,17 @@ module M = struct
 
   let sexp_of_t = sexp_of_item_set
   let t_of_sexp = item_set_of_sexp
+
+  let default = {
+    kernel_items = ItemList.M.default;
+    nonkernel_items = [];
+    term_transition = [||];
+    nonterm_transition = [||];
+    dots_at_end = [];
+    state_symbol = None;
+    state_id = state_id_of_int (-1);
+    bfs_parent = None;
+  }
 
 end
 
@@ -79,17 +90,17 @@ let has_extending_shift item_set nonterm term =
 let possible_reductions item_set lookahead =
   let open GrammarType in
   List.fold_left (fun reductions item ->
-    if Options._use_LR0 then (
+    if Options._use_LR0 () then (
       (* don't check the lookahead *)
       reductions
 
-    ) else if Options._use_SLR1 then (
+    ) else if Options._use_SLR1 () then (
       (* the follow of its LHS must include 'lookahead' *)
       let prod = item.dprod.prod in
       if TerminalSet.mem lookahead.term_index prod.left.follow then
         prod :: reductions
       else (
-        if Options._trace_reductions then (
+        if Options._trace_reductions () then (
           Printf.printf "state %d, not reducing by "
             (int_of_state_id item_set.state_id);
           PrintGrammar.print_production prod;
@@ -100,11 +111,11 @@ let possible_reductions item_set lookahead =
         reductions
       )
 
-    ) else if Options._use_LALR1 || Options._use_LR1 then (
+    ) else if Options._use_LALR1 () || Options._use_LR1 () then (
       (* the item's lookahead must include 'lookahead' *)
       let prod = item.dprod.prod in
       if TerminalSet.mem lookahead.term_index item.lookahead then (
-        if Options._trace_reductions then (
+        if Options._trace_reductions () then (
           Printf.printf "state %d, reducing by "
             (int_of_state_id item_set.state_id);
           PrintGrammar.print_production prod;
@@ -113,7 +124,7 @@ let possible_reductions item_set lookahead =
         );
         prod :: reductions
       ) else (
-        if Options._trace_reductions then (
+        if Options._trace_reductions () then (
           Printf.printf "state %d, not reducing by "
             (int_of_state_id item_set.state_id);
           PrintGrammar.print_production prod;

@@ -5,7 +5,7 @@ open AnalysisEnvType
  ************************************************************)
 
 
-module M = struct
+module M : S with type t = dotted_production = struct
   type t = dotted_production
 
   let hash a =
@@ -22,6 +22,8 @@ module M = struct
 
   let sexp_of_t = sexp_of_dotted_production
   let t_of_sexp = dotted_production_of_sexp
+
+  let default = empty_dotted_production
 
 end
 

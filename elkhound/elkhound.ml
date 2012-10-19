@@ -1,4 +1,4 @@
-open GrammarType
+open Grammar
 
 let (|>) = BatPervasives.(|>)
 
@@ -41,12 +41,14 @@ let parse files =
 
 let merge grammars =
   let topforms = Merge.merge grammars in
-  if false then
+  if Options._print_merged () then
     PrintAst.print (Merge.to_ast topforms);
   topforms
 
 
 let tree_parse topforms =
+  let open GrammarType in
+
   let grammar = GrammarTreeParser.of_ast topforms in
   if false then
     List.iter PrintGrammar.print_production grammar.productions;
@@ -76,6 +78,7 @@ let state_graph (_, states, _ as tuple) =
 
 let emit_code (env, states, tables) =
   let open AnalysisEnvType in
+
   let terms = env.indexed_terms in
   let nonterms = env.indexed_nonterms in
   let prods_by_lhs = env.prods_by_lhs in
@@ -86,11 +89,11 @@ let emit_code (env, states, tables) =
     (EmitCode.emit_ml "ccparse/gr/cc" terms nonterms prods_by_lhs verbatims impl_verbatims) tables
 
 
-let optional enabled f x = if enabled then f x else x
+let optional enabled f x = if enabled () then f x else x
 
-let main () =
+let main inputs =
   try
-    Options.inputs
+    inputs
     |> parse
     |> merge
     |> tree_parse
@@ -106,4 +109,4 @@ let main () =
 
 let () =
   Printexc.record_backtrace true;
-  Printexc.print main ()
+  Printexc.print Cmdline.run main

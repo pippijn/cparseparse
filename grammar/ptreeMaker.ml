@@ -57,7 +57,7 @@ let merge name = function
   | Some { params = [l; r] as params } ->
       Some {
         params;
-        code = <:expr<$uid:Options._module_prefix ^ "Ptree"$.$uid:name$.Merge ($lid:l$, $lid:r$)>>
+        code = <:expr<$uid:Options._module_prefix () ^ "Ptree"$.$uid:name$.Merge ($lid:l$, $lid:r$)>>
       }
   | _ -> failwith "invalid merge function"
 
@@ -66,9 +66,9 @@ let nonterminal nonterm =
   let semtype =
     if nonterm.nt_index = 1 then
       (* synthesised start symbol *)
-      <:ctyp<$uid:Options._module_prefix ^ "Ptree"$.t>>
+      <:ctyp<$uid:Options._module_prefix () ^ "Ptree"$.t>>
     else
-      <:ctyp<$uid:Options._module_prefix ^ "Ptree"$.$uid:nonterm.nbase.name$.t>>
+      <:ctyp<$uid:Options._module_prefix () ^ "Ptree"$.$uid:nonterm.nbase.name$.t>>
   in
   { nonterm with
     nbase = { nonterm.nbase with
@@ -174,7 +174,7 @@ let prods_by_lhs prods_by_lhs =
               in
 
               let prod_variant =
-                <:expr<$uid:Options._module_prefix ^ "Ptree"$.$uid:left.nbase.name$.$uid:prod_name$>>
+                <:expr<$uid:Options._module_prefix () ^ "Ptree"$.$uid:left.nbase.name$.$uid:prod_name$>>
               in
 
               let args =

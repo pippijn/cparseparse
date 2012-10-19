@@ -146,18 +146,18 @@ let gnu_keywords = [
   "__inline__",                 TOK_INLINE;
 ]
 
-let keywords = List.fold_left (fun map (kw, tok) -> StringMap.add kw tok map) StringMap.empty (
-  if Options._xc then
+let keywords = lazy (List.fold_left (fun map (kw, tok) -> StringMap.add kw tok map) StringMap.empty (
+  if Options._xc () then
     c89_keywords @ c99_keywords @ gnu_keywords
   else
     c89_keywords @ gnu_keywords @ cxx1998_keywords @ cxx2011_keywords
-)
+))
 
 let string_table = Hashtbl.create 1009
 
 let classify id =
   try
-    StringMap.find id keywords
+    StringMap.find id (Lazy.force keywords)
   with Not_found ->
     try
       TOK_NAME (Hashtbl.find string_table id)

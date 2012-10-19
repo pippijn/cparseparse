@@ -1,3 +1,4 @@
+open Glr
 open Camlp4.PreCast
 open GrammarType
 open CodegenHelpers
@@ -22,7 +23,7 @@ let print_tables tables =
   let open ParseTablesType in
 
   <:str_item<
-    let parseTables = ParseTablesType.({
+    let parseTables = Glr.ParseTablesType.({
       numTerms = $int:string_of_int tables.numTerms$;
       numNonterms = $int:string_of_int tables.numNonterms$;
       numProds = $int:string_of_int tables.numProds$;
@@ -53,19 +54,19 @@ let make_ml_tables dat tables =
   Marshal.to_channel dat tables [Marshal.No_sharing];
 
   <:sig_item<
-    val parseTables : ParseTablesType.t
+    val parseTables : Glr.ParseTablesType.t
   >>,
-  if Options._use_table_dump then (
-    if Options._inline_table_dump then (
+  if Options._use_table_dump () then (
+    if Options._inline_table_dump () then (
       let data = Marshal.to_string tables [Marshal.No_sharing] in
 
-      if Options._compress_table_dump then (
+      if Options._compress_table_dump () then (
         let len = String.length data in
 
         let compressed = Zlib.compress data in
 
         Some <:str_item<
-          let parseTables : ParseTablesType.t =
+          let parseTables : Glr.ParseTablesType.t =
             Marshal.from_string
               (Zlib.uncompress
                 $str:String.escaped compressed$
@@ -73,16 +74,16 @@ let make_ml_tables dat tables =
         >>
       ) else (
         Some <:str_item<
-          let parseTables : ParseTablesType.t =
+          let parseTables : Glr.ParseTablesType.t =
             Marshal.from_string $str:String.escaped data$ 0
         >>
       )
     ) else (
-      if Options._compress_table_dump then
+      if Options._compress_table_dump () then
         failwith "zlib compression is only supported for inline table dumps";
 
       Some <:str_item<
-        let parseTables : ParseTablesType.t =
+        let parseTables : Glr.ParseTablesType.t =
           input_value (open_in_bin "_build/ccparse/gr/ccTables.dat")
       >>
     )

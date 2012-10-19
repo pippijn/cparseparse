@@ -1,14 +1,6 @@
 open AnalysisEnvType
 
-module ItemSetVertex : Graph.Sig.COMPARABLE with type t = item_set = struct
-  include ItemSet.M
-end
-module ItemSetLabel : Graph.Sig.ORDERED_TYPE_DFT = struct
-  include ItemSet.M
-  let default = Obj.magic ()
-end
-
-module G = Graph.Imperative.Digraph.ConcreteLabeled(ItemSetVertex)(ItemSetLabel)
+module G = Graph.Imperative.Digraph.ConcreteLabeled(ItemSet.M)(ItemSet.M)
 
 
 let item_set_graph states =

@@ -1,62 +1,46 @@
-module Priv = struct
-  let _ptree = ref false
-  let _tptree = ref false
-  let _print = ref false
-  let _print_lousy_ast = ref false
-  let _pp = ref false
-  let _tokens = ref false
-  let _dumptoks = ref false
-  let _loadtoks = ref false
-  let _stats = ref false
-  let _trivial = ref false
-  let _timing = ref false
-  let _xc = ref false
-  let _rt = ref false
-
-  let inputs = ref []
-end
+let _ptree = ref false
+let _tptree = ref false
+let _print = ref false
+let _pp = ref false
+let _tokens = ref false
+let _dumptoks = ref false
+let _loadtoks = ref false
+let _stats = ref false
+let _trivial = ref false
+let _xc = ref false
+let _rt = ref false
 
 
 let () =
-  Arg.(parse (align [
-    "-ptree",		Set Priv._ptree,		" build parse tree";
-    "-tptree",		Set Priv._tptree,		" build strongly typed parse tree";
-    "-print",		Set Priv._print,		" print tree";
-    "-print-lousy-ast", Set Priv._print_lousy_ast,	" print lousy ast";
-    "-pp",		Set Priv._pp,			" fully tokenise before parsing";
-    "-tokens",		Set Priv._tokens,		" tokenise only; do not parse (implies -pp)";
-    "-dumptoks",	Set Priv._dumptoks,		" dump tokens to file (implies -pp)";
-    "-loadtoks",	Set Priv._loadtoks,		" load tokens from file";
-    "-stats",		Set Priv._stats,		" print parsing statistics";
-    "-trivial",		Set Priv._trivial,		" use trivial user actions";
-    "-timing",		Set Priv._timing,		" output timing details";
-    "-xc",		Set Priv._xc,			" parse code as C, not as C++ (implicit if any input file name ends with .c)";
-    "-rt",		Set Priv._rt,			" set real-time scheduling policy with highest priority";
-  ]) (fun input -> Priv.inputs := input :: !Priv.inputs) "Usage: cxxparse [option...] <file...>");
+  Cmdline.register Arg.([
+    "-ptree",		Set _ptree,		" build parse tree";
+    "-tptree",		Set _tptree,		" build strongly typed parse tree";
+    "-print",		Set _print,		" print tree";
+    "-pp",		Set _pp,		" fully tokenise before parsing";
+    "-tokens",		Set _tokens,		" tokenise only; do not parse (implies -pp)";
+    "-dumptoks",	Set _dumptoks,		" dump tokens to file (implies -pp)";
+    "-loadtoks",	Set _loadtoks,		" load tokens from file";
+    "-stats",		Set _stats,		" print parsing statistics";
+    "-trivial",		Set _trivial,		" use trivial user actions";
+    "-xc",		Set _xc,		" parse code as C, not as C++ (implicit if any input file name ends with .c)";
+    "-rt",		Set _rt,		" set real-time scheduling policy with highest priority";
+  ]) ~action:(fun inputs ->
+    if !_dumptoks || !_tokens then
+      _pp := true;
 
-  begin
-    Timing.trace_progress := !Priv._timing;
-
-    if !Priv._dumptoks || !Priv._tokens then
-      Priv._pp := true;
-
-    if List.filter (ExtString.ends_with ".c") !Priv.inputs <> [] then
-      Priv._xc := true;
-  end
+    if List.filter (ExtString.ends_with ".c") inputs <> [] then
+      _xc := true;
+  )
 
 
-let _ptree = !Priv._ptree
-let _tptree = !Priv._tptree
-let _print = !Priv._print
-let _print_lousy_ast = !Priv._print_lousy_ast
-let _pp = !Priv._pp
-let _tokens = !Priv._tokens
-let _dumptoks = !Priv._dumptoks
-let _loadtoks = !Priv._loadtoks
-let _stats = !Priv._stats
-let _trivial = !Priv._trivial
-let _timing = !Priv._timing
-let _xc = !Priv._xc
-let _rt = !Priv._rt
-
-let inputs = List.rev !Priv.inputs
+let _ptree () = !_ptree
+let _tptree () = !_tptree
+let _print () = !_print
+let _pp () = !_pp
+let _tokens () = !_tokens
+let _dumptoks () = !_dumptoks
+let _loadtoks () = !_loadtoks
+let _stats () = !_stats
+let _trivial () = !_trivial
+let _xc () = !_xc
+let _rt () = !_rt

@@ -21,58 +21,116 @@ SourceRepository head
 
 Executable elkhound
         Path:                   elkhound
-        BuildTools:             ocamlbuild,camlp4of
-        BuildDepends:           sexplib,ocamlgraph,ulex,menhirLib,batteries,glr,baselib,unix,camlp4,camlp4.lib
-        MainIs:                 elkhound.ml
+        BuildTools:             ocamlbuild
+        BuildDepends:           grammar,menhirLib,batteries,ulex
         CompiledObject:         native
-#        NativeOpt:              -inline 0 -unsafe -noassert -nodynlink
+        MainIs:                 elkhound.ml
 
 
 Executable cpapa
         Path:                   cpapa
         BuildTools:             ocamlbuild
         BuildDepends:           ccparse
-        MainIs:                 cpapa.ml
         CompiledObject:         native
+        MainIs:                 cpapa.ml
 
 Executable treematch
         Path:                   treematch
         BuildTools:             ocamlbuild
         BuildDepends:           sexplib,camlp4,camlp4.lib,batteries,baselib
-        MainIs:                 treematch.ml
         CompiledObject:         native
+        MainIs:                 treematch.ml
 
 Executable runtests
         Path:                   testsuite
         BuildTools:             ocamlbuild
         BuildDepends:           unix,batteries,baselib
-        MainIs:                 runtests.ml
         CompiledObject:         native
+        MainIs:                 runtests.ml
+
+
+Library grammar
+        Path:                   grammar
+        Pack:			true
+        BuildTools:             ocamlbuild,camlp4of
+        BuildDepends:           sexplib,ocamlgraph,ulex,batteries,glr,baselib,unix,camlp4,camlp4.lib
+        CompiledObject:         native
+#        NativeOpt:              -inline 999 -unsafe -noassert
+        Modules:                AnalysisEnv,
+                                AnalysisEnvType,
+                                Assoc,
+                                BfsTree,
+                                CamlAst,
+                                CodegenHelpers,
+                                ConflictResolution,
+                                Derivability,
+                                Diagnostics,
+                                DottedProduction,
+                                EmitActions,
+                                EmitCode,
+                                EmitPtree,
+                                EmitTables,
+                                EmitTokens,
+                                FirstSets,
+                                FollowSets,
+                                GrammarAnalysis,
+                                GrammarAst,
+                                GrammarGraph,
+                                GrammarLexer,
+                                GrammarParser,
+                                GrammarTreeParser,
+                                GrammarType,
+                                GrammarUtil,
+                                ItemList,
+                                ItemSet,
+                                LrItem,
+                                LrItemSets,
+                                Merge,
+                                Options,
+                                OutputMenhir,
+                                PrintAnalysisEnv,
+                                PrintAst,
+                                PrintGrammar,
+                                PtreeMaker,
+                                Reachability,
+                                Renumbering,
+                                StateGraph,
+                                SuperSets,
+                                TableConstruction,
+                                TableEncoding,
+                                TablePrinting,
+                                Terminal,
+                                TerminalSet,
+                                Warnings
 
 
 Library ccparse
         Path:                   ccparse
+        Pack:			true
         BuildTools:             ocamlbuild
         BuildDepends:           glr,baselib,unix
+        CompiledObject:         native
+#        NativeOpt:              -inline 999 -unsafe -noassert
         Modules:                gr/CcActions,
                                 gr/CcPtree,
                                 gr/CcPtreeActions,
                                 gr/CcTables,
                                 gr/CcTokens,
-                                Ccparse,
                                 Cc_keywords,
                                 Lexer,
+                                Parser,
                                 Options
-        CompiledObject:         native
-#        NativeOpt:              -inline 999 -unsafe -noassert
 
 
 Library glr
         Path:                   glr
+        Pack:			true
         BuildTools:             ocamlbuild
         BuildDepends:           baselib
+        CompiledObject:         native
+#        NativeOpt:              -inline 999 -unsafe -noassert
         Modules:                Arraystack,
-                                Glr,
+                                GlrEngine,
                                 Lexerint,
                                 Objpool,
                                 ParseTables,
@@ -80,15 +138,21 @@ Library glr
                                 PtreeActions,
                                 PtreeNode,
                                 UserActions
-        CompiledObject:         native
-#        NativeOpt:              -inline 999 -unsafe -noassert
 
 Library baselib
         Path:                   baselib
         BuildTools:             ocamlbuild
         BuildDepends:           sexplib,batteries
+        CompiledObject:         native
+#        NativeOpt:              -inline 999 -unsafe -noassert
+        CCLib:                  -lstdc++ -lz
+        CSources:               ml_BitSet.c,
+                                ml_Sched.c,
+                                ml_Valgrind.c,
+                                ml_Zlib.c
         Modules:                Bit2d,
                                 BitSet,
+                                Cmdline,
                                 CompressedBitSet,
                                 ExtFormat,
                                 HashStack,
@@ -102,12 +166,6 @@ Library baselib
                                 Timing,
                                 Valgrind,
                                 Zlib
-        CSources:               ml_BitSet.c,
-                                ml_Sched.c,
-                                ml_Valgrind.c,
-                                ml_Zlib.c
-        CCLib:                  -lstdc++ -lz
-#        NativeOpt:              -inline 999 -unsafe -noassert
 
 
 Test runtests

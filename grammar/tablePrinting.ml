@@ -1,3 +1,5 @@
+open Glr
+
 let print_table ?(cols=14) out table =
   Printf.fprintf out "[| (* %d elements *)" (Array.length table);
   Array.iteri (fun i value ->

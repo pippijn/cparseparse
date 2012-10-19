@@ -412,7 +412,7 @@ let of_ast topforms =
     config;
   } in
 
-  if Options._trace_merge then (
+  if Options._trace_merge () then (
     Printf.printf "%d terminals\n" (StringMap.cardinal terminals);
     Printf.printf "%d nonterminals\n" (StringMap.cardinal nonterminals);
     Printf.printf "%d productions\n" (List.length productions);

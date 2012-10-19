@@ -54,7 +54,7 @@ let changed_items item_set =
 
 let production_closure env finished worklist item b prod =
   let open GrammarType in
-  if Options._trace_closure then (
+  if Options._trace_closure () then (
     print_string "    considering production ";
     PrintGrammar.print_production prod;
     print_newline ();
@@ -81,7 +81,7 @@ let production_closure env finished worklist item b prod =
   (* if beta ->* epsilon, add LA *)
   let new_item_la =
     if beta.can_derive_empty then (
-      if Options._trace_closure then (
+      if Options._trace_closure () then (
         print_string "      beta: ";
         PrintAnalysisEnv.print_dotted_production beta;
         print_newline ();
@@ -89,7 +89,7 @@ let production_closure env finished worklist item b prod =
       );
       TerminalSet.union new_item_la item.lookahead
     ) else (
-      if Options._trace_closure then (
+      if Options._trace_closure () then (
         print_endline "      beta can NOT derive empty";
       );
       new_item_la
@@ -102,7 +102,7 @@ let production_closure env finished worklist item b prod =
     TerminalSet.diff new_item_la prod.forbid
   in
 
-  if Options._trace_closure then (
+  if Options._trace_closure () then (
     print_string "      built item ";
     PrintAnalysisEnv.print_lr_item env { dprod = new_dp; lookahead = new_item_la };
     print_newline ();
@@ -127,7 +127,7 @@ let production_closure env finished worklist item b prod =
   match already with
   | Some already ->
       (* yes, it's already there *)
-      if Options._trace_closure then (
+      if Options._trace_closure () then (
         print_string "      looks similar to ";
         PrintAnalysisEnv.print_lr_item env already;
         print_newline ();
@@ -139,7 +139,7 @@ let production_closure env finished worklist item b prod =
       if not (TerminalSet.equal already.lookahead merged) then (
         already.lookahead <- merged;
 
-        if Options._trace_closure then (
+        if Options._trace_closure () then (
           print_string "      (chg) merged it to make ";
           PrintAnalysisEnv.print_lr_item env already;
           print_newline ();
@@ -157,7 +157,7 @@ let production_closure env finished worklist item b prod =
           (* 'already' is in the worklist, so that's fine *)
         )
       ) else (
-        if Options._trace_closure then (
+        if Options._trace_closure () then (
           print_endline "      the dprod already existed";
         );
       )
@@ -170,7 +170,7 @@ let production_closure env finished worklist item b prod =
         lookahead = new_item_la;
       } in
 
-      if Options._trace_closure then (
+      if Options._trace_closure () then (
         print_endline "      this dprod is new, queueing it to add";
       );
 
@@ -185,7 +185,7 @@ let single_item_closure env finished worklist item =
   (* in comments that follow, 'item' is broken down as
    *   A -> alpha . B beta, LA *)
 
-  if Options._trace_closure then (
+  if Options._trace_closure () then (
     print_string "%%% considering item ";
     PrintAnalysisEnv.print_lr_item env item;
     print_newline ();
@@ -195,13 +195,13 @@ let single_item_closure env finished worklist item =
   match LrItem.symbol_after_dot item with
   | None ->
       (* dot is at the end *)
-      if Options._trace_closure then (
+      if Options._trace_closure () then (
         print_endline "    dot is at the end"
       )
 
   | Some (Terminal _) ->
       (* symbol after the dot is a terminal *)
-      if Options._trace_closure then (
+      if Options._trace_closure () then (
         print_endline "    symbol after the dot is a terminal"
       )
 
@@ -217,7 +217,7 @@ let item_set_closure env item_set =
    * every 'dprod' not associated has dprod.back_pointer = None *)
   let worklist = Stack.create () in
 
-  if Options._trace_closure then (
+  if Options._trace_closure () then (
     print_string "%%% computing closure of ";
     PrintAnalysisEnv.print_item_set env item_set;
   );
@@ -262,7 +262,7 @@ let item_set_closure env item_set =
   (* we potentially added a bunch of things *)
   changed_items item_set;
 
-  if Options._trace_closure then (
+  if Options._trace_closure () then (
     print_string "%%% done with closure of ";
     PrintAnalysisEnv.print_item_set env item_set;
   )
@@ -326,7 +326,7 @@ let merge_state env item_set sym in_done_list already dot_moved_items =
    * considering their lookahead sets; so we have to merge the
    * computed lookaheads with those in 'already' *)
   if merge_lookaheads_into already dot_moved_items.items then (
-    if Options._trace_lrsets then (
+    if Options._trace_lrsets () then (
       Printf.printf "from state %d, found that the transition on %s yielded a state similar to %d, but with different lookahead\n"
         (int_of_state_id item_set.state_id)
         (GrammarUtil.name_of_symbol sym)
@@ -412,7 +412,7 @@ let process_item env item_set item =
       ()
 
   | Some sym ->
-      if Options._trace_lrsets then (
+      if Options._trace_lrsets () then (
         print_string "%%% considering item ";
         PrintAnalysisEnv.print_lr_item env.env item;
         print_newline ();
@@ -424,7 +424,7 @@ let process_item env item_set item =
        *
        * if we already have a transition for this symbol,
        * there's nothing more to be done *)
-      if Options._use_LALR1 || ItemSet.transition item_set sym == None then
+      if Options._use_LALR1 () || ItemSet.transition item_set sym == None then
         create_transition env item_set sym
 
 
@@ -435,7 +435,7 @@ let process_item_set env =
    * the processing below, to properly handle self-loops *)
   ItemList.Table.add env.item_sets_done item_set.kernel_items item_set;
 
-  if Options._trace_lrsets then (
+  if Options._trace_lrsets () then (
     print_string "%%% ";
     Printf.printf "state %d, %d kernel items and %d nonkernel items\n"
       (int_of_state_id item_set.state_id)
@@ -482,7 +482,7 @@ let construct_lr_item_sets env =
     (* EOF is not added to the lookahead; we assume EOF is actually
      * mentioned in the production already, and we won't contemplate
      * executing this reduction within the normal parser core
-     * (see Glr.cleanupAfterParse) *)
+     * (see GlrEngine.cleanupAfterParse) *)
 
     item_set_closure env.env item_set;
 
@@ -495,7 +495,7 @@ let construct_lr_item_sets env =
     process_item_set env
   done;
 
-  if true || Options._trace_lrsets then (
+  if true || Options._trace_lrsets () then (
     print_string "%%% ";
     Printf.printf "finished item set construction with %d states\n" (ItemList.Table.length env.item_sets_done);
   );

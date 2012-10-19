@@ -1,3 +1,6 @@
+open Glr
+
+
 let cc_lexer = Lexerint.({
   token = (fun () -> Lexing.dummy_pos, Lexing.dummy_pos, CcTokens.TOK_EOF);
   index = (fun (_, _, next) -> CcTokens.index next);
@@ -23,16 +26,16 @@ let handle_return = function
 
 let glrparse glr lexer =
   let tree =
-    Timing.time "parsing" (Glr.glrParse glr) lexer
+    Timing.time "parsing" (GlrEngine.glrParse glr) lexer
   in
 
   (* print accounting statistics from glr.ml *)
-  if Options._stats then (
-    let open Glr in
+  if Options._stats () then (
+    let open GlrEngine in
 
     Printf.printf "stack nodes: num=%d max=%d\n"
-      !Glr.numStackNodesAllocd
-      !Glr.maxStackNodesAllocd;
+      !GlrEngine.numStackNodesAllocd
+      !GlrEngine.maxStackNodesAllocd;
     Printf.printf "detShift:     %d\n" glr.stats.detShift;
     Printf.printf "detReduce:    %d\n" glr.stats.detReduce;
     Printf.printf "nondetShift:  %d\n" glr.stats.nondetShift;
@@ -84,38 +87,38 @@ let lexer_from_file input =
 
   let lexbuf = Lexing.from_channel cin in
 
-  assert (not Options._loadtoks);
-  if Options._pp then (
+  assert (not (Options._loadtoks ()));
+  if Options._pp () then (
     let tokens = Timing.time "lexing" (tokenise [] Lexer.token) lexbuf in
-    if Options._dumptoks then (
-      if Options._loadtoks then
+    if Options._dumptoks () then (
+      if Options._loadtoks () then
         failwith "-dumptoks and -loadtoks are mutually exclusive";
       Marshal.to_channel (open_out_bin (input ^ ".tkd")) tokens [Marshal.No_sharing];
     );
 
     lexer_from_list tokens
   ) else (
-    assert (not Options._dumptoks);
+    assert (not (Options._dumptoks ()));
     lexer_from_lexing lexbuf
   )
 
 
 let parse_file glr actions input =
   let lexer =
-    if Options._loadtoks then
+    if Options._loadtoks () then
       lexer_from_dump input
     else
       lexer_from_file input
   in
 
   let lexer =
-    if Options._ptree then
+    if Options._ptree () then
       PtreeActions.make_lexer actions lexer
     else
       lexer
   in
 
-  if Options._tokens then
+  if Options._tokens () then
     None
   else
     match glrparse glr lexer with
@@ -126,7 +129,7 @@ let parse_file glr actions input =
 
 
 let parse_files actions tables inputs =
-  let glr = Glr.makeGLR actions tables in
+  let glr = GlrEngine.makeGLR actions tables in
 
   List.map (parse_file glr actions) inputs
 
@@ -140,22 +143,22 @@ let elkmain inputs =
   let actions = CcActions.userActions in
   let tables  = CcTables.parseTables in
 
-  if Options._ptree then (
+  if Options._ptree () then (
 
     let actions = PtreeActions.make_actions actions tables in
     let trees = parse_files actions tables inputs in
     List.iter (function
       | None -> ()
       | Some tree ->
-          if Options._print then
+          if Options._print () then
             PtreeNode.print_tree tree stdout true
     ) trees
 
-  ) else if Options._tptree then (
+  ) else if Options._tptree () then (
 
     let actions = CcPtreeActions.userActions in
     let trees = parse_files actions tables inputs in
-    if Options._print then
+    if Options._print () then
       List.iter (function
         | None -> ()
         | Some lst ->
@@ -163,7 +166,7 @@ let elkmain inputs =
             print_tptree lst
       ) trees
 
-  ) else if Options._trivial then (
+  ) else if Options._trivial () then (
 
     let actions = UserActions.make_trivial actions in
     let trees = parse_files actions tables inputs in
@@ -181,7 +184,7 @@ let elkmain inputs =
 
 
 let main inputs =
-  if Options._rt then
+  if Options._rt () then
     Sched.(setscheduler 0 FIFO { priority = 20 });
 
   try
