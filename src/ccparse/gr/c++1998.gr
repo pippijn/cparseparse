@@ -63,7 +63,7 @@ option unreachable_terminals 8;
 
 terminals {
   // grab token list
-  include("ccparse/tok/cc_tokens.ids")
+  include("src/ccparse/tok/cc_tokens.ids")
 
   // all literals are yielded as their syntax strings
   token(string) TOK_INT_LITERAL;

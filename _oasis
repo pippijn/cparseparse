@@ -20,7 +20,7 @@ SourceRepository head
 
 
 Executable elkhound
-        Path:                   elkhound
+        Path:                   src/elkhound
         BuildTools:             ocamlbuild
         BuildDepends:           gramanl,                                # internal
                                 batteries,menhirLib,ulex                # external
@@ -28,14 +28,14 @@ Executable elkhound
         MainIs:                 elkhound.ml
 
 Executable cpapa
-        Path:                   cpapa
+        Path:                   src/cpapa
         BuildTools:             ocamlbuild
         BuildDepends:           ccparse
         CompiledObject:         native
         MainIs:                 cpapa.ml
 
 Executable treematch
-        Path:                   treematch
+        Path:                   src/treematch
         BuildTools:             ocamlbuild
         BuildDepends:           baselib,                                # internal
                                 camlp4,camlp4.lib,                      # core
@@ -54,7 +54,7 @@ Executable runtests
 
 
 Library gramanl
-        Path:                   gramanl
+        Path:                   src/gramanl
         Pack:                   true
         BuildTools:             ocamlbuild,camlp4of
         BuildDepends:           baselib,glr,                            # internal
@@ -113,7 +113,7 @@ Library gramanl
                                 Warnings
 
 Library ccparse
-        Path:                   ccparse
+        Path:                   src/ccparse
         Pack:                   true
         BuildTools:             ocamlbuild
         BuildDepends:           baselib,glr,cabs,                       # internal
@@ -131,7 +131,7 @@ Library ccparse
                                 Options
 
 Library cabs
-        Path:                   cabs
+        Path:                   src/cabs
         Pack:                   true
         BuildTools:             ocamlbuild
         BuildDepends:           batteries,sexplib                       # external
@@ -143,7 +143,7 @@ Library cabs
                                 Tqual
 
 Library glr
-        Path:                   glr
+        Path:                   src/glr
         Pack:                   true
         BuildTools:             ocamlbuild
         BuildDepends:           baselib                                 # internal
@@ -161,7 +161,7 @@ Library glr
                                 UserActions
 
 Library baselib
-        Path:                   baselib
+        Path:                   src/baselib
         BuildTools:             ocamlbuild
         BuildDepends:           batteries,sexplib                       # external
         CompiledObject:         native

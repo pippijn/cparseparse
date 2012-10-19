@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: 90b8828d2c36afdaa7761f0ec6532e00) *)
+(* DO NOT EDIT (digest: 4f619f865173db7dd5dcda59d17c0378) *)
 module OASISGettext = struct
 # 21 "/tmp/oasis-0.3.0/src/oasis/OASISGettext.ml"
 
@@ -479,12 +479,13 @@ let package_default =
   {
      MyOCamlbuildBase.lib_ocaml =
        [
-          ("baselib", ["baselib"]);
-          ("glr", ["glr"]);
-          ("ccparse", ["ccparse"; "ccparse/gr"]);
-          ("grammar", ["grammar"])
+          ("cabs", ["src/cabs"]);
+          ("baselib", ["src/baselib"]);
+          ("glr", ["src/glr"]);
+          ("ccparse", ["src/ccparse"; "src/ccparse/gr"]);
+          ("gramanl", ["src/gramanl"])
        ];
-     lib_c = [("baselib", "baselib", [])];
+     lib_c = [("baselib", "src/baselib", [])];
      flags =
        [
           (["oasis_library_baselib_cclib"; "link"],
@@ -497,32 +498,34 @@ let package_default =
        ];
      includes =
        [
-          ("treematch", ["baselib"]);
-          ("testsuite", ["baselib"]);
-          ("grammar", ["baselib"; "glr"]);
-          ("glr", ["baselib"]);
-          ("elkhound", ["grammar"]);
-          ("cpapa", ["ccparse"; "ccparse/gr"]);
-          ("ccparse/gr", ["baselib"; "ccparse"; "glr"]);
-          ("ccparse", ["baselib"; "ccparse/gr"; "glr"])
+          ("testsuite", ["src/baselib"]);
+          ("src/treematch", ["src/baselib"]);
+          ("src/gramanl", ["src/baselib"; "src/glr"]);
+          ("src/glr", ["src/baselib"]);
+          ("src/elkhound", ["src/gramanl"]);
+          ("src/cpapa", ["src/ccparse"; "src/ccparse/gr"]);
+          ("src/ccparse/gr",
+            ["src/baselib"; "src/cabs"; "src/ccparse"; "src/glr"]);
+          ("src/ccparse",
+            ["src/baselib"; "src/cabs"; "src/ccparse/gr"; "src/glr"])
        ];
      }
   ;;
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default package_default;;
 
-# 515 "myocamlbuild.ml"
+# 518 "myocamlbuild.ml"
 (* OASIS_STOP *)
 let tokens = [
-  "ccparse/tok/c++1998.tok";
-  "ccparse/tok/c++2011.tok";
-  "ccparse/tok/gnu.tok";
+  "src/ccparse/tok/c++1998.tok";
+  "src/ccparse/tok/c++2011.tok";
+  "src/ccparse/tok/gnu.tok";
 ]
 let grammars = [
-  "ccparse/gr/c++1998.gr";
-  "ccparse/gr/c++2011.gr";
-  "ccparse/gr/kandr.gr";
-  "ccparse/gr/gnu.gr";
+  "src/ccparse/gr/c++1998.gr";
+  "src/ccparse/gr/c++2011.gr";
+  "src/ccparse/gr/kandr.gr";
+  "src/ccparse/gr/gnu.gr";
 ]
 
 let configure fl =
@@ -543,56 +546,45 @@ let dispatch_mine = function
             A"-O3";
             A"-ggdb3";
             A"-std=c++0x";
-            A"-I../baselib";
+            A"-I../src/baselib";
           ] @ configure "OLD_CXX"))
         end;
 
 
       rule "Generate token files"
         ~prods:[
-          "ccparse/tok/cc_tokens.ids";
-          "ccparse/tok/cc_tokens.ml";
+          "src/ccparse/tok/cc_tokens.ids";
+          "src/ccparse/tok/cc_tokens.ml";
         ]
         ~deps:([
-          "ccparse/tok/make-token-files";
+          "src/ccparse/tok/make-token-files";
         ] @ tokens)
         begin fun env build ->
-          Cmd(S([A"perl"; A"ccparse/tok/make-token-files"; A"-o"; A"ccparse/tok/cc_tokens"] @ List.map (fun a -> A a) tokens))
+          Cmd(S([A"perl"; A"src/ccparse/tok/make-token-files"; A"-o"; A"src/ccparse/tok/cc_tokens"] @ List.map (fun a -> A a) tokens))
         end;
 
 
       rule "Compile C++ grammar to ML"
         ~prods:[
-          "ccparse/gr/ccActions.mli";
-          "ccparse/gr/ccActions.ml";
-          "ccparse/gr/ccPtree.ml";
-          "ccparse/gr/ccPtreeActions.mli";
-          "ccparse/gr/ccPtreeActions.ml";
-          "ccparse/gr/ccTables.dat";
-          "ccparse/gr/ccTables.mli";
-          "ccparse/gr/ccTables.ml";
-          "ccparse/gr/ccTokens.mli";
-          "ccparse/gr/ccTokens.ml";
+          "src/ccparse/gr/ccActions.mli";
+          "src/ccparse/gr/ccActions.ml";
+          "src/ccparse/gr/ccNames.mli";
+          "src/ccparse/gr/ccNames.ml";
+          "src/ccparse/gr/ccPtree.ml";
+          "src/ccparse/gr/ccPtreeActions.mli";
+          "src/ccparse/gr/ccPtreeActions.ml";
+          "src/ccparse/gr/ccTables.dat";
+          "src/ccparse/gr/ccTables.mli";
+          "src/ccparse/gr/ccTables.ml";
+          "src/ccparse/gr/ccTokens.mli";
+          "src/ccparse/gr/ccTokens.ml";
         ]
         ~deps:([
-          "ccparse/tok/cc_tokens.ids";
-          "elkhound/elkhound.native";
+          "src/ccparse/tok/cc_tokens.ids";
+          "src/elkhound/elkhound.native";
         ] @ grammars)
         begin fun env build ->
-          Cmd(S([A"elkhound/elkhound.native"; A"-timing"] @ List.map (fun a -> A a) grammars))
-        end;
-
-
-      rule "Compile C++ grammar to ML (original elkhound)"
-        ~prods:[
-          "ccparse/gr/cc.mli";
-          "ccparse/gr/cc.ml";
-        ]
-        ~deps:([
-          "ccparse/tok/cc_tokens.ids";
-        ] @ grammars)
-        begin fun env build ->
-          Cmd(S([A"../../oink-stack/elkhound/elkhound"; A"-ocaml"] @ List.map (fun a -> A a) grammars))
+          Cmd(S([A"src/elkhound/elkhound.native"; A"-timing"] @ List.map (fun a -> A a) grammars))
         end;
 
 
@@ -600,6 +592,8 @@ let dispatch_mine = function
       (*   ~prods:[ *)
       (*     "%Actions.mli"; *)
       (*     "%Actions.ml"; *)
+      (*     "%Names.mli"; *)
+      (*     "%Names.ml"; *)
       (*     "%Ptree.ml"; *)
       (*     "%PtreeActions.mli"; *)
       (*     "%PtreeActions.ml"; *)
@@ -611,10 +605,10 @@ let dispatch_mine = function
       (*   ] *)
       (*   ~deps:[ *)
       (*     "%.gr"; *)
-      (*     "elkhound/elkhound.native"; *)
+      (*     "src/elkhound/elkhound.native"; *)
       (*   ] *)
       (*   begin fun env build -> *)
-      (*     Cmd(S[A"elkhound/elkhound.native"; A"-timing"; A(env "%.gr")]) *)
+      (*     Cmd(S[A"src/elkhound/elkhound.native"; A"-timing"; A(env "%.gr")]) *)
       (*   end; *)
 
   | _ ->

@@ -92,7 +92,7 @@ let emit_code (env, states, tables) =
   let impl_verbatims = env.impl_verbatims in
 
   Timing.progress "emitting ML code"
-    (EmitCode.emit_ml "ccparse/gr/cc" terms nonterms prods_by_lhs verbatims impl_verbatims) tables
+    (EmitCode.emit_ml "src/ccparse/gr/cc" terms nonterms prods_by_lhs verbatims impl_verbatims) tables
 
 
 let optional enabled f x = if enabled () then f x else x
