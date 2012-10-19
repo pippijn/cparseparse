@@ -22,7 +22,7 @@ SourceRepository head
 Executable elkhound
         Path:                   elkhound
         BuildTools:             ocamlbuild
-        BuildDepends:           grammar,                                # internal
+        BuildDepends:           gramanl,                                # internal
                                 menhirLib,batteries,ulex                # external
         CompiledObject:         native
         MainIs:                 elkhound.ml
@@ -53,8 +53,8 @@ Executable runtests
         MainIs:                 runtests.ml
 
 
-Library grammar
-        Path:                   grammar
+Library gramanl
+        Path:                   gramanl
         Pack:                   true
         BuildTools:             ocamlbuild,camlp4of
         BuildDepends:           glr,baselib,                            # internal
