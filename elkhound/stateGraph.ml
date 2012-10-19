@@ -1,10 +1,10 @@
 open AnalysisEnvType
 
 module ItemSetVertex : Graph.Sig.COMPARABLE with type t = item_set = struct
-  include ItemSetS
+  include ItemSet.M
 end
 module ItemSetLabel : Graph.Sig.ORDERED_TYPE_DFT = struct
-  include ItemSetS
+  include ItemSet.M
   let default = Obj.magic ()
 end
 

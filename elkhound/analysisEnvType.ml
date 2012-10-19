@@ -49,59 +49,6 @@ and lr_item = {
 } with sexp
 
 
-module DottedProductionS = struct
-  type t = dotted_production
-
-  let hash a =
-    a.dprod_id
-
-  let compare a b =
-    a.dprod_id - b.dprod_id
-
-  let equal a b =
-    a == b
-
-  let stats _ = failwith "Not supported"
-  let reset _ = failwith "Not supported"
-
-  let sexp_of_t = sexp_of_dotted_production
-  let t_of_sexp = dotted_production_of_sexp
-
-end
-
-module DottedProductionTable = Hashtbl.Make(DottedProductionS)
-module DottedProductionMap = SexpMap.Make(DottedProductionS)
-module DottedProductionSet = SexpSet.Make(DottedProductionS)
-module DottedProductionStack = HashStack.Make(DottedProductionTable)
-
-
-module LrItemS = struct
-
-  type t = lr_item
-
-  let hash a =
-    DottedProductionS.hash a.dprod
-
-  let compare a b =
-    DottedProductionS.compare a.dprod b.dprod
-
-  let equal a b =
-    DottedProductionS.equal a.dprod b.dprod
-
-  let stats _ = failwith "Not supported"
-  let reset _ = failwith "Not supported"
-
-  let sexp_of_t = sexp_of_lr_item
-  let t_of_sexp = lr_item_of_sexp
-
-end
-
-module LrItemTable = Hashtbl.Make(LrItemS)
-module LrItemMap = SexpMap.Make(LrItemS)
-module LrItemSet = SexpSet.Make(LrItemS)
-module LrItemStack = HashStack.Make(LrItemTable)
-
-
 (************************************************************
  * :: ItemList types
  ************************************************************)
@@ -114,51 +61,6 @@ type item_list = {
    * concatenated into a buffer of sufficient size *)
   mutable hash : int;
 } with sexp
-
-module ItemListS = struct
-
-  type t = item_list
-
-  let hash_items items =
-    List.fold_left (lxor) 0 (List.map LrItemS.hash items)
-
-  let hash a =
-    if a.hash = 0 then
-      a.hash <- hash_items a.items;
-    a.hash
-
-  let rec compare_items result a b =
-    match a, b with
-    | ah :: at, bh :: bt ->
-        if result <> 0 then
-          result
-        else
-          compare_items (LrItemS.compare ah bh) at bt
-    | _ :: _, [] ->
-        1
-    | [], _ :: _ ->
-        -1
-    | [], [] ->
-        result
-
-  let compare a b =
-    compare_items 0 a.items b.items
-
-  let equal a b =
-    compare a b = 0
-
-  let stats _ = failwith "Not supported"
-  let reset _ = failwith "Not supported"
-
-  let sexp_of_t = sexp_of_item_list
-  let t_of_sexp = item_list_of_sexp
-
-end
-
-module ItemListTable = Hashtbl.Make(ItemListS)
-module ItemListMap = SexpMap.Make(ItemListS)
-module ItemListSet = SexpSet.Make(ItemListS)
-module ItemListStack = HashStack.Make(ItemListTable)
 
 
 (************************************************************
@@ -214,36 +116,6 @@ type item_set = {
    * BFS tree *)
   mutable bfs_parent            : item_set option;
 } with sexp
-
-
-module ItemSetS = struct
-
-  type t = item_set
-
-  let hash a =
-    ItemListS.hash a.kernel_items
-
-  let compare a b =
-    (* since nonkernel items are entirely determined by kernel
-     * items, and kernel items are sorted, it's sufficient to
-     * check for kernel list equality *)
-    ItemListS.compare a.kernel_items b.kernel_items
-
-  let equal a b =
-    compare a b = 0
-
-  let stats _ = failwith "Not supported"
-  let reset _ = failwith "Not supported"
-
-  let sexp_of_t = sexp_of_item_set
-  let t_of_sexp = item_set_of_sexp
-
-end
-
-module ItemSetTable = Hashtbl.Make(ItemSetS)
-module ItemSetMap = SexpMap.Make(ItemSetS)
-module ItemSetSet = SexpSet.Make(ItemSetS)
-module ItemSetStack = HashStack.Make(ItemSetTable)
 
 
 (************************************************************

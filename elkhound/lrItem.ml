@@ -1,6 +1,38 @@
 open AnalysisEnvType
 
 (************************************************************
+ * :: Common Operations
+ ************************************************************)
+
+
+module M = struct
+
+  type t = lr_item
+
+  let hash a =
+    DottedProduction.M.hash a.dprod
+
+  let compare a b =
+    DottedProduction.M.compare a.dprod b.dprod
+
+  let equal a b =
+    DottedProduction.M.equal a.dprod b.dprod
+
+  let stats _ = failwith "Not supported"
+  let reset _ = failwith "Not supported"
+
+  let sexp_of_t = sexp_of_lr_item
+  let t_of_sexp = lr_item_of_sexp
+
+end
+
+module Table = Hashtbl.Make(M)
+module Map = SexpMap.Make(M)
+module Set = SexpSet.Make(M)
+module Stack = HashStack.Make(Table)
+
+
+(************************************************************
  * :: Functions
  ************************************************************)
 

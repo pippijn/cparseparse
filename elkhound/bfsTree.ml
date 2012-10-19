@@ -7,21 +7,21 @@ open GrammarType
 let compute_bfs_tree env states =
   (* for the BFS, we need a queue of states yet to be processed, and a
    * pile of 'done' states *)
-  let queue = ItemSetStack.create 300 in
-  let closed = ItemSetTable.create (List.length states) in
+  let queue = ItemSet.Stack.create 300 in
+  let closed = ItemSet.Table.create (List.length states) in
 
   let is_queued state =
-    ItemSetStack.mem queue state
+    ItemSet.Stack.mem queue state
   in
 
   let is_closed state =
-    ItemSetTable.mem closed state
+    ItemSet.Table.mem closed state
   in
 
   (* initial entry in queue is root of BFS tree *)
   let start_state = BatOption.get env.start_state in
   assert (start_state == List.hd states);
-  ItemSetStack.push start_state start_state queue;
+  ItemSet.Stack.push start_state start_state queue;
 
   (* it will be convenient to have all the symbols in a single list
    * for iteration purposes *)
@@ -32,12 +32,12 @@ let compute_bfs_tree env states =
   in
 
   (* loop until the queue is exhausted *)
-  while not (ItemSetStack.is_empty queue) do
+  while not (ItemSet.Stack.is_empty queue) do
     (* dequeue first element *)
-    let source = ItemSetStack.pop queue in
+    let source = ItemSet.Stack.pop queue in
 
     (* mark it as done so we won't consider any more transitions to it *)
-    ItemSetTable.add closed source ();
+    ItemSet.Table.add closed source ();
 
     (* for each symbol... *)
     Array.iter (fun sym ->
@@ -62,7 +62,7 @@ let compute_bfs_tree env states =
           target.bfs_parent <- Some source;
 
           (* finally, enqueue the target so we'll explore its targets too *)
-          ItemSetStack.push target target queue
+          ItemSet.Stack.push target target queue
 
     ) all_symbols;
   done;

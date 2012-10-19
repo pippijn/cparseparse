@@ -9,8 +9,8 @@ type env = {
 
   mutable next_item_set_id : int;
 
-  item_sets_pending : item_set ItemListStack.t;
-  item_sets_done : item_set ItemListTable.t;
+  item_sets_pending : item_set ItemList.Stack.t;
+  item_sets_done : item_set ItemList.Table.t;
 }
 
 
@@ -117,7 +117,7 @@ let production_closure env finished worklist item b prod =
     | None ->
         let item =
           try
-            Some (DottedProductionTable.find finished new_dp)
+            Some (DottedProduction.Table.find finished new_dp)
           with Not_found ->
             None
         in
@@ -149,7 +149,7 @@ let production_closure env finished worklist item b prod =
         if in_finished then (
           (* pull from the 'done' list and put in worklist, since the
            * lookahead changed *)
-          DottedProductionTable.remove finished already.dprod;
+          DottedProduction.Table.remove finished already.dprod;
           assert (already.dprod.back_pointer == None); (* was not on the worklist *)
           Stack.push already worklist;
           already.dprod.back_pointer <- Some already; (* now is on worklist *)
@@ -223,11 +223,11 @@ let item_set_closure env item_set =
   );
 
   (* set of items we've finished *)
-  let finished = DottedProductionTable.create 13 in
+  let finished = DottedProduction.Table.create 13 in
 
   (* put all the nonkernels we have into 'finished' *)
   List.iter (fun item ->
-    DottedProductionTable.add finished item.dprod item
+    DottedProduction.Table.add finished item.dprod item
   ) item_set.nonkernel_items;
 
   (* clear the non-kernel item list *)
@@ -247,7 +247,7 @@ let item_set_closure env item_set =
     (* put it into list of 'done' items; this way, if this
      * exact item is generated during closure, it will be
      * seen and re-inserted (instead of duplicated) *)
-    DottedProductionTable.add finished item.dprod item;
+    DottedProduction.Table.add finished item.dprod item;
 
     (* close it -> worklist *)
     single_item_closure env finished worklist item
@@ -255,7 +255,7 @@ let item_set_closure env item_set =
 
   (* move everything from 'finished' to the nonkernel items list *)
   item_set.nonkernel_items <-
-    DottedProductionTable.fold (fun dprod item items ->
+    DottedProduction.Table.fold (fun dprod item items ->
       item :: items
     ) finished [];
 
@@ -295,7 +295,7 @@ let move_dot_no_closure dotted_prods source symbol =
 
   (* we added stuff; sorting is needed both for hashing, and also
    * for the lookahead merge step that follows a successful lookup *)
-  let kernel_items = List.sort LrItemS.compare kernel_items in
+  let kernel_items = List.sort LrItem.M.compare kernel_items in
   { items = kernel_items; hash = 0; }
   
 
@@ -341,11 +341,11 @@ let merge_state env item_set sym in_done_list already dot_moved_items =
       (* item_sets_pending contains 'already', it will be processed later *)
     ) else (
       (* we thought we were done with this *)
-      assert (ItemListTable.mem env.item_sets_done already.kernel_items);
+      assert (ItemList.Table.mem env.item_sets_done already.kernel_items);
 
       (* but we're not: move it back to the 'pending' list *)
-      ItemListTable.remove env.item_sets_done already.kernel_items;
-      ItemListStack.push already.kernel_items already env.item_sets_pending;
+      ItemList.Table.remove env.item_sets_done already.kernel_items;
+      ItemList.Stack.push already.kernel_items already env.item_sets_pending;
     )
   );
 
@@ -361,7 +361,7 @@ let create_state env item_set sym dot_moved_items =
   item_set_closure env.env with_dot_moved;
 
   (* then add it to 'pending' *)
-  ItemListStack.push with_dot_moved.kernel_items with_dot_moved env.item_sets_pending;
+  ItemList.Stack.push with_dot_moved.kernel_items with_dot_moved env.item_sets_pending;
 
   with_dot_moved
 
@@ -370,9 +370,9 @@ let merge_or_create_state env item_set sym dot_moved_items =
   (* see if we already have it, in either set *)
   try
     try
-      merge_state env item_set sym false (ItemListStack.find env.item_sets_pending dot_moved_items) dot_moved_items
+      merge_state env item_set sym false (ItemList.Stack.find env.item_sets_pending dot_moved_items) dot_moved_items
     with Not_found ->
-      merge_state env item_set sym true (ItemListTable.find env.item_sets_done dot_moved_items) dot_moved_items
+      merge_state env item_set sym true (ItemList.Table.find env.item_sets_done dot_moved_items) dot_moved_items
   with Not_found ->
     create_state env item_set sym dot_moved_items
 
@@ -429,11 +429,11 @@ let process_item env item_set item =
 
 
 let process_item_set env =
-  let item_set = ItemListStack.pop env.item_sets_pending in
+  let item_set = ItemList.Stack.pop env.item_sets_pending in
 
   (* put it in the done set; note that we must do this *before*
    * the processing below, to properly handle self-loops *)
-  ItemListTable.add env.item_sets_done item_set.kernel_items item_set;
+  ItemList.Table.add env.item_sets_done item_set.kernel_items item_set;
 
   if Options._trace_lrsets then (
     print_string "%%% ";
@@ -458,8 +458,8 @@ let construct_lr_item_sets env =
 
     next_item_set_id = 0;
 
-    item_sets_pending = ItemListStack.create 13;
-    item_sets_done    = ItemListTable.create 13;
+    item_sets_pending = ItemList.Stack.create 13;
+    item_sets_done    = ItemList.Table.create 13;
   } in
 
   (* start by constructing closure of first production
@@ -487,21 +487,21 @@ let construct_lr_item_sets env =
     item_set_closure env.env item_set;
 
     (* this makes the initial pending item_set *)
-    ItemListStack.push item_set.kernel_items item_set env.item_sets_pending
+    ItemList.Stack.push item_set.kernel_items item_set env.item_sets_pending
   end;
 
   (* for each pending item set *)
-  while not (ItemListStack.is_empty env.item_sets_pending) do
+  while not (ItemList.Stack.is_empty env.item_sets_pending) do
     process_item_set env
   done;
 
   if true || Options._trace_lrsets then (
     print_string "%%% ";
-    Printf.printf "finished item set construction with %d states\n" (ItemListTable.length env.item_sets_done);
+    Printf.printf "finished item set construction with %d states\n" (ItemList.Table.length env.item_sets_done);
   );
 
   let states =
-    ItemListTable.fold (fun _ item_set ids -> item_set :: ids) env.item_sets_done []
+    ItemList.Table.fold (fun _ item_set ids -> item_set :: ids) env.item_sets_done []
     |> List.sort (fun a b -> compare a.state_id b.state_id)
   in
 

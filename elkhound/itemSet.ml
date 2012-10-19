@@ -1,6 +1,41 @@
 open AnalysisEnvType
 
 (************************************************************
+ * :: Common Operations
+ ************************************************************)
+
+
+module M = struct
+
+  type t = item_set
+
+  let hash a =
+    ItemList.M.hash a.kernel_items
+
+  let compare a b =
+    (* since nonkernel items are entirely determined by kernel
+     * items, and kernel items are sorted, it's sufficient to
+     * check for kernel list equality *)
+    ItemList.M.compare a.kernel_items b.kernel_items
+
+  let equal a b =
+    compare a b = 0
+
+  let stats _ = failwith "Not supported"
+  let reset _ = failwith "Not supported"
+
+  let sexp_of_t = sexp_of_item_set
+  let t_of_sexp = item_set_of_sexp
+
+end
+
+module Table = Hashtbl.Make(M)
+module Map = SexpMap.Make(M)
+module Set = SexpSet.Make(M)
+module Stack = HashStack.Make(Table)
+
+
+(************************************************************
  * :: Functions
  ************************************************************)
 
