@@ -149,6 +149,7 @@ let rec normal state = lexer
 
 (* Comments *)
 | "//" [^ '\n']*						-> normal state lexbuf
+| "(*" ([^ '*']| "*"* [^ '*' ')'])* "*"+ ")"			-> normal state lexbuf
 | "/*" ([^ '*']| "*"* [^ '*' '/'])* "*"+ "/"			-> normal state lexbuf
 | "/*" ([^ '*']| "*"* [^ '*' '/'])* "*"*			-> failwith "unterminated comment"
 
