@@ -1,5 +1,7 @@
-open BatPervasives
 open GrammarParser
+
+let (|>) = BatPervasives.(|>)
+
 
 type automaton =
   | Normal
@@ -164,7 +166,7 @@ let rec normal state = lexer
 | "include" ws* "(" ws* '"' ([^ '"']+) '"' ws* ")" ->
     let lexeme = Ulexing.utf8_lexeme lexbuf in
     let file = include_file lexeme in
-    let nextbuf = Ulexing.from_utf8_channel (Pervasives.open_in file) in
+    let nextbuf = Ulexing.from_utf8_channel (open_in file) in
     state.stack <- nextbuf :: state.stack;
     normal state nextbuf
 

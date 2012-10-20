@@ -1,8 +1,10 @@
-open BatPervasives
 open GrammarAst
 open GrammarType
 open Merge
 open Camlp4.PreCast
+
+let (|>) = BatPervasives.(|>)
+let (--) = BatPervasives.(--)
 
 module CamlSyntax = Camlp4OCamlParser.Make(Camlp4OCamlRevisedParser.Make(Syntax))
 
@@ -220,7 +222,7 @@ let collect_terminals decls types precs =
 
 
 let collect_nonterminals nonterms term_count =
-  (*Sexplib.Sexp.output_hum Pervasives.stdout (StringMap.sexp_of_t Gramast.sexp_of_topform nonterms);*)
+  (*Sexplib.Sexp.output_hum stdout (StringMap.sexp_of_t Gramast.sexp_of_topform nonterms);*)
   (*print_newline ();*)
 
   let nonterminals =

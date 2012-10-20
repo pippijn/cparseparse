@@ -1,6 +1,7 @@
-open BatPervasives
 open GrammarType
 open AnalysisEnvType
+
+let (|>) = BatPervasives.(|>)
 
 
 let compute_grammar_properties env grammar =

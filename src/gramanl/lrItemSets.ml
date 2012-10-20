@@ -1,5 +1,6 @@
-open BatPervasives
 open AnalysisEnvType
+
+let (|>) = BatPervasives.(|>)
 
 
 type env = {
