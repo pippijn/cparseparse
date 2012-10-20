@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: c136a1e6b7f82e66d627f147667462e0)
+# DO NOT EDIT (digest: 2dc9f220dccf6dd88a79eed464d3ce93)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -51,6 +51,7 @@
 "src/glr/parseTablesType.cmx": for-pack(Glr)
 "src/glr/ptreeActions.cmx": for-pack(Glr)
 "src/glr/ptreeNode.cmx": for-pack(Glr)
+"src/glr/tokenInfo.cmx": for-pack(Glr)
 "src/glr/userActions.cmx": for-pack(Glr)
 <src/glr/*.ml{,i}>: use_baselib
 <src/glr/*.ml{,i}>: pkg_batteries
