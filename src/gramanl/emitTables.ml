@@ -54,7 +54,7 @@ let make_ml_tables dat tables =
   Marshal.to_channel dat tables [Marshal.No_sharing];
 
   <:sig_item<
-    val parseTables : Glr.ParseTablesType.t
+    include Glr.ParseTablesType.S
   >>,
   if Options._use_table_dump () then (
     if Options._inline_table_dump () then (

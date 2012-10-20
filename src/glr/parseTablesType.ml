@@ -87,6 +87,7 @@ type t = {
 }
 
 
+(* signature for generated parse tables *)
 module type S = sig
   val parseTables : t
 end

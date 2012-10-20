@@ -151,6 +151,7 @@ let make_trivial (underlying : 'a t) : unit t = { underlying with
 }
 
 
+(* signature for generated user actions *)
 module type S = sig
   type result
   val userActions : result t

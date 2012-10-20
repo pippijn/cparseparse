@@ -254,11 +254,8 @@ let make_ml_action_code terms nonterms prods_by_lhs final_prod verbatims impl_ve
     (* insert the stand-alone verbatim sections *)
     $Ast.sgSem_of_list verbatims$
 
-    type result = ($result_type$)
-
-    (* all that goes into the interface is the name of the
-     * UserActions.t object *)
-    val userActions : result Glr.UserActions.t
+    (* all that goes into the interface is the result type *)
+    include Glr.UserActions.S with type result = ($result_type$)
   >>,
   <:str_item<
     (* Open module so record field labels are visible *)
