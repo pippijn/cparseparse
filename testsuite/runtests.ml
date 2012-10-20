@@ -108,13 +108,17 @@ let run_test error_log tool (pass, fail, total_time) source reference =
 
   (* Retrieve command line options from file *)
   let opts =
-    let stream = open_in source in
-    let line = input_line stream in
-    close_in stream;
+    try
+      let stream = open_in source in
+      let line = input_line stream in
+      close_in stream;
 
-    match ExtString.without_prefix "//+" line with
-    | Some opts -> opts
-    | None -> ""
+      match ExtString.without_prefixes ["//+"; "#+"; "(*+"] line with
+      | Some opts -> opts
+      | None -> ""
+    with End_of_file ->
+      (* empty file *)
+      ""
   in
 
   (* Parse the file *)
