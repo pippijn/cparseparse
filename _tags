@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 11a1ea3be5b5bd638ad17a7c2ef7e4cf)
+# DO NOT EDIT (digest: c136a1e6b7f82e66d627f147667462e0)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -42,6 +42,7 @@
 # Library glr
 "src/glr/glr.cmxs": use_glr
 "src/glr/arraystack.cmx": for-pack(Glr)
+"src/glr/easy.cmx": for-pack(Glr)
 "src/glr/glrEngine.cmx": for-pack(Glr)
 "src/glr/glrOptions.cmx": for-pack(Glr)
 "src/glr/lexerint.cmx": for-pack(Glr)
@@ -54,6 +55,24 @@
 <src/glr/*.ml{,i}>: use_baselib
 <src/glr/*.ml{,i}>: pkg_batteries
 <src/glr/*.ml{,i}>: pkg_sexplib
+# Executable sless
+"testsuite/elkhound/scannerless/sless.native": use_glr
+"testsuite/elkhound/scannerless/sless.native": use_baselib
+"testsuite/elkhound/scannerless/sless.native": pkg_batteries
+"testsuite/elkhound/scannerless/sless.native": pkg_sexplib
+<testsuite/elkhound/scannerless/*.ml{,i}>: use_glr
+<testsuite/elkhound/scannerless/*.ml{,i}>: use_baselib
+<testsuite/elkhound/scannerless/*.ml{,i}>: pkg_batteries
+<testsuite/elkhound/scannerless/*.ml{,i}>: pkg_sexplib
+# Executable arith
+"testsuite/elkhound/arith/arith.native": use_glr
+"testsuite/elkhound/arith/arith.native": use_baselib
+"testsuite/elkhound/arith/arith.native": pkg_batteries
+"testsuite/elkhound/arith/arith.native": pkg_sexplib
+<testsuite/elkhound/arith/*.ml{,i}>: use_glr
+<testsuite/elkhound/arith/*.ml{,i}>: use_baselib
+<testsuite/elkhound/arith/*.ml{,i}>: pkg_batteries
+<testsuite/elkhound/arith/*.ml{,i}>: pkg_sexplib
 # Library ccparse
 "src/ccparse/ccparse.cmxs": use_ccparse
 "src/ccparse/cc_keywords.cmx": for-pack(Ccparse)
