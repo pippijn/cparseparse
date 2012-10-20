@@ -14,7 +14,7 @@ let print_table ?(cols=14) out table =
   Printf.fprintf out "\n  |]"
 
 
-let print_tables out tables =
+let print_tables tables out =
   let open ParseTablesType in
 
   Printf.fprintf out "let parseTables = ParseTablesType.({\n";

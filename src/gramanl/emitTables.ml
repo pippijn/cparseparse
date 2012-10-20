@@ -50,7 +50,7 @@ let print_tables tables =
     })
   >>
 
-let make_ml_tables dat tables =
+let make_ml_tables tables dat =
   Marshal.to_channel dat tables [Marshal.No_sharing];
 
   <:sig_item<

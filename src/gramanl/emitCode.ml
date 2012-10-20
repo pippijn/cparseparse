@@ -6,23 +6,6 @@ module OCamlPrinter = Printers.OCaml
 
 
 (************************************************
- * :: Output helpers
- ************************************************)
-
-
-let closing f x channels =
-  let r =
-    try
-      f x
-    with e ->
-      List.iter close_out channels;
-      raise e
-  in
-  List.iter close_out channels;
-  r
-
-
-(************************************************
  * :: Toplevel code generators/printers
  ************************************************)
 
@@ -94,20 +77,19 @@ let emit_tables name tables =
   (* Tables *)
   let dcl = name ^ "Tables.mli" in
   let out = name ^ "Tables.ml" in
-  let dat = open_out_bin (name ^ "Tables.dat") in
+  let dat = name ^ "Tables.dat" in
 
   let intf, impl =
-    closing (EmitTables.make_ml_tables dat) tables
-      [dat]
+    BatStd.with_dispose ~dispose:close_out
+      (EmitTables.make_ml_tables tables) (open_out_bin dat)
   in
 
   OCamlPrinter.print_interf ~output_file:dcl intf;
 
   match impl with
   | None ->
-      let out = open_out out in
-      closing (TablePrinting.print_tables out) tables
-        [out]
+      BatStd.with_dispose ~dispose:close_out
+        (TablePrinting.print_tables tables) (open_out out)
 
   | Some impl ->
       OCamlPrinter.print_implem ~output_file:out impl
