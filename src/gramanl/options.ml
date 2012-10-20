@@ -24,7 +24,6 @@ let _trace_lrsets = ref false
 let _trace_prec = ref false
 let _trace_conflict = ref false
 let _trace_table = ref false
-let _trace_table_encoding = ref false
 let _trace_reductions = ref false
 let _trace_first = ref false
 let _trace_derivable = ref false
@@ -60,7 +59,6 @@ let () =
     "-trace-prec",		Set _trace_prec,		" output details when precedences are used to resolve conflicts";
     "-trace-conflict",		Set _trace_conflict,		" output details during conflict resolution";
     "-trace-table",		Set _trace_table,		" output details during parse table construction";
-    "-trace-table-encoding",	Set _trace_table_encoding,	" output verbose details on table encoding";
     "-trace-reductions",	Set _trace_reductions,		" output details on possible reductions for each state";
     "-trace-first",		Set _trace_first,		" output details during First-set computation";
     "-trace-derivable",		Set _trace_derivable,		" output details during derivability relation computation";
@@ -107,7 +105,6 @@ let _trace_lrsets () = !_trace_lrsets
 let _trace_prec () = !_trace_prec
 let _trace_conflict () = !_trace_conflict
 let _trace_table () = !_trace_table
-let _trace_table_encoding () = !_trace_table_encoding
 let _trace_reductions () = !_trace_reductions
 let _trace_first () = !_trace_first
 let _trace_derivable () = !_trace_derivable
