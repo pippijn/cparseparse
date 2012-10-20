@@ -66,13 +66,7 @@ let output_underline dot out str =
 
 let with_out file f =
   let out = open_out file in
-  begin try
-    f out
-  with e ->
-    close_out out;
-    raise e
-  end;
-  close_out out
+  BatStd.with_dispose ~dispose:close_out f out
 
 
 let write_all stream lines =
@@ -91,9 +85,9 @@ let read_all stream =
 
 
 let string_of_process_status = let open Unix in function
-  | WEXITED status -> "exited with code " ^ string_of_int status
-  | WSIGNALED signum -> "caught signal " ^ string_of_int signum
-  | WSTOPPED signum -> "stopped by signal " ^ string_of_int signum
+  | WEXITED   status -> "exited with code "  ^ string_of_int status
+  | WSIGNALED signum -> "caught signal "     ^ string_of_int signum
+  | WSTOPPED  signum -> "stopped by signal " ^ string_of_int signum
 
 
 (* +=====~~~-------------------------------------------------------~~~=====+ *)
