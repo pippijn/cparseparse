@@ -34,7 +34,7 @@ let run f =
 
   Arg.(parse (align specs)
     (fun input -> inputs := input :: !inputs)
-    ("Usage: " ^ Sys.argv.(0) ^ " [option...] <input...>")
+    ("Usage: " ^ BatStd.exe ^ " [option...] <input...>")
   );
 
   let inputs = List.rev !inputs in
