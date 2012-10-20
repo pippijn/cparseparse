@@ -156,7 +156,7 @@ let compute_cell_action tables state shift_dest reductions terminal =
               );
               TableEncoding.encode_reduce tables prod.prod_index state.state_id
           | _ ->
-              failwith "logic error"
+              failwith "internal logic error"
     )
   in
   if Options._trace_table () then (
