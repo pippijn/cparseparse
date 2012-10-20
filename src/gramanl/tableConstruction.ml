@@ -1,5 +1,7 @@
 open AnalysisEnvType
 
+let (--) = BatPervasives.(--)
+
 
 (* this is a depth-first traversal of the 'derivable' relation;
  * when we reach a nonterminal that can't derive any others not
@@ -20,19 +22,18 @@ let rec topological_sort nonterm_count (* number of nonterminals in the grammar 
     BitSet.add seen current;
 
     (* look at all nonterminals this one can derive *)
-    let rec loop nt next_ordinal =
-      if nt = nonterm_count then
-        next_ordinal
-      else if Derivability.can_derive_i derivable nt current then
-        (* 'nt' can derive 'current'; expand 'nt' first, thus making
-         * it later in the order, so we'll reduce to 'current' before
-         * reducing to 'nt' (when token spans are equal) *)
-        loop (nt + 1) (topological_sort nonterm_count derivable seen order next_ordinal nt)
-      else
-        loop (nt + 1) next_ordinal
+    let next_ordinal =
+      BatEnum.fold (fun next_ordinal nt ->
+        if Derivability.can_derive_i derivable nt current then
+          (* 'nt' can derive 'current'; expand 'nt' first, thus making
+           * it later in the order, so we'll reduce to 'current' before
+           * reducing to 'nt' (when token spans are equal) *)
+          topological_sort nonterm_count derivable seen order next_ordinal nt
+        else
+          next_ordinal
+      ) next_ordinal (0 -- (nonterm_count - 1))
     in
 
-    let next_ordinal = loop 0 next_ordinal in
     (* finally, put 'current' into the order *)
     order.(current) <- next_ordinal;
     next_ordinal - 1

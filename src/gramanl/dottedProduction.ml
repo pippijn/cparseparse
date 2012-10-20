@@ -11,9 +11,11 @@ module M : GrammarSig.S with type t = dotted_production = struct
     a.dprod_id
 
   let compare a b =
+    assert (a == b || a.dprod_id != b.dprod_id);
     a.dprod_id - b.dprod_id
 
   let equal a b =
+    assert (a == b || a.dprod_id != b.dprod_id);
     a == b
 
   let stats _ = failwith "Not supported"
