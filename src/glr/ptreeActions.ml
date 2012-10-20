@@ -1,10 +1,10 @@
-(* ptreeact.ml *)
 (* given actions for a grammar, wrap them with actions that
- * just build a parse tree (forsest) *)
-(* based on elkhound/ptreeact *)
+ * just build a parse tree (forest) *)
+
+module type S = Sig.ConvertibleType
 
 
-let inject : PtreeNode.t -> SemanticValue.t = Obj.magic
+let inject  : PtreeNode.t -> SemanticValue.t = Obj.magic
 let project : SemanticValue.t -> PtreeNode.t = Obj.magic
 
 
@@ -33,13 +33,9 @@ let make_actions underlying tables : PtreeNode.t UserActions.t =
         let lhsIndex = ParseTables.getProdInfo_lhsIndex tables prodId in
 
         let name = underlying.nonterminalName lhsIndex in
-        
-        (* make a tree node, initially with no children *)
-        let ret =
-          PtreeNode.make name rhsLen (fun i ->
-            project svals.(i)
-          )
-        in
+
+        (* make a tree node *)
+        let ret = PtreeNode.make name rhsLen (fun i -> project svals.(i)) in
 
         inject ret
     );
@@ -58,7 +54,7 @@ let make_actions underlying tables : PtreeNode.t UserActions.t =
         let l = project left in
         let r = project right in
         
-        PtreeNode.addAlternative l r;
+        PtreeNode.add_alternative l r;
         inject l
     );
 

@@ -4,6 +4,10 @@ let _accounting = ref true
 let _use_keep = ref true
 let _use_mini_lr = ref true
 
+(* turn this on to detect cyclicity; there is a performance penalty *)
+let _ptree_cycles = ref true
+let _ptree_indent = ref 2
+
 
 let () =
   Cmdline.register (Arg.([
@@ -12,6 +16,8 @@ let () =
     "-accounting",		Set _accounting,		" keep some statistics useful for performance evaluation";
     "-use-keep",		Set _use_keep,			" call the user's keep() functions";
     "-use-mini-lr",		Set _use_mini_lr,		" use the mini LR core";
+    "-ptree-cycles",		Set _ptree_cycles,		" detect parse tree cyclicity";
+    "-ptree-indent",		Set_int _ptree_indent,		"<amount> indentation per level in parse tree printing";
   ]))
 
 
@@ -20,3 +26,5 @@ let _trace_parse () = !_trace_parse
 let _accounting () = !_accounting
 let _use_keep () = !_use_keep
 let _use_mini_lr () = !_use_mini_lr
+let _ptree_cycles () = !_ptree_cycles
+let _ptree_indent () = !_ptree_indent
