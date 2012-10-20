@@ -90,9 +90,9 @@ let encode_ambig tables state terminal shift_dest reductions =
     match shift_dest with
     | Some shift_dest ->
         if Options._trace_table () then (
-          Printf.printf " [shift token %d, to state %d"
+          Printf.printf " [shift token %d, to state %a"
             terminal.term_index
-            (StateId.to_int shift_dest.state_id);
+            StateId.print shift_dest.state_id;
         );
         [TableEncoding.encode_shift tables shift_dest.state_id terminal.term_index]
     | None ->
@@ -123,9 +123,9 @@ let encode_shift tables terminal shift_dest =
   let open GrammarType in
 
   if Options._trace_table () then (
-    Printf.printf "(unambig) shift token %d, to state %d"
+    Printf.printf "(unambig) shift token %d, to state %a"
       terminal.term_index
-      (StateId.to_int shift_dest.state_id);
+      StateId.print shift_dest.state_id;
   );
   TableEncoding.encode_shift tables shift_dest.state_id terminal.term_index
 
@@ -151,8 +151,8 @@ let compute_cell_action tables state shift_dest reductions terminal =
   let open GrammarType in
 
   if Options._trace_table () then (
-    Printf.printf "state %d, on terminal %d (\"%s\") "
-      (StateId.to_int state.state_id)
+    Printf.printf "state %a, on terminal %d (\"%s\") "
+      StateId.print state.state_id
       terminal.term_index
       terminal.tbase.name;
   );
@@ -224,7 +224,7 @@ let compute_action_row env tables nonterms terms allow_ambig sr rr state =
     if false then (
       PrintAnalysisEnv.print_item_set env state;
     );
-    Printf.printf "------ state %d ------\n" (StateId.to_int state.state_id);
+    Printf.printf "------ state %a ------\n" StateId.print state.state_id;
   );
 
   (* ---- fill in this row in the action table ---- *)

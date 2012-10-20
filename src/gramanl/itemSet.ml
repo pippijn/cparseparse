@@ -33,7 +33,7 @@ module M : GrammarSig.S with type t = item_set = struct
     nonterm_transition = [||];
     dots_at_end = [];
     state_symbol = None;
-    state_id = StateId.of_int (-1);
+    state_id = StateId.default;
     bfs_parent = None;
   }
 
@@ -108,8 +108,8 @@ let possible_reductions item_set lookahead =
         prod :: reductions
       else (
         if Options._trace_reductions () then (
-          Printf.printf "state %d, not reducing by "
-            (StateId.to_int item_set.state_id);
+          Printf.printf "state %a, not reducing by "
+            StateId.print item_set.state_id;
           PrintGrammar.print_production prod;
           Printf.printf " because %s is not in follow of %s\n"
             lookahead.tbase.name
@@ -123,8 +123,8 @@ let possible_reductions item_set lookahead =
       let prod = item.dprod.prod in
       if TerminalSet.mem lookahead.term_index item.lookahead then (
         if Options._trace_reductions () then (
-          Printf.printf "state %d, reducing by "
-            (StateId.to_int item_set.state_id);
+          Printf.printf "state %a, reducing by "
+            StateId.print item_set.state_id;
           PrintGrammar.print_production prod;
           Printf.printf " because %s is in lookahead\n"
             lookahead.tbase.name;
@@ -132,8 +132,8 @@ let possible_reductions item_set lookahead =
         prod :: reductions
       ) else (
         if Options._trace_reductions () then (
-          Printf.printf "state %d, not reducing by "
-            (StateId.to_int item_set.state_id);
+          Printf.printf "state %a, not reducing by "
+            StateId.print item_set.state_id;
           PrintGrammar.print_production prod;
           Printf.printf " because %s is not in lookahead\n"
             lookahead.tbase.name;

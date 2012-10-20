@@ -80,18 +80,18 @@ let print_item_set ?(out=stdout) ?(print_nonkernels=false) env item_set =
     | Some sym ->
         match ItemSet.transition item_set sym with
         | None -> output_string out "(no transition)"
-        | Some is -> Printf.fprintf out "--> %d" (StateId.to_int is.state_id)
+        | Some is -> Printf.fprintf out "--> %a" StateId.print is.state_id
     end;
 
     output_string out "\n";
   in
 
-  Printf.fprintf out "State %d,\n  sample input: %s\n  and left context: %s\n"
-    (StateId.to_int item_set.state_id)
+  Printf.fprintf out "State %a,\n  sample input: %s\n  and left context: %s\n"
+    StateId.print item_set.state_id
     (SampleInput.sample_input env.indexed_terms env.indexed_nonterms env.prods_by_lhs item_set)
     (SampleInput.left_context env.indexed_terms env.indexed_nonterms item_set);
 
-  Printf.fprintf out "ItemSet %d {\n" (StateId.to_int item_set.state_id);
+  Printf.fprintf out "ItemSet %a {\n" StateId.print item_set.state_id;
   if print_nonkernels then (
     List.iter print_lr_item
       (List.sort compare
@@ -109,18 +109,18 @@ let print_item_set ?(out=stdout) ?(print_nonkernels=false) env item_set =
     match transition with
     | None -> ()
     | Some transition ->
-        Printf.fprintf out "  on terminal %s go to %d\n"
+        Printf.fprintf out "  on terminal %s go to %a\n"
           env.indexed_terms.(i).tbase.name
-          (StateId.to_int transition.state_id)
+          StateId.print transition.state_id
   ) item_set.term_transition;
 
   Array.iteri (fun i transition ->
     match transition with
     | None -> ()
     | Some transition ->
-        Printf.fprintf out "  on nonterminal %s go to %d\n"
+        Printf.fprintf out "  on nonterminal %s go to %a\n"
           env.indexed_nonterms.(i).nbase.name
-          (StateId.to_int transition.state_id)
+          StateId.print transition.state_id
   ) item_set.nonterm_transition;
 
   List.iter (fun item ->

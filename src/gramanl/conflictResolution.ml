@@ -11,7 +11,7 @@ type decision = {
 let print_actions shift_dest reductions =
   begin match shift_dest with
   | Some shift_dest ->
-      Printf.printf "      | shift, and move to state %d\n" (StateId.to_int shift_dest.state_id)
+      Printf.printf "      | shift, and move to state %a\n" StateId.print shift_dest.state_id
   | None -> ()
   end;
 
@@ -28,8 +28,8 @@ let handle_shift_reduce_conflict state prod sym decision =
   let open GrammarType in
 
   if Options._trace_prec () then (
-    Printf.printf "    in state %d, S/R conflict on token %s with production "
-      (StateId.to_int state.state_id)
+    Printf.printf "    in state %a, S/R conflict on token %s with production "
+      StateId.print state.state_id
       sym.tbase.name;
     PrintGrammar.print_production prod;
     print_newline ();
@@ -104,10 +104,10 @@ let handle_shift_reduce_conflict state prod sym decision =
         { decision with keep_shift = false; keep_reduce = false }
     | AK_NEVERASSOC ->
         (* the user claimed this token would never be involved in a conflict *)
-        failwith (Printf.sprintf "token %s was declared 'prec', but it is involved in an associativity conflict with \"%s\" in state %d\n"
+        failwith (Printf.sprintf "token %s was declared 'prec', but it is involved in an associativity conflict with \"%s\" in state %a\n"
           sym.tbase.name
           (* TODO *)"prod"
-          (StateId.to_int state.state_id))
+          StateId.sprint state.state_id)
     | AK_SPLIT ->
         if Options._trace_prec () then (
           print_endline "      => will SPLIT because user asked to";
@@ -181,8 +181,8 @@ let subset_directive_resolution state sym reductions =
           let remove = CompressedBitSet.mem sub.nt_index map in
           if Options._trace_prec () then (
             if remove then (
-              Printf.printf "in state %d, R/R conflict on token %s, removed production yielding %s, because another yields subset %s\n"
-                (StateId.to_int state.state_id)
+              Printf.printf "in state %a, R/R conflict on token %s, removed production yielding %s, because another yields subset %s\n"
+                StateId.print state.state_id
                 sym.tbase.name
                 prod.left.nbase.name
                 sub.nbase.name;
@@ -231,8 +231,8 @@ let try_resolve_conflicts state sym shift_dest reductions allow_ambig sr rr =
       List.fold_left (fun reductions prod ->
         if prod.prec <> 0 && prod.prec < highest_prec then (
           if Options._trace_prec () then (
-            Printf.printf "in state %d, R/R conflict on token %s, removed production "
-              (StateId.to_int state.state_id)
+            Printf.printf "in state %a, R/R conflict on token %s, removed production "
+              StateId.print state.state_id
               sym.tbase.name;
             PrintGrammar.print_production prod;
             Printf.printf " because %d < %d\n"
