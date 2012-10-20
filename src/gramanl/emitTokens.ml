@@ -65,7 +65,7 @@ let make_ml_tokens terms =
   let intf =
     <:sig_item<
       type t = $types$
-      include Lexerint.TokenInfo with type t := t
+      include Glr.TokenInfo.S with type t := t
     >>
   in
 

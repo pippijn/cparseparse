@@ -11,7 +11,7 @@ module Make
   (Tables : ParseTablesType.S)
   (Ptree : PtreeActions.S)
   (PtreeAct : UserActions.S with type result = Ptree.t)
-  (Tokens : Lexerint.TokenInfo)
+  (Tokens : TokenInfo.S)
   (Config : Config)
 = struct
 

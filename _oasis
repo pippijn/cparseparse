@@ -175,6 +175,7 @@ Library glr
                                 ParseTablesType,
                                 PtreeActions,
                                 PtreeNode,
+                                TokenInfo,
                                 UserActions
 
 Library baselib
