@@ -4,6 +4,8 @@ module Options = struct
     "cpapa", "-trivial";
   ]
   let dirs = [
+    "arith", "testsuite/elkhound/arith/tests";
+    "sless", "testsuite/elkhound/scannerless/tests";
     "treematch", "testsuite/treematch";
     "cpapa", "testsuite/ccparse";
     "cpapa", "testsuite/in";
