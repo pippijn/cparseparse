@@ -19,6 +19,6 @@ rule token = parse
 
 | "#" _* "\n"           { token lexbuf }
 
-| eof                   { TOK_EOF }
-
 | _ as c                { failwith ("illegal character: '" ^ Char.escaped c ^ "'") }
+
+| eof                   { TOK_EOF }
