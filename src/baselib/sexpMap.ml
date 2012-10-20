@@ -11,7 +11,7 @@ module type S = sig
 end
 
 
-module Make(T : Sig.ConvertibleType) : S with type key = T.t = struct
+module Make(T : Sig.OrderedConvertibleType) : S with type key = T.t = struct
   open Sexplib
 
   include BatMap.Make(T)

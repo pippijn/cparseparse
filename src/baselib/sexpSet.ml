@@ -1,9 +1,9 @@
 module type S = sig
   include BatSet.S
-  include Sig.ConvertibleType with type t := t
+  include Sig.OrderedConvertibleType with type t := t
 end
 
-module Make(T : Sig.ConvertibleType) : S with type elt = T.t = struct
+module Make(T : Sig.OrderedConvertibleType) : S with type elt = T.t = struct
   open Sexplib
 
   include BatSet.Make(T)
