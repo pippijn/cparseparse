@@ -26,10 +26,15 @@ module Make
     let actions = Actions.userActions in
 
     let lexer = Lexerint.({
-      token = (fun () -> token lexbuf);
-      index = Tokens.index;
-      sval  = Tokens.sval;
-      sloc  = (fun _ -> Lexing.dummy_pos, Lexing.dummy_pos);
+      token = (fun () ->
+        let token = token lexbuf in
+        let start_p = Lexing.lexeme_start_p lexbuf in
+        let end_p = Lexing.lexeme_end_p lexbuf in
+        start_p, end_p, token
+      );
+      index = (fun (_, _, t) -> Tokens.index t);
+      sval  = (fun (_, _, t) -> Tokens.sval  t);
+      sloc  = (fun (s, e, _) -> s, e);
     }) in
 
     if Config.ptree then (
