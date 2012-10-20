@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: 4f619f865173db7dd5dcda59d17c0378) *)
+(* DO NOT EDIT (digest: ef22f83727da07c0027720287cd3111c) *)
 module OASISGettext = struct
 # 21 "/tmp/oasis-0.3.0/src/oasis/OASISGettext.ml"
 
@@ -498,6 +498,8 @@ let package_default =
        ];
      includes =
        [
+          ("testsuite/elkhound/scannerless", ["src/glr"]);
+          ("testsuite/elkhound/arith", ["src/glr"]);
           ("testsuite", ["src/baselib"]);
           ("src/treematch", ["src/baselib"]);
           ("src/gramanl", ["src/baselib"; "src/glr"]);
@@ -514,7 +516,7 @@ let package_default =
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default package_default;;
 
-# 518 "myocamlbuild.ml"
+# 520 "myocamlbuild.ml"
 (* OASIS_STOP *)
 let tokens = [
   "src/ccparse/tok/c++1998.tok";
@@ -566,13 +568,14 @@ let dispatch_mine = function
 
       rule "Compile C++ grammar to ML"
         ~prods:[
+          "src/ccparse/gr/ccPtree.ml";
+          "src/ccparse/gr/ccPtreeActions.mli";
+          "src/ccparse/gr/ccPtreeActions.ml";
+
           "src/ccparse/gr/ccActions.mli";
           "src/ccparse/gr/ccActions.ml";
           "src/ccparse/gr/ccNames.mli";
           "src/ccparse/gr/ccNames.ml";
-          "src/ccparse/gr/ccPtree.ml";
-          "src/ccparse/gr/ccPtreeActions.mli";
-          "src/ccparse/gr/ccPtreeActions.ml";
           "src/ccparse/gr/ccTables.dat";
           "src/ccparse/gr/ccTables.mli";
           "src/ccparse/gr/ccTables.ml";
@@ -584,32 +587,33 @@ let dispatch_mine = function
           "src/elkhound/elkhound.native";
         ] @ grammars)
         begin fun env build ->
-          Cmd(S([A"src/elkhound/elkhound.native"; A"-timing"] @ List.map (fun a -> A a) grammars))
+          Cmd(S([A"src/elkhound/elkhound.native"; A"-timing"; A"-module-prefix"; A"Cc"] @ List.map (fun a -> A a) grammars))
         end;
 
 
-      (* rule "Compile grammar to ML" *)
-      (*   ~prods:[ *)
-      (*     "%Actions.mli"; *)
-      (*     "%Actions.ml"; *)
-      (*     "%Names.mli"; *)
-      (*     "%Names.ml"; *)
-      (*     "%Ptree.ml"; *)
-      (*     "%PtreeActions.mli"; *)
-      (*     "%PtreeActions.ml"; *)
-      (*     "%Tables.dat"; *)
-      (*     "%Tables.mli"; *)
-      (*     "%Tables.ml"; *)
-      (*     "%Tokens.mli"; *)
-      (*     "%Tokens.ml"; *)
-      (*   ] *)
-      (*   ~deps:[ *)
-      (*     "%.gr"; *)
-      (*     "src/elkhound/elkhound.native"; *)
-      (*   ] *)
-      (*   begin fun env build -> *)
-      (*     Cmd(S[A"src/elkhound/elkhound.native"; A"-timing"; A(env "%.gr")]) *)
-      (*   end; *)
+      rule "Compile grammar to ML"
+        ~prods:[
+          "%Ptree.ml";
+          "%PtreeActions.mli";
+          "%PtreeActions.ml";
+
+          "%Actions.mli";
+          "%Actions.ml";
+          "%Names.mli";
+          "%Names.ml";
+          "%Tables.dat";
+          "%Tables.mli";
+          "%Tables.ml";
+          "%Tokens.mli";
+          "%Tokens.ml";
+        ]
+        ~deps:[
+          "%.gr";
+          "src/elkhound/elkhound.native";
+        ]
+        begin fun env build ->
+          Cmd(S[A"src/elkhound/elkhound.native"; A"-timing"; A(env "%.gr")])
+        end;
 
   | _ ->
       ()
