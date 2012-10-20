@@ -18,11 +18,13 @@ let _use_table_dump = ref true
 let _inline_table_dump = ref true
 let _compress_table_dump = ref true
 
+let _trace_renumbering = ref false
 let _trace_closure = ref false
 let _trace_lrsets = ref false
 let _trace_prec = ref false
 let _trace_conflict = ref false
 let _trace_table = ref false
+let _trace_table_encoding = ref false
 let _trace_reductions = ref false
 let _trace_first = ref false
 let _trace_derivable = ref false
@@ -52,11 +54,13 @@ let () =
     "-inline-table-dump",	Set _inline_table_dump,		" inline serialised tables into the Tables module as string";
     "-compress-table-dump",	Set _compress_table_dump,	" compress serialised tables with zlib";
 
+    "-trace-renumbering",	Set _trace_renumbering,		" output details on state renumbering";
     "-trace-closure",		Set _trace_closure,		" output details during LR item set closure";
     "-trace-lrsets",		Set _trace_lrsets,		" output details during LR item set construction";
     "-trace-prec",		Set _trace_prec,		" output details when precedences are used to resolve conflicts";
     "-trace-conflict",		Set _trace_conflict,		" output details during conflict resolution";
     "-trace-table",		Set _trace_table,		" output details during parse table construction";
+    "-trace-table-encoding",	Set _trace_table_encoding,	" output verbose details on table encoding";
     "-trace-reductions",	Set _trace_reductions,		" output details on possible reductions for each state";
     "-trace-first",		Set _trace_first,		" output details during First-set computation";
     "-trace-derivable",		Set _trace_derivable,		" output details during derivability relation computation";
@@ -97,11 +101,13 @@ let _use_table_dump () = !_use_table_dump
 let _inline_table_dump () = !_inline_table_dump
 let _compress_table_dump () = !_compress_table_dump
 
+let _trace_renumbering () = !_trace_renumbering
 let _trace_closure () = !_trace_closure
 let _trace_lrsets () = !_trace_lrsets
 let _trace_prec () = !_trace_prec
 let _trace_conflict () = !_trace_conflict
 let _trace_table () = !_trace_table
+let _trace_table_encoding () = !_trace_table_encoding
 let _trace_reductions () = !_trace_reductions
 let _trace_first () = !_trace_first
 let _trace_derivable () = !_trace_derivable

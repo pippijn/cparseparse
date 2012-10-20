@@ -68,7 +68,7 @@ let rhs_has_nonterm prod nonterm =
 let num_rhs_nonterms prod =
   let open GrammarType in
 
-  List.fold_left (fun count -> function
-    | Terminal    _ -> count
-    | Nonterminal _ -> count + 1
-  ) 0 prod.right
+  ExtList.count (function
+    | Terminal    _ -> false
+    | Nonterminal _ -> true
+  ) prod.right

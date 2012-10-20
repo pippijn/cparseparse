@@ -3,7 +3,7 @@ open GrammarAst
 
 
 let accumulators =
-  List.fold_left (fun set elt -> StringSet.add elt set) StringSet.empty [
+  StringSet.of_list [
     "shift_reduce_conflicts";
     "reduce_reduce_conflicts";
     "unreachable_nonterminals";

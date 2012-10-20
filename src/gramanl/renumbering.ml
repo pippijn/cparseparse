@@ -16,24 +16,17 @@ let ordering_operator order =
 
 
 let compare_by_outgoing syms transition_fn a b =
-  fst (Array.fold_left (fun (order, t) _ ->
-    let order =
-      if order <> 0 then
-        order
-      else
-        let dest_a = transition_fn a t in
-        let dest_b = transition_fn b t in
+  ExtArray.foldl_untili (fun t _ ->
+    let dest_a = transition_fn a t in
+    let dest_b = transition_fn b t in
 
-        match dest_a, dest_b with
-        | None, Some _ -> 1
-        | Some _, None -> -1
-        | Some dest_a, Some dest_b ->
-            int_of_state_id dest_a.state_id - int_of_state_id dest_b.state_id
-        | _ -> 0
-    in
-
-    order, t + 1
-  ) (0, 0) syms)
+    match dest_a, dest_b with
+    | None, Some _ -> 1
+    | Some _, None -> -1
+    | Some dest_a, Some dest_b ->
+        int_of_state_id dest_a.state_id - int_of_state_id dest_b.state_id
+    | _ -> 0
+  ) 0 syms
 
 
 let compare_by_reductions terms a b =
@@ -74,7 +67,7 @@ let renumber_states_compare env a b =
     |<> lazy (compare_by_reductions env.indexed_terms a b)
   in
 
-  if false then (
+  if Options._trace_renumbering () then (
     if arbitrary_order then (
       Printf.printf "%d[%s] %s %d[%s]\n"
         (int_of_state_id a.state_id)
@@ -87,6 +80,7 @@ let renumber_states_compare env a b =
     );
   );
 
+  (* validate invariants *)
   if a != b then (
     assert (order <> 0);
     if int_of_state_id a.state_id = 0 then

@@ -42,22 +42,14 @@ let run_analyses grammar =
 
   begin
     let unr_nonterms =
-      Array.fold_left (fun count nonterm ->
-        if not nonterm.nbase.reachable then (
-          count + 1
-        ) else (
-          count
-        )
-      ) 0 env.indexed_nonterms
+      ExtArray.count (fun nonterm ->
+        not nonterm.nbase.reachable
+      ) env.indexed_nonterms
     in
     let unr_terms =
-      Array.fold_left (fun count term ->
-        if not term.tbase.reachable then (
-          count + 1
-        ) else (
-          count
-        )
-      ) 0 env.indexed_terms
+      ExtArray.count (fun term ->
+        not term.tbase.reachable
+      ) env.indexed_terms
     in
 
     Warnings.report_unexpected unr_nonterms env.options.expectedUNRNonterms "unreachable nonterminals";

@@ -55,14 +55,14 @@ let validate_action (code : int) : action_entry =
    * there are more than 32k states or productions; in turn, the most
    * likely cause of *that* would be the grammar is being generated
    * automatically from some other specification *)
-  if false then (
+  if Options._trace_table_encoding () then (
     Printf.printf " %d\n" code;
   );
   assert (code > -0x7fff && code < 0x7fff);
   code
 
 let validate_goto (code : int) : goto_entry =
-  if false then (
+  if Options._trace_table_encoding () then (
     Printf.printf " %d\n" code;
   );
   assert (code > -0x7fff && code < 0x7fff);
@@ -77,19 +77,19 @@ let append_ambig ambig_table set =
 
 
 let encode_shift tables (dest_state : state_id) (shifted_term_id : term_index) : action_entry =
-  if false then (
+  if Options._trace_table_encoding () then (
     Printf.printf "encode_shift %d %d =" (int_of_state_id dest_state) shifted_term_id;
   );
   validate_action (int_of_state_id dest_state + 1)
 
 let encode_reduce tables (prod_id : prod_index) (in_state : state_id) : action_entry =
-  if false then (
+  if Options._trace_table_encoding () then (
     Printf.printf "encode_reduce %d %d =" prod_id (int_of_state_id in_state);
   );
   validate_action (-prod_id - 1)
 
 let encode_ambig tables (set : action_entry list) (in_state : state_id) : action_entry =
-  if false then (
+  if Options._trace_table_encoding () then (
     Printf.printf "encode_ambig %d %d =" (List.length set) (int_of_state_id in_state);
   );
   let position = Stack.length tables.ambig_table in
@@ -97,13 +97,13 @@ let encode_ambig tables (set : action_entry list) (in_state : state_id) : action
   validate_action (tables.tables.numStates + position + 1)
 
 let encode_error tables : action_entry =
-  if false then (
+  if Options._trace_table_encoding () then (
     Printf.printf "encode_error =";
   );
   validate_action (0)
 
 let encode_goto tables (dest_state : state_id) (shifted_nonterm_id : nt_index) : action_entry =
-  if false then (
+  if Options._trace_table_encoding () then (
     Printf.printf "encode_goto %d %d =" (int_of_state_id dest_state) shifted_nonterm_id;
   );
   validate_goto (int_of_state_id dest_state)
@@ -116,7 +116,7 @@ let action_entry tables (state_id : state_id) (term_id : term_index) =
   tables.tables.actionTable.(int_of_state_id state_id * tables.tables.actionCols + term_id)
 
 let set_action_entry tables (state_id : state_id) (term_id : term_index) (act : action_entry) =
-  if false then (
+  if Options._trace_table_encoding () then (
     Printf.printf "set_action_entry %d %d %d\n" (int_of_state_id state_id) term_id act;
   );
   tables.tables.actionTable.(int_of_state_id state_id * tables.tables.actionCols + term_id) <- act
@@ -126,14 +126,14 @@ let goto_entry tables (state_id : state_id) (nonterm_id : nt_index) =
   tables.tables.gotoTable.(int_of_state_id state_id * tables.tables.gotoCols + nonterm_id)
 
 let set_goto_entry tables (state_id : state_id) (nonterm_id : nt_index) (goto : goto_entry) =
-  if false then (
+  if Options._trace_table_encoding () then (
     Printf.printf "set_goto_entry %d %d %d\n" (int_of_state_id state_id) nonterm_id goto;
   );
   tables.tables.gotoTable.(int_of_state_id state_id * tables.tables.gotoCols + nonterm_id) <- goto
 
 
 let set_state_symbol tables (state_id : state_id) (sym : symbol_id) =
-  if false then (
+  if Options._trace_table_encoding () then (
     Printf.printf "set_state_symbol %d %d\n" (int_of_state_id state_id) sym;
   );
   tables.tables.stateSymbol.(int_of_state_id state_id) <- sym

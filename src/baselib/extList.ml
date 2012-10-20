@@ -75,3 +75,9 @@ let foldl_until f x l =
     else
       f e
   ) x l
+
+
+let count f l =
+  List.fold_left (fun count e ->
+    count + if f e then 1 else 0
+  ) 0 l
