@@ -120,6 +120,7 @@ Library gramanl
                                 Renumbering,
                                 SampleInput,
                                 StateGraph,
+                                StateId,
                                 SuperSets,
                                 TableConstruction,
                                 TableEncoding,

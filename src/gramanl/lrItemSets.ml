@@ -16,7 +16,7 @@ type env = {
 
 
 let make_item_set env kernel_items =
-  let state_id = state_id_of_int env.next_item_set_id in
+  let state_id = StateId.of_int env.next_item_set_id in
   env.next_item_set_id <- env.next_item_set_id + 1;
 
   { ItemSet.M.default with
@@ -325,9 +325,9 @@ let merge_state env item_set sym in_done_list already dot_moved_items =
   if merge_lookaheads_into already dot_moved_items.items then (
     if Options._trace_lrsets () then (
       Printf.printf "from state %d, found that the transition on %s yielded a state similar to %d, but with different lookahead\n"
-        (int_of_state_id item_set.state_id)
+        (StateId.to_int item_set.state_id)
         (GrammarUtil.name_of_symbol sym)
-        (int_of_state_id already.state_id)
+        (StateId.to_int already.state_id)
     );
 
     (* this changed 'already'; recompute its closure *)
@@ -435,7 +435,7 @@ let process_item_set env =
   if Options._trace_lrsets () then (
     print_string "%%% ";
     Printf.printf "state %d, %d kernel items and %d nonkernel items\n"
-      (int_of_state_id item_set.state_id)
+      (StateId.to_int item_set.state_id)
       (List.length item_set.kernel_items.items)
       (List.length item_set.nonkernel_items)
   );

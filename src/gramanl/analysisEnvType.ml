@@ -68,14 +68,6 @@ type item_list = {
  ************************************************************)
 
 
-type state_id
-
-let int_of_state_id : state_id -> int = Obj.magic
-let state_id_of_int : int -> state_id = Obj.magic
-
-let state_id_of_sexp sexp = state_id_of_int (int_of_sexp sexp)
-let sexp_of_state_id id   = sexp_of_int (int_of_state_id id)
-
 (* a set of dotted productions, and the transitions between
  * item sets, as in LR(0) set-of-items construction *)
 type item_set = {
@@ -105,7 +97,7 @@ type item_set = {
 
   (* numerical state id, should be unique among item sets
    * in a particular grammar's sets *)
-  mutable state_id              : state_id;
+  mutable state_id              : StateId.t;
 
   (* it's useful to have a BFS tree superimposed on the transition
    * graph; for example, it makes it easy to generate sample inputs

@@ -36,7 +36,7 @@ let create numTerms numNonterms numStates numProds nontermOrder startState final
        * can't even allocate the storage now *)
       ambigTable = [||];
 
-      startState = int_of_state_id startState;
+      startState = StateId.to_int startState;
       finalProductionIndex;
 
       nontermOrder;
@@ -70,13 +70,13 @@ let append_ambig ambig_table set =
   ) set
 
 
-let encode_shift tables (dest_state : state_id) (shifted_term_id : term_index) : action_entry =
-  validate_action (int_of_state_id dest_state + 1)
+let encode_shift tables (dest_state : StateId.t) (shifted_term_id : term_index) : action_entry =
+  validate_action (StateId.to_int dest_state + 1)
 
-let encode_reduce tables (prod_id : prod_index) (in_state : state_id) : action_entry =
+let encode_reduce tables (prod_id : prod_index) (in_state : StateId.t) : action_entry =
   validate_action (-prod_id - 1)
 
-let encode_ambig tables (set : action_entry list) (in_state : state_id) : action_entry =
+let encode_ambig tables (set : action_entry list) (in_state : StateId.t) : action_entry =
   let position = Stack.length tables.ambig_table in
   append_ambig tables.ambig_table set;
   validate_action (tables.tables.numStates + position + 1)
@@ -84,29 +84,29 @@ let encode_ambig tables (set : action_entry list) (in_state : state_id) : action
 let encode_error tables : action_entry =
   validate_action (0)
 
-let encode_goto tables (dest_state : state_id) (shifted_nonterm_id : nt_index) : action_entry =
-  validate_goto (int_of_state_id dest_state)
+let encode_goto tables (dest_state : StateId.t) (shifted_nonterm_id : nt_index) : action_entry =
+  validate_goto (StateId.to_int dest_state)
 
 let encode_goto_error tables =
   error_goto_entry
 
 
-let action_entry tables (state_id : state_id) (term_id : term_index) =
-  tables.tables.actionTable.(int_of_state_id state_id * tables.tables.actionCols + term_id)
+let action_entry tables (state_id : StateId.t) (term_id : term_index) =
+  tables.tables.actionTable.(StateId.to_int state_id * tables.tables.actionCols + term_id)
 
-let set_action_entry tables (state_id : state_id) (term_id : term_index) (act : action_entry) =
-  tables.tables.actionTable.(int_of_state_id state_id * tables.tables.actionCols + term_id) <- act
-
-
-let goto_entry tables (state_id : state_id) (nonterm_id : nt_index) =
-  tables.tables.gotoTable.(int_of_state_id state_id * tables.tables.gotoCols + nonterm_id)
-
-let set_goto_entry tables (state_id : state_id) (nonterm_id : nt_index) (goto : goto_entry) =
-  tables.tables.gotoTable.(int_of_state_id state_id * tables.tables.gotoCols + nonterm_id) <- goto
+let set_action_entry tables (state_id : StateId.t) (term_id : term_index) (act : action_entry) =
+  tables.tables.actionTable.(StateId.to_int state_id * tables.tables.actionCols + term_id) <- act
 
 
-let set_state_symbol tables (state_id : state_id) (sym : symbol_id) =
-  tables.tables.stateSymbol.(int_of_state_id state_id) <- sym
+let goto_entry tables (state_id : StateId.t) (nonterm_id : nt_index) =
+  tables.tables.gotoTable.(StateId.to_int state_id * tables.tables.gotoCols + nonterm_id)
+
+let set_goto_entry tables (state_id : StateId.t) (nonterm_id : nt_index) (goto : goto_entry) =
+  tables.tables.gotoTable.(StateId.to_int state_id * tables.tables.gotoCols + nonterm_id) <- goto
+
+
+let set_state_symbol tables (state_id : StateId.t) (sym : symbol_id) =
+  tables.tables.stateSymbol.(StateId.to_int state_id) <- sym
 
 
 let set_prod_info tables (prod_id : prod_index) rhsLen (lhsIndex : nt_index) =
