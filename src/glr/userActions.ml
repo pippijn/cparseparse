@@ -149,3 +149,9 @@ let make_trivial (underlying : 'a t) : unit t = { underlying with
   keepNontermValue = (fun _ _ -> true);
   reclassifyToken = (fun oldTokenType _ -> oldTokenType);
 }
+
+
+module type S = sig
+  type result
+  val userActions : result t
+end

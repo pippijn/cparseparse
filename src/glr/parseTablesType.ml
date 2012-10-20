@@ -85,3 +85,8 @@ type t = {
   (* index of last production to reduce *)
   finalProductionIndex : int;
 }
+
+
+module type S = sig
+  val parseTables : t
+end
