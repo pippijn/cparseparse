@@ -19,9 +19,25 @@ SourceRepository head
         Browser:                http://xinutec.org/git/lang/cxxparse.git
 
 
+Executable arith
+        Path:                   testsuite/elkhound/arith
+        BuildTools:             ocamlbuild,camlp4o
+        BuildDepends:           glr,                                    # internal
+                                sexplib                                 # external
+        CompiledObject:         native
+        MainIs:                 arith.ml
+
+Executable sless
+        Path:                   testsuite/elkhound/scannerless
+        BuildTools:             ocamlbuild,camlp4o
+        BuildDepends:           glr,                                    # internal
+                                sexplib                                 # external
+        CompiledObject:         native
+        MainIs:                 sless.ml
+
 Executable elkhound
         Path:                   src/elkhound
-        BuildTools:             ocamlbuild
+        BuildTools:             ocamlbuild,camlp4o
         BuildDepends:           gramanl,                                # internal
                                 batteries,menhirLib,ulex                # external
         CompiledObject:         native
@@ -36,7 +52,7 @@ Executable cpapa
 
 Executable treematch
         Path:                   src/treematch
-        BuildTools:             ocamlbuild
+        BuildTools:             ocamlbuild,camlp4of
         BuildDepends:           baselib,                                # internal
                                 camlp4,camlp4.lib,                      # core
                                 batteries,sexplib                       # external
@@ -115,7 +131,7 @@ Library gramanl
 Library ccparse
         Path:                   src/ccparse
         Pack:                   true
-        BuildTools:             ocamlbuild
+        BuildTools:             ocamlbuild,ocamllex
         BuildDepends:           baselib,glr,cabs,                       # internal
                                 unix                                    # core
         CompiledObject:         native
@@ -133,7 +149,7 @@ Library ccparse
 Library cabs
         Path:                   src/cabs
         Pack:                   true
-        BuildTools:             ocamlbuild
+        BuildTools:             ocamlbuild,camlp4o
         BuildDepends:           batteries,sexplib                       # external
         CompiledObject:         native
 #        NativeOpt:              -inline 999 -unsafe -noassert
@@ -150,6 +166,7 @@ Library glr
         CompiledObject:         native
 #        NativeOpt:              -inline 999 -unsafe -noassert
         Modules:                Arraystack,
+                                Easy,
                                 GlrEngine,
                                 GlrOptions,
                                 Lexerint,
@@ -162,7 +179,7 @@ Library glr
 
 Library baselib
         Path:                   src/baselib
-        BuildTools:             ocamlbuild
+        BuildTools:             ocamlbuild,camlp4o
         BuildDepends:           batteries,sexplib                       # external
         CompiledObject:         native
 #        NativeOpt:              -inline 999 -unsafe -noassert
