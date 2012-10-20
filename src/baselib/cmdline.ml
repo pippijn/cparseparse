@@ -18,7 +18,21 @@ let register ?action spec =
 let run f =
   let inputs = ref [] in
 
-  Arg.(parse (align !specs)
+  let specs =
+    List.map (fun (arg, kind, desc) ->
+      let default =
+        match kind with
+        | Arg.Set ref -> string_of_bool !ref
+        | Arg.Set_int ref -> string_of_int !ref
+        | Arg.Set_string ref -> !ref
+        | _ -> failwith "unsupported argument kind"
+      in
+
+      (arg, kind, desc ^ " (default: " ^ default ^ ")")
+    ) !specs
+  in
+
+  Arg.(parse (align specs)
     (fun input -> inputs := input :: !inputs)
     ("Usage: " ^ Sys.argv.(0) ^ " [option...] <input...>")
   );
