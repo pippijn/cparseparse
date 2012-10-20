@@ -17,7 +17,13 @@ let print_grammar grammar =
   print_newline ()
 
 
+let dirname s =
+  let point = String.rindex s '/' in
+  String.sub s 0 point
+
+
 let parse files =
+  dirname (List.hd files),
   List.map (fun file ->
     let ulexbuf = Ulexing.from_utf8_channel (open_in file) in
     let parse = MenhirLib.Convert.traditional2revised
@@ -39,14 +45,14 @@ let parse files =
   ) files
 
 
-let merge grammars =
+let merge (dirname, grammars) =
   let topforms = Merge.merge grammars in
   if Options._print_merged () then
     PrintAst.print (Merge.to_ast topforms);
-  topforms
+  dirname, topforms
 
 
-let tree_parse topforms =
+let tree_parse (dirname, topforms) =
   let open GrammarType in
 
   let grammar = GrammarTreeParser.of_ast topforms in
@@ -54,35 +60,40 @@ let tree_parse topforms =
     List.iter PrintGrammar.print_production grammar.productions;
   if false then
     print_grammar grammar;
-  grammar
+  dirname, grammar
 
 
-let grammar_graph grammar =
-  Timing.progress "writing grammar graph" GrammarGraph.visualise grammar;
-  grammar
+let grammar_graph (dirname, grammar) =
+  let file = dirname ^ "/grammar.dot" in
+  Timing.progress "writing grammar graph" (GrammarGraph.visualise ~file) grammar;
+  dirname, grammar
 
 
-let analyse grammar =
-  GrammarAnalysis.run_analyses grammar
+let analyse (dirname, grammar) =
+  dirname, GrammarAnalysis.run_analyses grammar
 
 
-let output_menhir (env, _, _ as tuple) =
-  OutputMenhir.output_grammar env;
+let output_menhir (dirname, (env, _, _) as tuple) =
+  let file = dirname ^ "/grammar.mly" in
+  OutputMenhir.output_grammar ~file env;
   tuple
 
 
-let state_graph (_, states, _ as tuple) =
-  Timing.progress "writing automaton graph" StateGraph.visualise states;
+let state_graph (dirname, (_, states, _) as tuple) =
+  let file = dirname ^ "/automaton.dot" in
+  Timing.progress "writing automaton graph" (StateGraph.visualise ~file) states;
   tuple
 
 
-let dump_automaton (env, states, _ as tuple) =
+let dump_automaton (dirname, (env, states, _) as tuple) =
+  let out = Pervasives.open_out (dirname ^ "/automaton.out") in
   Timing.progress "dumping states to automaton.out"
-    (List.iter (PrintAnalysisEnv.print_item_set ~out:(Pervasives.open_out "automaton.out") env)) states;
+    (List.iter (PrintAnalysisEnv.print_item_set ~out env)) states;
+  close_out out;
   tuple
 
 
-let emit_code (env, states, tables) =
+let emit_code (dirname, (env, states, tables)) =
   let open AnalysisEnvType in
 
   let terms = env.indexed_terms in
@@ -92,7 +103,7 @@ let emit_code (env, states, tables) =
   let impl_verbatims = env.impl_verbatims in
 
   Timing.progress "emitting ML code"
-    (EmitCode.emit_ml "src/ccparse/gr/cc" terms nonterms prods_by_lhs verbatims impl_verbatims) tables
+    (EmitCode.emit_ml dirname terms nonterms prods_by_lhs verbatims impl_verbatims) tables
 
 
 let optional enabled f x = if enabled () then f x else x

@@ -204,12 +204,13 @@ let collect_terminals decls types precs =
       if BitSet.mem has_code i then
         terminals
       else
-        let dummy_name = "__dummy_filler_token" ^ string_of_int i in
+        let dummy_name = "Dummy_filler_token" ^ string_of_int i in
         let dummy = { empty_terminal with
           tbase = { empty_symbol_base with
             name = dummy_name;
             reachable = true;
-          }
+          };
+          term_index = i;
         } in
         StringMap.add dummy_name dummy terminals
     ) terminals (1 -- max_code)
@@ -382,6 +383,9 @@ let collect_productions aliases terminals nonterminals nonterms =
 
 let of_ast topforms =
   let topforms = synthesise_start_rule topforms in
+
+  if Options._print_merged () then
+    PrintAst.print (Merge.to_ast topforms);
 
   let aliases = collect_terminal_aliases topforms.decls in
   let types = collect_terminal_types topforms.types in

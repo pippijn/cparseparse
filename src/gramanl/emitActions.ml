@@ -254,9 +254,11 @@ let make_ml_action_code terms nonterms prods_by_lhs final_prod verbatims impl_ve
     (* insert the stand-alone verbatim sections *)
     $Ast.sgSem_of_list verbatims$
 
+    type result = ($result_type$)
+
     (* all that goes into the interface is the name of the
      * UserActions.t object *)
-    val userActions : $result_type$ Glr.UserActions.t
+    val userActions : result Glr.UserActions.t
   >>,
   <:str_item<
     (* Open module so record field labels are visible *)
@@ -313,8 +315,10 @@ let make_ml_action_code terms nonterms prods_by_lhs final_prod verbatims impl_ve
     let nonterminalName (nontermId : int) : string =
       $namesModule$.nontermNamesArray.(nontermId)
 
+    type result = ($result_type$)
+
     (* wrap all the action stuff up as a record *)
-    let userActions : $result_type$ UserActions.t = {
+    let userActions : result UserActions.t = {
       reductionAction;
       duplicateTerminalValue;
       duplicateNontermValue;

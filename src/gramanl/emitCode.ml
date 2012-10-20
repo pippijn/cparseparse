@@ -117,8 +117,10 @@ let emit_tables name tables =
  * :: Main entry point
  ************************************************)
 
-let emit_ml name terms nonterms prods_by_lhs verbatims impl_verbatims tables =
+let emit_ml dirname terms nonterms prods_by_lhs verbatims impl_verbatims tables =
   let final_prod prods = prods.(tables.ParseTablesType.finalProductionIndex) in
+
+  let name = dirname ^ "/" ^ String.lowercase (Options._module_prefix ()) in
 
   emit_tokens name terms;
   emit_parse_tree name prods_by_lhs;

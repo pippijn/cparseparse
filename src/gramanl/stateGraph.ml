@@ -19,9 +19,9 @@ let dot formatter g =
   Dot.fprint_graph formatter g
 
 
-let visualise states =
+let visualise ~file states =
   let g = ItemSet.compute_graph states in
-  let out = open_out "automaton.dot" in
+  let out = open_out file in
   let formatter = Format.formatter_of_out_channel out in
   dot formatter g;
   close_out out

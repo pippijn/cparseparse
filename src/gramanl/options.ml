@@ -1,4 +1,4 @@
-let _module_prefix = ref "Cc"
+let _module_prefix = ref ""
 
 let _paranoid = ref false
 
@@ -62,7 +62,19 @@ let () =
     "-trace-derivable",		Set _trace_derivable,		" output details during derivability relation computation";
     "-trace-merge",		Set _trace_merge,		" output details while merging grammar modules";
     "-trace-rewrite",		Set _trace_rewrite,		" output details during symbolic reduction";
-  ])
+  ]) ~action:(fun inputs ->
+    if !_module_prefix = "" then (
+      let name = List.hd inputs in
+
+      let slash = String.rindex name '/' + 1 in
+      let point = String.rindex name '.' in
+      let name = String.sub name slash (point - slash) in
+
+      name.[0] <- Char.uppercase name.[0];
+
+      _module_prefix := name
+    )
+  )
 
 
 let _module_prefix () = !_module_prefix

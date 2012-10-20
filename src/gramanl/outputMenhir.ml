@@ -72,8 +72,8 @@ let output_nonterm out terms = function
       )
 
 
-let output_grammar env =
-  let out = open_out "grammar.mly" in
+let output_grammar ~file env =
+  let out = open_out file in
 
   output_string out "%{\n";
   output_string out "%}\n\n";
