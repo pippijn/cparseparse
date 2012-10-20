@@ -12,17 +12,14 @@ let can_derive_empty derivable nonterm =
   can_derive derivable nonterm empty_nonterminal
 
 let can_sequence_derive_empty derivable seq =
-  (* XXX: double negation is not pretty *)
-  not (
-    (* look through the sequence; if any members cannot derive
-     * the empty string, fail *)
-    ExtList.iter_until (function
-      | Terminal _ ->
-          true (* terminals can't derive the empty string *)
-      | Nonterminal (_, nonterm) ->
-          not (can_derive_empty derivable nonterm)
-    ) seq
-  )
+  (* look through the sequence; if any members cannot derive
+   * the empty string, fail *)
+  List.for_all (function
+    | Terminal _ ->
+        false (* terminals can't derive the empty string *)
+    | Nonterminal (_, nonterm) ->
+        can_derive_empty derivable nonterm
+  ) seq
 
 
 let add_derivable_i env left right =
