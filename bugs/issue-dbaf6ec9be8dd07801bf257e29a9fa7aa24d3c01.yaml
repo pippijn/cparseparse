@@ -1,0 +1,22 @@
+--- !ditz.rubyforge.org,2008-03-06/issue 
+title: Rename module GlrOptions to Options
+desc: |-
+  Currently, ocamlbuild does not properly support multiple options.ml files in
+  different directories, even when using -for-pack. We need to think about how
+  to make this possible. It might become more necessary in the future. For now,
+  having a glrOptions.ml is okay.
+type: :bugfix
+component: infrastructure
+release: 
+reporter: Pippijn van Steenhoven <pippijn@xinutec.org>
+status: :unstarted
+disposition: 
+creation_time: 2012-10-20 03:26:30.321192 Z
+references: []
+
+id: dbaf6ec9be8dd07801bf257e29a9fa7aa24d3c01
+log_events: 
+- - 2012-10-20 03:26:31.278196 Z
+  - Pippijn van Steenhoven <pippijn@xinutec.org>
+  - created
+  - ""
