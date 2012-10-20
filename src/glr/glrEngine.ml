@@ -119,6 +119,12 @@ let getSome = function
  * defined there *)
 
 
+(* We define our own versions of these exceptions, so that user code raising
+ * the ones in Pervasives will not interfere with parser internals. *)
+exception End_of_file
+exception Exit
+
+
 type statistics = {
   mutable detShift : int;
   mutable detReduce : int;
