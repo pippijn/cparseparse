@@ -1,10 +1,8 @@
-open AnalysisEnvType
-open GrammarType
-
-
 (* given an LR transition graph, compute the BFS tree on top of it
  * and set the parent links to record the tree *)
 let compute_bfs_tree env states =
+  let open AnalysisEnvType in
+
   (* for the BFS, we need a queue of states yet to be processed, and a
    * pile of 'done' states *)
   let queue = ItemSet.Stack.create 300 in
@@ -26,6 +24,7 @@ let compute_bfs_tree env states =
   (* it will be convenient to have all the symbols in a single list
    * for iteration purposes *)
   let all_symbols =
+    let open GrammarType in
     Array.append
       (Array.map (fun term -> Terminal ("", term)) env.indexed_terms)
       (Array.map (fun nonterm -> Nonterminal ("", nonterm)) env.indexed_nonterms)

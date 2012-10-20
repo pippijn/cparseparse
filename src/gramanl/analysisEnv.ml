@@ -1,11 +1,8 @@
 open GrammarType
-open AnalysisEnvType
 
 
 (* clear first/follow sets *)
 let reset_first_follow prods nonterms =
-  let open GrammarType in
-
   StringMap.iter (fun _ nonterm ->
     nonterm.first <- TerminalSet.empty;
     nonterm.follow <- TerminalSet.empty;
@@ -108,6 +105,8 @@ let compute_indexed_prods productions nonterm_count =
 
 
 let compute_dotted_productions indexed_prods =
+  let open AnalysisEnvType in
+
   let next_id =
     let next = ref 0 in
     fun () ->
@@ -142,6 +141,8 @@ let compute_dotted_productions indexed_prods =
 
 
 let verify_nonshared indexed_nonterms indexed_prods dotted_prods =
+  let open AnalysisEnvType in
+
   (* check nonterminals with nonterminals *)
   Array.iter (fun nonterm1 ->
     Array.iter (fun nonterm2 ->
@@ -181,6 +182,8 @@ let verify_nonshared indexed_nonterms indexed_prods dotted_prods =
 
 
 let verify_empty indexed_nonterms indexed_prods dotted_prods =
+  let open AnalysisEnvType in
+
   Array.iter (fun nonterm ->
     assert (TerminalSet.cardinal nonterm.first = 0)
   ) indexed_nonterms;
@@ -207,7 +210,7 @@ let init_env grammar =
   let dotted_prods = compute_dotted_productions indexed_prods in
 
   (* make the env *)
-  let env = {
+  let env = AnalysisEnvType.({
     indexed_nonterms;
     indexed_terms;
     indexed_prods;
@@ -220,7 +223,7 @@ let init_env grammar =
     options = grammar.config;
     verbatims = grammar.verbatim;
     impl_verbatims = grammar.impl_verbatim;
-  } in
+  }) in
 
   (* reset first/follow sets to 0 *)
   reset_first_follow grammar.productions grammar.nonterminals;
