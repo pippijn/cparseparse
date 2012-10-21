@@ -8,7 +8,7 @@ type: :task
 component: gramanl
 release: 
 reporter: Pippijn van Steenhoven <pippijn@xinutec.org>
-status: :paused
+status: :in_progress
 disposition: 
 creation_time: 2012-10-19 15:25:56.116487 Z
 references: []
@@ -27,3 +27,7 @@ log_events:
   - Wojciech Meyer <wojciech.meyer@gmail.com>
   - changed status from in_progress to paused
   - ""
+- - 2012-10-21 06:28:22.224848 Z
+  - Pippijn van Steenhoven <pippijn@xinutec.org>
+  - changed status from paused to in_progress
+  - "Initial version complete: generating input for treematch -special"

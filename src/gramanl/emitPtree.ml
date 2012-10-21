@@ -117,68 +117,115 @@ let production_types has_merge prods =
       <:str_item<type t = $types$ | SEXP>>
 
 
+let rec compute_reachable_dfs prods prods_by_lhs reachable prod_index =
+  let prod = ProdArray.get prods prod_index in
+
+  let reachable =
+    StringSet.add prod.left.nbase.name reachable
+  in
+
+  List.fold_left (fun reachable -> function
+    (* untagged nonterminals are ignored *)
+    | Nonterminal ("", _)
+    | Terminal _ ->
+        reachable
+
+    | Nonterminal (_, { nt_index; nbase = { name } }) ->
+        if StringSet.mem name reachable then
+          (* this nonterminal is already reachable *)
+          reachable
+        else
+          (* recurse into the nonterminal's productions *)
+          List.fold_left
+            (compute_reachable_dfs prods prods_by_lhs)
+            reachable
+            (NtArray.get prods_by_lhs nt_index)
+  ) reachable prod.right
+
+
+let compute_reachable prods prods_by_lhs =
+  (* start at the first production *)
+  let first_production =
+    StateId.Nonterminal.start
+    |> NtArray.get prods_by_lhs
+    |> List.hd
+  in
+
+  compute_reachable_dfs prods prods_by_lhs StringSet.empty first_production
+
 
 let make_ml_parse_tree prods prods_by_lhs =
-  let bindings =
-    List.rev (Array.fold_left (fun bindings indices ->
+  let reachable = compute_reachable prods prods_by_lhs in
+
+  let types =
+    Array.fold_right (fun indices types ->
       match List.map (ProdArray.get prods) indices with
       | [] ->
           (* the empty nonterminal has no productions *)
-          bindings
+          types
 
       | { left = { nbase = { name } } } :: _ when name.[0] = '_' ->
           (* we do not emit code for the synthesised start rule *)
-          bindings
+          types
 
       | first :: _ as prods ->
           let nonterm = first.left in
           let name = nonterm.nbase.name in
           assert (is_uid name);
 
-          let has_merge = nonterm.merge != None in
+          if not (StringSet.mem name reachable) then (
+            print_endline ("unreachable: " ^ name);
+            types
+          ) else (
+            let has_merge = nonterm.merge != None in
 
-          let intf_types, impl_types = production_types has_merge prods in
+            let intf_types, impl_types = production_types has_merge prods in
 
-          (* signature *)
-          let intf =
-            <:module_type<
-              sig
-                $intf_types$
-                val sexp_of_t : t -> Sexplib.Sexp.t
-                val t_of_sexp : Sexplib.Sexp.t -> t
-              end
-            >>
-          in
+            (name, intf_types, impl_types) :: types
+          )
 
-          (* implementation *)
-          let impl =
-            <:module_expr<
-              struct
-                $impl_types$
-              end
-            >>
-          in
+    ) prods_by_lhs []
+  in
 
-          let binding =
-            <:module_binding<$name$ : $intf$ = $impl$>>
-          in
+  let bindings =
+    List.fold_left (fun bindings (name, intf_types, impl_types) ->
+      (* signature *)
+      let intf =
+        <:module_type<
+          sig
+            $intf_types$
+            val sexp_of_t : t -> Sexplib.Sexp.t
+            val t_of_sexp : Sexplib.Sexp.t -> t
+          end
+        >>
+      in
 
-          binding :: bindings
-    ) [] prods_by_lhs)
+      (* implementation *)
+      let impl =
+        <:module_expr<
+          struct
+            $impl_types$
+          end
+        >>
+      in
+
+      assert (not (StringMap.mem name bindings));
+      StringMap.add name <:module_binding<$name$ : $intf$ = $impl$>> bindings
+    ) StringMap.empty types
+  in
+
+  let first_module =
+    match types with
+    | (name, _, _) :: _ ->
+        name
+    | _ ->
+        failwith "could not find first module"
   in
 
   let combined =
     BatList.reduce (fun combined binding ->
-      Ast.MbAnd (_loc, binding, combined)
-    ) (List.rev bindings)
-  in
-
-  let first_module =
-    match bindings with
-    | <:module_binding<$name$ : $_$ = $_$>> :: _ ->
-        name
-    | _ ->
-        failwith "could not find first module"
+      <:module_binding<$combined$ and $binding$>>
+    ) (StringMap.bindings bindings |> List.split |> snd)
   in
 
   let modules = Ast.StRecMod (_loc, combined) in
@@ -195,6 +242,4 @@ let make_ml_parse_tree prods prods_by_lhs =
     >>
   in
 
-  impl
-
-
+  impl, reachable

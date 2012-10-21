@@ -20,3 +20,9 @@ let count f l =
   Array.fold_left (fun count e ->
     count + if f e then 1 else 0
   ) 0 l
+
+
+let sum f l =
+  Array.fold_left (fun sum e ->
+    sum + f e
+  ) 0 l

@@ -23,12 +23,23 @@ let emit_tokens name terms =
 let emit_parse_tree name prods prods_by_lhs =
   (* Parse Tree *)
   let out = name ^ "Ptree.ml" in
-  let impl = EmitPtree.make_ml_parse_tree prods prods_by_lhs in
+  let impl, reachable = EmitPtree.make_ml_parse_tree prods prods_by_lhs in
 
   OCamlPrinter.print_implem ~output_file:out impl;
   (* TODO: with sexp *)
   ignore (Sys.command ("sed -i -e 's/type t = \\([^;|]*\\);;/type t = \\1 with sexp;;/' " ^ out));
-  ignore (Sys.command ("sed -i -e 's/ | SEXP;;/ with sexp;;/' " ^ out))
+  ignore (Sys.command ("sed -i -e 's/ | SEXP;;/ with sexp;;/' " ^ out));
+
+  reachable
+
+
+let emit_treematch name prods prods_by_lhs =
+  (* Parse Tree *)
+  let out = name ^ "Treematch.ml" in
+  let impl = EmitTreematch.make_ml_treematch prods prods_by_lhs in
+
+  BatStd.with_dispose ~dispose:close_out
+    (fun out -> output_string out impl) (open_out out)
 
 
 let emit_symbol_names name terms nonterms =
@@ -63,13 +74,13 @@ let emit_user_actions name terms nonterms prods final_prod verbatims impl_verbat
   ignore (Sys.command ("sed -i -e 's/\\.true/.True/;s/\\.false/.False/' " ^ out))
 
 
-let emit_ptree_actions name terms nonterms prods prods_by_lhs final_prod verbatims impl_verbatims =
+let emit_ptree_actions name terms nonterms prods final_prod verbatims impl_verbatims prods_by_lhs reachable =
   (* Parse Tree Actions *)
   emit_user_actions
       (name ^ "Ptree")
       terms
-      (PtreeMaker.nonterms nonterms)
-      (PtreeMaker.prods prods_by_lhs prods)
+      (PtreeMaker.nonterms reachable nonterms)
+      (PtreeMaker.prods reachable prods_by_lhs prods)
       final_prod verbatims impl_verbatims
 
 
@@ -107,8 +118,9 @@ let emit_ml dirname index prods_by_lhs verbatims impl_verbatims tables =
   let name = dirname ^ "/" ^ String.lowercase (Options._module_prefix ()) in
 
   emit_tokens name index.terms;
-  emit_parse_tree name index.prods prods_by_lhs;
+  let reachable = emit_parse_tree name index.prods prods_by_lhs in
+  emit_treematch name index.prods prods_by_lhs;
   emit_symbol_names name index.terms index.nonterms;
   emit_user_actions name index.terms index.nonterms index.prods final_prod verbatims impl_verbatims;
-  emit_ptree_actions name index.terms index.nonterms index.prods prods_by_lhs final_prod verbatims impl_verbatims;
+  emit_ptree_actions name index.terms index.nonterms index.prods final_prod verbatims impl_verbatims prods_by_lhs reachable;
   emit_tables name tables

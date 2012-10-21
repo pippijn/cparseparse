@@ -16,8 +16,8 @@ type: :task
 component: gramanl
 release: 
 reporter: Pippijn van Steenhoven <pippijn@xinutec.org>
-status: :unstarted
-disposition: 
+status: :closed
+disposition: :fixed
 creation_time: 2012-10-20 07:52:09.248059 Z
 references: []
 
@@ -27,3 +27,9 @@ log_events:
   - Pippijn van Steenhoven <pippijn@xinutec.org>
   - created
   - ""
+- - 2012-10-21 06:29:37.252772 Z
+  - Pippijn van Steenhoven <pippijn@xinutec.org>
+  - closed with disposition fixed
+  - |-
+    Unreachable parse tree nodes are now no longer emitted and the semantic
+    actions yield unit.
