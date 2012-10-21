@@ -92,13 +92,13 @@ nonterm(int) Exp {
   // compiled in a context where the semantic value names have the
   // type that you associated with the nonterminal (in square brackets
   // after the keyword "nonterm").
-  -> e1:Exp "+" e2:Exp        { e1 + e2 }
+  -> e1:Exp "+" e2:Exp        [Add] { e1 + e2 }
 
-  -> e1:Exp "-" e2:Exp        { e1 - e2 }
-  -> e1:Exp "*" e2:Exp        { e1 * e2 }
-  -> e1:Exp "/" e2:Exp        { e1 / e2 }
-  -> n:TOK_NUMBER             { n }
-  -> p:ParenthesizedExp       { p }
+  -> e1:Exp "-" e2:Exp        [Sub] { e1 - e2 }
+  -> e1:Exp "*" e2:Exp        [Mul] { e1 * e2 }
+  -> e1:Exp "/" e2:Exp        [Div] { e1 / e2 }
+  -> n:TOK_NUMBER             [Int] { n }
+  -> p:ParenthesizedExp       [Exp] { p }
 }
 
 // I've separated this rule out into its own nonterminal just to
