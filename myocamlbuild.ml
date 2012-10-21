@@ -604,7 +604,7 @@ let dispatch_mine = function
           Cmd(S[
             A"src/treematch/treematch.native"; A"-special"; A(env "%.tm");
             Sh"| sed -e 's/type t = \\([^;|]*\\);;/type t = \\1 with sexp;;/g;s/ | SEXP;;/ with sexp;;/g'";
-            Sh">"; A(env "%.ml")
+            Sh">"; A(env "%.ml");
           ])
         end;
 

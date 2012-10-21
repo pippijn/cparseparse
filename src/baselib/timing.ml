@@ -29,7 +29,7 @@ let output_maybe out = function
 
 let alloc_stats () =
   if Cmdline._alloc_stats () then
-    Gc.compact ();
+    Gc.full_major ();
   Gc.stat (), Gc.allocated_bytes ()
 
 
