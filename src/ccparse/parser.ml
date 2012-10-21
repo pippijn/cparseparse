@@ -139,6 +139,11 @@ let print_tptree tree =
   print_newline ()
 
 
+let print_treematch tree =
+  Sexplib.Sexp.output_hum stdout (CcTreematch.Ptree.sexp_of_t tree);
+  print_newline ()
+
+
 let elkmain inputs =
   let actions = CcActions.userActions in
   let tables  = CcTables.parseTables in
@@ -164,6 +169,18 @@ let elkmain inputs =
         | Some lst ->
             (* Print our parse tree *)
             print_tptree lst
+      ) trees
+
+  ) else if Options._treematch () then (
+
+    let actions = CcTreematchActions.userActions in
+    let trees = parse_files actions tables inputs in
+    if Options._print () then
+      List.iter (function
+        | None -> ()
+        | Some lst ->
+            (* Print our parse tree *)
+            print_treematch lst
       ) trees
 
   ) else if Options._trivial () then (

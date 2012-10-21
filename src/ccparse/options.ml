@@ -1,5 +1,6 @@
 let _ptree = ref false
 let _tptree = ref false
+let _treematch = ref false
 let _print = ref false
 let _pp = ref false
 let _tokens = ref false
@@ -15,6 +16,7 @@ let () =
   Cmdline.register Arg.([
     "-ptree",		Set _ptree,		" build parse tree";
     "-tptree",		Set _tptree,		" build strongly typed parse tree";
+    "-treematch",	Set _treematch,		" build treematch-backed tree";
     "-print",		Set _print,		" print tree";
     "-pp",		Set _pp,		" fully tokenise before parsing";
     "-tokens",		Set _tokens,		" tokenise only; do not parse (implies -pp)";
@@ -35,6 +37,7 @@ let () =
 
 let _ptree () = !_ptree
 let _tptree () = !_tptree
+let _treematch () = !_treematch
 let _print () = !_print
 let _pp () = !_pp
 let _tokens () = !_tokens

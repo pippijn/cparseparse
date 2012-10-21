@@ -44,7 +44,7 @@ let production_types term_mods left has_merge prods =
   match prods with
   | [prod] when PtreeMaker.is_singleton_nonterminal prod && not has_merge ->
       let semtype = ctyp_of_right_symbol prod in
-      left ^ ": " ^ semtype
+      left ^ ": " ^ left ^ " " ^ semtype
 
   | [tail; head_tail] when PtreeMaker.is_list_nonterminal tail head_tail && not has_merge ->
       let semtype = ctyp_of_right_symbol head_tail in
@@ -88,7 +88,7 @@ let production_types term_mods left has_merge prods =
             | Some name -> assert (is_uid name); name
           in
 
-          prod_name ^ " " ^ prod_type
+          prod_name ^ " SourceLocation " ^ prod_type
         ) prods
       in
 
@@ -134,12 +134,14 @@ let make_ml_treematch reachable prods prods_by_lhs =
     ) [] prods_by_lhs)
   in
 
-  let bindings =
+  let term_bindings =
     Hashtbl.fold (fun name typ bindings ->
       (name ^ ": " ^ typ) :: bindings
-    ) term_mods bindings
+    ) term_mods []
   in
 
   "ast Ptree {\n"
   ^ String.concat "\n" bindings
+  ^ "\n\n"
+  ^ String.concat "\n" term_bindings
   ^ "\n}\n"

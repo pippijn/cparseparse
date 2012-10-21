@@ -148,6 +148,7 @@ Library ccparse
                                 gr/CcTables,
                                 gr/CcTokens,
                                 gr/CcTreematch,
+                                gr/CcTreematchActions,
                                 Cc_keywords,
                                 Lexer,
                                 Parser,

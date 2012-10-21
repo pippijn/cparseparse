@@ -13,6 +13,8 @@ module Make
   (Tables : ParseTablesType.S)
   (Ptree : PtreeActions.S)
   (PtreeAct : UserActions.S with type result = Ptree.Ptree.t)
+  (Treematch : PtreeActions.S)
+  (TreematchAct : UserActions.S with type result = Treematch.Ptree.t)
   (Tokens : TokenInfo.S)
   (Config : Config)
 = struct

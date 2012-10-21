@@ -38,7 +38,7 @@ let is_left_recursion head_tail =
 (* nonterminal with a single production with a tagged symbol *)
 let is_singleton_nonterminal prod =
   match symbols_of_production prod with
-  | [sym] -> true
+  | [sym] -> false
   | _ -> false
 
 
