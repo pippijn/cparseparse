@@ -5,8 +5,8 @@ module Parser = Glr.Easy.Make
   (SlessTokens)
   (struct
     let ptree = false
-    let typed_ptree = true
-    let treematch = false
+    let typed_ptree = false
+    let treematch = true
     let user = false
   end)
 

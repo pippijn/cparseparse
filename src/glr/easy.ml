@@ -3,6 +3,8 @@ module type Config = sig
   val ptree : bool
   (* produce a typed parse tree and print it as s-expressions *)
   val typed_ptree : bool
+  (* produce and print treematch-backed parse tree *)
+  val treematch : bool
   (* perform user actions *)
   val user : bool
 end
@@ -55,6 +57,20 @@ module Make
     );
     
     if Config.typed_ptree then (
+      
+      let actions = PtreeAct.userActions in
+
+      match parse actions tables lexer with
+      | None      ->
+          print_endline "parsing failed"
+      | Some tree ->
+          Sexplib.Sexp.output_hum stdout
+            (Ptree.Ptree.sexp_of_t tree);
+          print_newline ()
+
+    );
+    
+    if Config.treematch then (
       
       let actions = PtreeAct.userActions in
 
