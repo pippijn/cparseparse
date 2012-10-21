@@ -4,6 +4,7 @@ module Parser = Glr.Easy.Make(ArithActions)(ArithTables)(ArithPtree)(ArithPtreeA
 
     let ptree = false
     let typed_ptree = false
+    let user = true
   end)
 
 

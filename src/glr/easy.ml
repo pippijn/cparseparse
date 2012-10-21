@@ -3,6 +3,8 @@ module type Config = sig
   val ptree : bool
   (* produce a typed parse tree and print it as s-expressions *)
   val typed_ptree : bool
+  (* perform user actions *)
+  val user : bool
 end
 
 
@@ -48,7 +50,9 @@ module Make
       | Some tree ->
           PtreeNode.print_tree tree stdout true
 
-    ) else if Config.typed_ptree then (
+    );
+    
+    if Config.typed_ptree then (
       
       let actions = PtreeAct.userActions in
 
@@ -60,7 +64,9 @@ module Make
             (Ptree.sexp_of_t tree);
           print_newline ()
 
-    ) else (
+    );
+    
+    if Config.user then (
 
       match parse actions tables lexer with
       | None      ->

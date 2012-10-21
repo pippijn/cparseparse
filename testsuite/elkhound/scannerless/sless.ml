@@ -4,6 +4,7 @@ module Parser = Glr.Easy.Make(SlessActions)(SlessTables)(SlessPtree)(SlessPtreeA
 
     let ptree = false
     let typed_ptree = true
+    let user = false
   end)
 
 
