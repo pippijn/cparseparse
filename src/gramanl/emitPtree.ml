@@ -156,8 +156,7 @@ let make_ml_parse_tree prods prods_by_lhs reachable =
         <:module_type<
           sig
             $intf_types$
-            val sexp_of_t : t -> Sexplib.Sexp.t
-            val t_of_sexp : Sexplib.Sexp.t -> t
+            include Sig.ConvertibleType with type t := t
           end
         >>
       in
