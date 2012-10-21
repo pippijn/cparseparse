@@ -135,7 +135,7 @@ let parse_files actions tables inputs =
 
 
 let print_tptree tree =
-  Sexplib.Sexp.output_hum stdout (CcPtree.sexp_of_t tree);
+  Sexplib.Sexp.output_hum stdout (CcPtree.Ptree.sexp_of_t tree);
   print_newline ()
 
 

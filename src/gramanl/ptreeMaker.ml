@@ -58,14 +58,26 @@ let is_boolean_nonterminal none some =
   && symbols_of_production some = []
 
 
-module Make(T : sig val prefix : string end) = struct
+module Make(T : sig
+  val prefix : string
+  val inner : string
+end) = struct
+
+  let expr_prefix =
+    <:expr<$uid:Options._module_prefix () ^ T.prefix$.$uid:T.inner$>>
+
+  let nonterm_type = function
+    | None ->
+        <:ctyp<$uid:Options._module_prefix () ^ T.prefix$.$uid:T.inner$.t>>
+    | Some name ->
+        <:ctyp<$uid:Options._module_prefix () ^ T.prefix$.$uid:T.inner$.$uid:name$.t>>
 
   let merge name = function
     | None -> None
     | Some { params = [l; r] as params } ->
         Some {
           params;
-          code = <:expr<$uid:Options._module_prefix () ^ T.prefix$.$uid:name$.Merge ($lid:l$, $lid:r$)>>
+          code = <:expr<$expr_prefix$.$uid:name$.Merge ($lid:l$, $lid:r$)>>
         }
     | _ -> failwith "invalid merge function"
 
@@ -78,9 +90,9 @@ module Make(T : sig val prefix : string end) = struct
         <:ctyp<unit>>
       else if StateId.Nonterminal.is_start nonterm.nt_index then
         (* synthesised start symbol *)
-        <:ctyp<$uid:Options._module_prefix () ^ T.prefix$.t>>
+        nonterm_type None
       else
-        <:ctyp<$uid:Options._module_prefix () ^ T.prefix$.$uid:nonterm.nbase.name$.t>>
+        nonterm_type (Some nonterm.nbase.name)
     in
     { nonterm with
       nbase = { nonterm.nbase with
@@ -188,7 +200,7 @@ module Make(T : sig val prefix : string end) = struct
               in
 
               let prod_variant =
-                <:expr<$uid:Options._module_prefix () ^ T.prefix$.$uid:left.nbase.name$.$uid:prod_name$>>
+                <:expr<$expr_prefix$.$uid:left.nbase.name$.$uid:prod_name$>>
               in
 
               let args =

@@ -12,7 +12,7 @@ module Make
   (Actions : UserActions.S)
   (Tables : ParseTablesType.S)
   (Ptree : PtreeActions.S)
-  (PtreeAct : UserActions.S with type result = Ptree.t)
+  (PtreeAct : UserActions.S with type result = Ptree.Ptree.t)
   (Tokens : TokenInfo.S)
   (Config : Config)
 = struct
@@ -61,7 +61,7 @@ module Make
           print_endline "parsing failed"
       | Some tree ->
           Sexplib.Sexp.output_hum stdout
-            (Ptree.sexp_of_t tree);
+            (Ptree.Ptree.sexp_of_t tree);
           print_newline ()
 
     );

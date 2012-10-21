@@ -196,11 +196,13 @@ let make_ml_parse_tree prods prods_by_lhs reachable =
     <:str_item<
       open Sexplib.Conv
 
-      $modules$
+      module Ptree = struct
+        $modules$
 
-      type t = $uid:first_module$.t
-      let t_of_sexp = $uid:first_module$.t_of_sexp
-      let sexp_of_t = $uid:first_module$.sexp_of_t
+        type t = $uid:first_module$.t
+        let t_of_sexp = $uid:first_module$.t_of_sexp
+        let sexp_of_t = $uid:first_module$.sexp_of_t
+      end
     >>
   in
 
