@@ -96,15 +96,13 @@ let dump_automaton (dirname, (env, states, _) as tuple) =
 let emit_code (dirname, (env, states, tables)) =
   let open AnalysisEnvType in
 
-  let terms = env.index.terms in
-  let nonterms = env.index.nonterms in
-  let prods = env.index.prods in
+  let index = env.index in
   let prods_by_lhs = env.prods_by_lhs in
   let verbatims = env.verbatims in
   let impl_verbatims = env.impl_verbatims in
 
   Timing.progress "emitting ML code"
-    (EmitCode.emit_ml dirname terms nonterms prods prods_by_lhs verbatims impl_verbatims) tables
+    (EmitCode.emit_ml dirname index prods_by_lhs verbatims impl_verbatims) tables
 
 
 let optional enabled f x = if enabled () then f x else x

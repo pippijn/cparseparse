@@ -99,14 +99,16 @@ let emit_tables name tables =
  * :: Main entry point
  ************************************************)
 
-let emit_ml dirname terms nonterms prods prods_by_lhs verbatims impl_verbatims tables =
+let emit_ml dirname index prods_by_lhs verbatims impl_verbatims tables =
+  let open AnalysisEnvType in
+
   let final_prod = StateId.Production.of_int tables.ParseTablesType.finalProductionIndex in
 
   let name = dirname ^ "/" ^ String.lowercase (Options._module_prefix ()) in
 
-  emit_tokens name terms;
-  emit_parse_tree name prods prods_by_lhs;
-  emit_symbol_names name terms nonterms;
-  emit_user_actions name terms nonterms prods final_prod verbatims impl_verbatims;
-  emit_ptree_actions name terms nonterms prods prods_by_lhs final_prod verbatims impl_verbatims;
+  emit_tokens name index.terms;
+  emit_parse_tree name index.prods prods_by_lhs;
+  emit_symbol_names name index.terms index.nonterms;
+  emit_user_actions name index.terms index.nonterms index.prods final_prod verbatims impl_verbatims;
+  emit_ptree_actions name index.terms index.nonterms index.prods prods_by_lhs final_prod verbatims impl_verbatims;
   emit_tables name tables
