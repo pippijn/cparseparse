@@ -35,6 +35,13 @@ let is_left_recursion head_tail =
   | _ -> false
 
 
+(* nonterminal with a single production with a tagged symbol *)
+let is_singleton_nonterminal prod =
+  match symbols_of_production prod with
+  | [sym] -> true
+  | _ -> false
+
+
 (* checks whether a nonterminal produces a list of another symbol *)
 let is_list_nonterminal tail head_tail =
   is_tail_of tail head_tail
@@ -103,10 +110,21 @@ let check_noname prod =
 
 let map_prods reachable has_merge prods =
   match prods with
-  (* nonterminal with a single production that is a tagged terminal *)
-  | [{ right = [Terminal (tag, _) | Nonterminal (tag, _)] } as prod] when tag <> "" && not has_merge ->
+  | [prod] when is_singleton_nonterminal prod && not has_merge ->
       check_noname prod;
-      [{ prod with action = Some <:expr<$lid:tag$>> }]
+      let left = nonterminal reachable prod.left in
+      let right = List.map (symbol reachable) prod.right in
+
+      let tag =
+        symbols_of_production prod
+        |> List.hd
+        |> GrammarUtil.tag_of_symbol
+      in
+      let action =
+        <:expr<$lid:tag$>>
+      in
+
+      [{ prod with left; right; action = Some action }]
 
   | [tail; head_tail] when is_list_nonterminal tail head_tail && not has_merge ->
       check_noname tail;

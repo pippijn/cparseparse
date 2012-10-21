@@ -51,8 +51,8 @@ let production_types has_merge prods =
   match prods with
   (* nonterminal with a single production that is a tagged symbol
    * (and there is no merge) *)
-  | [{ right = [Terminal (tag, _) | Nonterminal (tag, _) as sym] }] when tag <> "" && not has_merge ->
-      let semtype = ctyp_of_symbol sym in
+  | [prod] when PtreeMaker.is_singleton_nonterminal prod && not has_merge ->
+      let semtype = ctyp_of_right_symbol prod in
       <:sig_item<type t = ($semtype$)>>,
       <:str_item<type t = ($semtype$)>>
 

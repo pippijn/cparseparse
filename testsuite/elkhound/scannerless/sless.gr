@@ -116,7 +116,7 @@ nonterm If -> "i" "f" { }
 nonterm Fi -> "f" "i" { }
 
 (* tokens, with whitespace following *)
-nonterm IDENT -> i:Ident WS [Id];
+nonterm IDENT -> i:Ident WS { }
 nonterm IF -> If WS { }
 nonterm FI -> Fi WS { }
 nonterm LPAREN -> "(" WS { }
