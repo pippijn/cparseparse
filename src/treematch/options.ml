@@ -5,7 +5,6 @@ module Priv = struct
   let _special = ref false
   let _dump_ast = ref false
   let _dump_tokens = ref false
-  let inputs = ref []
 end
 
 let () =
@@ -16,7 +15,7 @@ let () =
     "-special",                 Set Priv._special,      " Use special backend";
     "-dump-ast",		Set Priv._dump_ast,	" dump source ast";
     "-dump-tokens",		Set Priv._dump_tokens,	" dump source tokens";
-  ]) ~action:(fun input -> Priv.inputs := input :: !Priv.inputs)
+  ])
 
 let _i () = !Priv._i
 let _infer () = !Priv._infer
@@ -24,4 +23,3 @@ let _no_emit () = !Priv._no_emit
 let _special () = !Priv._special
 let _dump_ast () = !Priv._dump_ast
 let _dump_tokens () =  !Priv._dump_tokens
-let inputs () = List.rev !Priv.inputs

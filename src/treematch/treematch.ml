@@ -5,14 +5,6 @@ let (|>) = BatPervasives.(|>)
 let (-|) = BatPervasives.(-|)
 let (|-) = BatPervasives.(|-)
 
-(* +=====~~~-------------------------------------------------------~~~=====+ *)
-(* |                      Some good runtime defaults                       | *)
-(* +=====~~~-------------------------------------------------------~~~=====+ *)
-
-let run f =
-  Printexc.record_backtrace true;
-  Printexc.print f Options.inputs
-
 
 (* +=====~~~-------------------------------------------------------~~~=====+ *)
 (* |                         Return list of tokens                         | *)
@@ -35,7 +27,7 @@ let rec tokenise tokens token lexbuf =
 (* +=====~~~-------------------------------------------------------~~~=====+ *)
 
 
-let files =
+let main =
   let single name =
     let program =
       let lexbuf = Lexing.from_channel (open_in name) in
@@ -76,4 +68,4 @@ let files =
 (* |                             Run our tool                              | *)
 (* +=====~~~-------------------------------------------------------~~~=====+ *)
 
-let () = Cmdline.run files
+let () = Cmdline.run main
