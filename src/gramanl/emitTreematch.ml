@@ -44,15 +44,15 @@ let production_types term_mods left has_merge prods =
   match prods with
   | [prod] when PtreeMaker.is_singleton_nonterminal prod && not has_merge ->
       let semtype = ctyp_of_right_symbol prod in
-      left ^ ": " ^ left ^ " " ^ semtype
+      left ^ ": =" ^ semtype
 
   | [tail; head_tail] when PtreeMaker.is_list_nonterminal tail head_tail && not has_merge ->
       let semtype = ctyp_of_right_symbol head_tail in
-      left ^ ": " ^ left ^ " [" ^ semtype ^ "]"
+      left ^ ": [" ^ semtype ^ "]"
 
   | [none; some] when PtreeMaker.is_option_nonterminal none some && not has_merge ->
       let semtype = ctyp_of_right_symbol some in
-      left ^ ": " ^ left ^ " ?" ^ semtype
+      left ^ ": ?" ^ semtype
 
   | [none; some] when PtreeMaker.is_boolean_nonterminal none some && not has_merge ->
       left ^ ": bool"

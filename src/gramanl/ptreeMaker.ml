@@ -37,7 +37,6 @@ let is_left_recursion head_tail =
 
 (* nonterminal with a single production with a tagged symbol *)
 let is_singleton_nonterminal prod =
-  false &&
   match symbols_of_production prod with
   | [sym] -> true
   | _ -> false
@@ -45,19 +44,16 @@ let is_singleton_nonterminal prod =
 
 (* checks whether a nonterminal produces a list of another symbol *)
 let is_list_nonterminal tail head_tail =
-  false &&
   is_tail_of tail head_tail
   && is_left_recursion head_tail
 
 
 let is_option_nonterminal none some =
-  false &&
   symbols_of_production none = []
   && List.length (symbols_of_production some) = 1
 
 
 let is_boolean_nonterminal none some =
-  false &&
   none.right = []
   && symbols_of_production some = []
 
