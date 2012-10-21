@@ -109,8 +109,27 @@ let emit_code (dirname, (env, states, tables)) =
   let verbatims = env.verbatims in
   let impl_verbatims = env.impl_verbatims in
 
+  let reachable = Reachability.compute_reachable_tagged index.prods prods_by_lhs in
+
+  let transform prefix =
+    let module Transform = PtreeMaker.Make(struct let prefix = prefix end) in
+
+    prefix,
+    Transform.nonterms reachable index.nonterms,
+    Transform.prods reachable prods_by_lhs index.prods
+  in
+
+  let actions = [
+    (* original user actions *)
+    "", index.nonterms, index.prods;
+    (* transform to use "%Ptree" module *)
+    transform "Ptree";
+    (* transform to use "%Treematch" module *)
+    (*transform "Treematch";*)
+  ] in
+
   Timing.progress "emitting ML code"
-    (EmitCode.emit_ml dirname index prods_by_lhs verbatims impl_verbatims) tables
+    (EmitCode.emit_ml dirname index prods_by_lhs actions reachable verbatims impl_verbatims) tables
 
 
 let optional enabled f x = if enabled () then f x else x

@@ -54,10 +54,10 @@ let emit_symbol_names name terms nonterms =
   OCamlPrinter.print_implem ~output_file:out impl
 
 
-let emit_user_actions name terms nonterms prods final_prod verbatims impl_verbatims =
+let emit_user_actions name prefix terms nonterms prods final_prod verbatims impl_verbatims =
   (* Actions *)
-  let dcl = name ^ "Actions.mli" in
-  let out = name ^ "Actions.ml" in
+  let dcl = name ^ prefix ^ "Actions.mli" in
+  let out = name ^ prefix ^ "Actions.ml" in
   let intf, impl =
     EmitActions.make_ml_action_code
       terms
@@ -70,16 +70,6 @@ let emit_user_actions name terms nonterms prods final_prod verbatims impl_verbat
   OCamlPrinter.print_implem ~output_file:out impl;
   (* TODO: True/False *)
   ignore (Sys.command ("sed -i -e 's/\\.true/.True/;s/\\.false/.False/' " ^ out))
-
-
-let emit_ptree_actions name terms nonterms prods final_prod verbatims impl_verbatims prods_by_lhs reachable =
-  (* Parse Tree Actions *)
-  emit_user_actions
-      (name ^ "Ptree")
-      terms
-      (PtreeMaker.nonterms reachable nonterms)
-      (PtreeMaker.prods reachable prods_by_lhs prods)
-      final_prod verbatims impl_verbatims
 
 
 let emit_tables name tables =
@@ -108,19 +98,20 @@ let emit_tables name tables =
  * :: Main entry point
  ************************************************)
 
-let emit_ml dirname index prods_by_lhs verbatims impl_verbatims tables =
+let emit_ml dirname index prods_by_lhs actions reachable verbatims impl_verbatims tables =
   let open AnalysisEnvType in
 
   let final_prod = StateId.Production.of_int tables.ParseTablesType.finalProductionIndex in
 
   let name = dirname ^ "/" ^ String.lowercase (Options._module_prefix ()) in
 
-  let reachable = Reachability.compute_reachable_tagged index.prods prods_by_lhs in
-
   emit_tokens name index.terms;
   emit_parse_tree name index.prods prods_by_lhs reachable;
   emit_treematch name index.prods prods_by_lhs reachable;
   emit_symbol_names name index.terms index.nonterms;
-  emit_user_actions name index.terms index.nonterms index.prods final_prod verbatims impl_verbatims;
-  emit_ptree_actions name index.terms index.nonterms index.prods final_prod verbatims impl_verbatims prods_by_lhs reachable;
+
+  List.iter (fun (prefix, nonterms, prods) ->
+    emit_user_actions name prefix index.terms nonterms prods final_prod verbatims impl_verbatims
+  ) actions;
+
   emit_tables name tables
