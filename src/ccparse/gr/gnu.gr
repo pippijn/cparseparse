@@ -646,74 +646,74 @@ nonterm NamespaceDefinition {
 // word such as const)."
 nonterm AttributeWord {
   // non-keyword name
-  -> n:TOK_NAME         { unimplemented 635 }
+  -> n:TOK_NAME         [Identifier] { unimplemented 635 }
 
   // keywords
-  -> "asm"              { unimplemented 636 }
-  -> "auto"             { unimplemented 637 }
-  -> "break"            { unimplemented 638 }
-  -> "bool"             { unimplemented 639 }
-  -> "case"             { unimplemented 640 }
-  -> "catch"            { unimplemented 641 }
-  -> "cdecl"            { unimplemented 642 }
-  -> "char"             { unimplemented 643 }
-  -> "class"            { unimplemented 644 }
-  -> "const"            { unimplemented 645 }
-  -> "const_cast"       { unimplemented 646 }
-  -> "continue"         { unimplemented 647 }
-  -> "default"          { unimplemented 648 }
-  -> "delete"           { unimplemented 649 }
-  -> "do"               { unimplemented 650 }
-  -> "double"           { unimplemented 651 }
-  -> "dynamic_cast"     { unimplemented 652 }
-  -> "else"             { unimplemented 653 }
-  -> "enum"             { unimplemented 654 }
-  -> "explicit"         { unimplemented 655 }
-  -> "export"           { unimplemented 656 }
-  -> "extern"           { unimplemented 657 }
-  -> "false"            { unimplemented 658 }
-  -> "float"            { unimplemented 659 }
-  -> "for"              { unimplemented 660 }
-  -> "friend"           { unimplemented 661 }
-  -> "goto"             { unimplemented 662 }
-  -> "if"               { unimplemented 663 }
-  -> "inline"           { unimplemented 664 }
-  -> "int"              { unimplemented 665 }
-  -> "long"             { unimplemented 666 }
-  -> "mutable"          { unimplemented 667 }
-  -> "namespace"        { unimplemented 668 }
-  -> "new"              { unimplemented 669 }
-  -> "operator"         { unimplemented 670 }
-  -> "pascal"           { unimplemented 671 }
-  -> "private"          { unimplemented 672 }
-  -> "protected"        { unimplemented 673 }
-  -> "public"           { unimplemented 674 }
-  -> "register"         { unimplemented 675 }
-  -> "reinterpret_cast" { unimplemented 676 }
-  -> "return"           { unimplemented 677 }
-  -> "short"            { unimplemented 678 }
-  -> "signed"           { unimplemented 679 }
-  -> "sizeof"           { unimplemented 680 }
-  -> "static"           { unimplemented 681 }
-  -> "static_cast"      { unimplemented 682 }
-  -> "struct"           { unimplemented 683 }
-  -> "switch"           { unimplemented 684 }
-  -> "template"         { unimplemented 685 }
-  -> "this"             { unimplemented 686 }
-  -> "throw"            { unimplemented 687 }
-  -> "true"             { unimplemented 688 }
-  -> "try"              { unimplemented 689 }
-  -> "typedef"          { unimplemented 690 }
-  -> "typeid"           { unimplemented 691 }
-  -> "typename"         { unimplemented 692 }
-  -> "union"            { unimplemented 693 }
-  -> "unsigned"         { unimplemented 694 }
-  -> "using"            { unimplemented 695 }
-  -> "virtual"          { unimplemented 696 }
-  -> "void"             { unimplemented 697 }
-  -> "volatile"         { unimplemented 698 }
-  -> "wchar_t"          { unimplemented 699 }
-  -> "while"            { unimplemented 700 }
+  -> "asm"              [Asm] { unimplemented 636 }
+  -> "auto"             [Auto] { unimplemented 637 }
+  -> "break"            [Break] { unimplemented 638 }
+  -> "bool"             [Bool] { unimplemented 639 }
+  -> "case"             [Case] { unimplemented 640 }
+  -> "catch"            [Catch] { unimplemented 641 }
+  -> "cdecl"            [Cdecl] { unimplemented 642 }
+  -> "char"             [Char] { unimplemented 643 }
+  -> "class"            [Class] { unimplemented 644 }
+  -> "const"            [Const] { unimplemented 645 }
+  -> "const_cast"       [ConstCast] { unimplemented 646 }
+  -> "continue"         [Continue] { unimplemented 647 }
+  -> "default"          [Default] { unimplemented 648 }
+  -> "delete"           [Delete] { unimplemented 649 }
+  -> "do"               [Do] { unimplemented 650 }
+  -> "double"           [Double] [Double] { unimplemented 651 }
+  -> "dynamic_cast"     [DynamicCast] { unimplemented 652 }
+  -> "else"             [Else] { unimplemented 653 }
+  -> "enum"             [Enum] { unimplemented 654 }
+  -> "explicit"         [Explicit] { unimplemented 655 }
+  -> "export"           [Export] { unimplemented 656 }
+  -> "extern"           [Extern] { unimplemented 657 }
+  -> "false"            [False] { unimplemented 658 }
+  -> "float"            [Float] { unimplemented 659 }
+  -> "for"              [For] { unimplemented 660 }
+  -> "friend"           [Friend] { unimplemented 661 }
+  -> "goto"             [Goto] { unimplemented 662 }
+  -> "if"               [If] { unimplemented 663 }
+  -> "inline"           [Inline] { unimplemented 664 }
+  -> "int"              [Int] { unimplemented 665 }
+  -> "long"             [Long] { unimplemented 666 }
+  -> "mutable"          [Mutable] { unimplemented 667 }
+  -> "namespace"        [Namespace] { unimplemented 668 }
+  -> "new"              [New] { unimplemented 669 }
+  -> "operator"         [Operator] { unimplemented 670 }
+  -> "pascal"           [Pascal] { unimplemented 671 }
+  -> "private"          [Private] { unimplemented 672 }
+  -> "protected"        [Protected] { unimplemented 673 }
+  -> "public"           [Public] { unimplemented 674 }
+  -> "register"         [Register] { unimplemented 675 }
+  -> "reinterpret_cast" [ReinterpretCast] { unimplemented 676 }
+  -> "return"           [Return] { unimplemented 677 }
+  -> "short"            [Short] { unimplemented 678 }
+  -> "signed"           [Signed] { unimplemented 679 }
+  -> "sizeof"           [Sizeof] { unimplemented 680 }
+  -> "static"           [Static] { unimplemented 681 }
+  -> "static_cast"      [StaticCast] { unimplemented 682 }
+  -> "struct"           [Struct] { unimplemented 683 }
+  -> "switch"           [Switch] { unimplemented 684 }
+  -> "template"         [Template] { unimplemented 685 }
+  -> "this"             [This] { unimplemented 686 }
+  -> "throw"            [Throw] { unimplemented 687 }
+  -> "true"             [True] { unimplemented 688 }
+  -> "try"              [Try] { unimplemented 689 }
+  -> "typedef"          [Typedef] { unimplemented 690 }
+  -> "typeid"           [Typeid] { unimplemented 691 }
+  -> "typename"         [Typename] { unimplemented 692 }
+  -> "union"            [Union] { unimplemented 693 }
+  -> "unsigned"         [Unsigned] { unimplemented 694 }
+  -> "using"            [Using] { unimplemented 695 }
+  -> "virtual"          [Virtual] { unimplemented 696 }
+  -> "void"             [Void] { unimplemented 697 }
+  -> "volatile"         [Volatile] { unimplemented 698 }
+  -> "wchar_t"          [WcharT] { unimplemented 699 }
+  -> "while"            [While] { unimplemented 700 }
 
   // don't know if I need to allow these; gcc 2.95.3 doesn't like them
   //  // GNU extensions
