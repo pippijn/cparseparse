@@ -26,7 +26,7 @@ let handle_return = function
 
 let glrparse glr lexer =
   let tree =
-    Timing.time ~alloc:() "parsing" (GlrEngine.glrParse glr) lexer
+    Timing.time ~alloc:true "parsing" (GlrEngine.glrParse glr) lexer
   in
 
   (* print accounting statistics from glr.ml *)
@@ -90,7 +90,7 @@ let lexer_from_file input =
   assert (not (Options._loadtoks ()));
   if Options._pp () then (
     let tokens =
-      Timing.time ~alloc:() "lexing" (tokenise [] Lexer.token) lexbuf
+      Timing.time ~alloc:true "lexing" (tokenise [] Lexer.token) lexbuf
     in
 
     if Options._dumptoks () then (

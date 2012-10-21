@@ -56,14 +56,21 @@ let alloc desc f x =
 let start = Unix.gettimeofday ()
 
 
-let progress ?alloc desc f x =
-  let start_alloc = BatOption.map alloc_stats alloc in
+let maybe_alloc_stats alloc =
+  if alloc && Cmdline._alloc_timing () then
+    Some (alloc_stats ())
+  else
+    None
+
+
+let progress ?(alloc=false) desc f x =
+  let start_alloc = maybe_alloc_stats alloc in
 
   let localstart = Unix.gettimeofday () in
   let result = f x in
   let finish = Unix.gettimeofday () in
 
-  let finish_alloc = BatOption.map alloc_stats alloc in
+  let finish_alloc = maybe_alloc_stats alloc in
 
   if Cmdline._trace_progress () then (
     print_string "%%% ";
@@ -78,14 +85,14 @@ let progress ?alloc desc f x =
   result
 
 
-let time ?alloc desc f x =
-  let start_alloc = BatOption.map alloc_stats alloc in
+let time ?(alloc=false) desc f x =
+  let start_alloc = maybe_alloc_stats alloc in
 
   let start = Unix.gettimeofday () in
   let result = f x in
   let finish = Unix.gettimeofday () in
 
-  let finish_alloc = BatOption.map alloc_stats alloc in
+  let finish_alloc = maybe_alloc_stats alloc in
 
   if Cmdline._trace_progress () then (
     print_string "%%% ";
