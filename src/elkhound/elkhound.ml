@@ -73,6 +73,14 @@ let analyse (dirname, grammar) =
   dirname, GrammarAnalysis.run_analyses grammar
 
 
+let print_transformed (dirname, (env, _, _) as tuple) =
+  let file = dirname ^ "/grammar.gr" in
+  let ast = BackTransform.ast_of_env env in
+  BatStd.with_dispose ~dispose:close_out
+    (fun out -> PrintAst.print ~out ast) (open_out file);
+  tuple
+
+
 let output_menhir (dirname, (env, _, _) as tuple) =
   let file = dirname ^ "/grammar.mly" in
   OutputMenhir.output_grammar ~file env;
@@ -115,6 +123,7 @@ let main inputs =
     |> tree_parse
     |> optional Options._graph_grammar grammar_graph
     |> analyse
+    |> optional Options._print_transformed print_transformed
     |> optional Options._output_menhir output_menhir
     |> optional Options._graph_automaton state_graph
     |> optional Options._dump_automaton dump_automaton

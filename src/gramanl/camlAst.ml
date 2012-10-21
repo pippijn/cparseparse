@@ -1,4 +1,6 @@
 open Camlp4.PreCast
+module CamlSyntax = Camlp4OCamlParser.Make(Camlp4OCamlRevisedParser.Make(Syntax))
+module CamlPrinter = Camlp4.Printers.OCaml.Make(Syntax)
 
 type ctyp = Ast.ctyp
 type expr = Ast.expr
@@ -19,8 +21,6 @@ let sexp_of_sig_item sg = Sexplib.Sexp.List []
 let sexp_of_str_item st = Sexplib.Sexp.List []
 
 
-module CamlSyntax = Camlp4OCamlParser.Make(Camlp4OCamlRevisedParser.Make(Syntax))
-
 let parse_string syntax default _loc str =
   match str with
   | ""  -> default
@@ -35,3 +35,14 @@ let ctyp_of_string      _loc = parse_string CamlSyntax.ctyp      <:ctyp<unit>> _
 let expr_of_string      _loc = parse_string CamlSyntax.expr      <:expr<()>>   _loc
 let sig_items_of_string _loc = parse_string CamlSyntax.sig_items <:sig_item<>> _loc
 let str_items_of_string _loc = parse_string CamlSyntax.str_items <:str_item<>> _loc
+
+
+let deparse_string syntax value =
+    let printer = new CamlPrinter.printer () in
+    (syntax printer) Format.str_formatter value;
+    Format.flush_str_formatter ()
+
+let string_of_ctyp = deparse_string (fun o -> o#ctyp)
+let string_of_expr = deparse_string (fun o -> o#expr)
+let string_of_sig_item = deparse_string (fun o -> o#sig_item)
+let string_of_str_item = deparse_string (fun o -> o#str_item)

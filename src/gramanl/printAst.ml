@@ -1,103 +1,110 @@
 open GrammarAst
-open Printf
 
-let print_termdecl = function
+let f = Printf.fprintf
+
+
+let print_termdecl out = function
   | TermDecl (code, name, "") ->
-      printf "  %3d : %s;\n" code name
+      f out "  %3d : %s;\n" code name
   | TermDecl (code, name, alias) ->
-      printf "  %3d : %s %s;\n" code name alias
+      f out "  %3d : %s \"%s\";\n" code name alias
 
-let print_action_code = function
+let print_action_code out = function
   | None ->
-      printf ";\n"
+      f out ";\n"
   | Some code ->
-      printf " %s\n" code
+      f out " %s\n" code
 
-let print_specfunc = function
+let print_specfunc out = function
   | SpecFunc (name, formals, code) ->
-      printf "  fun %s (" name;
+      f out "  fun %s (" name;
       ignore (List.fold_left (fun first formal ->
         if not first then
-          print_string ", ";
-        print_string formal;
+          output_string out ", ";
+        output_string out formal;
         false
       ) true formals);
-      printf ") %s\n" code
+      f out ") %s\n" code
 
-let print_termtype = function
+let print_type out = function
+  | "" -> ()
+  | ty -> f out "(%s)" ty
+
+let print_termtype out = function
   | TermType (name, termtype, []) ->
-      printf "  token %s %s;\n" termtype name
+      f out "  token%a %s;\n" print_type termtype name
   | TermType (name, termtype, funcs) ->
-      printf "  token %s %s {\n" termtype name;
-      List.iter print_specfunc funcs;
-      printf "}\n"
+      f out "  token%a %s {\n" print_type termtype name;
+      List.iter (print_specfunc out) funcs;
+      f out "}\n"
 
-let print_precspec = function
+let print_precspec out = function
   | PrecSpec (kind, prec, tokens) ->
-      printf "    %s %d" (Assoc.to_string kind) prec;
-      List.iter (printf " %s") tokens;
-      printf ";\n"
+      f out "    %s %d" (Assoc.to_string kind) prec;
+      List.iter (f out " %s") tokens;
+      f out ";\n"
 
-let print_rhs = function
+let print_rhs out = function
   | RH_name ("", name) ->
-      printf " %s" name
+      f out " %s" name
   | RH_name (tag, name) ->
-      printf " %s:%s" tag name
+      f out " %s:%s" tag name
   | RH_string ("", str) ->
-      printf " %s" str
+      f out " %s" str
   | RH_string (tag, str) ->
-      printf " %s:%s" tag str
+      f out " %s:%s" tag str
   | RH_prec (tokName) ->
-      printf " prec (%s)" tokName
+      f out " prec (%s)" tokName
   | RH_forbid (tokName) ->
-      printf " forbid_next (%s)" tokName
+      f out " forbid_next (%s)" tokName
 
-let print_proddecl = function
+let print_proddecl out = function
   | ProdDecl (PDK_NEW, None, rhs, actionCode) ->
-      printf "  ->";
-      List.iter print_rhs rhs;
-      print_action_code actionCode
+      f out "  ->";
+      List.iter (print_rhs out) rhs;
+      print_action_code out actionCode
   | ProdDecl (PDK_NEW, Some prod_name, rhs, actionCode) ->
-      printf "  -> [%s]" prod_name;
-      List.iter print_rhs rhs;
-      print_action_code actionCode
+      f out "  -> [%s]" prod_name;
+      List.iter (print_rhs out) rhs;
+      print_action_code out actionCode
   | ProdDecl (PDK_REPLACE, None, rhs, actionCode) ->
-      printf "  replace";
-      List.iter print_rhs rhs;
-      print_action_code actionCode
+      f out "  replace";
+      List.iter (print_rhs out) rhs;
+      print_action_code out actionCode
   | ProdDecl (PDK_DELETE, None, rhs, actionCode) ->
-      printf "  delete";
-      List.iter print_rhs rhs;
-      print_action_code actionCode
+      f out "  delete";
+      List.iter (print_rhs out) rhs;
+      print_action_code out actionCode
   | _ -> failwith "invalid ProdDecl"
 
-let print_topform = function
+let print_topform out = function
   | TF_verbatim (false, code) ->
-      printf "\nverbatim%s\n" code
+      f out "\nverbatim {\n%s\n}\n" code
   | TF_verbatim (true, code) ->
-      printf "\nimpl_verbatim%s\n" code
+      f out "\nimpl_verbatim {\n%s\n}\n" code
   | TF_option (name, value) ->
-      printf "option %s %d;\n" name value
+      f out "option %s %d;\n" name value
   | TF_terminals (decls, types, prec) ->
-      printf "\nterminals {\n";
-      List.iter print_termdecl decls;
-      List.iter print_termtype types;
-      printf "\n  precedence {\n";
-      List.iter print_precspec prec;
-      printf "  }\n";
-      printf "}\n\n"
+      f out "\nterminals {\n";
+      List.iter (print_termdecl out) decls;
+      f out "\n";
+      List.iter (print_termtype out) types;
+      f out "\n  precedence {\n";
+      List.iter (print_precspec out) prec;
+      f out "  }\n";
+      f out "}\n\n"
   | TF_nonterm (name, None, funcs, prods, subsets) ->
-      printf "nonterm %s {\n" name;
-      List.iter print_specfunc funcs;
-      List.iter print_proddecl prods;
-      List.iter (printf "  %s\n") subsets;
-      printf "}\n\n"
+      f out "nonterm %s {\n" name;
+      List.iter (print_specfunc out) funcs;
+      List.iter (print_proddecl out) prods;
+      List.iter (f out "  %s\n") subsets;
+      f out "}\n\n"
   | TF_nonterm (name, Some semtype, funcs, prods, subsets) ->
-      printf "nonterm(%s) %s {\n" semtype name;
-      List.iter print_specfunc funcs;
-      List.iter print_proddecl prods;
-      List.iter (printf "  %s\n") subsets;
-      printf "}\n\n"
+      f out "nonterm(%s) %s {\n" semtype name;
+      List.iter (print_specfunc out) funcs;
+      List.iter (print_proddecl out) prods;
+      List.iter (f out "  %s\n") subsets;
+      f out "}\n\n"
 
-let print ast =
-  List.iter print_topform ast
+let print ?(out=stdout) ast =
+  List.iter (print_topform out) ast

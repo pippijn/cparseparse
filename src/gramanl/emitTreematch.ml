@@ -2,8 +2,6 @@ open Camlp4.PreCast
 open GrammarType
 open CodegenHelpers
 
-module OCamlPrinter = Camlp4.Printers.OCaml.Make(Syntax)
-
 let (|>) = BatPervasives.(|>)
 let _loc = Loc.ghost
 
@@ -11,12 +9,6 @@ let _loc = Loc.ghost
 (************************************************
  * :: Concrete syntax tree
  ************************************************)
-
-let string_of_ctyp ctyp =
-  let printer = new OCamlPrinter.printer () in
-  printer#ctyp Format.str_formatter ctyp;
-  Format.flush_str_formatter ()
-
 
 let ctyp_of_nonterminal nonterm =
   (* the type is the referenced nonterminal module *)
@@ -82,7 +74,7 @@ let production_types term_mods left has_merge prods =
                   [ctyp_of_nonterminal nonterm]
               | Terminal (_, ({ tbase = { name; semtype = Some semtype; } } as term)) ->
                   if not (Hashtbl.mem term_mods name) then
-                    Hashtbl.add term_mods name (string_of_ctyp semtype);
+                    Hashtbl.add term_mods name (CamlAst.string_of_ctyp semtype);
                   [ctyp_of_terminal term]
 
               | _ -> failwith "bad"

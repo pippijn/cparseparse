@@ -81,6 +81,7 @@ Library gramanl
         Modules:                AnalysisEnv,
                                 AnalysisEnvType,
                                 Assoc,
+                                BackTransform,
                                 BfsTree,
                                 CamlAst,
                                 CodegenHelpers,
