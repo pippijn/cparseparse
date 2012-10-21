@@ -63,7 +63,7 @@ module Emit = struct
         >>
 
   and ast_clause (nm, args) =
-    let args = List.map (fun nm -> <:ctyp< $lid:Ident.string_of_lident (Ident.lident_of_uident nm)$ >>) args in
+    let args = List.map (fun nm -> <:ctyp< $uid:(Ident.string_of_uident nm)$.t >>) args in
     <:ctyp< $uid:Ident.string_of_uident nm$ of $Ast.tySta_of_list args$>>
 
   and rewrite_node typing (nm, cl) =
