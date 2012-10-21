@@ -23,3 +23,7 @@ log_events:
   - Pippijn van Steenhoven <pippijn@xinutec.org>
   - changed status from unstarted to in_progress
   - Verbatims, options, decls, types, precs are done. Nonterminals are TODO.
+- - 2012-10-21 10:27:40.719837 Z
+  - Pippijn van Steenhoven <pippijn@xinutec.org>
+  - commented
+  - "Nonterminals are now also printed. TODO: spec funcs of terms, %prec, %forbid, subsets"

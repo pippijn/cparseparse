@@ -13,7 +13,7 @@ let print_action_code out = function
   | None ->
       f out ";\n"
   | Some code ->
-      f out " %s\n" code
+      f out " { %s }\n" code
 
 let print_specfunc out = function
   | SpecFunc (name, formals, code) ->
@@ -24,7 +24,7 @@ let print_specfunc out = function
         output_string out formal;
         false
       ) true formals);
-      f out ") %s\n" code
+      f out ")%a" print_action_code (Some code)
 
 let print_type out = function
   | "" -> ()
@@ -44,36 +44,43 @@ let print_precspec out = function
       List.iter (f out " %s") tokens;
       f out ";\n"
 
+let print_tag out = function
+  | "" -> ()
+  | tag -> f out "%s:" tag
+
 let print_rhs out = function
-  | RH_name ("", name) ->
-      f out " %s" name
   | RH_name (tag, name) ->
-      f out " %s:%s" tag name
-  | RH_string ("", str) ->
-      f out " %s" str
+      f out " %a%s" print_tag tag name
   | RH_string (tag, str) ->
-      f out " %s:%s" tag str
+      f out " %a\"%s\"" print_tag tag str
   | RH_prec (tokName) ->
       f out " prec (%s)" tokName
   | RH_forbid (tokName) ->
       f out " forbid_next (%s)" tokName
 
+let print_prod_name out = function
+  | None -> ()
+  | Some name -> f out " [%s]" name
+
+let print_rhs out = function
+  | [] ->
+      f out " empty"
+  | rhs ->
+      List.iter (print_rhs out) rhs
+
 let print_proddecl out = function
-  | ProdDecl (PDK_NEW, None, rhs, actionCode) ->
+  | ProdDecl (PDK_NEW, prod_name, rhs, actionCode) ->
       f out "  ->";
-      List.iter (print_rhs out) rhs;
-      print_action_code out actionCode
-  | ProdDecl (PDK_NEW, Some prod_name, rhs, actionCode) ->
-      f out "  -> [%s]" prod_name;
-      List.iter (print_rhs out) rhs;
+      print_rhs out rhs;
+      print_prod_name out prod_name;
       print_action_code out actionCode
   | ProdDecl (PDK_REPLACE, None, rhs, actionCode) ->
       f out "  replace";
-      List.iter (print_rhs out) rhs;
+      print_rhs out rhs;
       print_action_code out actionCode
   | ProdDecl (PDK_DELETE, None, rhs, actionCode) ->
       f out "  delete";
-      List.iter (print_rhs out) rhs;
+      print_rhs out rhs;
       print_action_code out actionCode
   | _ -> failwith "invalid ProdDecl"
 

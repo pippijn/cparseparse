@@ -2,9 +2,39 @@ open GrammarAst
 open GrammarType
 open AnalysisEnvType
 
+let (|>) = BatPervasives.(|>)
+
+
 (* This module implements a transformation from AnalysisEnvType types to
  * GrammarAst types. This is the inverse transform of the one performed by
  * GrammarTreeParser and AnalysisEnv. *)
+
+
+let proddecl_of_prod prod =
+  let rhs =
+    List.map (function
+      | Terminal (tag, { alias }) when alias <> "" ->
+          RH_string (tag, alias)
+
+      | Nonterminal (tag, { nbase = { name } })
+      | Terminal (tag, { tbase = { name } }) ->
+          RH_name (tag, name)
+
+      (* TODO: RH_prec, RH_forbid *)
+
+    ) prod.right
+  in
+
+  let action = BatOption.map CamlAst.string_of_expr prod.action in
+
+  ProdDecl (PDK_NEW, prod.prod_name, rhs, action)
+
+
+let specfunc_of_spec_func funcs = function
+  | _, None -> funcs
+  | name, Some { params; code; } ->
+      SpecFunc (name, params, CamlAst.string_of_expr code) :: funcs
+
 
 let ast_of_env env =
   (* first, we reconstruct the verbatim sections *)
@@ -34,11 +64,17 @@ let ast_of_env env =
   in
   let types =
     TermArray.fold_left (fun types term ->
+      let specfuncs = [
+        "dup", term.tbase.dup;
+        "del", term.tbase.del;
+        "classify", term.classify;
+      ] in
+
       match term.tbase.semtype with
       | None ->
           types
       | Some semtype -> 
-          TermType (term.tbase.name, CamlAst.string_of_ctyp semtype, []) :: types
+          TermType (term.tbase.name, CamlAst.string_of_ctyp semtype, (*TODO: specfuncs*)[]) :: types
     ) [] env.index.terms
   in
   let precs =
@@ -51,7 +87,37 @@ let ast_of_env env =
 
   (* finally, the nonterminals with their productions *)
   let first_nonterm = "" in
-  let nonterms = StringMap.empty in
+  let nonterms =
+    NtArray.fold_left (fun nonterms nonterm ->
+      let prods =
+        (* Get production indices *)
+        NtArray.get env.prods_by_lhs nonterm.nt_index
+        (* Get actual productions *)
+        |> List.map (ProdArray.get env.index.prods)
+        (* Transform to ProdDecl *)
+        |> List.map proddecl_of_prod
+      in
+
+      let specfuncs = [
+        "dup", nonterm.nbase.dup;
+        "del", nonterm.nbase.del;
+        "merge", nonterm.merge;
+        "keep", nonterm.keep;
+      ] in
+
+      let nt =
+        TF_nonterm (
+          nonterm.nbase.name,
+          BatOption.map CamlAst.string_of_ctyp nonterm.nbase.semtype,
+          List.fold_left specfunc_of_spec_func [] specfuncs,
+          prods,
+          (*TODO: subsets*)[]
+        ), nonterm.nt_index
+      in
+
+      StringMap.add nonterm.nbase.name nt nonterms
+    ) StringMap.empty env.index.nonterms
+  in
 
   let topforms = Merge.({
     verbatims;
