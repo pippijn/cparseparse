@@ -664,7 +664,7 @@ nonterm AttributeWord {
   -> "default"          [Default] { unimplemented 648 }
   -> "delete"           [Delete] { unimplemented 649 }
   -> "do"               [Do] { unimplemented 650 }
-  -> "double"           [Double] [Double] { unimplemented 651 }
+  -> "double"           [Double] { unimplemented 651 }
   -> "dynamic_cast"     [DynamicCast] { unimplemented 652 }
   -> "else"             [Else] { unimplemented 653 }
   -> "enum"             [Enum] { unimplemented 654 }
