@@ -94,6 +94,7 @@ Library gramanl
                                 EmitPtree,
                                 EmitTables,
                                 EmitTokens,
+                                EmitTreematch,
                                 FirstSets,
                                 FollowSets,
                                 GrammarAnalysis,
