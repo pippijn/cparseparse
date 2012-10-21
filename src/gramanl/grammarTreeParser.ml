@@ -184,7 +184,7 @@ let collect_terminals decls types precs =
         precedence;
         associativity;
         classify = spec_func funcs "classify" 1;
-        term_index = code;
+        term_index = StateId.Terminal.of_int code;
       } in
 
       let max_code = max max_code code in
@@ -194,19 +194,21 @@ let collect_terminals decls types precs =
   in
 
   (* track what terminals have codes *)
-  let has_code = BitSet.Set.create (max_code + 1) in
+  let module TerminalSet = BitSet.Make(StateId.Terminal) in
+  let has_code = TerminalSet.create (max_code + 1) in
   List.iter (fun (TermDecl (code, _, _)) ->
-    BitSet.Set.add has_code code;
+    let code = StateId.Terminal.of_int code in
+    TerminalSet.add has_code code;
   ) decls;
 
   let terminals =
     (* fill in any gaps in the code space; this is required because
      * later analyses assume the terminal code space is dense *)
     BatEnum.fold (fun terminals i ->
-      if BitSet.Set.mem has_code i then
+      if TerminalSet.mem has_code i then
         terminals
       else
-        let dummy_name = "Dummy_filler_token" ^ string_of_int i in
+        let dummy_name = "Dummy_filler_token" ^ StateId.Terminal.to_string i in
         let dummy = { empty_terminal with
           tbase = { empty_symbol_base with
             name = dummy_name;
@@ -215,7 +217,7 @@ let collect_terminals decls types precs =
           term_index = i;
         } in
         StringMap.add dummy_name dummy terminals
-    ) terminals (1 -- max_code)
+    ) terminals (StateId.Terminal.range 1 max_code)
   in
 
   terminals
@@ -290,7 +292,7 @@ let collect_production_rhs aliases terminals nonterminals is_synthesised rhs_lis
         StringMap.find name terminals
     in
 
-    if terminal.term_index = 0 && not is_synthesised then
+    if StateId.Terminal.is_eof terminal.term_index && not is_synthesised then
       failwith "you cannot use the EOF token in your rules";
     terminal
   in

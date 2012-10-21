@@ -65,7 +65,7 @@ let compute_indexed_terms terms =
   StringMap.iter (fun _ term ->
     (* the ids have already been assigned *)
     let i = term.term_index in (* map: symbol to index *)
-    indexed.(i) <- term (* map: index to symbol *)
+    TermArray.set indexed i term (* map: index to symbol *)
   ) terms;
 
   (* verify we filled the term_index map *)

@@ -58,7 +58,7 @@ type terminal = {
   (* code to reclassify a token type *)
   classify              : spec_func option;
   (* terminal class index - this terminal's id; -1 means unassigned *)
-  term_index            : int;
+  term_index            : StateId.Terminal.t;
 } with sexp
 
 (* something that can appear on the left-hand side of a production
@@ -153,7 +153,7 @@ let empty_terminal = {
   precedence    = 0;
   associativity = Assoc.AK_NONASSOC;
   classify      = None;
-  term_index    = -1;
+  term_index    = StateId.Terminal.default;
 }
 
 

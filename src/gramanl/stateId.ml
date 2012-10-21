@@ -26,7 +26,8 @@ module State = struct
 
   let default : t = -1
 
-  let is_start (id : t) = id = 0
+  let start : t = 0
+  let is_start (id : t) = id = start
 end
 
 
@@ -41,4 +42,15 @@ module Nonterminal = struct
   let is_start (index : t) = index = start
 
   let default = empty
+end
+
+
+(* terminals *)
+module Terminal = struct
+  include IntegralModule
+
+  let eof = 0
+  let is_eof (index : t) = index = eof
+
+  let default : t = -1
 end

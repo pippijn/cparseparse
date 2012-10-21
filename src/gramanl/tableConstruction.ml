@@ -92,8 +92,8 @@ let encode_ambig tables state terminal shift_dest reductions =
     match shift_dest with
     | Some shift_dest ->
         if Options._trace_table () then (
-          Printf.printf " [shift token %d, to state %a"
-            terminal.term_index
+          Printf.printf " [shift token %a, to state %a"
+            StateId.Terminal.print terminal.term_index
             StateId.State.print shift_dest.state_id;
         );
         [TableEncoding.encode_shift tables shift_dest.state_id terminal.term_index]
@@ -125,8 +125,8 @@ let encode_shift tables terminal shift_dest =
   let open GrammarType in
 
   if Options._trace_table () then (
-    Printf.printf "(unambig) shift token %d, to state %a"
-      terminal.term_index
+    Printf.printf "(unambig) shift token %a, to state %a"
+      StateId.Terminal.print terminal.term_index
       StateId.State.print shift_dest.state_id;
   );
   TableEncoding.encode_shift tables shift_dest.state_id terminal.term_index
@@ -153,9 +153,9 @@ let compute_cell_action tables state shift_dest reductions terminal =
   let open GrammarType in
 
   if Options._trace_table () then (
-    Printf.printf "state %a, on terminal %d (\"%s\") "
+    Printf.printf "state %a, on terminal %a (\"%s\") "
       StateId.State.print state.state_id
-      terminal.term_index
+      StateId.Terminal.print terminal.term_index
       terminal.tbase.name;
   );
 
@@ -186,7 +186,7 @@ let encode_symbol_id = let open GrammarType in function
   | None ->
       0
   | Some (Terminal    (_,    term)) ->
-      term.term_index + 1
+      +(StateId.Terminal.to_int term.term_index) + 1
   | Some (Nonterminal (_, nonterm)) ->
       -(StateId.Nonterminal.to_int nonterm.nt_index) - 1
 

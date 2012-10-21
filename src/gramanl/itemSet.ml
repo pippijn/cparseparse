@@ -52,7 +52,7 @@ module Graph = Graph.Persistent.Digraph.ConcreteLabeled(M)(M)
 
 let transition_for_term item_set term =
   let open GrammarType in
-  item_set.term_transition.(term.term_index)
+  TermArray.get item_set.term_transition term.term_index
 
 let transition_for_nonterm item_set nonterm =
   let open GrammarType in
@@ -67,7 +67,7 @@ let transition item_set sym =
 
 let set_transition_for_term from_set term to_set =
   let open GrammarType in
-  from_set.term_transition.(term.term_index) <- Some to_set
+  TermArray.set from_set.term_transition term.term_index (Some to_set)
 
 let set_transition_for_nonterm from_set nonterm to_set =
   let open GrammarType in
@@ -76,7 +76,7 @@ let set_transition_for_nonterm from_set nonterm to_set =
 let set_transition from_set sym to_set =
   let open GrammarType in
   match sym with
-  | Terminal (_, term) -> set_transition_for_term from_set term to_set
+  | Terminal    (_,    term) -> set_transition_for_term    from_set    term to_set
   | Nonterminal (_, nonterm) -> set_transition_for_nonterm from_set nonterm to_set
 
 

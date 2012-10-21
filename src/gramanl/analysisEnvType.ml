@@ -2,6 +2,7 @@ open Sexplib.Conv
 
 module Derivable = Bit2d.Make(StateId.Nonterminal)
 module NtArray = IntegralIndexedArray.Make(StateId.Nonterminal)
+module TermArray = IntegralIndexedArray.Make(StateId.Terminal)
 
 
 (************************************************************
@@ -121,7 +122,7 @@ type item_set = {
 type env = {
   (* index the symbols on their integer ids *)
   indexed_nonterms              : GrammarType.nonterminal NtArray.t; (* nt_index -> nonterminal *)
-  indexed_terms                 : GrammarType.terminal array; (* term_index -> terminal *)
+  indexed_terms                 : GrammarType.terminal TermArray.t; (* term_index -> terminal *)
   indexed_prods                 : GrammarType.production array; (* prod_index -> production *)
 
   (* during item set closure, profiling reports we spend a lot of time

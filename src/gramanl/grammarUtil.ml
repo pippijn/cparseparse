@@ -47,7 +47,7 @@ let compare_symbol a b =
 
   (* order by id within terms/nonterms *)
   | Some (Terminal (_, term_a)), Some (Terminal (_, term_b)) ->
-      term_a.term_index - term_b.term_index
+      StateId.Terminal.compare term_a.term_index term_b.term_index
   | Some (Nonterminal (_, nonterm_a)), Some (Nonterminal (_, nonterm_b)) ->
       StateId.Nonterminal.compare nonterm_a.nt_index nonterm_b.nt_index
 

@@ -70,7 +70,7 @@ let append_ambig ambig_table set =
   ) set
 
 
-let encode_shift tables (dest_state : StateId.State.t) (shifted_term_id : term_index) : action_entry =
+let encode_shift tables (dest_state : StateId.State.t) (shifted_term_id : StateId.Terminal.t) : action_entry =
   validate_action (StateId.State.to_int dest_state + 1)
 
 let encode_reduce tables (prod_id : prod_index) (in_state : StateId.State.t) : action_entry =
@@ -91,11 +91,11 @@ let encode_goto_error tables =
   error_goto_entry
 
 
-let action_entry tables (state_id : StateId.State.t) (term_id : term_index) =
-  tables.tables.actionTable.(StateId.State.to_int state_id * tables.tables.actionCols + term_id)
+let action_entry tables (state_id : StateId.State.t) (term_id : StateId.Terminal.t) =
+  tables.tables.actionTable.(StateId.State.to_int state_id * tables.tables.actionCols + StateId.Terminal.to_int term_id)
 
-let set_action_entry tables (state_id : StateId.State.t) (term_id : term_index) (act : action_entry) =
-  tables.tables.actionTable.(StateId.State.to_int state_id * tables.tables.actionCols + term_id) <- act
+let set_action_entry tables (state_id : StateId.State.t) (term_id : StateId.Terminal.t) (act : action_entry) =
+  tables.tables.actionTable.(StateId.State.to_int state_id * tables.tables.actionCols + StateId.Terminal.to_int term_id) <- act
 
 
 let goto_entry tables (state_id : StateId.State.t) (nonterm_id : StateId.Nonterminal.t) =

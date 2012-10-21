@@ -1,6 +1,7 @@
 module State : sig
   include GrammarSig.IntegralModuleType
 
+  val start : t
   val is_start : t -> bool
 end
 
@@ -14,4 +15,13 @@ module Nonterminal : sig
 
   val start : t
   val is_start : t -> bool
+end
+
+
+(* terminals *)
+module Terminal : sig
+  include GrammarSig.IntegralModuleType
+
+  val eof : t
+  val is_eof : t -> bool
 end
