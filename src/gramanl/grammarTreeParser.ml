@@ -6,23 +6,6 @@ open Camlp4.PreCast
 let (|>) = BatPervasives.(|>)
 let (--) = BatPervasives.(--)
 
-module CamlSyntax = Camlp4OCamlParser.Make(Camlp4OCamlRevisedParser.Make(Syntax))
-
-let parse_string syntax default _loc str =
-  match str with
-  | ""  -> default
-  | str ->
-      try
-        CamlSyntax.Gram.parse_string syntax _loc str
-      with Loc.Exc_located (loc, Stream.Error msg) ->
-        Format.fprintf Format.str_formatter "%a\n  while parsing \"%s\": %s" Loc.print loc str msg;
-        Diagnostics.error (Format.flush_str_formatter ())
-
-let ctyp_of_string     _loc = parse_string CamlSyntax.ctyp      <:ctyp<unit>> _loc
-let expr_of_string     _loc = parse_string CamlSyntax.expr      <:expr<()>>   _loc
-let sig_item_of_string _loc = parse_string CamlSyntax.sig_items <:sig_item<>> _loc
-let str_item_of_string _loc = parse_string CamlSyntax.str_items <:str_item<>> _loc
-
 let _loc = Loc.ghost
 
 
@@ -70,12 +53,12 @@ let collect_verbatims verbatims =
   List.fold_left (fun (verbatim, impl_verbatim) -> function
     | TF_verbatim (true, code) ->
         let code =
-          str_item_of_string _loc code
+          CamlAst.str_items_of_string _loc code
         in
         (verbatim, code :: impl_verbatim)
     | TF_verbatim (false, code) ->
         let code =
-          sig_item_of_string _loc code
+          CamlAst.sig_items_of_string _loc code
         in
         (code :: verbatim, impl_verbatim)
 
@@ -140,7 +123,7 @@ let spec_func funcs name formal_count =
     if List.length params <> formal_count then
       failwith ("incorrect number of formal parameters for '" ^ name ^ "' function");
 
-    let code = expr_of_string _loc code in
+    let code = CamlAst.expr_of_string _loc code in
 
     Some { params; code; }
 
@@ -158,7 +141,7 @@ let collect_terminals decls types precs =
       let semtype, funcs =
         try
           let (TermType (_, termtype, funcs)) = StringMap.find name types in
-          Some (ctyp_of_string _loc termtype), funcs
+          Some (CamlAst.ctyp_of_string _loc termtype), funcs
         with Not_found ->
           None, []
       in
@@ -244,7 +227,7 @@ let collect_nonterminals nonterms term_count =
           let nonterminal = { empty_nonterminal with
             nbase = {
               name;
-              semtype = BatOption.map (ctyp_of_string _loc) semtype;
+              semtype = BatOption.map (CamlAst.ctyp_of_string _loc) semtype;
               dup = spec_func funcs "dup" 1;
               del = spec_func funcs "del" 1;
               reachable = false;
@@ -358,7 +341,7 @@ let collect_productions aliases terminals nonterminals nonterms =
 
           List.fold_left (fun (productions, next_prod_index) (ProdDecl (kind, prod_name, rhs, action)) ->
             let action =
-              BatOption.map (expr_of_string _loc) action
+              BatOption.map (CamlAst.expr_of_string _loc) action
             in
 
             (* build a production *)
