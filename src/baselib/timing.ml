@@ -1,47 +1,69 @@
-let output_size out size =
-  let size = float_of_int size /. 1024.0 in
-  Printf.fprintf out "%.1f" size
+(************************************************************
+ * :: Allocation statistics for functions
+ ************************************************************)
 
 
 let output_memsize out size =
-  if abs size > 1024 * 1024 * 1024 then
-    Printf.fprintf out "%aG" output_size (size / 1024 / 1024)
-  else if abs size > 1024 * 1024 then
-    Printf.fprintf out "%aM" output_size (size / 1024)
-  else if abs size > 1024 then
-    Printf.fprintf out "%aK" output_size size
+  if abs_float size > 1024.0 *. 1024.0 *. 1024.0 then
+    Printf.fprintf out "%.1fG" (size /. 1024.0 /. 1024.0 /. 1024.0)
+  else if abs_float size > 1024.0 *. 1024.0 then
+    Printf.fprintf out "%.1fM" (size /. 1024.0 /. 1024.0)
+  else if abs_float size > 1024.0 then
+    Printf.fprintf out "%.1fK" (size /. 1024.0)
   else
-    Printf.fprintf out "%dB" size
+    Printf.fprintf out "%dB" (int_of_float size)
 
 
-let output_alloc out = function
-  | Some start_stat, Some finish_stat ->
-      Printf.fprintf out " (allocated %a)" output_memsize
-        Gc.((finish_stat.live_words - start_stat.live_words) * Sys.word_size)
+let output_alloc out ((start, start_bytes), (finish, finish_bytes)) =
+  Printf.fprintf out " (live memory %a, allocated %a)"
+    output_memsize (float_of_int Gc.((finish.live_words - start.live_words) * Sys.word_size))
+    output_memsize (finish_bytes -. start_bytes)
+
+
+let output_maybe out = function
+  | Some a, Some b ->
+      output_alloc out (a, b)
   | _ ->
       ()
 
 
+let alloc_stats () =
+  if Cmdline._alloc_stats () then
+    Gc.compact ();
+  Gc.stat (), Gc.allocated_bytes ()
+
+
+let alloc desc f x =
+  let start = alloc_stats () in
+  let result = f x in
+  let finish = alloc_stats () in
+
+  if Cmdline._alloc_stats () then (
+    print_string "%%% ";
+    Printf.printf "%s%a\n"
+      desc
+      output_alloc (start, finish);
+    flush stdout;
+  );
+
+  result
+
+
+(************************************************************
+ * :: Timing of functions
+ ************************************************************)
+
 let start = Unix.gettimeofday ()
 
 
-let alloc_stats () =
-  if Cmdline._alloc_stats () then (
-    Gc.compact ();
-    Some (Gc.stat ())
-  ) else (
-    None
-  )
-
-
-let progress desc f x =
-  let start_stat = alloc_stats () in
+let progress ?alloc desc f x =
+  let start_alloc = BatOption.map alloc_stats alloc in
 
   let localstart = Unix.gettimeofday () in
   let result = f x in
   let finish = Unix.gettimeofday () in
 
-  let finish_stat = alloc_stats () in
+  let finish_alloc = BatOption.map alloc_stats alloc in
 
   if Cmdline._trace_progress () then (
     print_string "%%% ";
@@ -49,28 +71,28 @@ let progress desc f x =
       (finish -. localstart)
       (finish -. start)
       desc
-      output_alloc (start_stat, finish_stat);
+      output_maybe (start_alloc, finish_alloc);
     flush stdout;
   );
 
   result
 
 
-let time desc f x =
-  let start_stat = alloc_stats () in
+let time ?alloc desc f x =
+  let start_alloc = BatOption.map alloc_stats alloc in
 
   let start = Unix.gettimeofday () in
   let result = f x in
   let finish = Unix.gettimeofday () in
 
-  let finish_stat = alloc_stats () in
+  let finish_alloc = BatOption.map alloc_stats alloc in
 
   if Cmdline._trace_progress () then (
     print_string "%%% ";
     Printf.printf "%s took %fs%a\n"
       desc
       (finish -. start)
-      output_alloc (start_stat, finish_stat);
+      output_maybe (start_alloc, finish_alloc);
     flush stdout;
   );
 

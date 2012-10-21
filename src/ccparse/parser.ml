@@ -26,7 +26,7 @@ let handle_return = function
 
 let glrparse glr lexer =
   let tree =
-    Timing.time "parsing" (GlrEngine.glrParse glr) lexer
+    Timing.time ~alloc:() "parsing" (GlrEngine.glrParse glr) lexer
   in
 
   (* print accounting statistics from glr.ml *)
@@ -89,7 +89,10 @@ let lexer_from_file input =
 
   assert (not (Options._loadtoks ()));
   if Options._pp () then (
-    let tokens = Timing.time "lexing" (tokenise [] Lexer.token) lexbuf in
+    let tokens =
+      Timing.time ~alloc:() "lexing" (tokenise [] Lexer.token) lexbuf
+    in
+
     if Options._dumptoks () then (
       if Options._loadtoks () then
         failwith "-dumptoks and -loadtoks are mutually exclusive";
@@ -128,10 +131,10 @@ let parse_file glr actions input =
         None
 
 
-let parse_files actions tables inputs =
+let parse_files actions tables =
   let glr = GlrEngine.makeGLR actions tables in
 
-  List.map (parse_file glr actions) inputs
+  Timing.alloc "parsing all files" (List.map (parse_file glr actions))
 
 
 let print_tptree tree =
