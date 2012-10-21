@@ -37,23 +37,27 @@ let is_left_recursion head_tail =
 
 (* nonterminal with a single production with a tagged symbol *)
 let is_singleton_nonterminal prod =
+  false &&
   match symbols_of_production prod with
-  | [sym] -> false
+  | [sym] -> true
   | _ -> false
 
 
 (* checks whether a nonterminal produces a list of another symbol *)
 let is_list_nonterminal tail head_tail =
+  false &&
   is_tail_of tail head_tail
   && is_left_recursion head_tail
 
 
 let is_option_nonterminal none some =
+  false &&
   symbols_of_production none = []
   && List.length (symbols_of_production some) = 1
 
 
 let is_boolean_nonterminal none some =
+  false &&
   none.right = []
   && symbols_of_production some = []
 
@@ -115,6 +119,12 @@ end) = struct
     NtArray.map (nonterminal reachable) nonterms
 
 
+  let production reachable prod =
+    let left = nonterminal reachable prod.left in
+    let right = List.map (symbol reachable) prod.right in
+    { prod with left; right; }
+
+
   let check_noname prod =
     match prod.prod_name with
     | None -> ()
@@ -125,8 +135,6 @@ end) = struct
     match prods with
     | [prod] when is_singleton_nonterminal prod && not has_merge ->
         check_noname prod;
-        let left = nonterminal reachable prod.left in
-        let right = List.map (symbol reachable) prod.right in
 
         let tag =
           symbols_of_production prod
@@ -137,7 +145,7 @@ end) = struct
           <:expr<$lid:tag$>>
         in
 
-        [{ prod with left; right; action = Some action }]
+        [production reachable { prod with action = Some action }]
 
     | [tail; head_tail] when is_list_nonterminal tail head_tail && not has_merge ->
         check_noname tail;
@@ -148,8 +156,8 @@ end) = struct
             let head2_tag = GrammarUtil.tag_of_symbol head2 in
             let tail2_tag = GrammarUtil.tag_of_symbol tail2 in
             [
-              { tail with action = Some <:expr<[]>> };
-              { head_tail with action = Some <:expr<$lid:tail2_tag$ :: $lid:head2_tag$>> };
+              production reachable { tail with action = Some <:expr<[]>> };
+              production reachable { head_tail with action = Some <:expr<$lid:tail2_tag$ :: $lid:head2_tag$>> };
             ]
         (* non-empty list *)
         | [tail1], [head2; tail2] ->
@@ -157,8 +165,8 @@ end) = struct
             let head2_tag = GrammarUtil.tag_of_symbol head2 in
             let tail2_tag = GrammarUtil.tag_of_symbol tail2 in
             [
-              { tail with action = Some <:expr<[$lid:tail1_tag$]>> };
-              { head_tail with action = Some <:expr<$lid:tail2_tag$ :: $lid:head2_tag$>> };
+              production reachable { tail with action = Some <:expr<[$lid:tail1_tag$]>> };
+              production reachable { head_tail with action = Some <:expr<$lid:tail2_tag$ :: $lid:head2_tag$>> };
             ]
 
         | _ -> failwith "error in is_list_nonterminal"
@@ -169,8 +177,8 @@ end) = struct
         | [some_sym] ->
             let some_tag = GrammarUtil.tag_of_symbol some_sym in
             [
-              { none with action = Some <:expr<None>> };
-              { some with action = Some <:expr<Some $lid:some_tag$>> };
+              production reachable { none with action = Some <:expr<None>> };
+              production reachable { some with action = Some <:expr<Some $lid:some_tag$>> };
             ]
 
         | _ -> failwith "error in is_option_nonterminal"
@@ -178,15 +186,12 @@ end) = struct
 
     | [none; some] when is_boolean_nonterminal none some && not has_merge ->
         [
-          { none with action = Some <:expr<false>> };
-          { some with action = Some <:expr<true>> };
+          production reachable { none with action = Some <:expr<false>> };
+          production reachable { some with action = Some <:expr<true>> };
         ]
 
     | prods ->
         List.map (fun prod ->
-          let left = nonterminal reachable prod.left in
-          let right = List.map (symbol reachable) prod.right in
-
           let action =
             (* production 0 is the synthesised start symbol *)
             if StateId.Production.is_start prod.prod_index then (
@@ -199,7 +204,7 @@ end) = struct
               in
 
               let prod_variant =
-                <:expr<$expr_prefix$.$uid:left.nbase.name$.$uid:prod_name$>>
+                <:expr<$expr_prefix$.$uid:prod.left.nbase.name$.$uid:prod_name$>>
               in
 
               let args =
@@ -222,7 +227,7 @@ end) = struct
             )
           in
 
-          { prod with left; right; action = Some action; }
+          production reachable { prod with action = Some action; }
         ) prods
 
 
