@@ -33,10 +33,10 @@ let emit_parse_tree name prods prods_by_lhs =
   reachable
 
 
-let emit_treematch name prods prods_by_lhs =
+let emit_treematch name prods prods_by_lhs reachable =
   (* Parse Tree *)
   let out = name ^ "Treematch.ml" in
-  let impl = EmitTreematch.make_ml_treematch prods prods_by_lhs in
+  let impl = EmitTreematch.make_ml_treematch reachable prods prods_by_lhs in
 
   BatStd.with_dispose ~dispose:close_out
     (fun out -> output_string out impl) (open_out out)
@@ -119,7 +119,7 @@ let emit_ml dirname index prods_by_lhs verbatims impl_verbatims tables =
 
   emit_tokens name index.terms;
   let reachable = emit_parse_tree name index.prods prods_by_lhs in
-  emit_treematch name index.prods prods_by_lhs;
+  emit_treematch name index.prods prods_by_lhs reachable;
   emit_symbol_names name index.terms index.nonterms;
   emit_user_actions name index.terms index.nonterms index.prods final_prod verbatims impl_verbatims;
   emit_ptree_actions name index.terms index.nonterms index.prods final_prod verbatims impl_verbatims prods_by_lhs reachable;

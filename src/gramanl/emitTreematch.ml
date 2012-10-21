@@ -117,7 +117,7 @@ let production_types term_mods left has_merge prods =
 
 
 
-let make_ml_treematch prods prods_by_lhs =
+let make_ml_treematch reachable prods prods_by_lhs =
   let term_mods = Hashtbl.create 13 in
 
   let bindings =
@@ -136,11 +136,13 @@ let make_ml_treematch prods prods_by_lhs =
           let name = nonterm.nbase.name in
           assert (is_uid name);
 
-          let has_merge = nonterm.merge != None in
+          if not (StringSet.mem name reachable) then
+            bindings
+          else
+            let has_merge = nonterm.merge != None in
+            let types = production_types term_mods name has_merge prods in
+            types :: bindings
 
-          let types = production_types term_mods name has_merge prods in
-
-          types :: bindings
     ) [] prods_by_lhs)
   in
 
