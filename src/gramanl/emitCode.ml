@@ -28,7 +28,7 @@ let emit_parse_tree name prods prods_by_lhs reachable =
   OCamlPrinter.print_implem ~output_file:out impl;
   (* TODO: with sexp *)
   ignore (Sys.command
-    ("sed -i -e 's/type t = \\([^;|]*\\);;/type t = \\1 with sexp;;/;s/ | SEXP;;/ with sexp;;/' " ^ out))
+    ("sed -i -e 's/type t = \\([^;|]*\\);;/type t = \\1 with sexp;;/g;s/ | SEXP;;/ with sexp;;/g' " ^ out))
 
 
 let emit_treematch name prods prods_by_lhs reachable =

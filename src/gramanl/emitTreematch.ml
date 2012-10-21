@@ -50,13 +50,11 @@ let ctyp_of_right_symbol head_tail =
  * also needs to change *)
 let production_types term_mods left has_merge prods =
   match prods with
-  (* TODO: figure out how to do this with treematch
-  (* nonterminal with a single production that is a tagged symbol
-   * (and there is no merge) *)
-  | [{ right = [Terminal (tag, _) | Nonterminal (tag, _) as sym] }] when tag <> "" && not has_merge ->
-      let semtype = ctyp_of_symbol sym in
+  | [prod] when PtreeMaker.is_singleton_nonterminal prod && not has_merge ->
+      let semtype = ctyp_of_right_symbol prod in
       left ^ ": " ^ semtype
 
+  (* TODO: figure out how to do these with treematch
   | [tail; head_tail] when PtreeMaker.is_list_nonterminal tail head_tail && not has_merge ->
       let semtype = ctyp_of_right_symbol head_tail in
       left ^ ": " ^ semtype ^ " list"
