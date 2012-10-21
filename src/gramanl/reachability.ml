@@ -1,6 +1,8 @@
 open AnalysisEnvType
 open GrammarType
 
+let (|>) = BatPervasives.(|>)
+
 
 let rec compute_reachable_dfs prods prods_by_lhs nonterm =
   (* if we did not see this nonterminal, yet *)
@@ -44,3 +46,41 @@ let compute_reachable nonterms terms prods prods_by_lhs start =
   (* the EOF token is reachable *)
   assert (terms.(0).tbase.reachable = false);
   terms.(0).tbase.reachable <- true
+
+
+
+let rec compute_reachable_tagged_dfs prods prods_by_lhs reachable prod_index =
+  let prod = ProdArray.get prods prod_index in
+
+  let reachable =
+    StringSet.add prod.left.nbase.name reachable
+  in
+
+  List.fold_left (fun reachable -> function
+    (* untagged nonterminals are ignored *)
+    | Nonterminal ("", _)
+    | Terminal _ ->
+        reachable
+
+    | Nonterminal (_, { nt_index; nbase = { name } }) ->
+        if StringSet.mem name reachable then
+          (* this nonterminal is already reachable *)
+          reachable
+        else
+          (* recurse into the nonterminal's productions *)
+          List.fold_left
+            (compute_reachable_tagged_dfs prods prods_by_lhs)
+            reachable
+            (NtArray.get prods_by_lhs nt_index)
+  ) reachable prod.right
+
+
+let compute_reachable_tagged prods prods_by_lhs =
+  (* start at the first production *)
+  let first_production =
+    StateId.Nonterminal.start
+    |> NtArray.get prods_by_lhs
+    |> List.hd
+  in
+
+  compute_reachable_tagged_dfs prods prods_by_lhs StringSet.empty first_production
