@@ -15,7 +15,7 @@ let reset_first_follow prods nonterms =
 
 
 let compute_indexed_nonterms nonterms =
-  let indexed = Array.make (StringMap.cardinal nonterms + 1) empty_nonterminal in
+  let indexed = NtArray.make (StringMap.cardinal nonterms + 1) empty_nonterminal in
 
   (* indexed.(0) is empty_nonterminal *)
   assert (StateId.Nonterminal.is_empty empty_nonterminal.nt_index);
@@ -36,9 +36,9 @@ let compute_indexed_nonterms nonterms =
   ) nonterms;
 
   (* verify invariants *)
-  Array.iteri (fun nt_index nonterm ->
+  NtArray.iteri (fun nt_index nonterm ->
     (* the mapping must be correct *)
-    assert (StateId.Nonterminal.to_int nonterm.nt_index = nt_index);
+    assert (nonterm.nt_index == nt_index);
 
     (* "empty" must be the first nonterminal *)
     if StateId.Nonterminal.is_empty nonterm.nt_index then
@@ -54,13 +54,13 @@ let compute_indexed_nonterms nonterms =
   ) indexed;
 
   (* number of nonterminals + 1 for empty_nonterminal *)
-  assert (Array.length indexed = StringMap.cardinal nonterms + 1);
+  assert (NtArray.length indexed = StringMap.cardinal nonterms + 1);
 
   indexed
 
 
 let compute_indexed_terms terms =
-  let indexed = Array.make (StringMap.cardinal terms) empty_terminal in
+  let indexed = TermArray.make (StringMap.cardinal terms) empty_terminal in
 
   StringMap.iter (fun _ term ->
     (* the ids have already been assigned *)
@@ -69,18 +69,18 @@ let compute_indexed_terms terms =
   ) terms;
 
   (* verify we filled the term_index map *)
-  Array.iter (fun term -> assert (term != empty_terminal)) indexed;
+  TermArray.iter (fun term -> assert (term != empty_terminal)) indexed;
 
-  assert (Array.length indexed = StringMap.cardinal terms);
+  assert (TermArray.length indexed = StringMap.cardinal terms);
 
   indexed
 
 
 let compute_indexed_prods productions nonterm_count =
   (* map: prod_index -> production *)
-  let indexed = Array.make (List.length productions) empty_production in
+  let indexed = ProdArray.make (List.length productions) empty_production in
   (* map: nonterminal -> productions with that nonterm on LHS *)
-  let prods_by_lhs = Array.make nonterm_count [] in
+  let prods_by_lhs = NtArray.make nonterm_count [] in
 
   (* fill in both maps *)
   BatList.iteri (fun i production ->
@@ -98,18 +98,18 @@ let compute_indexed_prods productions nonterm_count =
   ) productions;
 
   (* verify invariants *)
-  Array.iteri (fun nt_index ->
+  NtArray.iteri (fun nt_index ->
     List.iter (fun prod_index ->
       let prod = ProdArray.get indexed prod_index in
-      assert (StateId.Nonterminal.to_int prod.left.nt_index == nt_index);
+      assert (prod.left.nt_index == nt_index);
     )
   ) prods_by_lhs;
-  Array.iteri (fun prod_index prod ->
-    assert (StateId.Production.to_int prod.prod_index == prod_index);
+  ProdArray.iteri (fun prod_index prod ->
+    assert (prod.prod_index == prod_index);
   ) indexed;
 
   (* verify we filled the prod_index map *)
-  Array.iter (fun prod -> assert (prod != empty_production)) indexed;
+  ProdArray.iter (fun prod -> assert (prod != empty_production)) indexed;
 
   indexed, prods_by_lhs
 
@@ -125,9 +125,9 @@ let compute_dotted_productions indexed_prods =
       id
   in
 
-  let dotted_prods = Array.init (Array.length indexed_prods) (fun i ->
+  let dotted_prods = ProdArray.init (ProdArray.length indexed_prods) (fun i ->
 
-    let prod = indexed_prods.(i) in
+    let prod = ProdArray.get indexed_prods i in
     let rhs_length = List.length prod.right in
 
     (* one dottedproduction for every dot position, which is one
@@ -154,51 +154,51 @@ let verify_nonshared indexed_nonterms indexed_prods dotted_prods =
   let open AnalysisEnvType in
 
   (* check nonterminals with nonterminals *)
-  Array.iter (fun nonterm1 ->
-    Array.iter (fun nonterm2 ->
+  NtArray.iter (fun nonterm1 ->
+    NtArray.iter (fun nonterm2 ->
       assert (nonterm1 == nonterm2 || nonterm1.first != nonterm2.first);
     ) indexed_nonterms
   ) indexed_nonterms;
   (* check productions with productions *)
-  Array.iter (fun prod1 ->
-    Array.iter (fun prod2 ->
+  ProdArray.iter (fun prod1 ->
+    ProdArray.iter (fun prod2 ->
       assert (prod1 == prod2 || prod1.first_rhs != prod2.first_rhs);
     ) indexed_prods
   ) indexed_prods;
   (* check dotted productions with dotted productions *)
-  Array.iter (Array.iter (fun dprod1 ->
-    Array.iter (Array.iter (fun dprod2 ->
+  ProdArray.iter (Array.iter (fun dprod1 ->
+    ProdArray.iter (Array.iter (fun dprod2 ->
       assert (dprod1 == dprod2 || dprod1.first_set != dprod2.first_set);
     )) dotted_prods
   )) dotted_prods;
   (* check nonterminals with productions *)
-  Array.iter (fun nonterm ->
-    Array.iter (fun prod ->
+  NtArray.iter (fun nonterm ->
+    ProdArray.iter (fun prod ->
       assert (nonterm.first != prod.first_rhs);
     ) indexed_prods
   ) indexed_nonterms;
   (* check productions with dottedproductions *)
-  Array.iter (fun prod ->
-    Array.iter (Array.iter (fun dprod ->
+  ProdArray.iter (fun prod ->
+    ProdArray.iter (Array.iter (fun dprod ->
       assert (prod.first_rhs != dprod.first_set);
     )) dotted_prods
   ) indexed_prods;
   (* check nonterminals with dotted productions *)
-  Array.iter (fun nonterm ->
-    Array.iter (Array.iter (fun dprod ->
+  NtArray.iter (fun nonterm ->
+    ProdArray.iter (Array.iter (fun dprod ->
       assert (nonterm.first != dprod.first_set);
     )) dotted_prods
   ) indexed_nonterms
 
 
 let verify_empty indexed_nonterms indexed_prods dotted_prods =
-  Array.iter (fun nonterm ->
+  NtArray.iter (fun nonterm ->
     assert (TerminalSet.cardinal nonterm.first = 0)
   ) indexed_nonterms;
-  Array.iter (fun prod ->
+  ProdArray.iter (fun prod ->
     assert (TerminalSet.cardinal prod.first_rhs = 0)
   ) indexed_prods;
-  Array.iter (Array.iter (fun dprod ->
+  ProdArray.iter (Array.iter (fun dprod ->
     assert (TerminalSet.cardinal dprod.first_set = 0)
   )) dotted_prods
 
@@ -206,7 +206,7 @@ let verify_empty indexed_nonterms indexed_prods dotted_prods =
 let init_env grammar =
   (* build indexed nonterminal map *)
   let indexed_nonterms = compute_indexed_nonterms grammar.nonterminals in
-  let nonterm_count = Array.length indexed_nonterms in
+  let nonterm_count = NtArray.length indexed_nonterms in
 
   (* build indexed terminal map *)
   let indexed_terms = compute_indexed_terms grammar.terminals in

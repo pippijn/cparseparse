@@ -12,7 +12,7 @@ let _loc = Loc.ghost
 
 
 let make_ml_token_type terms =
-  Array.map (fun term ->
+  TermArray.map (fun term ->
     let semtype =
       assert (is_uid term.tbase.name);
       <:ctyp<$uid:term.tbase.name$>>
@@ -22,14 +22,14 @@ let make_ml_token_type terms =
     | None    -> semtype
     | Some ty -> <:ctyp<$semtype$ of $ty$>>
   ) terms
-  |> Array.to_list
+  |> TermArray.to_list
   |> Ast.tyOr_of_list
 
 
 
 let make_ml_token_fn ?default value terms =
   let cases =
-    Array.fold_left (fun cases term ->
+    TermArray.fold_left (fun cases term ->
       try
         let name = term.tbase.name in
         assert (is_uid name);

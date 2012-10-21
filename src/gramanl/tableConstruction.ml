@@ -46,11 +46,11 @@ let rec topological_sort nonterms (* number of nonterminals in the grammar *)
  * on nonterminals *)
 let topological_order derivable nonterms =
   let open GrammarType in
-  let nonterm_count = Array.length nonterms in
+  let nonterm_count = NtArray.length nonterms in
   let seen = NonterminalSet.create nonterm_count in
 
-  let order = Array.make nonterm_count 0 in
-  ignore (Array.fold_left (fun next_ordinal nonterm ->
+  let order = NtArray.make nonterm_count 0 in
+  ignore (NtArray.fold_left (fun next_ordinal nonterm ->
     (* expand from 'nt' in case it's disconnected; this will be
      * a no-op if we've already 'seen' it *)
     topological_sort nonterms derivable seen order next_ordinal nonterm.nt_index
@@ -235,14 +235,14 @@ let compute_action_row env tables nonterms terms allow_ambig sr rr state =
   (* ---- fill in this row in the action table ---- *)
 
   (* for each possible lookahead... *)
-  Array.iter (fun terminal ->
+  TermArray.iter (fun terminal ->
     encode_action tables nonterms allow_ambig sr rr state terminal;
   ) terms;
 
   (* ---- fill in this row in the goto table ---- *)
 
   (* for each nonterminal... *)
-  Array.iter (fun nonterm ->
+  NtArray.iter (fun nonterm ->
     encode_goto_row tables state nonterm
   ) nonterms;
 
@@ -257,17 +257,17 @@ let compute_parse_tables env allow_ambig states =
   let open GrammarType in
 
   if false then (
-    Array.iter (fun prod ->
+    ProdArray.iter (fun prod ->
       PrintGrammar.print_production prod;
       print_newline ();
     ) env.index.prods;
   );
 
   let tables = TableEncoding.create
-    (Array.length env.index.terms)
-    (Array.length env.index.nonterms)
+    (TermArray.length env.index.terms)
+    (NtArray.length env.index.nonterms)
     (List.length states)
-    (Array.length env.index.prods)
+    (ProdArray.length env.index.prods)
     (topological_order env.derivable env.index.nonterms)
     (BatOption.get env.start_state).state_id
     (*~final_prod:*)0 (* slight hack: assume it's the first production *)
@@ -287,14 +287,14 @@ let compute_parse_tables env allow_ambig states =
   Warnings.report_unexpected !rr env.options.expectedRR "reduce/reduce conflicts";
 
   (* report on cyclicity *)
-  Array.iter (fun nonterm ->
+  NtArray.iter (fun nonterm ->
     if nonterm.cyclic then
       Printf.printf "grammar symbol %s is cyclic\n"
         nonterm.nbase.name
   ) env.index.nonterms;
 
   (* fill in 'prod_info' *)
-  Array.iter (fun prod ->
+  ProdArray.iter (fun prod ->
     TableEncoding.set_prod_info tables prod.prod_index (List.length prod.right) prod.left.nt_index
   ) env.index.prods;
 

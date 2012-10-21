@@ -15,10 +15,10 @@ let ordering_operator order =
     "="
 
 
-let compare_by_outgoing syms transition_fn a b =
-  ExtArray.foldl_untili (fun t _ ->
-    let dest_a = transition_fn a t in
-    let dest_b = transition_fn b t in
+let compare_by_outgoing syms foldl_untili get transition a b =
+  foldl_untili (fun t _ ->
+    let dest_a = get (transition a) t in
+    let dest_b = get (transition b) t in
 
     match dest_a, dest_b with
     | None, Some _ -> 1
@@ -30,7 +30,7 @@ let compare_by_outgoing syms transition_fn a b =
 
 
 let compare_by_reductions terms a b =
-  ExtArray.foldl_until (fun term ->
+  TermArray.foldl_until (fun term ->
     let red_a = List.sort compare (ItemSet.possible_reductions a term) in
     let red_b = List.sort compare (ItemSet.possible_reductions b term) in
 
@@ -60,9 +60,9 @@ let renumber_states_compare env a b =
   let order =
     order
     (* first up: terminals *)
-    |<> lazy (compare_by_outgoing env.index.terms (fun is t -> is.term_transition.(t)) a b)
+    |<> lazy (compare_by_outgoing env.index.terms TermArray.foldl_untili TermArray.get (fun is -> is.term_transition) a b)
     (* next: nonterminals *)
-    |<> lazy (compare_by_outgoing env.index.nonterms (fun is t -> is.nonterm_transition.(t)) a b)
+    |<> lazy (compare_by_outgoing env.index.nonterms NtArray.foldl_untili NtArray.get (fun is -> is.nonterm_transition) a b)
     (* finally, order by possible reductions *)
     |<> lazy (compare_by_reductions env.index.terms a b)
   in

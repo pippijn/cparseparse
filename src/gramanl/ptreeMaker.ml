@@ -99,7 +99,7 @@ let symbol reachable = function
 
 
 let nonterms reachable nonterms =
-  Array.map (nonterminal reachable) nonterms
+  NtArray.map (nonterminal reachable) nonterms
 
 
 let check_noname prod =
@@ -225,7 +225,7 @@ let unit_prods =
  * also needs to change *)
 let prods reachable prods_by_lhs prods =
   let prods_by_lhs =
-    Array.map (fun indices ->
+    NtArray.map (fun indices ->
       let prods = List.map (ProdArray.get prods) indices in
 
       let is_reachable =
@@ -248,8 +248,8 @@ let prods reachable prods_by_lhs prods =
   in
 
   (* make a new indexed prods *)
-  let prod_count = ExtArray.sum (List.length) prods_by_lhs in
-  let prods = Array.make prod_count empty_production in
-  Array.iter (List.iter (fun prod -> ProdArray.set prods prod.prod_index prod)) prods_by_lhs;
+  let prod_count = NtArray.sum (List.length) prods_by_lhs in
+  let prods = ProdArray.make prod_count empty_production in
+  NtArray.iter (List.iter (fun prod -> ProdArray.set prods prod.prod_index prod)) prods_by_lhs;
 
   prods

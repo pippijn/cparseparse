@@ -45,7 +45,7 @@ let compute_first derivable indexed_nonterms indexed_prods indexed_terms =
     changed := false;
 
     (* for each production *)
-    Array.iter (fun prod ->
+    ProdArray.iter (fun prod ->
       let lhs = prod.left in
 
       (* compute First(RHS-sequence) *)
@@ -72,7 +72,7 @@ let compute_first derivable indexed_nonterms indexed_prods indexed_terms =
   done;
 
   if Options._trace_first () then (
-    Array.iter (fun nonterm ->
+    NtArray.iter (fun nonterm ->
       if nonterm != empty_nonterminal then (
         PrintAnalysisEnv.print_terminal_set ~name:nonterm.nbase.name indexed_terms nonterm.first;
         print_newline ();
@@ -86,12 +86,13 @@ let compute_dprod_first derivable dotted_prods indexed_prods indexed_terms =
   let open AnalysisEnvType in
 
   (* for each production *)
-  Array.iter (fun prod ->
+  ProdArray.iteri (fun prod_index prod ->
+    let dprods = ProdArray.get dotted_prods prod_index in
 
     (* for each dotted production where the dot is not at the end.. *)
     let rhs_length = List.length prod.right in
     for posn = 0 to rhs_length do
-      let dprod = (ProdArray.get dotted_prods prod.prod_index).(posn) in
+      let dprod = dprods.(posn) in
 
       let right = ExtList.nth_tl dprod.prod.right posn in
 

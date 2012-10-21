@@ -11,7 +11,7 @@ let error_goto_entry : goto_entry = 0xffff
 
 
 let create numTerms numNonterms numStates numProds nontermOrder startState finalProductionIndex =
-  assert (Array.length nontermOrder = numNonterms);
+  assert (NtArray.length nontermOrder = numNonterms);
   {
     tables = {
       numTerms;
@@ -39,7 +39,7 @@ let create numTerms numNonterms numStates numProds nontermOrder startState final
       startState = StateId.State.to_int startState;
       finalProductionIndex;
 
-      nontermOrder;
+      nontermOrder = NtArray.to_array nontermOrder;
     };
     ambig_table = Stack.create ();
   }
@@ -110,8 +110,8 @@ let set_state_symbol tables (state_id : StateId.State.t) (sym : symbol_id) =
 
 
 let set_prod_info tables (prod_id : StateId.Production.t) rhsLen (lhsIndex : StateId.Nonterminal.t) =
-  ProdArray.set tables.tables.prodInfo_rhsLen prod_id rhsLen;
-  ProdArray.set tables.tables.prodInfo_lhsIndex prod_id (StateId.Nonterminal.to_int lhsIndex)
+  tables.tables.prodInfo_rhsLen.(StateId.Production.to_int prod_id) <- rhsLen;
+  tables.tables.prodInfo_lhsIndex.(StateId.Production.to_int prod_id) <- StateId.Nonterminal.to_int lhsIndex
 
 
 let finish_tables tables =

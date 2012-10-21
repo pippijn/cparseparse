@@ -16,9 +16,15 @@ let output_assoc = let open Assoc in function
 
 
 let output_precs out terms =
-  let max_prec = Array.fold_left (fun prec term -> max prec term.precedence) 0 terms in
+  let max_prec =
+    TermArray.fold_left (fun prec term ->
+      max prec term.precedence
+    ) 0 terms
+  in
+
   let precs = Array.make (max_prec + 1) [] in
-  Array.iter (fun term ->
+
+  TermArray.iter (fun term ->
     if term.precedence <> 0 then
       precs.(term.precedence) <- term :: precs.(term.precedence)
   ) terms;
@@ -58,7 +64,7 @@ let output_production out terms prods prod_index =
   else
     List.iter (output_symbol out) prod.right;
   if prod.prec <> 0 && prod.prec <> last_prec prod.right then (
-    let term = BatArray.find (fun term -> term.precedence = prod.prec) terms in
+    let term = TermArray.find (fun term -> term.precedence = prod.prec) terms in
     Printf.fprintf out " %%prec %s" term.tbase.name;
   );
   Printf.fprintf out "\t{ %a }\n" StateId.Production.print prod.prod_index
@@ -80,12 +86,12 @@ let output_grammar ~file env =
 
   output_string out "%{\n";
   output_string out "%}\n\n";
-  Array.iter (output_token out) env.index.terms;
+  TermArray.iter (output_token out) env.index.terms;
   output_string out "\n";
   output_precs out env.index.terms;
-  let first = env.index.nonterms.(1) in
+  let first = NtArray.get env.index.nonterms StateId.Nonterminal.start in
   Printf.fprintf out "\n%%start<int> %s\n\n" first.nbase.name;
   output_string out "%%\n\n";
-  Array.iter (output_nonterm out env.index.terms env.index.prods) env.prods_by_lhs;
+  NtArray.iter (output_nonterm out env.index.terms env.index.prods) env.prods_by_lhs;
 
   close_out out

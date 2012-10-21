@@ -3,7 +3,7 @@ open GrammarType
 
 let compute_supersets indexed_nonterms nonterms =
   (* first, resolve all subset nonterminals *)
-  Array.iter (fun super ->
+  NtArray.iter (fun super ->
     super.subsets <-
       List.map (fun sub ->
         (* we validated the existence of all subsets, already *)
@@ -11,7 +11,7 @@ let compute_supersets indexed_nonterms nonterms =
       ) super.subset_names
   ) indexed_nonterms;
 
-  Array.iter (fun super ->
+  NtArray.iter (fun super ->
     List.iter (fun sub ->
       match sub.superset with
       | Some _ ->

@@ -11,8 +11,8 @@ let make_ml_descriptions terms nonterms =
   (* emit a map of terminal ids to their names *)
   let term_names_array =
     let names =
-      Array.map (fun term -> <:expr<$str:term.tbase.name$>>) terms
-      |> Array.to_list
+      TermArray.map (fun term -> <:expr<$str:term.tbase.name$>>) terms
+      |> TermArray.to_list
       |> Ast.exSem_of_list
     in
     <:str_item<let termNamesArray : string array = [| $names$ |]>>
@@ -21,8 +21,8 @@ let make_ml_descriptions terms nonterms =
   (* emit a map of terminal ids to their aliases *)
   let term_aliases_array =
     let names =
-      Array.map (fun term -> <:expr<$str:GrammarUtil.name_of_terminal term$>>) terms
-      |> Array.to_list
+      TermArray.map (fun term -> <:expr<$str:GrammarUtil.name_of_terminal term$>>) terms
+      |> TermArray.to_list
       |> Ast.exSem_of_list
     in
     <:str_item<let termAliasesArray : string array = [| $names$ |]>>
@@ -31,8 +31,8 @@ let make_ml_descriptions terms nonterms =
   (* emit a map of nonterminal ids to their names *)
   let nonterm_names_array =
     let names =
-      Array.map (fun nonterm -> <:expr<$str:nonterm.nbase.name$>>) nonterms
-      |> Array.to_list
+      NtArray.map (fun nonterm -> <:expr<$str:nonterm.nbase.name$>>) nonterms
+      |> NtArray.to_list
       |> Ast.exSem_of_list
     in
     <:str_item<let nontermNamesArray : string array = [| $names$ |]>>

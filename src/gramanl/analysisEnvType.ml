@@ -85,8 +85,8 @@ type item_set = {
   mutable nonkernel_items       : lr_item list;
   (* transition function (where we go on shifts); None means no transition
    *   Map : (Terminal id or Nonterminal id) -> item_set *)
-  term_transition               : item_set option array;
-  nonterm_transition            : item_set option array;
+  term_transition               : item_set option TermArray.t;
+  nonterm_transition            : item_set option NtArray.t;
 
   (* profiler reports I'm spending significant time rifling through
    * the items looking for those that have the dot at the end; so this
@@ -117,9 +117,9 @@ type item_set = {
  ************************************************************)
 
 type index = {
-  nonterms                      : GrammarType.nonterminal NtArray.t; (* nt_index   -> nonterminal *)
-  terms                         : GrammarType.terminal TermArray.t;  (* term_index -> terminal    *)
-  prods                         : GrammarType.production array;      (* prod_index -> production  *)
+  nonterms                      : GrammarType.nonterminal NtArray.t;  (* nt_index   -> nonterminal *)
+  terms                         : GrammarType.terminal TermArray.t;   (* term_index -> terminal    *)
+  prods                         : GrammarType.production ProdArray.t; (* prod_index -> production  *)
 } with sexp
 
 type env = {

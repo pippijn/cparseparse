@@ -119,7 +119,7 @@ let make_ml_treematch reachable prods prods_by_lhs =
   let term_mods = Hashtbl.create 13 in
 
   let bindings =
-    List.rev (Array.fold_left (fun bindings indices ->
+    List.rev (NtArray.fold_left (fun bindings indices ->
       match List.map (ProdArray.get prods) indices with
       | [] ->
           (* the empty nonterminal has no productions *)

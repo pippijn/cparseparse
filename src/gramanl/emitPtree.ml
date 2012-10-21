@@ -119,7 +119,7 @@ let production_types has_merge prods =
 
 let make_ml_parse_tree prods prods_by_lhs reachable =
   let types =
-    Array.fold_right (fun indices types ->
+    NtArray.fold_right (fun indices types ->
       match List.map (ProdArray.get prods) indices with
       | [] ->
           (* the empty nonterminal has no productions *)

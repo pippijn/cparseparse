@@ -28,24 +28,28 @@ let rec compute_reachable_dfs prods prods_by_lhs nonterm =
 
 let compute_reachable nonterms terms prods prods_by_lhs start =
   (* start by clearing the reachability flags *)
-  Array.iter (fun nonterm -> nonterm.nbase.reachable <- false) nonterms;
-  Array.iter (fun    term ->    term.tbase.reachable <- false)    terms;
+  NtArray.  iter (fun nonterm -> nonterm.nbase.reachable <- false) nonterms;
+  TermArray.iter (fun    term ->    term.tbase.reachable <- false)    terms;
 
   (* do a DFS on the grammar, marking things reachable as
    * they're encountered *)
   compute_reachable_dfs prods prods_by_lhs start;
 
   (* the empty and start symbol are reachable *)
-  assert (nonterms.(0) == empty_nonterminal);
-  assert (nonterms.(0).nbase.reachable = false);
-  nonterms.(0).nbase.reachable <- true;
-  assert (nonterms.(1).nbase.name == GrammarTreeParser.start_name);
-  assert (nonterms.(1).nbase.reachable = false);
-  nonterms.(1).nbase.reachable <- true;
+  let empty = NtArray.get nonterms StateId.Nonterminal.empty in
+  assert (empty == empty_nonterminal);
+  assert (empty.nbase.reachable = false);
+  empty.nbase.reachable <- true;
+
+  let start = NtArray.get nonterms StateId.Nonterminal.start in
+  assert (start.nbase.name == GrammarTreeParser.start_name);
+  assert (start.nbase.reachable = false);
+  start.nbase.reachable <- true;
 
   (* the EOF token is reachable *)
-  assert (terms.(0).tbase.reachable = false);
-  terms.(0).tbase.reachable <- true
+  let eof = TermArray.get terms StateId.Terminal.eof in
+  assert (eof.tbase.reachable = false);
+  eof.tbase.reachable <- true
 
 
 

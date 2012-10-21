@@ -42,12 +42,12 @@ let run_analyses grammar =
 
   begin
     let unr_nonterms =
-      ExtArray.count (fun nonterm ->
+      NtArray.count (fun nonterm ->
         not nonterm.nbase.reachable
       ) env.index.nonterms
     in
     let unr_terms =
-      ExtArray.count (fun term ->
+      TermArray.count (fun term ->
         not term.tbase.reachable
       ) env.index.terms
     in

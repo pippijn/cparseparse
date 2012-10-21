@@ -29,8 +29,8 @@ module M : GrammarSig.S with type t = item_set = struct
   let default = {
     kernel_items = ItemList.M.default;
     nonkernel_items = [];
-    term_transition = [||];
-    nonterm_transition = [||];
+    term_transition = TermArray.empty;
+    nonterm_transition = NtArray.empty;
     dots_at_end = [];
     state_symbol = None;
     state_id = StateId.State.default;
@@ -162,13 +162,13 @@ let inverse_transition terms nonterms source target =
   let open GrammarType in
   try
     Terminal ("",
-      BatArray.find (fun term ->
+      TermArray.find (fun term ->
         eq_option target (transition_for_term source term)
       ) terms
     )
   with Not_found ->
     Nonterminal ("",
-      BatArray.find (fun nonterm ->
+      NtArray.find (fun nonterm ->
         eq_option target (transition_for_nonterm source nonterm)
       ) nonterms
     )
@@ -180,7 +180,7 @@ let inverse_transition terms nonterms source target =
 
 let compute_graph states =
   List.fold_left (fun g state ->
-    Array.fold_left (fun g -> function
+    NtArray.fold_left (fun g -> function
       | None -> g
       | Some target ->
           Graph.add_edge g state target

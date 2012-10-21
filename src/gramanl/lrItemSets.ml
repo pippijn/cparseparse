@@ -21,8 +21,8 @@ let make_item_set env kernel_items =
 
   { ItemSet.M.default with
     kernel_items = { items = kernel_items; hash = 0; };
-    term_transition = Array.make env.term_count None;
-    nonterm_transition = Array.make env.nonterm_count None;
+    term_transition = TermArray.make env.term_count None;
+    nonterm_transition = NtArray.make env.nonterm_count None;
     state_id = state_id;
   }
 
@@ -455,8 +455,8 @@ let construct_lr_item_sets env =
   let env = {
     env = env;
 
-    nonterm_count = Array.length env.index.nonterms;
-    term_count    = Array.length env.index.terms;
+    nonterm_count = NtArray.length env.index.nonterms;
+    term_count    = TermArray.length env.index.terms;
 
     next_item_set_id = 0;
 
@@ -469,9 +469,10 @@ let construct_lr_item_sets env =
    * on LHS, and no other productions have the start symbol
    * on LHS) *)
   begin
-    let first_dp = DottedProduction.get env.env.dotted_prods env.env.index.prods.(0) 0 (* dot at left *) in
-    assert (first_dp.prod == env.env.index.prods.(0));
-    assert (first_dp.prod.left.nbase.name == GrammarTreeParser.start_name);
+    let first_prod = ProdArray.get env.env.index.prods StateId.Production.start in
+    let first_dp = DottedProduction.get env.env.dotted_prods first_prod 0 (* dot at left *) in
+    assert (first_dp.prod == first_prod);
+    assert (first_prod.left.nbase.name == GrammarTreeParser.start_name);
 
     let first_item = {
       dprod = first_dp;

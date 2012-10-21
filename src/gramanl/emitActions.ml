@@ -52,7 +52,7 @@ let final_semtype final_prod =
 let make_ml_actions prods =
   (* iterate over productions, emitting action function closures *)
   let closures =
-    Array.map (fun prod ->
+    ProdArray.map (fun prod ->
       (* put the production in comments above the defn *)
       if false then (
         print_string "(*";
@@ -124,7 +124,7 @@ let make_ml_actions prods =
       <:expr<fun svals start_p end_p -> $fun_body$>>
     ) prods
 
-    |> Array.to_list
+    |> ProdArray.to_list
     |> Ast.exSem_of_list
   in
 
@@ -210,7 +210,11 @@ let make_ml_dup_del_merge terms nonterms =
       "nonterm"
       (fun nonterm -> nonterm.nbase)
       func
-      nonterms
+      (* XXX: This (and the TermArray one) break type-safety. One solution
+       * would be to pass all operations down these functions. That is very
+       * ugly, however, so I refrain from doing so.
+       * TODO: Think about a better solution. *)
+      (NtArray.to_array nonterms)
   in
 
   let make_term sf_name a_name func rettype =
@@ -218,7 +222,7 @@ let make_ml_dup_del_merge terms nonterms =
       "term"
       (fun term -> term.tbase)
       func
-      terms
+      (TermArray.to_array terms)
   in
 
   [

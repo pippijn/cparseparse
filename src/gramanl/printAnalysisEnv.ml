@@ -12,7 +12,7 @@ let print_terminal_set ?(out=stdout) ?(abbreviate=true) ?(name=".") terms set =
     output_string out " ..."
   ) else (
     let first = ref true in
-    Array.iter (fun term ->
+    TermArray.iter (fun term ->
       if TerminalSet.mem term.term_index set then (
         if not !first then
           output_string out ",";
@@ -105,21 +105,21 @@ let print_item_set ?(out=stdout) ?(print_nonkernels=false) env item_set =
 
   (* print transition function directly, since I'm now throwing
    * away items sometimes *)
-  Array.iteri (fun i transition ->
+  TermArray.iteri (fun i transition ->
     match transition with
     | None -> ()
     | Some transition ->
         Printf.fprintf out "  on terminal %s go to %a\n"
-          env.index.terms.(i).tbase.name
+          (TermArray.get env.index.terms i).tbase.name
           StateId.State.print transition.state_id
   ) item_set.term_transition;
 
-  Array.iteri (fun i transition ->
+  NtArray.iteri (fun i transition ->
     match transition with
     | None -> ()
     | Some transition ->
         Printf.fprintf out "  on nonterminal %s go to %a\n"
-          env.index.nonterms.(i).nbase.name
+          (NtArray.get env.index.nonterms i).nbase.name
           StateId.State.print transition.state_id
   ) item_set.nonterm_transition;
 

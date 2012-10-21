@@ -7,7 +7,7 @@ let compute_follow derivable indexed_prods =
     changed := false;
 
     (* for each production *)
-    Array.iter (fun prod ->
+    ProdArray.iter (fun prod ->
       (* for each RHS nonterminal member *)
       ExtList.iterl (fun after_right_sym right_sym ->
         match right_sym with
