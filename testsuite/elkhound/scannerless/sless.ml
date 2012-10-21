@@ -1,5 +1,7 @@
 module Parser = Glr.Easy.Make(SlessActions)(SlessTables)(SlessPtree)(SlessPtreeActions)(SlessTokens)
   (struct
+    open SlessTreematch
+
     let ptree = false
     let typed_ptree = true
   end)

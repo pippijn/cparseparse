@@ -1,0 +1,3 @@
+# sexplib
+<**/*Ptree.ml>:		syntax_camlp4o, pkg_sexplib.syntax
+<**/*Treematch.ml>:	syntax_camlp4o, pkg_sexplib.syntax

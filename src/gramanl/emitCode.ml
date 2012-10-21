@@ -27,15 +27,14 @@ let emit_parse_tree name prods prods_by_lhs =
 
   OCamlPrinter.print_implem ~output_file:out impl;
   (* TODO: with sexp *)
-  ignore (Sys.command ("sed -i -e 's/type t = \\([^;|]*\\);;/type t = \\1 with sexp;;/' " ^ out));
-  ignore (Sys.command ("sed -i -e 's/ | SEXP;;/ with sexp;;/' " ^ out));
+  ignore (Sys.command ("sed -i -e 's/type t = \\([^;|]*\\);;/type t = \\1 with sexp;;/;s/ | SEXP;;/ with sexp;;/' " ^ out));
 
   reachable
 
 
 let emit_treematch name prods prods_by_lhs reachable =
   (* Parse Tree *)
-  let out = name ^ "Treematch.ml" in
+  let out = name ^ "Treematch.tm" in
   let impl = EmitTreematch.make_ml_treematch reachable prods prods_by_lhs in
 
   BatStd.with_dispose ~dispose:close_out

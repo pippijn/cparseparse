@@ -1,5 +1,7 @@
 module Parser = Glr.Easy.Make(ArithActions)(ArithTables)(ArithPtree)(ArithPtreeActions)(ArithTokens)
   (struct
+    open ArithTreematch
+
     let ptree = false
     let typed_ptree = false
   end)

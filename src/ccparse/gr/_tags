@@ -1,9 +1,11 @@
 # sexplib
-"ccPtree.ml": syntax_camlp4o, pkg_sexplib.syntax
+"ccPtree.ml":		syntax_camlp4o, pkg_sexplib.syntax
+"ccTreematch.ml":	syntax_camlp4o, pkg_sexplib.syntax
 
 # pack
-"ccActions.cmx": for-pack(Ccparse)
-"ccPtree.cmx": for-pack(Ccparse)
-"ccPtreeActions.cmx": for-pack(Ccparse)
-"ccTables.cmx": for-pack(Ccparse)
-"ccTokens.cmx": for-pack(Ccparse)
+"ccActions.cmx":	for-pack(Ccparse)
+"ccPtree.cmx":		for-pack(Ccparse)
+"ccPtreeActions.cmx":	for-pack(Ccparse)
+"ccTables.cmx":		for-pack(Ccparse)
+"ccTokens.cmx":		for-pack(Ccparse)
+"ccTreematch.cmx":	for-pack(Ccparse)

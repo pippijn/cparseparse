@@ -571,6 +571,7 @@ let dispatch_mine = function
           "src/ccparse/gr/ccPtree.ml";
           "src/ccparse/gr/ccPtreeActions.mli";
           "src/ccparse/gr/ccPtreeActions.ml";
+          "src/ccparse/gr/ccTreematch.tm";
 
           "src/ccparse/gr/ccActions.mli";
           "src/ccparse/gr/ccActions.ml";
@@ -591,11 +592,27 @@ let dispatch_mine = function
         end;
 
 
+      rule "Compile Treematch specification to ML"
+        ~prod:"%.ml"
+        ~deps:[
+          "%.tm";
+          "src/treematch/treematch.native";
+        ]
+        begin fun env build ->
+          Cmd(S[
+            A"src/treematch/treematch.native"; A"-special"; A(env "%.tm");
+            Sh"| sed -e 's/type t = \\([^;|]*\\);;/type t = \\1 with sexp;;/;s/ | SEXP;;/ with sexp;;/'";
+            Sh">"; A(env "%.ml")
+          ])
+        end;
+
+
       rule "Compile grammar to ML"
         ~prods:[
           "%Ptree.ml";
           "%PtreeActions.mli";
           "%PtreeActions.ml";
+          "%Treematch.tm";
 
           "%Actions.mli";
           "%Actions.ml";
