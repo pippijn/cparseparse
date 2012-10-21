@@ -59,7 +59,7 @@ let output_production out terms prod =
     let term = BatArray.find (fun term -> term.precedence = prod.prec) terms in
     Printf.fprintf out " %%prec %s" term.tbase.name;
   );
-  Printf.fprintf out "\t{ %d }\n" prod.prod_index
+  Printf.fprintf out "\t{ %a }\n" StateId.Production.print prod.prod_index
 
 
 let output_nonterm out terms = function

@@ -3,6 +3,7 @@ open Sexplib.Conv
 module Derivable = Bit2d.Make(StateId.Nonterminal)
 module NtArray = IntegralIndexedArray.Make(StateId.Nonterminal)
 module TermArray = IntegralIndexedArray.Make(StateId.Terminal)
+module ProdArray = IntegralIndexedArray.Make(StateId.Production)
 
 
 (************************************************************
@@ -135,7 +136,7 @@ type env = {
   (* map of production x dot_position -> dotted_production;
    * each element of the 'dotted_prods' array is a pointer to an
    * array of dotted_production objects *)
-  dotted_prods                  : dotted_production array array;
+  dotted_prods                  : dotted_production array ProdArray.t;
 
   (* if entry i,j is true, then nonterminal i can derive nonterminal j
    * (this is a graph, represented (for now) as an adjacency matrix) *)

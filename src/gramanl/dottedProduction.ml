@@ -50,12 +50,12 @@ module Graph = Graph.Persistent.Digraph.ConcreteLabeled(M)(M)
 
 let get dotted_prods prod dot =
   let open GrammarType in
-  dotted_prods.(prod.prod_index).(dot)
+  (ProdArray.get dotted_prods prod.prod_index).(dot)
 
 
 let next dotted_prods dprod =
   let open GrammarType in
-  dotted_prods.(dprod.prod.prod_index).(dprod.dot + 1)
+  (ProdArray.get dotted_prods dprod.prod.prod_index).(dprod.dot + 1)
 
 
 let symbol_before_dot dprod =

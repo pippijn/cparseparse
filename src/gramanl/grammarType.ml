@@ -105,7 +105,7 @@ type production = {
 
   (* --- annotation --- *)
   mutable first_rhs     : TerminalSet.t; (* First(RHS) *)
-  mutable prod_index    : int; (* unique production id *)
+  mutable prod_index    : StateId.Production.t; (* unique production id *)
 } with sexp
 
 type config = {
@@ -193,7 +193,7 @@ let empty_production = {
   action     = None;
 
   first_rhs  = TerminalSet.empty;
-  prod_index = -1;
+  prod_index = StateId.Production.default;
 }
 
 

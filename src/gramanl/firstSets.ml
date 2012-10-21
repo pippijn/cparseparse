@@ -91,7 +91,7 @@ let compute_dprod_first derivable dotted_prods indexed_prods indexed_terms =
     (* for each dotted production where the dot is not at the end.. *)
     let rhs_length = List.length prod.right in
     for posn = 0 to rhs_length do
-      let dprod = dotted_prods.(prod.prod_index).(posn) in
+      let dprod = (ProdArray.get dotted_prods prod.prod_index).(posn) in
 
       let right = ExtList.nth_tl dprod.prod.right posn in
 

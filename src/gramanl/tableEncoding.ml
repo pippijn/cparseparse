@@ -73,8 +73,8 @@ let append_ambig ambig_table set =
 let encode_shift tables (dest_state : StateId.State.t) (shifted_term_id : StateId.Terminal.t) : action_entry =
   validate_action (StateId.State.to_int dest_state + 1)
 
-let encode_reduce tables (prod_id : prod_index) (in_state : StateId.State.t) : action_entry =
-  validate_action (-prod_id - 1)
+let encode_reduce tables (prod_id : StateId.Production.t) (in_state : StateId.State.t) : action_entry =
+  validate_action (-(StateId.Production.to_int prod_id) - 1)
 
 let encode_ambig tables (set : action_entry list) (in_state : StateId.State.t) : action_entry =
   let position = Stack.length tables.ambig_table in
@@ -109,9 +109,9 @@ let set_state_symbol tables (state_id : StateId.State.t) (sym : symbol_id) =
   tables.tables.stateSymbol.(StateId.State.to_int state_id) <- sym
 
 
-let set_prod_info tables (prod_id : prod_index) rhsLen (lhsIndex : StateId.Nonterminal.t) =
-  tables.tables.prodInfo_rhsLen.(prod_id) <- rhsLen;
-  tables.tables.prodInfo_lhsIndex.(prod_id) <- StateId.Nonterminal.to_int lhsIndex
+let set_prod_info tables (prod_id : StateId.Production.t) rhsLen (lhsIndex : StateId.Nonterminal.t) =
+  ProdArray.set tables.tables.prodInfo_rhsLen prod_id rhsLen;
+  ProdArray.set tables.tables.prodInfo_lhsIndex prod_id (StateId.Nonterminal.to_int lhsIndex)
 
 
 let finish_tables tables =

@@ -104,8 +104,8 @@ let encode_ambig tables state terminal shift_dest reductions =
   let reduce_actions =
     List.map (fun prod ->
       if Options._trace_table () then (
-        Printf.printf "; reduce by %d"
-          prod.prod_index;
+        Printf.printf "; reduce by %a"
+          StateId.Production.print prod.prod_index;
       );
       TableEncoding.encode_reduce tables prod.prod_index state.state_id
     ) reductions
@@ -136,8 +136,8 @@ let encode_reduce tables state terminal prod =
   let open GrammarType in
 
   if Options._trace_table () then (
-    Printf.printf "(unambig) reduce by %d"
-      prod.prod_index;
+    Printf.printf "(unambig) reduce by %a"
+      StateId.Production.print prod.prod_index;
   );
   TableEncoding.encode_reduce tables prod.prod_index state.state_id
 

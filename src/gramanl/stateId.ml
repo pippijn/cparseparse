@@ -24,10 +24,10 @@ end
 module State = struct
   include IntegralModule
 
-  let default : t = -1
-
   let start : t = 0
   let is_start (id : t) = id = start
+
+  let default : t = -1
 end
 
 
@@ -51,6 +51,17 @@ module Terminal = struct
 
   let eof = 0
   let is_eof (index : t) = index = eof
+
+  let default : t = -1
+end
+
+
+(* productions *)
+module Production = struct
+  include IntegralModule
+
+  let start : t = 0
+  let is_start (id : t) = id = start
 
   let default : t = -1
 end

@@ -367,7 +367,7 @@ let collect_productions aliases terminals nonterminals nonterms =
                 left;
                 action;
                 prod_name;
-                prod_index = next_prod_index;
+                prod_index = StateId.Production.of_int next_prod_index;
               }
               (* deal with RHS elements *)
               |> collect_production_rhs aliases terminals nonterminals is_synthesised rhs

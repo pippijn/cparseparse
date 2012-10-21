@@ -25,3 +25,12 @@ module Terminal : sig
   val eof : t
   val is_eof : t -> bool
 end
+
+
+(* productions *)
+module Production : sig
+  include GrammarSig.IntegralModuleType
+
+  val start : t
+  val is_start : t -> bool
+end
