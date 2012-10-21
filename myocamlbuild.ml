@@ -572,6 +572,8 @@ let dispatch_mine = function
           "src/ccparse/gr/ccPtreeActions.mli";
           "src/ccparse/gr/ccPtreeActions.ml";
           "src/ccparse/gr/ccTreematch.tm";
+          "src/ccparse/gr/ccTreematchActions.mli";
+          "src/ccparse/gr/ccTreematchActions.ml";
 
           "src/ccparse/gr/ccActions.mli";
           "src/ccparse/gr/ccActions.ml";
@@ -613,6 +615,8 @@ let dispatch_mine = function
           "%PtreeActions.mli";
           "%PtreeActions.ml";
           "%Treematch.tm";
+          "%TreematchActions.mli";
+          "%TreematchActions.ml";
 
           "%Actions.mli";
           "%Actions.ml";
