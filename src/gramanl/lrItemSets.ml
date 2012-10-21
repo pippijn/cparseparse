@@ -49,8 +49,11 @@ let changed_items item_set =
       None
 
 
-let production_closure env finished worklist item b prod =
+let production_closure env finished worklist item b prod_index =
   let open GrammarType in
+
+  let prod = ProdArray.get env.index.prods prod_index in
+
   if Options._trace_closure () then (
     print_string "    considering production ";
     PrintGrammar.print_production prod;

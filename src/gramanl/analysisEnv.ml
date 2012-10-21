@@ -84,25 +84,28 @@ let compute_indexed_prods productions nonterm_count =
 
   (* fill in both maps *)
   BatList.iteri (fun i production ->
-    let i = StateId.Production.of_int i in
+    let prod_index = StateId.Production.of_int i in
     let nt_index = production.left.nt_index in
 
-    let prods = NtArray.get prods_by_lhs nt_index in
-    NtArray.set prods_by_lhs nt_index (production :: prods);
+    begin
+      let prods = NtArray.get prods_by_lhs nt_index in
+      NtArray.set prods_by_lhs nt_index (prod_index :: prods);
+    end;
 
-    assert (ProdArray.get indexed i == empty_production);
-    production.prod_index <- i;
-    ProdArray.set indexed i production;
+    assert (ProdArray.get indexed prod_index == empty_production);
+    production.prod_index <- prod_index;
+    ProdArray.set indexed prod_index production;
   ) productions;
 
   (* verify invariants *)
-  Array.iteri (fun nt_index prods ->
-    List.iter (fun prod ->
-      assert (StateId.Nonterminal.to_int prod.left.nt_index = nt_index);
-    ) prods
+  Array.iteri (fun nt_index ->
+    List.iter (fun prod_index ->
+      let prod = ProdArray.get indexed prod_index in
+      assert (StateId.Nonterminal.to_int prod.left.nt_index == nt_index);
+    )
   ) prods_by_lhs;
   Array.iteri (fun prod_index prod ->
-    assert (StateId.Production.to_int prod.prod_index = prod_index);
+    assert (StateId.Production.to_int prod.prod_index == prod_index);
   ) indexed;
 
   (* verify we filled the prod_index map *)

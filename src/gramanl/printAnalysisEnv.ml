@@ -88,7 +88,7 @@ let print_item_set ?(out=stdout) ?(print_nonkernels=false) env item_set =
 
   Printf.fprintf out "State %a,\n  sample input: %s\n  and left context: %s\n"
     StateId.State.print item_set.state_id
-    (SampleInput.sample_input env.index.terms env.index.nonterms env.prods_by_lhs item_set)
+    (SampleInput.sample_input env.index.terms env.index.nonterms env.index.prods env.prods_by_lhs item_set)
     (SampleInput.left_context env.index.terms env.index.nonterms item_set);
 
   Printf.fprintf out "ItemSet %a {\n" StateId.State.print item_set.state_id;

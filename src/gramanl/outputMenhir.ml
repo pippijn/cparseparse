@@ -49,7 +49,9 @@ let last_prec =
   ) 0
 
 
-let output_production out terms prod =
+let output_production out terms prods prod_index =
+  let prod = ProdArray.get prods prod_index in
+
   output_string out "\t|";
   if prod.right = [] then
     output_string out " /* empty */"
@@ -62,12 +64,13 @@ let output_production out terms prod =
   Printf.fprintf out "\t{ %a }\n" StateId.Production.print prod.prod_index
 
 
-let output_nonterm out terms = function
+let output_nonterm out terms prods = function
   | [] -> ()
-  | first :: _ as prods ->
+  | first_index :: _ as indices ->
+      let first = ProdArray.get prods first_index in
       if first.left.nbase.reachable then (
         Printf.fprintf out "%s:\n" first.left.nbase.name;
-        List.iter (output_production out terms) prods;
+        List.iter (output_production out terms prods) indices;
         output_string out "\n";
       )
 
@@ -83,6 +86,6 @@ let output_grammar ~file env =
   let first = env.index.nonterms.(1) in
   Printf.fprintf out "\n%%start<int> %s\n\n" first.nbase.name;
   output_string out "%%\n\n";
-  Array.iter (output_nonterm out env.index.terms) env.prods_by_lhs;
+  Array.iter (output_nonterm out env.index.terms env.index.prods) env.prods_by_lhs;
 
   close_out out

@@ -235,12 +235,8 @@ let make_ml_dup_del_merge terms nonterms =
   ]
 
 
-let make_ml_action_code terms nonterms prods_by_lhs final_prod verbatims impl_verbatims =
-  let prod_count = Array.fold_left (List.fold_left (fun count _ -> count + 1)) 0 prods_by_lhs in
-  let prods = Array.make prod_count empty_production in
-  Array.iter (List.iter (fun prod -> AnalysisEnvType.ProdArray.set prods prod.prod_index prod)) prods_by_lhs;
-
-  let result_type = final_semtype (final_prod prods) in
+let make_ml_action_code terms nonterms prods final_prod verbatims impl_verbatims =
+  let result_type = final_semtype (ProdArray.get prods final_prod) in
 
   let closures =
     make_ml_actions prods

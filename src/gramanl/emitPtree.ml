@@ -118,10 +118,10 @@ let production_types has_merge prods =
 
 
 
-let make_ml_parse_tree prods_by_lhs =
+let make_ml_parse_tree prods prods_by_lhs =
   let bindings =
-    List.rev (Array.fold_left (fun bindings prods ->
-      match prods with
+    List.rev (Array.fold_left (fun bindings indices ->
+      match List.map (ProdArray.get prods) indices with
       | [] ->
           (* the empty nonterminal has no productions *)
           bindings
@@ -130,7 +130,7 @@ let make_ml_parse_tree prods_by_lhs =
           (* we do not emit code for the synthesised start rule *)
           bindings
 
-      | first :: _ ->
+      | first :: _ as prods ->
           let nonterm = first.left in
           let name = nonterm.nbase.name in
           assert (is_uid name);

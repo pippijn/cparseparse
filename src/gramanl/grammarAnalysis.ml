@@ -6,7 +6,7 @@ let (|>) = BatPervasives.(|>)
 
 let compute_grammar_properties env grammar =
   Timing.progress "reachability computation"
-    (Reachability.compute_reachable env.index.nonterms env.index.terms env.prods_by_lhs) grammar.start_symbol;
+    (Reachability.compute_reachable env.index.nonterms env.index.terms env.index.prods env.prods_by_lhs) grammar.start_symbol;
   Timing.progress "derivability computation"
     Derivability.compute_derivability_relation env;
   Timing.progress "super sets computation"

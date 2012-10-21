@@ -1,9 +1,6 @@
 open Sexplib.Conv
 
 module Derivable = Bit2d.Make(StateId.Nonterminal)
-module NtArray = IntegralIndexedArray.Make(StateId.Nonterminal)
-module TermArray = IntegralIndexedArray.Make(StateId.Terminal)
-module ProdArray = IntegralIndexedArray.Make(StateId.Production)
 
 
 (************************************************************
@@ -134,7 +131,7 @@ type env = {
    * symbol on the LHS; so let's index produtions by LHS symbol index;
    * this array maps each nonterminal to the list of productions with
    * that nonterminal on the LHS *)
-  prods_by_lhs                  : GrammarType.production list NtArray.t;
+  prods_by_lhs                  : StateId.Production.t list NtArray.t;
 
   (* map of production x dot_position -> dotted_production;
    * each element of the 'dotted_prods' array is a pointer to an
