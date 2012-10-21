@@ -96,8 +96,8 @@ let dump_automaton (dirname, (env, states, _) as tuple) =
 let emit_code (dirname, (env, states, tables)) =
   let open AnalysisEnvType in
 
-  let terms = env.indexed_terms in
-  let nonterms = env.indexed_nonterms in
+  let terms = env.index.terms in
+  let nonterms = env.index.nonterms in
   let prods_by_lhs = env.prods_by_lhs in
   let verbatims = env.verbatims in
   let impl_verbatims = env.impl_verbatims in

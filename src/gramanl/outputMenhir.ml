@@ -77,12 +77,12 @@ let output_grammar ~file env =
 
   output_string out "%{\n";
   output_string out "%}\n\n";
-  Array.iter (output_token out) env.indexed_terms;
+  Array.iter (output_token out) env.index.terms;
   output_string out "\n";
-  output_precs out env.indexed_terms;
-  let first = env.indexed_nonterms.(1) in
+  output_precs out env.index.terms;
+  let first = env.index.nonterms.(1) in
   Printf.fprintf out "\n%%start<int> %s\n\n" first.nbase.name;
   output_string out "%%\n\n";
-  Array.iter (output_nonterm out env.indexed_terms) env.prods_by_lhs;
+  Array.iter (output_nonterm out env.index.terms) env.prods_by_lhs;
 
   close_out out

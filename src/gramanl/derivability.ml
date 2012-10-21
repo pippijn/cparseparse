@@ -34,7 +34,7 @@ let add_derivable_i env left right =
    * only calls to this with left==right will be when the
    * derivability code detects a nonzero-length path. *)
   if left == right then (
-    let left = NtArray.get env.indexed_nonterms left in (* == right *)
+    let left = NtArray.get env.index.nonterms left in (* == right *)
 
     if Options._trace_derivable () then (
       if not left.cyclic then (
@@ -173,7 +173,7 @@ let add_derivable_relations env changes =
                 can_derive_empty env.derivable right_nonterm
         ) true right)
 
-  ) env.indexed_prods
+  ) env.index.prods
 
 
 let compute_derivability_closure env changes =
@@ -186,7 +186,7 @@ let compute_derivability_closure env changes =
    * I don't consider edges (u,u) because it messes up my cyclicity
    * detection logic.  (But (u,v) and (v,u) is ok, and in fact is
    * what I want, for detecting cycles.) *)
-  let nonterm_count = NtArray.length env.indexed_nonterms in
+  let nonterm_count = NtArray.length env.index.nonterms in
   (* for each node u (except empty) *)
   for u = 1 to nonterm_count - 1 do
     let u = StateId.Nonterminal.of_int u in
@@ -203,8 +203,8 @@ let compute_derivability_closure env changes =
               if Options._trace_derivable () then (
                 print_string "%%% derivable: ";
                 Printf.printf "discovered (by closure step): %s ->* %s\n"
-                  (NtArray.get env.indexed_nonterms u).nbase.name
-                  (NtArray.get env.indexed_nonterms w).nbase.name;
+                  (NtArray.get env.index.nonterms u).nbase.name
+                  (NtArray.get env.index.nonterms w).nbase.name;
               );
               incr changes
             )

@@ -452,8 +452,8 @@ let construct_lr_item_sets env =
   let env = {
     env = env;
 
-    nonterm_count = Array.length env.indexed_nonterms;
-    term_count    = Array.length env.indexed_terms;
+    nonterm_count = Array.length env.index.nonterms;
+    term_count    = Array.length env.index.terms;
 
     next_item_set_id = 0;
 
@@ -466,8 +466,8 @@ let construct_lr_item_sets env =
    * on LHS, and no other productions have the start symbol
    * on LHS) *)
   begin
-    let first_dp = DottedProduction.get env.env.dotted_prods env.env.indexed_prods.(0) 0 (* dot at left *) in
-    assert (first_dp.prod == env.env.indexed_prods.(0));
+    let first_dp = DottedProduction.get env.env.dotted_prods env.env.index.prods.(0) 0 (* dot at left *) in
+    assert (first_dp.prod == env.env.index.prods.(0));
     assert (first_dp.prod.left.nbase.name == GrammarTreeParser.start_name);
 
     let first_item = {

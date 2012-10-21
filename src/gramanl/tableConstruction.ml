@@ -260,15 +260,15 @@ let compute_parse_tables env allow_ambig states =
     Array.iter (fun prod ->
       PrintGrammar.print_production prod;
       print_newline ();
-    ) env.indexed_prods;
+    ) env.index.prods;
   );
 
   let tables = TableEncoding.create
-    (Array.length env.indexed_terms)
-    (Array.length env.indexed_nonterms)
+    (Array.length env.index.terms)
+    (Array.length env.index.nonterms)
     (List.length states)
-    (Array.length env.indexed_prods)
-    (topological_order env.derivable env.indexed_nonterms)
+    (Array.length env.index.prods)
+    (topological_order env.derivable env.index.nonterms)
     (BatOption.get env.start_state).state_id
     (*~final_prod:*)0 (* slight hack: assume it's the first production *)
   in
@@ -279,7 +279,7 @@ let compute_parse_tables env allow_ambig states =
 
   (* for each state... *)
   List.iter (fun state ->
-    compute_action_row env tables env.indexed_nonterms env.indexed_terms allow_ambig sr rr state
+    compute_action_row env tables env.index.nonterms env.index.terms allow_ambig sr rr state
   ) states;
 
   (* report on conflict counts *)
@@ -291,11 +291,11 @@ let compute_parse_tables env allow_ambig states =
     if nonterm.cyclic then
       Printf.printf "grammar symbol %s is cyclic\n"
         nonterm.nbase.name
-  ) env.indexed_nonterms;
+  ) env.index.nonterms;
 
   (* fill in 'prod_info' *)
   Array.iter (fun prod ->
     TableEncoding.set_prod_info tables prod.prod_index (List.length prod.right) prod.left.nt_index
-  ) env.indexed_prods;
+  ) env.index.prods;
 
   TableEncoding.finish_tables tables

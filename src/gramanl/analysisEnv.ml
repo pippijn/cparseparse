@@ -216,9 +216,11 @@ let init_env grammar =
 
   (* make the env *)
   let env = {
-    indexed_nonterms;
-    indexed_terms;
-    indexed_prods;
+    index = {
+      nonterms = indexed_nonterms;
+      terms = indexed_terms;
+      prods = indexed_prods;
+    };
     prods_by_lhs;
     dotted_prods;
     derivable = Derivability.initial_derivable_relation nonterm_count;

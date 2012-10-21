@@ -119,12 +119,15 @@ type item_set = {
  * :: AnalysisEnv types
  ************************************************************)
 
+type index = {
+  nonterms                      : GrammarType.nonterminal NtArray.t; (* nt_index   -> nonterminal *)
+  terms                         : GrammarType.terminal TermArray.t;  (* term_index -> terminal    *)
+  prods                         : GrammarType.production array;      (* prod_index -> production  *)
+} with sexp
 
 type env = {
   (* index the symbols on their integer ids *)
-  indexed_nonterms              : GrammarType.nonterminal NtArray.t; (* nt_index -> nonterminal *)
-  indexed_terms                 : GrammarType.terminal TermArray.t; (* term_index -> terminal *)
-  indexed_prods                 : GrammarType.production array; (* prod_index -> production *)
+  index                         : index;
 
   (* during item set closure, profiling reports we spend a lot of time
    * walking the list of productions looking for those that have a given

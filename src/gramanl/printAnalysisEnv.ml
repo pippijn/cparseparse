@@ -64,7 +64,7 @@ let print_dotted_production ?(out=stdout) ?terms dprod =
 let print_lr_item ?(out=stdout) env item =
   print_dotted_production ~out item.dprod;
   output_string out "  ";
-  print_terminal_set ~out env.indexed_terms item.lookahead
+  print_terminal_set ~out env.index.terms item.lookahead
 
 
 let print_item_set ?(out=stdout) ?(print_nonkernels=false) env item_set =
@@ -88,8 +88,8 @@ let print_item_set ?(out=stdout) ?(print_nonkernels=false) env item_set =
 
   Printf.fprintf out "State %a,\n  sample input: %s\n  and left context: %s\n"
     StateId.State.print item_set.state_id
-    (SampleInput.sample_input env.indexed_terms env.indexed_nonterms env.prods_by_lhs item_set)
-    (SampleInput.left_context env.indexed_terms env.indexed_nonterms item_set);
+    (SampleInput.sample_input env.index.terms env.index.nonterms env.prods_by_lhs item_set)
+    (SampleInput.left_context env.index.terms env.index.nonterms item_set);
 
   Printf.fprintf out "ItemSet %a {\n" StateId.State.print item_set.state_id;
   if print_nonkernels then (
@@ -110,7 +110,7 @@ let print_item_set ?(out=stdout) ?(print_nonkernels=false) env item_set =
     | None -> ()
     | Some transition ->
         Printf.fprintf out "  on terminal %s go to %a\n"
-          env.indexed_terms.(i).tbase.name
+          env.index.terms.(i).tbase.name
           StateId.State.print transition.state_id
   ) item_set.term_transition;
 
@@ -119,7 +119,7 @@ let print_item_set ?(out=stdout) ?(print_nonkernels=false) env item_set =
     | None -> ()
     | Some transition ->
         Printf.fprintf out "  on nonterminal %s go to %a\n"
-          env.indexed_nonterms.(i).nbase.name
+          env.index.nonterms.(i).nbase.name
           StateId.State.print transition.state_id
   ) item_set.nonterm_transition;
 

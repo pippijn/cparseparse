@@ -6,17 +6,17 @@ let (|>) = BatPervasives.(|>)
 
 let compute_grammar_properties env grammar =
   Timing.progress "reachability computation"
-    (Reachability.compute_reachable env.indexed_nonterms env.indexed_terms env.prods_by_lhs) grammar.start_symbol;
+    (Reachability.compute_reachable env.index.nonterms env.index.terms env.prods_by_lhs) grammar.start_symbol;
   Timing.progress "derivability computation"
     Derivability.compute_derivability_relation env;
   Timing.progress "super sets computation"
-    (SuperSets.compute_supersets env.indexed_nonterms) grammar.nonterminals;
+    (SuperSets.compute_supersets env.index.nonterms) grammar.nonterminals;
   Timing.progress "first sets computation"
-    (FirstSets.compute_first env.derivable env.indexed_nonterms env.indexed_prods) env.indexed_terms;
+    (FirstSets.compute_first env.derivable env.index.nonterms env.index.prods) env.index.terms;
   Timing.progress "computation of dotted production first sets"
-    (FirstSets.compute_dprod_first env.derivable env.dotted_prods env.indexed_prods) env.indexed_terms;
+    (FirstSets.compute_dprod_first env.derivable env.dotted_prods env.index.prods) env.index.terms;
   Timing.progress "follow sets computation"
-    FollowSets.compute_follow env.derivable env.indexed_prods
+    FollowSets.compute_follow env.derivable env.index.prods
 
 
 let compute_lr_tables env =
@@ -44,12 +44,12 @@ let run_analyses grammar =
     let unr_nonterms =
       ExtArray.count (fun nonterm ->
         not nonterm.nbase.reachable
-      ) env.indexed_nonterms
+      ) env.index.nonterms
     in
     let unr_terms =
       ExtArray.count (fun term ->
         not term.tbase.reachable
-      ) env.indexed_terms
+      ) env.index.terms
     in
 
     Warnings.report_unexpected unr_nonterms env.options.expectedUNRNonterms "unreachable nonterminals";

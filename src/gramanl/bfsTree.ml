@@ -26,8 +26,8 @@ let compute_bfs_tree env states =
   let all_symbols =
     let open GrammarType in
     Array.append
-      (Array.map (fun term -> Terminal ("", term)) env.indexed_terms)
-      (Array.map (fun nonterm -> Nonterminal ("", nonterm)) env.indexed_nonterms)
+      (Array.map (fun term -> Terminal ("", term)) env.index.terms)
+      (Array.map (fun nonterm -> Nonterminal ("", nonterm)) env.index.nonterms)
   in
 
   (* loop until the queue is exhausted *)

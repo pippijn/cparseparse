@@ -60,11 +60,11 @@ let renumber_states_compare env a b =
   let order =
     order
     (* first up: terminals *)
-    |<> lazy (compare_by_outgoing env.indexed_terms (fun is t -> is.term_transition.(t)) a b)
+    |<> lazy (compare_by_outgoing env.index.terms (fun is t -> is.term_transition.(t)) a b)
     (* next: nonterminals *)
-    |<> lazy (compare_by_outgoing env.indexed_nonterms (fun is t -> is.nonterm_transition.(t)) a b)
+    |<> lazy (compare_by_outgoing env.index.nonterms (fun is t -> is.nonterm_transition.(t)) a b)
     (* finally, order by possible reductions *)
-    |<> lazy (compare_by_reductions env.indexed_terms a b)
+    |<> lazy (compare_by_reductions env.index.terms a b)
   in
 
   if Options._trace_renumbering () then (
