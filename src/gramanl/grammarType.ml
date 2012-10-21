@@ -77,7 +77,7 @@ type nonterminal = {
   (* --- annotation --- *)
   mutable first         : TerminalSet.t; (* set of terminals that can be start of a string derived from 'this' *)
   mutable follow        : TerminalSet.t; (* set of terminals that can follow a string derived from 'this' *)
-  nt_index              : int; (* nonterminal index in indexed_nonterminals for grammar analysis *)
+  nt_index              : StateId.Nonterminal.t; (* nonterminal index in indexed_nonterminals for grammar analysis *)
   mutable cyclic        : bool; (* true if this can derive itself in 1 or more steps *)
   mutable subsets       : nonterminal list; (* resolved subsets *)
   mutable superset      : nonterminal option; (* inverse of 'subsets' *)
@@ -176,7 +176,7 @@ let empty_nonterminal = {
   first    = TerminalSet.empty;
   follow   = TerminalSet.empty;
   (* empty has an index of 0; all other nonterminals must have indices >= 1 *)
-  nt_index = 0;
+  nt_index = StateId.Nonterminal.default;
   cyclic   = false;
   subsets  = [];
   superset = None;

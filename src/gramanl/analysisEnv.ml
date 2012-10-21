@@ -1,3 +1,4 @@
+open AnalysisEnvType
 open GrammarType
 
 
@@ -17,32 +18,36 @@ let compute_indexed_nonterms nonterms =
   let indexed = Array.make (StringMap.cardinal nonterms + 1) empty_nonterminal in
 
   (* indexed.(0) is empty_nonterminal *)
-  assert (empty_nonterminal.nt_index = 0);
+  assert (StateId.Nonterminal.is_empty empty_nonterminal.nt_index);
 
   StringMap.iter (fun _ nonterm ->
     (* the ids have already been assigned *)
     let i = nonterm.nt_index in (* map: symbol to index *)
     (* verify there are no duplicate indices *)
-    if indexed.(i) != empty_nonterminal then (
-      Printf.printf "%s has the same index (%d) as %s\n"
-        indexed.(i).nbase.name
-        i
+    let existing = NtArray.get indexed i in
+    if existing != empty_nonterminal then (
+      Printf.printf "%s has the same index (%a) as %s\n"
+        existing.nbase.name
+        StateId.Nonterminal.print i
         nonterm.nbase.name
     );
-    assert (indexed.(i) == empty_nonterminal);
-    indexed.(i) <- nonterm (* map: index to symbol *)
+    assert (existing == empty_nonterminal);
+    NtArray.set indexed i nonterm (* map: index to symbol *)
   ) nonterms;
 
   (* verify invariants *)
   Array.iteri (fun nt_index nonterm ->
     (* the mapping must be correct *)
-    assert (nonterm.nt_index = nt_index);
+    assert (StateId.Nonterminal.to_int nonterm.nt_index = nt_index);
+
     (* "empty" must be the first nonterminal *)
-    if nonterm.nt_index = 0 then
+    if StateId.Nonterminal.is_empty nonterm.nt_index then
       assert (nonterm == empty_nonterminal)
+
     (* the synthesised start symbol must follow *)
-    else if nonterm.nt_index = 1 then
+    else if StateId.Nonterminal.is_start nonterm.nt_index then
       assert (nonterm.nbase.name == GrammarTreeParser.start_name)
+
     (* any other nonterminals must not be empty *)
     else
       assert (nonterm != empty_nonterminal)
@@ -81,7 +86,8 @@ let compute_indexed_prods productions nonterm_count =
   BatList.iteri (fun i production ->
     let nt_index = production.left.nt_index in
 
-    prods_by_lhs.(nt_index) <- production :: prods_by_lhs.(nt_index);
+    let prods = NtArray.get prods_by_lhs nt_index in
+    NtArray.set prods_by_lhs nt_index (production :: prods);
 
     assert (indexed.(i) == empty_production);
     production.prod_index <- i;
@@ -91,11 +97,11 @@ let compute_indexed_prods productions nonterm_count =
   (* verify invariants *)
   Array.iteri (fun nt_index prods ->
     List.iter (fun prod ->
-      assert (prod.left.nt_index = nt_index);
+      assert (StateId.Nonterminal.to_int prod.left.nt_index = nt_index);
     ) prods
   ) prods_by_lhs;
   Array.iteri (fun prod_index prod ->
-    assert (prod.prod_index == prod_index);
+    assert (prod.prod_index = prod_index);
   ) indexed;
 
   (* verify we filled the prod_index map *)
@@ -182,8 +188,6 @@ let verify_nonshared indexed_nonterms indexed_prods dotted_prods =
 
 
 let verify_empty indexed_nonterms indexed_prods dotted_prods =
-  let open AnalysisEnvType in
-
   Array.iter (fun nonterm ->
     assert (TerminalSet.cardinal nonterm.first = 0)
   ) indexed_nonterms;
@@ -210,7 +214,7 @@ let init_env grammar =
   let dotted_prods = compute_dotted_productions indexed_prods in
 
   (* make the env *)
-  let env = AnalysisEnvType.({
+  let env = {
     indexed_nonterms;
     indexed_terms;
     indexed_prods;
@@ -223,7 +227,7 @@ let init_env grammar =
     options = grammar.config;
     verbatims = grammar.verbatim;
     impl_verbatims = grammar.impl_verbatim;
-  }) in
+  } in
 
   (* reset first/follow sets to 0 *)
   reset_first_follow grammar.productions grammar.nonterminals;

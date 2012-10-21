@@ -21,7 +21,7 @@ type topforms = {
   precs : precspec list;
 
   first_nonterm : string;
-  nonterms : (topform * int) StringMap.t;
+  nonterms : (topform * StateId.Nonterminal.t) StringMap.t;
 } with sexp
 
 
@@ -197,7 +197,7 @@ let merge grammars =
                     failwith "match"
 
               with Not_found ->
-                topform, next_nt_index, next_nt_index + 1
+                topform, (StateId.Nonterminal.of_int next_nt_index), next_nt_index + 1
             in
 
             let first_nonterm =
@@ -224,9 +224,9 @@ let merge grammars =
   StringMap.iter (fun _ (a, a_index) ->
     StringMap.iter (fun _ (b, b_index) ->
       if a != b && a_index = b_index then (
-        Printf.printf "%s has the same index (%d) as %s\n"
+        Printf.printf "%s has the same index (%a) as %s\n"
           (nonterm_name a)
-          a_index
+          StateId.Nonterminal.print a_index
           (nonterm_name b)
       );
       assert (a == b || a_index <> b_index);

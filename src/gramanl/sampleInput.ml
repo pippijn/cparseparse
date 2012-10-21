@@ -70,7 +70,7 @@ let rec rewrite_nt_as_terminals prods_by_lhs output nonterm seen =
       not (GrammarUtil.rhs_has_nonterm prod nonterm)
       (* if this production has already been used, don't use it again *)
       && not (List.memq prod seen)
-    ) prods_by_lhs.(nonterm.nt_index)
+    ) (NtArray.get prods_by_lhs nonterm.nt_index)
   in
 
   if candidates = [] then (

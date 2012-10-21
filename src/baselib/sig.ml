@@ -14,3 +14,13 @@ module type OrderedConvertibleType = sig
   include BatInterfaces.OrderedType with type t := t
   include ConvertibleType with type t := t
 end
+
+
+module type IntegralType = sig
+  type t
+
+  val to_int : t -> int
+  val of_int : int -> t
+
+  val range : int -> int -> t BatEnum.t
+end

@@ -1,5 +1,8 @@
 open Sexplib.Conv
 
+module Derivable = Bit2d.Make(StateId.Nonterminal)
+module NtArray = IntegralIndexedArray.Make(StateId.Nonterminal)
+
 
 (************************************************************
  * :: LrItem types
@@ -97,7 +100,7 @@ type item_set = {
 
   (* numerical state id, should be unique among item sets
    * in a particular grammar's sets *)
-  mutable state_id              : StateId.t;
+  mutable state_id              : StateId.State.t;
 
   (* it's useful to have a BFS tree superimposed on the transition
    * graph; for example, it makes it easy to generate sample inputs
@@ -117,7 +120,7 @@ type item_set = {
 
 type env = {
   (* index the symbols on their integer ids *)
-  indexed_nonterms              : GrammarType.nonterminal array; (* nt_index -> nonterminal *)
+  indexed_nonterms              : GrammarType.nonterminal NtArray.t; (* nt_index -> nonterminal *)
   indexed_terms                 : GrammarType.terminal array; (* term_index -> terminal *)
   indexed_prods                 : GrammarType.production array; (* prod_index -> production *)
 
@@ -126,7 +129,7 @@ type env = {
    * symbol on the LHS; so let's index produtions by LHS symbol index;
    * this array maps each nonterminal to the list of productions with
    * that nonterminal on the LHS *)
-  prods_by_lhs                  : GrammarType.production list array;
+  prods_by_lhs                  : GrammarType.production list NtArray.t;
 
   (* map of production x dot_position -> dotted_production;
    * each element of the 'dotted_prods' array is a pointer to an
@@ -135,7 +138,7 @@ type env = {
 
   (* if entry i,j is true, then nonterminal i can derive nonterminal j
    * (this is a graph, represented (for now) as an adjacency matrix) *)
-  derivable                     : Bit2d.t;
+  derivable                     : Derivable.t;
 
   (* true if any nonterminal can derive itself (with no extra symbols
    * surrounding it) in 1 or more steps *)

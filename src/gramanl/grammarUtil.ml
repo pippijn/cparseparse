@@ -49,7 +49,7 @@ let compare_symbol a b =
   | Some (Terminal (_, term_a)), Some (Terminal (_, term_b)) ->
       term_a.term_index - term_b.term_index
   | Some (Nonterminal (_, nonterm_a)), Some (Nonterminal (_, nonterm_b)) ->
-      nonterm_a.nt_index - nonterm_b.nt_index
+      StateId.Nonterminal.compare nonterm_a.nt_index nonterm_b.nt_index
 
 
 let rhs_has_nonterm prod nonterm =

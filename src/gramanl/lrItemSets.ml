@@ -16,7 +16,7 @@ type env = {
 
 
 let make_item_set env kernel_items =
-  let state_id = StateId.of_int env.next_item_set_id in
+  let state_id = StateId.State.of_int env.next_item_set_id in
   env.next_item_set_id <- env.next_item_set_id + 1;
 
   { ItemSet.M.default with
@@ -204,7 +204,9 @@ let single_item_closure env finished worklist item =
 
   | Some (Nonterminal (_, b)) ->
       (* for each production "B -> gamma" *)
-      List.iter (production_closure env finished worklist item b) env.prods_by_lhs.(b.nt_index)
+      List.iter
+        (production_closure env finished worklist item b)
+        (NtArray.get env.prods_by_lhs b.nt_index)
 
 
 (* based on [ASU] figure 4.33, p.223
@@ -325,9 +327,9 @@ let merge_state env item_set sym in_done_list already dot_moved_items =
   if merge_lookaheads_into already dot_moved_items.items then (
     if Options._trace_lrsets () then (
       Printf.printf "from state %a, found that the transition on %s yielded a state similar to %a, but with different lookahead\n"
-        StateId.print item_set.state_id
+        StateId.State.print item_set.state_id
         (GrammarUtil.name_of_symbol sym)
-        StateId.print already.state_id
+        StateId.State.print already.state_id
     );
 
     (* this changed 'already'; recompute its closure *)
@@ -435,7 +437,7 @@ let process_item_set env =
   if Options._trace_lrsets () then (
     print_string "%%% ";
     Printf.printf "state %a, %d kernel items and %d nonkernel items\n"
-      StateId.print item_set.state_id
+      StateId.State.print item_set.state_id
       (List.length item_set.kernel_items.items)
       (List.length item_set.nonkernel_items)
   );

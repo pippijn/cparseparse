@@ -64,7 +64,7 @@ let merge name = function
 
 let nonterminal nonterm =
   let semtype =
-    if nonterm.nt_index = 1 then
+    if StateId.Nonterminal.is_start nonterm.nt_index then
       (* synthesised start symbol *)
       <:ctyp<$uid:Options._module_prefix () ^ "Ptree"$.t>>
     else

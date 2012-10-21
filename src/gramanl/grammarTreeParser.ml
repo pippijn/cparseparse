@@ -46,7 +46,7 @@ let synthesise_start_rule topforms =
   in
 
   { topforms with
-    nonterms = StringMap.add start_name (start, 1) topforms.nonterms
+    nonterms = StringMap.add start_name (start, StateId.Nonterminal.start) topforms.nonterms
   }
 
 
@@ -194,16 +194,16 @@ let collect_terminals decls types precs =
   in
 
   (* track what terminals have codes *)
-  let has_code = BitSet.create (max_code + 1) in
+  let has_code = BitSet.Set.create (max_code + 1) in
   List.iter (fun (TermDecl (code, _, _)) ->
-    BitSet.add has_code code;
+    BitSet.Set.add has_code code;
   ) decls;
 
   let terminals =
     (* fill in any gaps in the code space; this is required because
      * later analyses assume the terminal code space is dense *)
     BatEnum.fold (fun terminals i ->
-      if BitSet.mem has_code i then
+      if BitSet.Set.mem has_code i then
         terminals
       else
         let dummy_name = "Dummy_filler_token" ^ string_of_int i in
