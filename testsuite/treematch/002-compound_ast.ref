@@ -40,7 +40,8 @@ module Program =
           type t =
             | Let of Identifer.t * Expression.t * Expression.t
             | Operator of Operator.t * Expression.t * Expression.t
-            | Call of Name.t * (Expression.t list)
+            | Call of ((Convention.t list) option) * Name.t *
+                      (Expression.t list)
             | Variable of Identifier.t
             | Constant of Integer.t
             | SEXP;;
@@ -51,7 +52,8 @@ module Program =
           type t =
             | Let of Identifer.t * Expression.t * Expression.t
             | Operator of Operator.t * Expression.t * Expression.t
-            | Call of Name.t * (Expression.t list)
+            | Call of ((Convention.t list) option) * Name.t *
+                      (Expression.t list)
             | Variable of Identifier.t
             | Constant of Integer.t
             | SEXP;;
@@ -70,6 +72,29 @@ module Program =
           val sexp_of_t : t -> Sexplib.Sexp.t;;
           val t_of_sexp : Sexplib.Sexp.t -> t;;
         end = struct type t = | Global of Identifer.t | SEXP;; end
+    and
+      Convention :
+        sig
+          type t =
+            | Convention of
+                            (((((Identifer.t list) option) option) option)
+                               option)
+                              list
+            | SEXP;;
+          val sexp_of_t : t -> Sexplib.Sexp.t;;
+          val t_of_sexp : Sexplib.Sexp.t -> t;;
+        end =
+        struct
+          type t =
+            | Convention of
+                            (((((Identifer.t list) option) option) option)
+                               option)
+                              list
+            | SEXP;;
+        end
     and Identifer : sig type t = string;; end = struct type t = string;; end
     and Integer : sig type t = int;; end = struct type t = int;; end;;
+    type t = Program.t;;
+    let t_of_sexp = Program.t_of_sexp;;
+    let sexp_of_t = Program.sexp_of_t;;
   end;;

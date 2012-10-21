@@ -90,4 +90,7 @@ module Program =
         end = struct type t = | Global of Identifer.t | SEXP;; end
     and Identifer : sig type t = string;; end = struct type t = string;; end
     and Integer : sig type t = int;; end = struct type t = int;; end;;
+    type t = Program.t;;
+    let t_of_sexp = Program.t_of_sexp;;
+    let sexp_of_t = Program.sexp_of_t;;
   end;;

@@ -19,10 +19,16 @@ module Emit = struct
     | Program.Ast (name, nodes) ->
 
       let first_type :: rest_types = List.map ast_node nodes in
+      let (first_name,_) :: _ = nodes in
       <:str_item<
 
         module $uid:Ident.string_of_uident name$ = struct
             module rec $first_type$ and $Ast.mbAnd_of_list rest_types$
+
+            type t = $uid:Ident.string_of_uident first_name$.t;;
+            let t_of_sexp = $uid:Ident.string_of_uident first_name$.t_of_sexp;;
+            let sexp_of_t = $uid:Ident.string_of_uident first_name$.sexp_of_t;;
+
         end
       >>
     | _ -> <:str_item< >>

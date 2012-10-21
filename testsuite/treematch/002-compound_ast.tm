@@ -6,13 +6,14 @@ Definition:  | Function Function
 Function:    | Function Identifer [Identifier] Expression
 Expression:  | Let Identifer Expression Expression
              | Operator Operator Expression Expression
-             | Call Name [Expression]
+             | Call ?[Convention] Name [Expression]
              | Variable Identifier
              | Constant Integer
 Operator:    | Plus
              | Minus
              | Mult
 Global:      | Global Identifer
+Convention: Convention [????[Identifer]]
 Identifer: string
 Integer: int
 }
