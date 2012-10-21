@@ -1,10 +1,21 @@
 let _trace_progress = ref false
+let _alloc_stats = ref false
 
 
 let specs = let open Arg in ref ([
   "-timing",		Set _trace_progress,		" output timing details";
+  "-alloc-stats",	Set _alloc_stats,		" print memory allocation statistics (implies -timing)";
 ])
-let actions = ref []
+let actions = ref [
+  (fun inputs ->
+    if !_alloc_stats then
+      _trace_progress := true;
+  )
+]
+
+
+let _trace_progress () = !_trace_progress
+let _alloc_stats () = !_alloc_stats
 
 
 let register ?action spec =
@@ -42,6 +53,3 @@ let run f =
   List.iter (fun f -> f inputs) !actions;
 
   f inputs
-
-
-let _trace_progress () = !_trace_progress
