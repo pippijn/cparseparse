@@ -29,6 +29,7 @@ let _trace_first = ref false
 let _trace_derivable = ref false
 let _trace_merge = ref false
 let _trace_rewrite = ref true
+let _trace_unreachable_ptree = ref false
 
 
 let () =
@@ -64,6 +65,7 @@ let () =
     "-trace-derivable",		Set _trace_derivable,		" output details during derivability relation computation";
     "-trace-merge",		Set _trace_merge,		" output details while merging grammar modules";
     "-trace-rewrite",		Set _trace_rewrite,		" output details during symbolic reduction";
+    "-trace-unreachable-ptree",	Set _trace_unreachable_ptree,	" show which parse tree nodes are removed due to unreachability";
   ]) ~action:(fun inputs ->
     if !_module_prefix = "" then (
       let name = List.hd inputs in
@@ -108,3 +110,4 @@ let _trace_first () = !_trace_first
 let _trace_derivable () = !_trace_derivable
 let _trace_merge () = !_trace_merge
 let _trace_rewrite () = !_trace_rewrite
+let _trace_unreachable_ptree () = !_trace_unreachable_ptree

@@ -135,7 +135,8 @@ let make_ml_parse_tree prods prods_by_lhs reachable =
           assert (is_uid name);
 
           if not (StringSet.mem name reachable) then (
-            print_endline ("unreachable: " ^ name);
+            if Options._trace_unreachable_ptree () then
+              print_endline ("unreachable: " ^ name);
             types
           ) else (
             let has_merge = nonterm.merge != None in
