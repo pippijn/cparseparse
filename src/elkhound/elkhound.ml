@@ -111,10 +111,9 @@ let emit_code (dirname, (env, states, tables)) =
 
   let reachable = Reachability.compute_reachable_tagged index.prods prods_by_lhs in
 
-  let transform inner prefix =
+  let transform prefix =
     let module Transform = PtreeMaker.Make(struct
       let prefix = prefix
-      let inner = inner
     end) in
 
     prefix,
@@ -126,9 +125,9 @@ let emit_code (dirname, (env, states, tables)) =
     (* original user actions *)
     "", index.nonterms, index.prods;
     (* transform to use "%Ptree" module *)
-    transform "Ptree" "Ptree";
+    transform "Ptree";
     (* transform to use "%Treematch" module *)
-    transform "Ptree" "Treematch";
+    transform "Treematch";
   ] in
 
   Timing.progress "emitting ML code"

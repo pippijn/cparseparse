@@ -60,17 +60,16 @@ let is_boolean_nonterminal none some =
 
 module Make(T : sig
   val prefix : string
-  val inner : string
 end) = struct
 
   let expr_prefix =
-    <:expr<$uid:Options._module_prefix () ^ T.prefix$.$uid:T.inner$>>
+    <:expr<$uid:Options._module_prefix () ^ T.prefix$.Ptree>>
 
   let nonterm_type = function
     | None ->
-        <:ctyp<$uid:Options._module_prefix () ^ T.prefix$.$uid:T.inner$.t>>
+        <:ctyp<$uid:Options._module_prefix () ^ T.prefix$.Ptree.t>>
     | Some name ->
-        <:ctyp<$uid:Options._module_prefix () ^ T.prefix$.$uid:T.inner$.$uid:name$.t>>
+        <:ctyp<$uid:Options._module_prefix () ^ T.prefix$.Ptree.$uid:name$.t>>
 
   let merge name = function
     | None -> None
