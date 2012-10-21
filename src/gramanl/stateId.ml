@@ -4,8 +4,8 @@ type t = int with sexp
 
 let compare (a : t) (b : t) : int = a - b
 
-let to_int (id : t) : int = id
-let of_int (id : int) : t = id
+let to_int : t -> int = BatPervasives.identity
+let of_int : int -> t = BatPervasives.identity
 
 let to_string (id : t) = string_of_int id
 let print out (id : t) = output_string out (to_string id)
