@@ -52,3 +52,5 @@ module Memcheck = struct
   external get_vbits : int -> int -> int -> int = "ml_Valgrind_Memcheck_get_vbits"
   external set_vbits : int -> int -> int -> int = "ml_Valgrind_Memcheck_set_vbits"
 end
+
+external sizeof : 'a -> int = "ml_Valgrind_sizeof"

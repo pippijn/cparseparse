@@ -1,10 +1,18 @@
+extern "C" {
 #include <caml/alloc.h>
 #include <caml/memory.h>
 #include <caml/mlvalues.h>
+}
 
 #include <valgrind/callgrind.h>
 #include <valgrind/memcheck.h>
 
+#include <cstdio>
+#include <set>
+
+typedef std::set<value> value_set;
+
+__BEGIN_DECLS
 
 /***************************************
  * :: callgrind
@@ -195,3 +203,58 @@ ml_Valgrind_Memcheck_set_vbits (value addr, value vbits, value nbytes)
 {
   return Val_int (VALGRIND_SET_VBITS (addr, vbits, nbytes));
 }
+
+
+/***************************************
+ * :: own functions
+ ***************************************/
+
+static int
+compute_size (value obj, value_set &seen, int level = 0)
+{
+  if (Is_long (obj))
+    return sizeof obj;
+
+  if (seen.find (obj) != seen.end ())
+    return sizeof obj;
+  seen.insert (obj);
+
+  header_t hd = Hd_val (obj);
+  tag_t tag = Tag_hd (hd);
+  int size = sizeof hd;
+
+  switch (tag)
+    {
+    case 0 ... No_scan_tag:
+      {
+        mlsize_t wosize = Wosize_hd (hd);
+        size += wosize * sizeof (value);
+
+        for (int i = 0; i < Wosize_hd (hd); i++)
+          size += compute_size (Field (obj, i), seen, level + 1);
+        break;
+      }
+
+    case String_tag:
+      size += caml_string_length (obj);
+      break;
+
+    default:
+      printf ("unhandled tag: %d\n", tag);
+      abort ();
+    }
+
+  return size;
+}
+
+
+CAMLprim value
+ml_Valgrind_sizeof (value obj)
+{
+  value_set seen;
+  int size = compute_size (obj, seen);
+  return Val_int (size);
+}
+
+
+__END_DECLS
