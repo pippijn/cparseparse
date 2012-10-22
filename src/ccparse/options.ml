@@ -4,8 +4,10 @@ let _treematch = ref false
 let _print = ref false
 let _pp = ref false
 let _tokens = ref false
-let _dumptoks = ref false
-let _loadtoks = ref false
+let _dump_toks = ref false
+let _load_toks = ref false
+let _dump_tree = ref false
+let _sizeof_tree = ref false
 let _stats = ref false
 let _trivial = ref false
 let _xc = ref false
@@ -20,14 +22,16 @@ let () =
     "-print",		Set _print,		" print tree";
     "-pp",		Set _pp,		" fully tokenise before parsing";
     "-tokens",		Set _tokens,		" tokenise only; do not parse (implies -pp)";
-    "-dumptoks",	Set _dumptoks,		" dump tokens to file (implies -pp)";
-    "-loadtoks",	Set _loadtoks,		" load tokens from file";
+    "-dump-toks",	Set _dump_toks,		" dump tokens to file (implies -pp)";
+    "-load-toks",	Set _load_toks,		" load tokens from file";
+    "-dump-tree",	Set _dump_tree,		" dump result of the parse to file";
+    "-sizeof-tree",	Set _sizeof_tree,	" compute memory size of parse result";
     "-stats",		Set _stats,		" print parsing statistics";
     "-trivial",		Set _trivial,		" use trivial user actions";
     "-xc",		Set _xc,		" parse code as C, not as C++ (implicit if any input file name ends with .c)";
     "-rt",		Set _rt,		" set real-time scheduling policy with highest priority";
   ]) ~action:(fun inputs ->
-    if !_dumptoks || !_tokens then
+    if !_dump_toks || !_tokens then
       _pp := true;
 
     if List.filter (ExtString.ends_with ".c") inputs <> [] then
@@ -41,8 +45,10 @@ let _treematch () = !_treematch
 let _print () = !_print
 let _pp () = !_pp
 let _tokens () = !_tokens
-let _dumptoks () = !_dumptoks
-let _loadtoks () = !_loadtoks
+let _dump_toks () = !_dump_toks
+let _load_toks () = !_load_toks
+let _dump_tree () = !_dump_tree
+let _sizeof_tree () = !_sizeof_tree
 let _stats () = !_stats
 let _trivial () = !_trivial
 let _xc () = !_xc

@@ -1,84 +1,84 @@
-// expected statistics
+(* expected statistics *)
 option shift_reduce_conflicts 3;
 option reduce_reduce_conflicts 18;
 
 
-// decltype
+(* decltype *)
 nonterm DeclSpecifier {
-  -> te:DecltypeTypeSpecifier m2:UberModifierSeqOpt { }
-  -> m1:UberModifierSeq te:DecltypeTypeSpecifier m2:UberModifierSeqOpt { }
+  -> te:DecltypeTypeSpecifier m2:UberModifierSeqOpt { unimplemented 1011 }
+  -> m1:UberModifierSeq te:DecltypeTypeSpecifier m2:UberModifierSeqOpt { unimplemented 1012 }
 }
 
 
 nonterm TypeSpecifier {
-  -> te:DecltypeTypeSpecifier cv2:UberCVQualifierSeqOpt { }
-  -> cv1:UberCVQualifierSeq te:DecltypeTypeSpecifier cv2:UberCVQualifierSeqOpt { }
+  -> te:DecltypeTypeSpecifier cv2:UberCVQualifierSeqOpt { unimplemented 1013 }
+  -> cv1:UberCVQualifierSeq te:DecltypeTypeSpecifier cv2:UberCVQualifierSeqOpt { unimplemented 1014 }
 }
 
 
 nonterm DecltypeTypeSpecifier {
-  fun merge(l,r) { unimplemented 0 }
+  fun merge(l,r) { unimplemented 1017 }
 
-  -> e:DecltypeExpr [DeclTypeExpr];
-  -> t:DecltypeType [DeclTypeType];
+  -> e:DecltypeExpr [DeclTypeExpr] { unimplemented 1015 }
+  -> t:DecltypeType [DeclTypeType] { unimplemented 1016 }
 }
 
 
 nonterm DecltypeExpr {
-  -> "decltype" "(" e:Expression ")";
+  -> "decltype" "(" e:Expression ")" { unimplemented 1018 }
        
 }
 
 nonterm DecltypeType {
-  -> "decltype" "(" t:TypeId ")";
+  -> "decltype" "(" t:TypeId ")" { unimplemented 1019 }
 }
 
 
-// nullptr
+(* nullptr *)
 nonterm Literal {
-  -> "nullptr" { }
+  -> "nullptr" { unimplemented 1020 }
 }
 
-// new character types
+(* new character types *)
 nonterm SimpleTypeSpecifier {
   -> "char16_t"      [Char16T] { unimplemented 248 }
   -> "char32_t"      [Char32T] { unimplemented 248 }
 }
 
-// constexpr
-nonterm UberModifier {
+(* constexpr *)
+nonterm(modifier) UberModifier {
   -> "constexpr"     [Constexpr] { unimplemented 248 }
 }
 
 nonterm CDtorModifier {
-  // TODO: this gives 19 RR conflicts
+  (* TODO: this gives 19 RR conflicts *)
   -> "constexpr"     [Constexpr] { unimplemented 248 }
 }
 
-// noexcept
+(* noexcept *)
 nonterm UnaryExpression {
-  -> e:NoexceptExpression [NoExcept];
+  -> e:NoexceptExpression [NoExcept] { unimplemented 1021 }
 }
 
 nonterm NoexceptExpression {
-  -> "noexcept" "(" e:ParenthesizedExpression ")";
+  -> "noexcept" "(" e:ParenthesizedExpression ")" { unimplemented 1022 }
 }
 
 nonterm ExceptionSpecification {
-  -> s:NoexceptSpecification;
+  -> s:NoexceptSpecification { unimplemented 1023 }
 }
 
 nonterm NoexceptSpecification {
-  -> "noexcept" [NoExcept] { }
+  -> "noexcept" [NoExcept] { unimplemented 1024 }
 }
 
-// variadic templates
+(* variadic templates *)
 nonterm TypeParameter {
-  // non-template type parameter
-  -> ClassOrTypename "..." i:IdentifierOpt t:DefaultTypeOpt { }
+  (* non-template type parameter *)
+  -> ClassOrTypename "..." i:IdentifierOpt t:DefaultTypeOpt { unimplemented 1025 }
 
-  // template type parameter
-  -> "template" "<" pl:TemplateParameterList ">" "class" "..." i:IdentifierOpt { }
+  (* template type parameter *)
+  -> "template" "<" pl:TemplateParameterList ">" "class" "..." i:IdentifierOpt { unimplemented 1026 }
 }
 
 nonterm TemplateArgument {
@@ -86,9 +86,9 @@ nonterm TemplateArgument {
      { unimplemented 511 }
 }
 
-// rvalue references
-/*
+(* rvalue references *)
+(*
 nonterm PrefixDeclarator {
   -> "&&" cv:CVQualifierSeqOpt { cv }
 }
-*/
+*)

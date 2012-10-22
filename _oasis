@@ -138,7 +138,7 @@ Library ccparse
         Path:                   src/ccparse
         Pack:                   true
         BuildTools:             ocamlbuild,ocamllex
-        BuildDepends:           baselib,glr,cabs,                       # internal
+        BuildDepends:           baselib,glr,ccabs,                      # internal
                                 unix                                    # core
         CompiledObject:         native
 #        NativeOpt:              -inline 999 -unsafe -noassert
@@ -150,6 +150,7 @@ Library ccparse
                                 gr/CcTreematch,
                                 gr/CcTreematchActions,
                                 Cc_keywords,
+                                Factory,
                                 Lexer,
                                 Parser,
                                 Options
@@ -165,6 +166,17 @@ Library cabs
                                 Constant,
                                 Sclass,
                                 Tqual
+
+Library ccabs
+        Path:                   src/ccabs
+        Pack:                   true
+        BuildTools:             ocamlbuild,camlp4o
+        BuildDepends:           batteries,sexplib                       # external
+        CompiledObject:         native
+#        NativeOpt:              -inline 999 -unsafe -noassert
+        Modules:                Ast,
+                                Flags,
+                                Query
 
 Library glr
         Path:                   src/glr
