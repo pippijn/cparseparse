@@ -123,6 +123,11 @@ let getSome = function
  * the ones in Pervasives will not interfere with parser internals. *)
 exception End_of_file
 exception Exit
+exception Cancel of string
+
+
+let cancel reason =
+  raise (Cancel reason)
 
 
 type statistics = {
@@ -981,10 +986,18 @@ let rwlProcessWorklist glr tokType tokSloc =
     done;
 
     (* invoke user's reduction action (TREEBUILD) *)
-    let sval = reductionAction glr.userAct path.prodIndex glr.toPass !leftEdge !rightEdge in
+    let sval, keep =
+      try
+        let sval = reductionAction glr.userAct path.prodIndex glr.toPass !leftEdge !rightEdge in
+        let keep = not (GlrOptions._use_keep ()) || keepNontermValue glr.userAct lhsIndex sval in
+       
+        sval, keep
+      with Cancel reason ->
+        SemanticValue.null, false
+    in
 
     (* did user want to keep? *)
-    if GlrOptions._use_keep () && not (keepNontermValue glr.userAct lhsIndex sval) then (
+    if not keep then (
       (* cancelled; drop on floor *)
     ) else (
       (* add source locations *)
