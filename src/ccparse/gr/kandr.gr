@@ -278,7 +278,7 @@ nonterm ParameterDeclaration {
   -> (*implicit-int*) d:UnqualifiedDeclarator
     {
       T_type (
-        TS_simple ([], ST_IMPLINT),
+        TS_simple ([], ST_ImplInt),
         DC_decl (d, None)
       )
     }

@@ -67,38 +67,47 @@ type decl_flags = decl_flag list with sexp
 
 
 type simple_type_id =
-  | ST_CHAR
-  | ST_UNSIGNED_CHAR
-  | ST_SIGNED_CHAR
-  | ST_BOOL
-  | ST_IMPLINT
-  | ST_INT
-  | ST_UNSIGNED_INT
-  | ST_LONG_INT
-  | ST_UNSIGNED_LONG_INT
-  | ST_LONG_LONG
-  | ST_UNSIGNED_LONG_LONG
-  | ST_SHORT_INT
-  | ST_UNSIGNED_SHORT_INT
-  | ST_WCHAR_T
-  | ST_FLOAT
-  | ST_DOUBLE
-  | ST_LONG_DOUBLE
-  | ST_FLOAT_COMPLEX
-  | ST_DOUBLE_COMPLEX
-  | ST_LONG_DOUBLE_COMPLEX
-  | ST_FLOAT_IMAGINARY
-  | ST_DOUBLE_IMAGINARY
-  | ST_LONG_DOUBLE_IMAGINARY
-  | ST_VOID
-  | ST_ELLIPSIS
+  | ST_Char
+  | ST_UChar
+  | ST_SChar
+
+  | ST_SInt
+  | ST_UInt
+
+  | ST_SLong
+  | ST_ULong
+
+  | ST_SLLong
+  | ST_ULLong
+
+  | ST_SShort
+  | ST_UShort
+
+  | ST_Float
+  | ST_Double
+  | ST_LDouble
+
+  | ST_CFloat
+  | ST_CDouble
+  | ST_CLDouble
+
+  | ST_IFloat
+  | ST_IDouble
+  | ST_ILDouble
+
+  | ST_ImplInt
+  | ST_Bool
+  | ST_WCharT
+
+  | ST_Void
+  | ST_Ellipsis
   with sexp
 
 type type_intr =
-  | TI_STRUCT
-  | TI_CLASS
-  | TI_UNION
-  | TI_ENUM
+  | TI_Struct
+  | TI_Class
+  | TI_Union
+  | TI_Enum
   with sexp
 
 
@@ -269,7 +278,7 @@ and pq_name =
   | PQ_qualifier of string option * template_argument list * pq_name
   | PQ_name of string
   | PQ_operator of operator_name * string
-  | PQ_template of string * template_argument
+  | PQ_template of string * template_argument list
 
 and type_specifier =
   | TS_name of cv_flags * pq_name
@@ -413,6 +422,12 @@ and namespace_decl =
   | ND_alias of string * pq_name
   | ND_usingDecl of pq_name
   | ND_usingDir of pq_name
+
+
+and attribute =
+  | AT_empty
+  | AT_word of string
+  | AT_func of string * arg_expression list
 
   (* all of the above gets sexp *)
   with sexp

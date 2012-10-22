@@ -649,79 +649,79 @@ nonterm NamespaceDefinition {
  * word such as const)." *)
 nonterm AttributeWord {
   (* non-keyword name *)
-  -> n:TOK_NAME         [Identifier] { unimplemented 635 }
+  -> n:TOK_NAME         [Identifier] 		{ n }
 
   (* keywords *)
-  -> "asm"              [Asm] { unimplemented 636 }
-  -> "auto"             [Auto] { unimplemented 637 }
-  -> "break"            [Break] { unimplemented 638 }
-  -> "bool"             [Bool] { unimplemented 639 }
-  -> "case"             [Case] { unimplemented 640 }
-  -> "catch"            [Catch] { unimplemented 641 }
-  -> "cdecl"            [Cdecl] { unimplemented 642 }
-  -> "char"             [Char] { unimplemented 643 }
-  -> "class"            [Class] { unimplemented 644 }
-  -> "const"            [Const] { unimplemented 645 }
-  -> "const_cast"       [ConstCast] { unimplemented 646 }
-  -> "continue"         [Continue] { unimplemented 647 }
-  -> "default"          [Default] { unimplemented 648 }
-  -> "delete"           [Delete] { unimplemented 649 }
-  -> "do"               [Do] { unimplemented 650 }
-  -> "double"           [Double] { unimplemented 651 }
-  -> "dynamic_cast"     [DynamicCast] { unimplemented 652 }
-  -> "else"             [Else] { unimplemented 653 }
-  -> "enum"             [Enum] { unimplemented 654 }
-  -> "explicit"         [Explicit] { unimplemented 655 }
-  -> "export"           [Export] { unimplemented 656 }
-  -> "extern"           [Extern] { unimplemented 657 }
-  -> "false"            [False] { unimplemented 658 }
-  -> "float"            [Float] { unimplemented 659 }
-  -> "for"              [For] { unimplemented 660 }
-  -> "friend"           [Friend] { unimplemented 661 }
-  -> "goto"             [Goto] { unimplemented 662 }
-  -> "if"               [If] { unimplemented 663 }
-  -> "inline"           [Inline] { unimplemented 664 }
-  -> "int"              [Int] { unimplemented 665 }
-  -> "long"             [Long] { unimplemented 666 }
-  -> "mutable"          [Mutable] { unimplemented 667 }
-  -> "namespace"        [Namespace] { unimplemented 668 }
-  -> "new"              [New] { unimplemented 669 }
-  -> "operator"         [Operator] { unimplemented 670 }
-  -> "pascal"           [Pascal] { unimplemented 671 }
-  -> "private"          [Private] { unimplemented 672 }
-  -> "protected"        [Protected] { unimplemented 673 }
-  -> "public"           [Public] { unimplemented 674 }
-  -> "register"         [Register] { unimplemented 675 }
-  -> "reinterpret_cast" [ReinterpretCast] { unimplemented 676 }
-  -> "return"           [Return] { unimplemented 677 }
-  -> "short"            [Short] { unimplemented 678 }
-  -> "signed"           [Signed] { unimplemented 679 }
-  -> "sizeof"           [Sizeof] { unimplemented 680 }
-  -> "static"           [Static] { unimplemented 681 }
-  -> "static_cast"      [StaticCast] { unimplemented 682 }
-  -> "struct"           [Struct] { unimplemented 683 }
-  -> "switch"           [Switch] { unimplemented 684 }
-  -> "template"         [Template] { unimplemented 685 }
-  -> "this"             [This] { unimplemented 686 }
-  -> "throw"            [Throw] { unimplemented 687 }
-  -> "true"             [True] { unimplemented 688 }
-  -> "try"              [Try] { unimplemented 689 }
-  -> "typedef"          [Typedef] { unimplemented 690 }
-  -> "typeid"           [Typeid] { unimplemented 691 }
-  -> "typename"         [Typename] { unimplemented 692 }
-  -> "union"            [Union] { unimplemented 693 }
-  -> "unsigned"         [Unsigned] { unimplemented 694 }
-  -> "using"            [Using] { unimplemented 695 }
-  -> "virtual"          [Virtual] { unimplemented 696 }
-  -> "void"             [Void] { unimplemented 697 }
-  -> "volatile"         [Volatile] { unimplemented 698 }
-  -> "wchar_t"          [WcharT] { unimplemented 699 }
-  -> "while"            [While] { unimplemented 700 }
+  -> "asm"              [Asm] 			{ "asm" }
+  -> "auto"             [Auto] 			{ "auto" }
+  -> "break"            [Break] 		{ "break" }
+  -> "bool"             [Bool] 			{ "bool" }
+  -> "case"             [Case] 			{ "case" }
+  -> "catch"            [Catch] 		{ "catch" }
+  -> "cdecl"            [Cdecl] 		{ "cdecl" }
+  -> "char"             [Char] 			{ "char" }
+  -> "class"            [Class] 		{ "class" }
+  -> "const"            [Const] 		{ "const" }
+  -> "const_cast"       [ConstCast] 		{ "const_cast" }
+  -> "continue"         [Continue] 		{ "continue" }
+  -> "default"          [Default] 		{ "default" }
+  -> "delete"           [Delete] 		{ "delete" }
+  -> "do"               [Do] 			{ "do" }
+  -> "double"           [Double] 		{ "double" }
+  -> "dynamic_cast"     [DynamicCast] 		{ "dynamic_cast" }
+  -> "else"             [Else] 			{ "else" }
+  -> "enum"             [Enum] 			{ "enum" }
+  -> "explicit"         [Explicit] 		{ "explicit" }
+  -> "export"           [Export] 		{ "export" }
+  -> "extern"           [Extern] 		{ "extern" }
+  -> "false"            [False] 		{ "false" }
+  -> "float"            [Float] 		{ "float" }
+  -> "for"              [For] 			{ "for" }
+  -> "friend"           [Friend] 		{ "friend" }
+  -> "goto"             [Goto] 			{ "goto" }
+  -> "if"               [If] 			{ "if" }
+  -> "inline"           [Inline] 		{ "inline" }
+  -> "int"              [Int] 			{ "int" }
+  -> "long"             [Long] 			{ "long" }
+  -> "mutable"          [Mutable] 		{ "mutable" }
+  -> "namespace"        [Namespace] 		{ "namespace" }
+  -> "new"              [New] 			{ "new" }
+  -> "operator"         [Operator] 		{ "operator" }
+  -> "pascal"           [Pascal] 		{ "pascal" }
+  -> "private"          [Private] 		{ "private" }
+  -> "protected"        [Protected] 		{ "protected" }
+  -> "public"           [Public] 		{ "public" }
+  -> "register"         [Register] 		{ "register" }
+  -> "reinterpret_cast" [ReinterpretCast] 	{ "reinterpret_cast" }
+  -> "return"           [Return] 		{ "return" }
+  -> "short"            [Short] 		{ "short" }
+  -> "signed"           [Signed] 		{ "signed" }
+  -> "sizeof"           [Sizeof] 		{ "sizeof" }
+  -> "static"           [Static] 		{ "static" }
+  -> "static_cast"      [StaticCast] 		{ "static_cast" }
+  -> "struct"           [Struct] 		{ "struct" }
+  -> "switch"           [Switch] 		{ "switch" }
+  -> "template"         [Template] 		{ "template" }
+  -> "this"             [This] 			{ "this" }
+  -> "throw"            [Throw] 		{ "throw" }
+  -> "true"             [True] 			{ "true" }
+  -> "try"              [Try] 			{ "try" }
+  -> "typedef"          [Typedef] 		{ "typedef" }
+  -> "typeid"           [Typeid] 		{ "typeid" }
+  -> "typename"         [Typename] 		{ "typename" }
+  -> "union"            [Union] 		{ "union" }
+  -> "unsigned"         [Unsigned] 		{ "unsigned" }
+  -> "using"            [Using] 		{ "using" }
+  -> "virtual"          [Virtual] 		{ "virtual" }
+  -> "void"             [Void] 			{ "void" }
+  -> "volatile"         [Volatile] 		{ "volatile" }
+  -> "wchar_t"          [WcharT] 		{ "wchar_t" }
+  -> "while"            [While] 		{ "while" }
 }
 
 nonterm CommaSepExpressionListOpt {
-  -> empty                 { unimplemented 701 }
-  -> el:ExpressionList     { unimplemented 702 }
+  -> empty                 { [] }
+  -> el:ExpressionList     { el }
 }
 
 nonterm AttributeParameters {
@@ -730,39 +730,39 @@ nonterm AttributeParameters {
    * expression, if an identifier, should not be typechecked as an
    * E_variable, since it need not match a declared name; first it
    * should be checked against known attribute parameters (maybe?). *)
-  -> exprs:CommaSepExpressionListOpt    { unimplemented 703 }
+  -> exprs:CommaSepExpressionListOpt;
 }
 
 nonterm Attribute {
   -> empty
-     { unimplemented 704 }
+     { AT_empty }
 
   -> w:AttributeWord
-     { unimplemented 705 }
+     { AT_word (w) }
 
   -> w:AttributeWord "(" ap:AttributeParameters ")"
-     { unimplemented 706 }
+     { AT_func (w, ap) }
 }
 
 nonterm AttributeList {
   -> at:Attribute
-     { unimplemented 707 }
+     { [at] }
 
   -> at:Attribute "," ap:AttributeList
-     { unimplemented 708 }
+     { at :: ap }
 }
 
 nonterm AttributeSpecifier {
   -> "__attribute__" "(" "(" ap:AttributeList ")" ")"
-     { unimplemented 709 }
+     { ap }
 }
 
 nonterm AttributeSpecifierList {
   -> s:AttributeSpecifier
-     { unimplemented 710 }
+     { [s] }
 
   -> s:AttributeSpecifier sl:AttributeSpecifierList
-     { unimplemented 711 }
+     { s :: sl }
 }
 
 (* quarl 2006-06-14

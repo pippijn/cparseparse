@@ -192,13 +192,13 @@ nonterm Literal {
 (* a single quoted sequence of characters; this nonterminal exists
  * so that gnu.gr can extend it *)
 nonterm PreprocString {
-  -> s:TOK_STRING_LITERAL                   { unimplemented 15 }
+  -> s:TOK_STRING_LITERAL                   { s }
 }
 
 (* a string literal, with all concatenated parts *)
 nonterm StringLiteral {
-  -> x:PreprocString                        { unimplemented 1234 }
-  -> xs:StringLiteral x:PreprocString       { unimplemented 1235 }
+  -> x:PreprocString                        { [x] }
+  -> xs:StringLiteral x:PreprocString       { x :: xs }
 }
 
 
@@ -348,17 +348,17 @@ nonterm CtorExpressionType {
   (*-> ColonColonOpt NestedNameSpecifier "template" TemplateId; *)
 
   -> n:PQTypeName        [TypeName]     { TS_name ([], n) }
-  -> "char"              [Char]         { TS_simple ([], ST_CHAR) }
-  -> "wchar_t"           [WCharT]       { TS_simple ([], ST_WCHAR_T) }
-  -> "bool"              [Bool]         { TS_simple ([], ST_BOOL) }
-  -> "short"             [Short]        { TS_simple ([], ST_SHORT_INT) }
-  -> "int"               [Int]          { TS_simple ([], ST_INT) }
-  -> "long"              [Long]         { TS_simple ([], ST_LONG_INT) }
-  -> "signed"            [Signed]       { TS_simple ([], ST_INT) }
-  -> "unsigned"          [Unsigned]     { TS_simple ([], ST_UNSIGNED_INT) }
-  -> "float"             [Float]        { TS_simple ([], ST_FLOAT) }
-  -> "double"            [Double]       { TS_simple ([], ST_DOUBLE) }
-  -> "void"              [Void]         { TS_simple ([], ST_VOID) }
+  -> "char"              [Char]         { TS_simple ([], ST_Char) }
+  -> "wchar_t"           [WCharT]       { TS_simple ([], ST_WCharT) }
+  -> "bool"              [Bool]         { TS_simple ([], ST_Bool) }
+  -> "short"             [Short]        { TS_simple ([], ST_SShort) }
+  -> "int"               [Int]          { TS_simple ([], ST_SInt) }
+  -> "long"              [Long]         { TS_simple ([], ST_SLong) }
+  -> "signed"            [Signed]       { TS_simple ([], ST_SInt) }
+  -> "unsigned"          [Unsigned]     { TS_simple ([], ST_UInt) }
+  -> "float"             [Float]        { TS_simple ([], ST_Float) }
+  -> "double"            [Double]       { TS_simple ([], ST_Double) }
+  -> "void"              [Void]         { TS_simple ([], ST_Void) }
 }
 
 nonterm CastKeyword {
@@ -889,17 +889,17 @@ nonterm Declaration {
   fun merge(l,r) { unimplemented 1302 }
 
   -> e:EmptyDeclaration        [Empty] { unimplemented 1200 }
-  -> d:BlockDeclaration        [Block] { unimplemented 1201 }
+  -> d:BlockDeclaration        [Block] { TF_decl (d) }
   -> f:FunctionDefinition      [Function] { TF_func (f) }
-  -> t:TemplateDeclaration     [Template] { unimplemented 1203 }
-  -> d:ExplicitInstantiation   [ExplInst] { unimplemented 1204 }
-  (*-> e:ExplicitSpecialisation  [ExplSpec] { unimplemented 1205 } [> folded into TemplateDeclaration <]*)
-  -> s:LinkageSpecification    [LinkageSpec] { unimplemented 1206 }
+  -> t:TemplateDeclaration     [Template] { TF_template (t) }
+  -> d:ExplicitInstantiation   [ExplInst] { d }
+  (*-> e:ExplicitSpecialisation  [ExplSpec] { e } [> folded into TemplateDeclaration <]*)
+  -> s:LinkageSpecification    [LinkageSpec] { s }
 
   (* substituted from BlockDeclaration *)
-  -> a:AsmDefinition           [Asm] { unimplemented 1207 }
-  -> n:NamespaceDefinition     [NamespaceDefn] { unimplemented 1208 }
-  -> n:NamespaceDecl           [NamespaceDecl] { unimplemented 1209 }
+  -> a:AsmDefinition           [Asm] { TF_asm (a) }
+  -> n:NamespaceDefinition     [NamespaceDefn] { n }
+  -> n:NamespaceDecl           [NamespaceDecl] { TF_namespaceDecl (n) }
 }
 
 nonterm EmptyDeclaration {
@@ -996,7 +996,17 @@ nonterm DeclSpecifier {
        }
 
   -> m1:UberModifierSeq k1:SimpleTypeSpecifier m2:UberTypeAndModifierSeqOpt
-       [PreModSimpleName] { unimplemented 214 }
+       [PreModSimpleName] {
+         let m = m1 @ m2 in
+         let k = k1 :: m2 in
+         {
+           dflags = Flags.dflags_of_modifiers m;
+           spec = TS_simple (
+             Flags.cv_of_modifiers m,
+             Flags.stype_of_modifiers k);
+           decllist = [];
+         }
+       }
 
   (* TS_elaborated, TS_classSpec, TS_enumSpec:
    * triggered by one of "class", "struct", "union", "enum", "typename",
@@ -1012,9 +1022,9 @@ nonterm DeclSpecifier {
 nonterm ElaboratedOrSpecifier {
   (* Note: This can multi-yield in cases like in/k0072.cc. *)
 
-  -> s:ElaboratedTypeSpecifier { unimplemented 217 }
-  -> s:ClassSpecifier          { unimplemented 218 }
-  -> s:EnumSpecifier           { unimplemented 219 }
+  -> s:ElaboratedTypeSpecifier;
+  -> s:ClassSpecifier;
+  -> s:EnumSpecifier;
 }
 
 
@@ -1109,12 +1119,12 @@ nonterm SimpleTypeSpecifier {
 
 
 nonterm ElaboratedTypeSpecifier {
-  -> k:ClassKey n:PQTypeName    [Class] { unimplemented 259 }
-  -> "enum" n:PQTypeName        [Enum] { unimplemented 260 }
+  -> k:ClassKey n:PQTypeName    [Class] { TS_elaborated ([], k, n) }
+  -> "enum" n:PQTypeName        [Enum]  { TS_elaborated ([], TI_Enum, n) }
 
   (* cppstd grammar ensures "typename" is only applied to qualified
    * names, but I find that more natural to enforce during typechecking *)
-  -> "typename" n:PQTypeName    [Typename] { unimplemented 261 }
+  -> "typename" n:PQTypeName    [Typename] { TS_name ([], n) }
 }
 
 
@@ -1124,19 +1134,10 @@ nonterm ElaboratedTypeSpecifier {
 nonterm TypeSpecifier {
   (* TS_name *)
   -> n:PQTypeName cv:UberCVQualifierSeqOpt
-       [Name] {
-         TS_name (
-           cv,
-           n)
-       }
+       [Name] { TS_name (cv, n) }
 
   -> cv1:UberCVQualifierSeq n:PQTypeName cv2:UberCVQualifierSeqOpt
-       [QualName] {
-         let cv = cv1 @ cv2 in
-         TS_name (
-           cv,
-           n)
-       }
+       [QualName] { TS_name (cv1 @ cv2, n) }
 
   (* TS_simple *)
   -> k1:SimpleTypeSpecifier m2:UberTypeAndCVQualifierSeqOpt
@@ -1153,7 +1154,7 @@ nonterm TypeSpecifier {
 
   (* TS_elaborated, TS_classSpec, TS_enumSpec *)
   -> e:ElaboratedOrSpecifier m2:UberCVQualifierSeqOpt
-       [Elab] { unimplemented 266 }
+       [Elab] { Flags.set_cv m2 e }
 
   -> m1:UberCVQualifierSeq e:ElaboratedOrSpecifier m2:UberCVQualifierSeqOpt
        [QualElab] { unimplemented 267 }
@@ -1855,8 +1856,8 @@ nonterm MemberDeclarator {
 }
 
 nonterm IdentifierOpt {
-  -> empty         { unimplemented 406 }
-  -> n:Identifier  { unimplemented 407 }
+  -> empty         { None }
+  -> n:Identifier  { Some n }
 }
 
 
@@ -2160,29 +2161,29 @@ nonterm TemplateParameterListContinuation {
 }
 
 nonterm ClassOrTypename {
-  -> "class" [Class] { unimplemented 1232 }
-  -> "typename" [Typename] { unimplemented 1233 }
+  -> "class"	[Class]		{ }
+  -> "typename"	[Typename]	{ }
 }
 
 nonterm DefaultTypeOpt {
-  -> empty                    { unimplemented 497 }
-  -> "=" t:TypeId             { unimplemented 498 }
+  -> empty                    { None }
+  -> "=" t:TypeId             { Some t }
 }
 
 nonterm DefaultTemplateOpt {
-  -> empty                    { unimplemented 499 }
-  -> "=" t:IdExpression       { unimplemented 500 }
+  -> empty                    { None }
+  -> "=" t:IdExpression       { Some t }
 }
 
 
 nonterm TemplateArgumentListOpt {
-  -> empty                       { unimplemented 501 }
-  -> list:TemplateArgumentList   { unimplemented 502 }
+  -> empty                       { [] }
+  -> list:TemplateArgumentList   { list }
 }
 
 nonterm TemplateId {
   -> n:Identifier "<" list:TemplateArgumentListOpt ">"
-       { unimplemented 503 }
+       { PQ_template (n, list) }
 
   (* 9/21/04: Added this possibility (e.g. d0103.cc). *)
   -> on:OperatorFunctionId "<" list:TemplateArgumentListOpt ">"
@@ -2211,10 +2212,10 @@ nonterm TemplateArgumentList {
   fun merge(l,r) { unimplemented 1006 }
 
   -> x:TemplateArgument
-       [Head] { unimplemented 507 }
+       [Head] { [x] }
 
   -> xs:TemplateArgumentList "," x:TemplateArgument
-       [Tail] { unimplemented 507 }
+       [Tail] { x :: xs }
 }
 
 nonterm TemplateArgument {
@@ -2319,7 +2320,7 @@ nonterm TypeIdList {
 (* ------------------------ namespaces ----------------------- *)
 nonterm NamespaceDefinition {
   -> "namespace" n:IdentifierOpt "{" unit:TranslationUnit "}"
-       { unimplemented 530 }
+       { TF_namespaceDefn (n, unit) }
 }
 
 nonterm NamespaceDecl {

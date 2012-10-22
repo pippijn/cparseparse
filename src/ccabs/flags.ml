@@ -63,6 +63,17 @@ let cv_of_modifiers mods =
 let stype_of_modifiers mods =
   (* implement cppstd Table 7, p.109 *)
   match List.sort compare (List.filter is_type_keyword mods) with
-  | [`UM_CHAR] -> ST_CHAR
-  | [`UM_INT] -> ST_INT
-  | _ -> failwith "malformed type"
+  | [`UM_CHAR] -> ST_Char
+  | [`UM_INT] -> ST_SInt
+  | [`UM_LONG; `UM_INT] -> ST_SLong
+  | [`UM_UNSIGNED; `UM_LONG; `UM_INT] -> ST_ULong
+  | mods -> failwith ("malformed type: " ^ Sexplib.Sexp.to_string_hum (sexp_of_modifiers mods))
+
+
+let set_cv cv = function
+  | TS_name (ocv, name) -> TS_name (ocv @ cv, name)
+  | TS_simple (ocv, tid) -> TS_simple (ocv @ cv, tid)
+  | TS_elaborated (ocv, tint, name) -> TS_elaborated (ocv @ cv, tint, name)
+  | TS_classSpec (ocv, tint, name, base, mems) -> TS_classSpec (ocv @ cv, tint, name, base, mems)
+  | TS_enumSpec (ocv, name, enums) -> TS_enumSpec (ocv @ cv, name, enums)
+

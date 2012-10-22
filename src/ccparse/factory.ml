@@ -31,7 +31,7 @@ let make_ellipsis_type_id () =
    * of the compound statement hardly seems like the "right" end
    * point for them *)
   T_type (
-    TS_simple ([], ST_ELLIPSIS),
+    TS_simple ([], ST_Ellipsis),
     DC_decl (
       D_name (None (* name *)),
       None (* initialiser *)
