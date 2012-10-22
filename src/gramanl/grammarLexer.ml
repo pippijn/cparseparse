@@ -151,9 +151,8 @@ let rec normal state = lexer
 
 (* Comments *)
 | "//" [^ '\n']*						-> normal state lexbuf
-| "(*" ([^ '*']| "*"* [^ '*' ')'])* "*"+ ")"			-> normal state lexbuf
 | "/*" ([^ '*']| "*"* [^ '*' '/'])* "*"+ "/"			-> normal state lexbuf
-| "/*" ([^ '*']| "*"* [^ '*' '/'])* "*"*			-> failwith "unterminated comment"
+| "(*"								-> comment 0 state lexbuf
 
 (* State-switching keywords *)
 | "context_class"						-> state.automaton <- Verbatim; TOK_CONTEXT_CLASS
@@ -204,6 +203,12 @@ let rec normal state = lexer
 	normal state nextbuf
     | _ :: [] -> EOF
     | [] -> failwith "impossible: empty lexer stack"
+
+
+and comment level state = lexer
+| "(*"								-> comment (level + 1) state lexbuf
+| "*)"								-> if level > 0 then comment (level - 1) state lexbuf else normal state lexbuf
+| _								-> comment level state lexbuf
 
 
 let token state =

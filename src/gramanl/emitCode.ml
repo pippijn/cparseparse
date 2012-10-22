@@ -98,7 +98,7 @@ let emit_tables name tables =
  * :: Main entry point
  ************************************************)
 
-let emit_ml dirname index prods_by_lhs actions reachable verbatims impl_verbatims tables =
+let emit_ml dirname index prods_by_lhs actions reachable tables =
   let open AnalysisEnvType in
 
   let final_prod = StateId.Production.of_int tables.ParseTablesType.finalProductionIndex in
@@ -110,7 +110,7 @@ let emit_ml dirname index prods_by_lhs actions reachable verbatims impl_verbatim
   emit_treematch name index.prods prods_by_lhs reachable;
   emit_symbol_names name index.terms index.nonterms;
 
-  List.iter (fun (prefix, nonterms, prods) ->
+  List.iter (fun (prefix, verbatims, impl_verbatims, nonterms, prods) ->
     emit_user_actions name prefix index.terms nonterms prods final_prod verbatims impl_verbatims
   ) actions;
 
