@@ -223,8 +223,10 @@ let elkmain inputs =
     List.iter (function
       | None -> ()
       | Some tu ->
-          Sexplib.Sexp.output_hum stdout (Ccabs.Ast.sexp_of_translation_unit tu);
-          print_newline ()
+          if Options._print () then (
+            Sexplib.Sexp.output_hum stdout (Ccabs.Ast.sexp_of_translation_unit tu);
+            print_newline ()
+          )
     ) trees
 
   )
