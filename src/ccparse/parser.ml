@@ -28,7 +28,7 @@ let glrparse filename glr lexer =
   let tree =
     try
       Some (Timing.time ~alloc:true "parsing" (GlrEngine.glrParse glr) lexer)
-    with GlrEngine.Located ((start_p, end_p), e) ->
+    with GlrEngine.Located ((start_p, end_p), e, backtrace) ->
       let open Lexing in
       (* print source position *)
       Printf.printf "\n%s:%d:%d: "
@@ -39,17 +39,16 @@ let glrparse filename glr lexer =
       (* print exception info *)
       begin match e with
       | GlrEngine.ParseError (state, token) ->
-          Printf.printf "parse error (state: %d, token: %d)"
+          Printf.printf "parse error (state: %d, token: %d)\n"
             state token
       | Failure msg ->
-          Printf.printf "failure in user actions: %s" msg
+          Printf.printf "failure in user actions: %s" msg;
+          print_endline backtrace
       | e ->
-          Printf.printf "exception in user actions: %s"
-            (Printexc.to_string e)
+          Printf.printf "exception in user actions: %s\n"
+            (Printexc.to_string e);
+          print_endline backtrace
       end;
-
-      (* finish printing error *)
-      print_newline ();
 
       None
   in
@@ -135,7 +134,9 @@ let lexer_from_file input =
   )
 
 
-let parse_file glr actions input =
+let parse_file tables actions input =
+  let glr = GlrEngine.makeGLR actions tables in
+
   let lexer =
     if Options._load_toks () then
       lexer_from_dump input
@@ -162,9 +163,7 @@ let dump_tree tree =
 
 
 let parse_files actions tables files =
-  let glr = GlrEngine.makeGLR actions tables in
-
-  let result = Timing.alloc "parsing all files" (List.map (parse_file glr actions)) files in
+  let result = Timing.alloc "parsing all files" (List.map (parse_file tables actions)) files in
 
   if Options._sizeof_tree () then (
     let size =

@@ -26,7 +26,7 @@ module Make
 
     try
       action (GlrEngine.glrParse glr lexer)
-    with GlrEngine.Located ((start_p, end_p), e) ->
+    with GlrEngine.Located ((start_p, end_p), e, extra) ->
       let open Lexing in
       (* print source position *)
       Printf.printf "\n%s:%d:%d: "
@@ -35,19 +35,18 @@ module Make
         (start_p.pos_cnum - start_p.pos_bol + 1);
 
       (* print exception info *)
-      begin match e with
+      match e with
       | GlrEngine.ParseError (state, token) ->
-          Printf.printf "parse error (state: %d, token: %d)"
-          state token
+          Printf.printf "parse error near token \"%s\" (state: %d, token: %d)\n"
+            extra
+            state token
       | Failure msg ->
-          Printf.printf "failure in user actions: %s" msg
+          Printf.printf "failure in user actions: %s\n" msg;
+          print_endline extra
       | e ->
-          Printf.printf "exception in user actions: %s"
-          (Printexc.to_string e)
-      end;
-
-      (* finish printing error *)
-      print_newline ()
+          Printf.printf "exception in user actions: %s\n"
+            (Printexc.to_string e);
+          print_endline extra
 
 
   let parse action filename token lexbuf =

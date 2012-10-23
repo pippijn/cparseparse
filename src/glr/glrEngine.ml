@@ -13,9 +13,9 @@
  *
  * (OLD) It should be clear that many factors contribute to this
  * implementation being slow, and I'm going to refrain from any
- * optimization for a bit.
+ * optimisation for a bit.
  *
- * UPDATE (3/29/02): I'm now trying to optimize it.  The starting
+ * UPDATE (3/29/02): I'm now trying to optimise it.  The starting
  * implementation is 300x slower than bison.  Ideal goal is 3x, but
  * more realistic is 10x.
  *
@@ -129,7 +129,7 @@ exception Cancel of string
 
 (* These exceptions are part of the public interface. *)
 exception ParseError of ParseTablesType.state_id * (*token*)int
-exception Located of SourceLocation.t * exn
+exception Located of SourceLocation.t * exn * string
 
 
 let cancel reason =
@@ -1163,7 +1163,7 @@ let parse_error ?reason glr tokType tokSloc lastToDie =
         Printf.printf "Last reduction was cancelled because: %s\n" reason
   );
 
-  raise (Located (tokSloc, ParseError (lastToDie, tokType)))
+  raise (Located (tokSloc, ParseError (lastToDie, tokType), terminalName glr.userAct tokType))
 
 
 let nondeterministicParseToken glr tokType tokSval tokSloc =
@@ -1485,7 +1485,7 @@ let rec main_loop (glr : 'a glr) lr lexer token : 'a =
        * already wrapped in Located *)
       raise e
   | e ->
-      raise (Located (tokSloc, e))
+      raise (Located (tokSloc, e, Printexc.get_backtrace ()))
   end;
 
   (* parse next token *)
