@@ -70,10 +70,11 @@ let grammar_graph (dirname, grammar) =
 
 
 let analyse (dirname, grammar) =
-  dirname, GrammarAnalysis.run_analyses grammar
+  let env, states, tables = GrammarAnalysis.run_analyses grammar in
+  dirname, env, states, tables
 
 
-let print_transformed (dirname, (env, _, _) as tuple) =
+let print_transformed (dirname, env, _, _ as tuple) =
   let file = dirname ^ "/grammar.gr" in
   let ast = BackTransform.ast_of_env env in
   BatStd.with_dispose ~dispose:close_out
@@ -81,19 +82,19 @@ let print_transformed (dirname, (env, _, _) as tuple) =
   tuple
 
 
-let output_menhir (dirname, (env, _, _) as tuple) =
+let output_menhir (dirname, env, _, _ as tuple) =
   let file = dirname ^ "/grammar.mly" in
   OutputMenhir.output_grammar ~file env;
   tuple
 
 
-let state_graph (dirname, (_, states, _) as tuple) =
+let state_graph (dirname, _, states, _ as tuple) =
   let file = dirname ^ "/automaton.dot" in
   Timing.progress "writing automaton graph" (StateGraph.visualise ~file) states;
   tuple
 
 
-let dump_automaton (dirname, (env, states, _) as tuple) =
+let dump_automaton (dirname, env, states, _ as tuple) =
   let out = Pervasives.open_out (dirname ^ "/automaton.out") in
   Timing.progress "dumping states to automaton.out"
     (List.iter (PrintAnalysisEnv.print_item_set ~out env)) states;
@@ -101,15 +102,8 @@ let dump_automaton (dirname, (env, states, _) as tuple) =
   tuple
 
 
-let emit_code (dirname, (env, states, tables)) =
+let make_ptree_actions reachable env =
   let open AnalysisEnvType in
-
-  let index = env.index in
-  let prods_by_lhs = env.prods_by_lhs in
-  let verbatims = env.verbatims in
-  let impl_verbatims = env.impl_verbatims in
-
-  let reachable = Reachability.compute_reachable_tagged index.prods prods_by_lhs in
 
   let transform prefix =
     let module Transform =
@@ -120,18 +114,36 @@ let emit_code (dirname, (env, states, tables)) =
 
     (* drop verbatim sections *)
     prefix, [], [],
-    Transform.nonterms reachable index.nonterms,
-    Transform.prods reachable prods_by_lhs index.prods
+    Transform.nonterms reachable env.index.nonterms,
+    Transform.prods reachable env.prods_by_lhs env.index.prods
   in
 
-  let actions = [
+  [
     (* original user actions *)
-    "", verbatims, impl_verbatims, index.nonterms, index.prods;
+    "", env.verbatims, env.impl_verbatims, env.index.nonterms, env.index.prods;
     (* transform to use "%Ptree" module *)
     transform "Ptree";
     (* transform to use "%Treematch" module *)
     transform "Treematch";
-  ] in
+  ]
+
+
+let make_ptree (dirname, env, states, tables) =
+  let open AnalysisEnvType in
+
+  let reachable = Reachability.compute_reachable_tagged env.index.prods env.prods_by_lhs in
+
+  let actions = Timing.progress "adding parse tree actions" (make_ptree_actions reachable) env in
+
+  dirname, env, reachable, actions, states, tables
+
+
+
+let emit_code (dirname, env, reachable, actions, states, tables) =
+  let open AnalysisEnvType in
+
+  let index = env.index in
+  let prods_by_lhs = env.prods_by_lhs in
 
   Timing.progress "emitting ML code"
     (EmitCode.emit_ml dirname index prods_by_lhs actions reachable) tables
@@ -151,6 +163,7 @@ let main inputs =
     |> optional Options._output_menhir output_menhir
     |> optional Options._graph_automaton state_graph
     |> optional Options._dump_automaton dump_automaton
+    |> make_ptree
     |> emit_code
   with Diagnostics.Diagnostic (severity, msg) ->
     Printf.printf "%s: %s\n" (Diagnostics.string_of_severity severity) msg;
