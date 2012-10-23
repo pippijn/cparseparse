@@ -1138,10 +1138,12 @@ let rwlShiftTerminals glr tokType tokSval tokSloc =
  * :: Non-deterministic parser core
  **********************************************************)
 
-let printParseErrorMessage glr tokType lastToDie =
+let printParseErrorMessage ?reason glr tokType tokSloc lastToDie =
   if not glr.noisyFailedParse then
     ()
   else begin
+    let start_p, end_p = tokSloc in
+
     if lastToDie <> cSTATE_INVALID then (
       Printf.printf "In state %d, I expected one of these tokens:\n" lastToDie;
       for i = 0 to ParseTables.getNumTerms glr.tables - 1 do
@@ -1153,9 +1155,16 @@ let printParseErrorMessage glr tokType lastToDie =
       Printf.printf "(expected-token info not available due to nondeterministic mode)\n"
     );
 
-    Printf.printf (*loc*) "Parse error (state %d) at %s\n"
+    let open Lexing in
+    Printf.printf (*loc*) "Parse error (state %d) at %s (%d:%d)\n"
                   lastToDie
-                  (terminalName glr.userAct tokType);
+                  (terminalName glr.userAct tokType)
+                  start_p.pos_lnum
+                  (start_p.pos_cnum - start_p.pos_bol);
+    match reason with
+    | None -> ()
+    | Some reason ->
+        Printf.printf "Last reduction was cancelled because: %s\n" reason
   end
 
 
@@ -1182,7 +1191,7 @@ let nondeterministicParseToken glr tokType tokSval tokSloc =
 
   (* error? *)
   if Arraystack.is_empty glr.topmostParsers then (
-    printParseErrorMessage glr tokType !lastToDie;
+    printParseErrorMessage glr tokType tokSloc !lastToDie;
     false
   ) else (
     true
@@ -1281,7 +1290,15 @@ let rec lrParseToken glr lr lexer token =
       done;
 
       (* call the user's action function (TREEBUILD) *)
-      let sval = reductionAction glr.userAct prodIndex lr.lrToPass !leftEdge !rightEdge in
+      let sval, keep, reason =
+        try
+          let sval = reductionAction glr.userAct prodIndex lr.lrToPass !leftEdge !rightEdge in
+          let keep = not (GlrOptions._use_keep ()) || keepNontermValue glr.userAct lhsIndex sval in
+
+          sval, keep, ""
+        with Cancel reason ->
+          SemanticValue.null, false, reason
+      in
 
       (* now, do an abbreviated 'glrShiftNonterminal' *)
       let newState =
@@ -1317,8 +1334,8 @@ let rec lrParseToken glr lr lexer token =
       assert (newNode.referenceCount = 1);
 
       (* does the user want to keep it? *)
-      if GlrOptions._use_keep () && not (keepNontermValue glr.userAct lhsIndex sval) then (
-        printParseErrorMessage glr tokType newNode.state;
+      if not keep then (
+        printParseErrorMessage ~reason glr tokType tokSloc newNode.state;
         if GlrOptions._accounting () then (
           glr.stats.detShift  <- glr.stats.detShift  + lr.lrDetShift;
           glr.stats.detReduce <- glr.stats.detReduce + lr.lrDetReduce;
