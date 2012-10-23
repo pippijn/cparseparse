@@ -10,7 +10,7 @@
  * the grammar to do more parsing work than the standard's (mainly
  * for declarators) and where I've chosen to fold in "opt".  The
  * names in (3) are often different because later phases of analysis
- * want to see different conceptual structure.  Anyway, the point is
+ * want to see different conceptual structure.	Anyway, the point is
  * to be aware of which kind of name a given thing is.
  *
  *
@@ -28,23 +28,23 @@
  * them:
  *
  *   (1) Disable multi-yield for the modified subtrees.  If an action
- *       modifies subtree nonterminal 'A', then in the definition of
- *       'A' I say "dup(n) { return NULL; }" to ensure that once the
- *       value is yielded once, it can't be yielded again.  Thus, if
- *       in fact it *is* yielded a second time, I'll get a segfault
- *       which will alert me to the design flaw in my rules.
- *       (DeclSpecifier is a good example of this.)
+ *	 modifies subtree nonterminal 'A', then in the definition of
+ *	 'A' I say "dup(n) { return NULL; }" to ensure that once the
+ *	 value is yielded once, it can't be yielded again.  Thus, if
+ *	 in fact it *is* yielded a second time, I'll get a segfault
+ *	 which will alert me to the design flaw in my rules.
+ *	 (DeclSpecifier is a good example of this.)
  *
  *   (2) Design the actions to that multiple modifications are
- *       checked for bad interactions.  In this grammar that is what
- *       I do for FakeLists, where I either (a) prevent putting a
- *       node at the head of two lists, or else (b) make sure that
- *       the two lists are in fact the same list both times.  For
- *       potentially-ambiguous nodes with FakeList links (Expression
- *       and Declarator), additional measures are taken to ensure
- *       the consistency of interaction with the ambiguity links.
- *       (See Expression::addAmbiguity and Expression::setNext in
- *       cc_ast_aux.cc.)
+ *	 checked for bad interactions.	In this grammar that is what
+ *	 I do for FakeLists, where I either (a) prevent putting a
+ *	 node at the head of two lists, or else (b) make sure that
+ *	 the two lists are in fact the same list both times.  For
+ *	 potentially-ambiguous nodes with FakeList links (Expression
+ *	 and Declarator), additional measures are taken to ensure
+ *	 the consistency of interaction with the ambiguity links.
+ *	 (See Expression::addAmbiguity and Expression::setNext in
+ *	 cc_ast_aux.cc.)
  *
  * Every place there's a destructive modification which isn't handled
  * by FakeLists is marked by the phrase 'destructive action'.
@@ -82,42 +82,42 @@ terminals {
 
   precedence {
     (* high precedence *)
-    prec  200 TOK_PREFER_REDUCE;
-    right 195 "::";           (* 2005-08-14: see doc/coloncolon.txt *)
-    prec  190 "const" "volatile" "else" "[";
+    prec	200 TOK_PREFER_REDUCE;
+    right	195 "::";		(* 2005-08-14: see doc/coloncolon.txt *)
+    prec	190 "const" "volatile" "else" "[";
 
     (* neither of these two lines are used, because the grammar
      * encodes their prec/assoc already; however, I have them here as
      * reference, and because these precedence numbers are used by
      * bpprint
      *)
-    (*left  140 "()" "[]" "->" "." "++"(postfix) "--"(postfix); *)
-    (*right 130 "!" "~" "++"(prefix) "--"(prefix) "-" "+" "*" "&" "(cast)" "sizeof";*)
+    (*left	140 "()" "[]" "->" "." "++"(postfix) "--"(postfix); *)
+    (*right	130 "!" "~" "++"(prefix) "--"(prefix) "-" "+" "*" "&" "(cast)" "sizeof";*)
 
-    left  120 ".*" "->*";     (* 7/07/03: changed from "right".. why was it that way? *)
-    left  110 "*" "/" "%";
-    left  100 "+" "-";
-    left   90 "<<" ">>";
+    left	120 ".*" "->*";		(* 7/07/03: changed from "right".. why was it that way? *)
+    left	110 "*" "/" "%";
+    left	100 "+" "-";
+    left	 90 "<<" ">>";
 
     (* part of the solution to the angle bracket problem requires
      * dropping these precedence specs and implementing them in the
      * grammar instead *)
-    (*left   80 "<" ">" "<=" ">="; *)
+    (*left	 80 "<" ">" "<=" ">="; *)
 
-    left   70 "==" "!=";
-    left   60 "&";
-    left   50 "^";
-    left   40 "|";
-    left   30 "&&";
-    left   20 "||";
+    left	 70 "==" "!=";
+    left	 60 "&";
+    left	 50 "^";
+    left	 40 "|";
+    left	 30 "&&";
+    left	 20 "||";
 
     (* also provided only for reference and for bpprint *)
-    (*right  10 "?:"; *)
-    (*right   9 "=" ... "+"; *)
+    (*right	 10 "?:"; *)
+    (*right	  9 "=" ... "+"; *)
     (* level 8 is the "," of a function argument list *)
-    (*left    7 ","; *)
+    (*left	  7 ","; *)
 
-    prec    1 TOK_PREFER_SHIFT;
+    prec	  1 TOK_PREFER_SHIFT;
     (* low precedence *)
   }
 }
@@ -168,46 +168,46 @@ nonterm TypeName {
 
 (* ------ A.3 Basic Concepts ------ *)
 nonterm TranslationUnit {
-  fun dup(n) { unimplemented 1234 }    (* prevent multi-yield *)
+  fun dup(n) { unimplemented 1234 }	(* prevent multi-yield *)
 
-  -> empty                                      { [] }
-  -> xs:TranslationUnit x:Declaration           { x :: xs }
+  -> empty					{ [] }
+  -> xs:TranslationUnit x:Declaration		{ x :: xs }
 }
 
 (* ------ A.4 Expressions ------ *)
 nonterm PrimaryExpression {
   -> e:Literal
-       [Literal];
+	[Literal];
 
   -> "this"
-       [This] { E_this }
+	[This] { E_this }
 
   -> "(" e:Expression ")"
-       [Expression] { E_grouping (e) }
+	[Grouping] { E_grouping (e) }
 
   -> e:IdExpression
-       [Id] { E_variable (e) }
+	[Variable] { E_variable (e) }
 }
 
 nonterm Literal {
-  -> i:TOK_INT_LITERAL    [Int]    { E_intLit i }
-  -> f:TOK_FLOAT_LITERAL  [Float]  { E_floatLit f }
-  -> s:StringLiteral      [String] { E_stringLit s }
-  -> c:TOK_CHAR_LITERAL   [Char]   { E_charLit c }
-  -> "true"               [True]   { E_boolLit true }
-  -> "false"              [False]  { E_boolLit false }
+  -> i:TOK_INT_LITERAL		[Int]		{ E_intLit i }
+  -> f:TOK_FLOAT_LITERAL	[Float]		{ E_floatLit f }
+  -> s:StringLiteral		[String]	{ E_stringLit s }
+  -> c:TOK_CHAR_LITERAL		[Char]		{ E_charLit c }
+  -> "true"			[True]		{ E_boolLit true }
+  -> "false"			[False]		{ E_boolLit false }
 }
 
 (* a single quoted sequence of characters; this nonterminal exists
  * so that gnu.gr can extend it *)
 nonterm PreprocString {
-  -> s:TOK_STRING_LITERAL                   { s }
+  -> s:TOK_STRING_LITERAL			[String]	{ s }
 }
 
 (* a string literal, with all concatenated parts *)
 nonterm StringLiteral {
-  -> x:PreprocString                        { [x] }
-  -> xs:StringLiteral x:PreprocString       { x :: xs }
+  -> x:PreprocString				{ [x] }
+  -> xs:StringLiteral x:PreprocString		{ x :: xs }
 }
 
 
@@ -222,22 +222,22 @@ nonterm IdExpression {
    * sequence; I'm enforcing it a little bit differently than the std
    * does *)
   -> "::" id:PQualifiedId
-       [GlobalId] { PQ_qualifier ((*~qualifier*)None, (*~targs*)[], id) }
+	[GlobalId] { PQ_qualifier ((*~qualifier*)None, (*~targs*)[], id) }
 }
 
 (* names that are not qualified *)
 nonterm UnqualifiedId {
   fun merge(l,r) { unimplemented 21 }
 
-  -> id:Identifier                [Id]		{ PQ_name (id) }
-  -> on:OperatorFunctionId        [OpFun]	{ PQ_operator (on) }
-  -> on:ConversionFunctionId      [ConvFun]	{ PQ_operator (on) }
+  -> id:Identifier			[Name]		{ PQ_name (id) }
+  -> on:OperatorFunctionId		[Operator]	{ PQ_operator (on) }
+  -> on:ConversionFunctionId		[Conversion]	{ PQ_operator (on) }
 
   (* std has `"~" ClassName' here, but I've chosen to separate out the
    * places that a destructor name can occur, since it avoids an
    * ambiguity with the "~" unary operator *)
 
-  -> id:TemplateId                [Templ];
+  -> id:TemplateId			[Template];
 }
 
 (* optional qualifier sequence (with no bare "::"), then an
@@ -246,22 +246,22 @@ nonterm UnqualifiedId {
 nonterm PQualifiedId {
   fun merge(l,r) { unimplemented 26 }
 
-  -> id:UnqualifiedId             precedence("::")
+  -> id:UnqualifiedId			precedence("::")
 	[Unqual];
 
   -> n:Identifier "::" id:PQualifiedId
-       [Qual] { PQ_qualifier (Some n, (*~targs*)[], id)  }
-
-  (* quarl 2006-06-14
-   *    changed targs:TemplateArgumentList to targs:TemplateArgumentListOpt;
-   *    see in/k0112.cc *)
-
-  -> n:Identifier "<" targs:TemplateArgumentListOpt ">" "::" id:PQualifiedId
-       [Templ] { PQ_qualifier (Some n, targs, id) }
+	[Qual] { PQ_qualifier (Some n, (*~targs*)[], id)  }
 
   (* passing a dependent template as template template argument *)
   -> n:Identifier "::" "template" tn:Identifier
-       [DepTemplTempl] { unimplemented 30 }
+	[TemplateQualNoInst] { unimplemented 30 }
+
+  (* quarl 2006-06-14
+   *	changed targs:TemplateArgumentList to targs:TemplateArgumentListOpt;
+   *	see in/k0112.cc *)
+
+  -> n:Identifier "<" targs:TemplateArgumentListOpt ">" "::" id:PQualifiedId
+	[Template] { PQ_qualifier (Some n, targs, id) }
 
   (* versions with "template" in front (it's not clear to me that this
    * is equivalent to the standard grammar.. I'm hacking it for now);
@@ -270,7 +270,7 @@ nonterm PQualifiedId {
    * marking all as TEMPLATE_QUALIFIER_HACK
    *)
   -> "template" n:Identifier "<" targs:TemplateArgumentListOpt ">" "::" id:PQualifiedId
-       [DepTempl] { unimplemented 31 }
+	[TemplateQual] { unimplemented 31 }
 }
 
 
@@ -298,15 +298,15 @@ nonterm PostfixExpression {
    * or a constructor call (x is a type) *)
   fun merge(l,r) { E_ambig (l, r) }
 
-  -> e:PrimaryExpression [P];
+  -> e:PrimaryExpression [PrimaryExpression];
 
   (* array access *)
   -> a:PostfixExpression "[" e:Expression "]"
-       [ArrayAcc] { E_binary (a, BIN_BRACKETS, e) }
+	[ArrayAcc] { E_binary (a, BIN_BRACKETS, e) }
 
   (* fn call *)
   -> f:PostfixExpression a:ArgumentList
-       [FunCall] { E_funCall (f, a) }
+	[FunCall] { E_funCall (f, a) }
 
   (* cppstd has two things with "typename", but I can't find anyplace
    * where their semantics are spelled out.. I have some code from
@@ -320,34 +320,34 @@ nonterm PostfixExpression {
    * "typename" can only be used with a qualified name, whereas I
    * enforce that in the type checker (more informative message). *)
   -> "typename" t:IdExpression a:ArgumentList
-       [DepCtorCall] { E_constructor (TS_name ([], t, (*~typenameUsed*)true), a) }
+	[DepCtorCall] { E_constructor (TS_name ([], t, (*~typenameUsed*)true), a) }
 
   (* function-style cast, or (equivalently) call to constructor; will
    * almost always be ambiguous with function call, so the distinction
    * will have to be delayed until typechecking *)
   -> spec:CtorExpressionType a:ArgumentList
-       [CtorCall] { E_constructor (spec, a) }
+	[CtorCall] { E_constructor (spec, a) }
 
   (* field access (includes pseudo-destructor) *)
   -> p:PostfixExpression "." n:MemberName
-       [MemberAcc] { E_fieldAcc (p, n) }
+	[MemberAcc] { E_fieldAcc (p, n) }
 
   (* deref + field access *)
   -> p:PostfixExpression "->" n:MemberName
-       [PtrAcc] { E_arrow (p, n) }
+	[PtrAcc] { E_arrow (p, n) }
 
   -> p:PostfixExpression "++"
-       [PostInc] { E_effect (EFF_POSTINC, p) }
+	[PostInc] { E_effect (EFF_POSTINC, p) }
   -> p:PostfixExpression "--"
-       [PostDec] { E_effect (EFF_POSTDEC, p) }
+	[PostDec] { E_effect (EFF_POSTDEC, p) }
 
   -> k:CastKeyword "<" t:TypeId ">" "(" e:Expression ")"
-       [Cast] { E_keywordCast (k, t, e) }
+	[Cast] { E_keywordCast (k, t, e) }
 
   -> "typeid" "(" e:Expression ")"
-       [TypeidExpr] { E_typeidExpr (e) }
+	[TypeidExpr] { E_typeidExpr (e) }
   -> "typeid" "(" t:TypeId ")"
-       [TypeidType] { E_typeidType (t) }
+	[TypeidType] { E_typeidType (t) }
 }
 
 (* the std calls this SimpleTypeSpecifier, but then also uses that
@@ -356,25 +356,25 @@ nonterm PostfixExpression {
 nonterm CtorExpressionType {
   (*-> ColonColonOpt NestedNameSpecifier "template" TemplateId; *)
 
-  -> n:PQTypeName        [TypeName]     { TS_name ([], n, (*~typenameUsed*)false) }
-  -> "char"              [Char]         { TS_simple ([], ST_Char) }
-  -> "wchar_t"           [WCharT]       { TS_simple ([], ST_WCharT) }
-  -> "bool"              [Bool]         { TS_simple ([], ST_Bool) }
-  -> "short"             [Short]        { TS_simple ([], ST_SShort) }
-  -> "int"               [Int]          { TS_simple ([], ST_SInt) }
-  -> "long"              [Long]         { TS_simple ([], ST_SLong) }
-  -> "signed"            [Signed]       { TS_simple ([], ST_SInt) }
-  -> "unsigned"          [Unsigned]     { TS_simple ([], ST_UInt) }
-  -> "float"             [Float]        { TS_simple ([], ST_Float) }
-  -> "double"            [Double]       { TS_simple ([], ST_Double) }
-  -> "void"              [Void]         { TS_simple ([], ST_Void) }
+  -> n:PQTypeName		[TypeName]	{ TS_name ([], n, (*~typenameUsed*)false) }
+  -> "char"			[Char]		{ TS_simple ([], ST_Char) }
+  -> "wchar_t"			[WCharT]	{ TS_simple ([], ST_WCharT) }
+  -> "bool"			[Bool]		{ TS_simple ([], ST_Bool) }
+  -> "short"			[Short]		{ TS_simple ([], ST_SShort) }
+  -> "int"			[Int]		{ TS_simple ([], ST_SInt) }
+  -> "long"			[Long]		{ TS_simple ([], ST_SLong) }
+  -> "signed"			[Signed]	{ TS_simple ([], ST_SInt) }
+  -> "unsigned"			[Unsigned]	{ TS_simple ([], ST_UInt) }
+  -> "float"			[Float]		{ TS_simple ([], ST_Float) }
+  -> "double"			[Double]	{ TS_simple ([], ST_Double) }
+  -> "void"			[Void]		{ TS_simple ([], ST_Void) }
 }
 
 nonterm CastKeyword {
-  -> "dynamic_cast"      [DynamicCast] { unimplemented 58 }
-  -> "static_cast"       [StaticCast] { unimplemented 59 }
-  -> "reinterpret_cast"  [ReinterpretCast] { unimplemented 60 }
-  -> "const_cast"        [ConstCast] { unimplemented 61 }
+  -> "dynamic_cast"		[DynamicCast]		{ unimplemented 58 }
+  -> "static_cast"		[StaticCast]		{ unimplemented 59 }
+  -> "reinterpret_cast"		[ReinterpretCast]	{ unimplemented 60 }
+  -> "const_cast"		[ConstCast]		{ unimplemented 61 }
 }
 
 (* here, and everywhere else that FakeList is used, I use right
@@ -387,14 +387,14 @@ nonterm ExpressionList {
   fun merge(l,r) { unimplemented 62 }
 
   -> a:AssignmentExpression
-       [Head] { [AE_expr (a)] }
+	[Head] { [AE_expr (a)] }
   -> e:ExpressionList "," a:AssignmentExpression
-       [Tail] { AE_expr (a) :: e }
+	[Tail] { AE_expr (a) :: e }
 }
 
 nonterm ExpressionListOpt {
-  -> empty               { [] }
-  -> e:ExpressionList    { e }
+  -> empty			{ [] }
+  -> e:ExpressionList		{ e }
 }
 
 (* I am pulling these out since PQVarName can be ~class *)
@@ -408,35 +408,35 @@ nonterm UnaryExpression {
    * size of a type called 'x' *)
   fun merge(l,r) { E_ambig (l, r) }
 
-  -> e:PostfixExpression         [P];
+  -> e:PostfixExpression [PostfixExpression];
 
-  -> e:DeleteExpression          [Delete];
-  -> e:NewExpression             [New];
+  -> e:DeleteExpression			[Delete];
+  -> e:NewExpression			[New];
 
-  -> "++" e:CastExpression       [PreInc]	{ E_effect (EFF_PREINC, e) }
-  -> "--" e:CastExpression       [PreDec]	{ E_effect (EFF_PREDEC, e) }
+  -> "++" e:CastExpression		[PreInc]	{ E_effect (EFF_PREINC, e) }
+  -> "--" e:CastExpression		[PreDec]	{ E_effect (EFF_PREDEC, e) }
 
   (* size of expression *)
-  -> "sizeof" e:UnaryExpression  [SizeofExpr]	{ E_sizeofExpr (e) }
+  -> "sizeof" e:UnaryExpression		[SizeofExpr]	{ E_sizeofExpr (e) }
   (* size of type *)
-  -> "sizeof" "(" t:TypeId ")"   [SizeofType]	{ E_sizeofType (t) }
+  -> "sizeof" "(" t:TypeId ")"		[SizeofType]	{ E_sizeofType (t) }
 
   (* dereference, addrof *)
-  -> "*" e:CastExpression        [Deref]	{ E_deref (e) }
-  -> "&" e:CastExpression        [AddrOf]	{ E_addrOf (e) }
+  -> "*" e:CastExpression		[Deref]		{ E_deref (e) }
+  -> "&" e:CastExpression		[AddrOf]	{ E_addrOf (e) }
 
   (* other unary operators *)
-  -> "+" e:CastExpression        [Plus]		{ E_unary (UNY_PLUS, e) }
-  -> "-" e:CastExpression        [Minus]	{ E_unary (UNY_MINUS, e) }
-  -> "!" e:CastExpression        [Not]		{ E_unary (UNY_NOT, e) }
-  -> "~" e:CastExpression        [BitNot]	{ E_unary (UNY_BITNOT, e) }
+  -> "+" e:CastExpression		[Plus]		{ E_unary (UNY_PLUS, e) }
+  -> "-" e:CastExpression		[Minus]		{ E_unary (UNY_MINUS, e) }
+  -> "!" e:CastExpression		[Not]		{ E_unary (UNY_NOT, e) }
+  -> "~" e:CastExpression		[BitNot]	{ E_unary (UNY_BITNOT, e) }
 }
 
 
 (* ---------------- "new" and "delete" expressions -------------- *)
 nonterm ColonColonOpt {
-  -> empty     { unimplemented 81 }
-  -> "::"      { unimplemented 82 }
+  -> empty	{ unimplemented 81 }
+  -> "::"	{ unimplemented 82 }
 }
 
 nonterm NewExpression {
@@ -444,24 +444,24 @@ nonterm NewExpression {
   fun merge(l,r) { unimplemented 83 }
 
   -> c:ColonColonOpt "new" p:NewPlacementOpt t:NewTypeId i:NewInitialiserOpt
-       { unimplemented 84 }
+	{ unimplemented 84 }
   -> c:ColonColonOpt "new" p:NewPlacementOpt "(" t:TypeId ")" i:NewInitialiserOpt
-       { unimplemented 85 }
+	{ unimplemented 85 }
 }
 
 nonterm NewPlacementOpt {
-  -> empty                          { unimplemented 86 }
-  -> "(" lst:ExpressionList ")"     { unimplemented 87 }
+  -> empty				{ unimplemented 86 }
+  -> "(" lst:ExpressionList ")"		{ unimplemented 87 }
 }
 
 nonterm NewTypeId {
   -> spec:TypeSpecifier decl:NewDeclaratorOpt
-    { unimplemented 88 }
+	{ unimplemented 88 }
 }
 
 (* NewDeclaratorOpt is, as a regular expression:
- *   (PtrOperator)*  ("[" Expression "]"  ("[" ConstExpression "]")* )?
- * where PtrOperator is
+ *   (PrefixDeclarator)*  ("[" Expression "]"  ("[" ConstExpression "]")* )?
+ * where PrefixDeclarator is
  *   "*" CVQualifierSeqOpt, or
  *   "&"
  * however, I cannot find any explanation in the spec of whether "&"
@@ -469,36 +469,36 @@ nonterm NewTypeId {
  * it (so I'll see the counterexample syntax if it exists) *)
 nonterm NewDeclaratorOpt {
   -> empty
-       { unimplemented 89 }
+	{ unimplemented 89 }
 
   (* pointers *)
   -> "*" cv:CVQualifierSeqOpt d:NewDeclaratorOpt
-       { unimplemented 90 }
+	{ unimplemented 90 }
   -> n:PtrToMemberName "*" cv:CVQualifierSeqOpt d:NewDeclaratorOpt
-       { unimplemented 91 }
+	{ unimplemented 91 }
 
   (* commit to at least one "[" ... "]" *)
-  -> d:DirectNewDeclarator               { unimplemented 92 }
+  -> d:DirectNewDeclarator		{ unimplemented 92 }
 }
 nonterm DirectNewDeclarator {
   fun keep(x) { unimplemented 1310 }
 
   -> (*abstract declarator*) "[" sz:Expression "]"
-       { unimplemented 93 }
+	{ unimplemented 93 }
   -> d:DirectNewDeclarator "[" sz:ConstantExpression "]"
-       { unimplemented 94 }
+	{ unimplemented 94 }
 }
 
 nonterm NewInitialiserOpt {
-  -> empty                            { unimplemented 95 }
-  -> "(" lst:ExpressionListOpt ")"    { unimplemented 96 }
+  -> empty				{ unimplemented 95 }
+  -> "(" lst:ExpressionListOpt ")"	{ unimplemented 96 }
 }
 
 nonterm DeleteExpression {
   -> c:ColonColonOpt "delete" e:CastExpression
-       { unimplemented 97 }
+	{ unimplemented 97 }
   -> c:ColonColonOpt "delete" "[" "]" e:CastExpression
-       { unimplemented 98 }
+	{ unimplemented 98 }
 }
 (* ------------ end of "new" and "delete" expressions ------------- *)
 
@@ -520,7 +520,7 @@ nonterm MemberName {
 
   (* cannot say ":: ~" *)
   -> "::" n:IdentifierMemberName
-        [GlobalName] { PQ_qualifier (None, [], n) }
+	[GlobalName] { PQ_qualifier (None, [], n) }
 }
 
 (* can begin with "~" or "template" or Identifier or "operator" *)
@@ -531,17 +531,17 @@ nonterm SpecialMemberName {
 
   (* final names *)
   -> "template" n:Identifier "<" list:TemplateArgumentListOpt ">"
-       { PQ_template (n, TA_templateUsed :: list) }
+	{ PQ_template (n, TA_templateUsed :: list) }
   -> "~" n:Identifier
-       { PQ_name ("~" ^ n) }
+	{ PQ_name ("~" ^ n) }
   -> "~" n:Identifier "<" list:TemplateArgumentListOpt ">"
-       { PQ_template ("~" ^ n, list) }
+	{ PQ_template ("~" ^ n, list) }
   -> on:ConversionFunctionId
-       { PQ_operator (on) }
+	{ PQ_operator (on) }
 
   (* qualifier name *)
   -> "template" n:Identifier "<" list:TemplateArgumentListOpt ">" "::" rest:SpecialMemberName
-       { PQ_qualifier (Some n, TA_templateUsed :: list, rest) }
+	{ PQ_qualifier (Some n, TA_templateUsed :: list, rest) }
 }
 
 (* can begin with Identifier, "template" or "operator"; this is
@@ -551,24 +551,24 @@ nonterm IdentifierMemberName {
 
   (* final names *)
   -> n:Identifier "<" list:TemplateArgumentListOpt ">"
-       { PQ_template (n, list) }
+	{ PQ_template (n, list) }
   -> n:Identifier
-       { PQ_name (n) }
+	{ PQ_name (n) }
   -> on:OperatorFunctionId
-       { PQ_operator (on) }
+	{ PQ_operator (on) }
 
   (* unqualified templatised operator *)
   -> on:OperatorFunctionId "<" list:TemplateArgumentListOpt ">"
-       { unimplemented 113 }
+	{ unimplemented 113 }
   (* template-qualified templatised operator *)
   -> "template" on:OperatorFunctionId "<" list:TemplateArgumentListOpt ">"
-       { unimplemented 114 }
+	{ unimplemented 114 }
 
   (* qualifier names *)
   -> n:Identifier "<" list:TemplateArgumentListOpt ">" "::" rest:SpecialMemberName
-       { PQ_qualifier (Some n, list, rest) }
+	{ PQ_qualifier (Some n, list, rest) }
   -> n:Identifier "::" rest:SpecialMemberName
-       { PQ_qualifier (Some n, [], rest) }
+	{ PQ_qualifier (Some n, [], rest) }
 }
 (* -------------- END: syntax after "." or "->" ------------------- *)
 
@@ -580,9 +580,9 @@ nonterm CastExpression {
    * it could be a cast to type 'x' of the expression 'y' *)
   fun merge(l,r) { E_ambig (l, r) }
 
-  -> e:UnaryExpression [P];
+  -> e:UnaryExpression [UnaryExpression];
   -> "(" t:TypeId ")" e:CastExpression
-       [Cast] { E_cast (t, e) }
+	[Cast] { E_cast (t, e) }
 }
 
 (* ---- binary operator expression ---- *)
@@ -594,18 +594,18 @@ nonterm BinExp_high {
    * it could be negation of expression y, cast to type x *)
   fun merge(l,r) { unimplemented 120 }
 
-  -> e:CastExpression [P];
+  -> e:CastExpression [CastExpression];
 
-  -> left:BinExp_high ".*"  right:BinExp_high  [DotStar]	{ E_binary (left, BIN_DSTAR, right) }
-  -> left:BinExp_high "->*" right:BinExp_high  [ArrowStar]	{ E_binary (left, BIN_ASTAR, right) }
+  -> left:BinExp_high ".*"  right:BinExp_high	[DotStar]	{ E_binary (left, BIN_DSTAR, right) }
+  -> left:BinExp_high "->*" right:BinExp_high	[ArrowStar]	{ E_binary (left, BIN_ASTAR, right) }
 
-  -> left:BinExp_high "*"  right:BinExp_high   [Mul]		{ E_binary (left, BIN_MUL, right) }
-  -> left:BinExp_high "/"  right:BinExp_high   [Div]		{ E_binary (left, BIN_DIV, right) }
-  -> left:BinExp_high "%"  right:BinExp_high   [Mod]		{ E_binary (left, BIN_MOD, right) }
-  -> left:BinExp_high "+"  right:BinExp_high   [Add]		{ E_binary (left, BIN_ADD, right) }
-  -> left:BinExp_high "-"  right:BinExp_high   [Sub]		{ E_binary (left, BIN_SUB, right) }
-  -> left:BinExp_high "<<" right:BinExp_high   [Lsh]		{ E_binary (left, BIN_LSH, right) }
-  -> left:BinExp_high ">>" right:BinExp_high   [Rsh]		{ E_binary (left, BIN_RSH, right) }
+  -> left:BinExp_high "*"  right:BinExp_high	[Mul]		{ E_binary (left, BIN_MUL, right) }
+  -> left:BinExp_high "/"  right:BinExp_high	[Div]		{ E_binary (left, BIN_DIV, right) }
+  -> left:BinExp_high "%"  right:BinExp_high	[Mod]		{ E_binary (left, BIN_MOD, right) }
+  -> left:BinExp_high "+"  right:BinExp_high	[Add]		{ E_binary (left, BIN_ADD, right) }
+  -> left:BinExp_high "-"  right:BinExp_high	[Sub]		{ E_binary (left, BIN_SUB, right) }
+  -> left:BinExp_high "<<" right:BinExp_high	[Lsh]		{ E_binary (left, BIN_LSH, right) }
+  -> left:BinExp_high ">>" right:BinExp_high	[Rsh]		{ E_binary (left, BIN_RSH, right) }
 }
 
 (* binary exprs with same precedence as ">"
@@ -623,15 +623,15 @@ nonterm BinExp_mid {
    * object (E_constructor), depending on whether 'x' names a type *)
   fun merge(l,r) { E_ambig (l, r) }
 
-  -> e:BinExp_high [P];
+  -> e:BinExp_high [BinExp_high];
 
   (* must express associativity directly; since these are all
    * left-associative, we require that there not be any reduced
    * ">" operators in the right context *)
-  -> left:BinExp_mid "<"  right:BinExp_high    [Lt] { E_binary (left, BIN_LESS, right) }
-  -> left:BinExp_mid ">"  right:BinExp_high    [Gt] { E_binary (left, BIN_GREATER, right) }
-  -> left:BinExp_mid "<=" right:BinExp_high    [Le] { E_binary (left, BIN_LESSEQ, right) }
-  -> left:BinExp_mid ">=" right:BinExp_high    [Ge] { E_binary (left, BIN_GREATEREQ, right) }
+  -> left:BinExp_mid "<"  right:BinExp_high	[Less]		{ E_binary (left, BIN_LESS, right) }
+  -> left:BinExp_mid ">"  right:BinExp_high	[Greater]	{ E_binary (left, BIN_GREATER, right) }
+  -> left:BinExp_mid "<=" right:BinExp_high	[LessEq]	{ E_binary (left, BIN_LESSEQ, right) }
+  -> left:BinExp_mid ">=" right:BinExp_high	[GreaterEq]	{ E_binary (left, BIN_GREATEREQ, right) }
 }
 
 (* binary exprs with lower precedence than ">" *)
@@ -642,16 +642,16 @@ nonterm BinExp_low {
    * it could be the address of expression y, cast to type x *)
   fun merge(l,r) { E_ambig (l, r) }
 
-  -> e:BinExp_mid [P];
+  -> e:BinExp_mid [BinExp_mid];
 
-  -> left:BinExp_low "==" right:BinExp_low   [Eq]	{ E_binary (left, BIN_EQUAL, right) }
-  -> left:BinExp_low "!=" right:BinExp_low   [Neq]	{ E_binary (left, BIN_NOTEQUAL, right) }
-  -> left:BinExp_low "&"  right:BinExp_low   [BitAnd]	{ E_binary (left, BIN_BITAND, right) }
-  -> left:BinExp_low "^"  right:BinExp_low   [BitXor]	{ E_binary (left, BIN_BITXOR, right) }
-  -> left:BinExp_low "|"  right:BinExp_low   [BitOr]	{ E_binary (left, BIN_BITOR, right) }
+  -> left:BinExp_low "==" right:BinExp_low	[Equal]		{ E_binary (left, BIN_EQUAL, right) }
+  -> left:BinExp_low "!=" right:BinExp_low	[NotEqual]	{ E_binary (left, BIN_NOTEQUAL, right) }
+  -> left:BinExp_low "&"  right:BinExp_low	[BitAnd]	{ E_binary (left, BIN_BITAND, right) }
+  -> left:BinExp_low "^"  right:BinExp_low	[BitXor]	{ E_binary (left, BIN_BITXOR, right) }
+  -> left:BinExp_low "|"  right:BinExp_low	[BitOr]		{ E_binary (left, BIN_BITOR, right) }
 
-  -> left:BinExp_low "&&" right:BinExp_low   [Or]	{ E_binary (left, BIN_OR, right) }
-  -> left:BinExp_low "||" right:BinExp_low   [And]	{ E_binary (left, BIN_AND, right) }
+  -> left:BinExp_low "&&" right:BinExp_low	[Or]		{ E_binary (left, BIN_OR, right) }
+  -> left:BinExp_low "||" right:BinExp_low	[And]		{ E_binary (left, BIN_AND, right) }
 }
 
 
@@ -662,10 +662,10 @@ nonterm ConditionalExpression {
   (* in/k0012.cc *)
   fun merge(l,r) { unimplemented 146 }
 
-  -> e:BinaryExpression [P];
+  -> e:BinaryExpression [BinaryExpression];
 
   -> cond:BinaryExpression "?" th:Expression ":" el:AssignmentExpression
-       [Conditional] { E_cond (cond, th, el) }
+	[Conditional] { E_cond (cond, th, el) }
 }
 
 (* why is conditional not allowed on left side of = ?  can I confirm
@@ -674,26 +674,26 @@ nonterm ConditionalExpression {
 nonterm AssignmentExpression {
   fun merge(l,r) { unimplemented 1301 }
 
-  -> e:ConditionalExpression [P];
+  -> e:ConditionalExpression [ConditionalExpression];
 
   -> e1:BinaryExpression op:AssignmentOperator e2:AssignmentExpression
-       [Assign] { E_assign (e1, op, e2) }
+	[Assign] { E_assign (e1, op, e2) }
 
   -> e:ThrowExpression [Throw];
 }
 
 nonterm AssignmentOperator {
-  -> "*="  [MulAssign]	{ BIN_MUL }
-  -> "/="  [DivAssign]	{ BIN_DIV }
-  -> "%="  [ModAssign]	{ BIN_MOD }
-  -> "+="  [AddAssign]	{ BIN_ADD }
-  -> "-="  [SubAssign]	{ BIN_SUB }
-  -> ">>=" [RshAssign]	{ BIN_RSH }
-  -> "<<=" [LshAssign]	{ BIN_LSH }
-  -> "&="  [BitAndAssign]	{ BIN_BITAND }
-  -> "^="  [BitXorAssign]	{ BIN_BITXOR }
-  -> "|="  [BitOrAssign]	{ BIN_BITOR }
-  -> "="   [Assign]	{ BIN_ASSIGN }
+  -> "*="	[MulAssign]	{ BIN_MUL }
+  -> "/="	[DivAssign]	{ BIN_DIV }
+  -> "%="	[ModAssign]	{ BIN_MOD }
+  -> "+="	[AddAssign]	{ BIN_ADD }
+  -> "-="	[SubAssign]	{ BIN_SUB }
+  -> ">>="	[RshAssign]	{ BIN_RSH }
+  -> "<<="	[LshAssign]	{ BIN_LSH }
+  -> "&="	[BitAndAssign]	{ BIN_BITAND }
+  -> "^="	[BitXorAssign]	{ BIN_BITXOR }
+  -> "|="	[BitOrAssign]	{ BIN_BITOR }
+  -> "="	[Assign]	{ BIN_ASSIGN }
 }
 
 
@@ -712,16 +712,16 @@ nonterm Expression {
   fun merge(l,r) { E_ambig (l, r) }
 
   -> ae:AssignmentExpression
-       [Head] { ae }
+	[Head] { ae }
 
   -> e:Expression "," ae:AssignmentExpression
-       [List] { E_binary (e, BIN_COMMA, ae) }
+	[List] { E_binary (e, BIN_COMMA, ae) }
 }
 
 nonterm ForConditionOpt {
   (* empty expression is a true no-op *)
-  -> empty         { E_boolLit true }
-  -> e:Expression  { e }
+  -> empty		{ E_boolLit true }
+  -> e:Expression	{ e }
 }
 
 (* this is an expression with the additional requirement that
@@ -738,8 +738,8 @@ nonterm ConstantExpression {
 }
 
 nonterm ConstantExpressionOpt {
-  -> empty                   { None }
-  -> e:ConstantExpression    { Some e }
+  -> empty			{ None }
+  -> e:ConstantExpression	{ Some e }
 }
 
 
@@ -751,7 +751,7 @@ nonterm ConstantExpressionOpt {
  *
  * The same could be argued of ConstantExpression, but I do think it's
  * a little clearer to have a nonterminal instead of sprinkled
- * comments, and much less added code than FullExpression was.  It's a
+ * comments, and much less added code than FullExpression was.	It's a
  * matter of taste, I guess. *)
 
 
@@ -760,8 +760,8 @@ nonterm ConstantExpressionOpt {
 nonterm LabelAndColon {
   (* 10/20/04: The precedence specification here fixes in/c/t0018.c by
    * telling the parser to shift any __attribute__ that follows the ":". *)
-  -> n:Identifier ":"    precedence(TOK_PREFER_SHIFT)
-       { unimplemented 171 }
+  -> n:Identifier ":"	precedence(TOK_PREFER_SHIFT)
+	{ unimplemented 171 }
 }
 
 (* labelled-statement *)
@@ -786,71 +786,71 @@ nonterm Statement {
 
   (* selection-statement
    * (prefer to shift "else" over reducing by this rule) *)
-  -> "if" "(" e:Condition ")" s:Statement     precedence(TOK_PREFER_SHIFT)
-  	[If] { S_if (e, s, S_skip) }
+  -> "if" "(" e:Condition ")" s:Statement	precedence(TOK_PREFER_SHIFT)
+	[If] { S_if (e, s, S_skip) }
 
   (* if-then-else preferred over if-then when ambiguous *)
   -> "if" "(" e:Condition ")" s1:Statement "else" s2:Statement
-  	[IfElse] { S_if (e, s1, s2) }
+	[IfElse] { S_if (e, s1, s2) }
 
   -> "switch" "(" e:Condition ")" s:Statement 
-  	[Switch] { S_switch (e, s) }
+	[Switch] { S_switch (e, s) }
 
   -> "while" "(" e:Condition ")" s:Statement 
-  	[While] { S_while (e, s) }
+	[While] { S_while (e, s) }
 
   -> "do" s:Statement "while" "(" e:Expression ")" ";" 
-  	[DoWhile] { S_doWhile (s, FullExpression e) }
+	[DoWhile] { S_doWhile (s, FullExpression e) }
 
   (* I might like to rework this so both semicolons appear here instead
    * of buried in ForInitStatement; it's this way now because that is how
    * the standard does it. *)
   -> "for" "(" s1:ForInitStatement c:ConditionOpt ";" e:ForConditionOpt ")" s2:Statement
-       	[For] { S_for (s1, c, FullExpression e, s2) }
+	[For] { S_for (s1, c, FullExpression e, s2) }
 
-  -> "break" ";"                        [Break] { S_break }
+  -> "break" ";"			[Break] { S_break }
 
-  -> "continue" ";"                     [Continue] { S_continue }
+  -> "continue" ";"			[Continue] { S_continue }
 
-  -> "return" e:Expression ";"          [ReturnExpr] { S_return (Some (FullExpression e)) }
+  -> "return" e:Expression ";"		[ReturnExpr] { S_return (Some (FullExpression e)) }
 
-  -> "return" ";"                       [ReturnVoid] { S_return (None) }
+  -> "return" ";"			[ReturnVoid] { S_return (None) }
 
-  -> "goto" n:Identifier ";"            [Goto] { S_goto (n) }
+  -> "goto" n:Identifier ";"		[Goto] { S_goto (n) }
 
   (* declaration-statement *)
-  -> d:BlockDeclaration                 [DeclStmt] { S_decl (d) }
+  -> d:BlockDeclaration			[DeclStmt] { S_decl (d) }
 
   (* try-block *)
-  -> s:TryBlock                         [Try] { s }
+  -> s:TryBlock				[Try] { s }
 
   (* assembly statement *)
-  -> a:AsmDefinition                    [Asm] { S_asm (a) }
+  -> a:AsmDefinition			[Asm] { S_asm (a) }
 
   (* namespace declaration *)
-  -> n:NamespaceDecl                    [Namespace] { S_namespaceDecl (n) }
+  -> n:NamespaceDecl			[Namespace] { S_namespaceDecl (n) }
 }
 
 nonterm ExpressionStatement {
-  -> ";"                  { S_skip }
-  -> e:Expression ";"     { S_expr (FullExpression e) }
+  -> ";"		 { S_skip }
+  -> e:Expression ";"	 { S_expr (FullExpression e) }
 }
 
 nonterm CompoundStatement {
   -> "{" seq:CompoundStmtHelper "}"
-       [CompoundStmt] { S_compound (seq) }
+	[CompoundStmt] { S_compound (seq) }
 }
 
 nonterm CompoundStmtHelper {
   -> empty
-       { [] }
+	{ [] }
   -> c:CompoundStmtHelper s:AnnotatedStatement
-       { s :: c }
+	{ s :: c }
 }
 
 nonterm AnnotatedStatement {
   -> s:Statement a:AnnotationOpt
-       [Stmt] { s }
+	[Stmt] { s }
 }
 
 
@@ -862,22 +862,22 @@ nonterm Condition {
   fun merge(l,r) { unimplemented 198 }
 
   -> e:Expression
-       [ExprCond] { CN_expr (FullExpression e) }
+	[ExprCond] { CN_expr (FullExpression e) }
 
   (* variable declaration in the condition clause *)
   -> spec:TypeSpecifier decl:Declarator "=" e:AssignmentExpression
-       [DeclCond] {
-         CN_decl (
-           T_type (
-             spec,
-             DC_decl (decl, Some (IN_expr e))))
-       }
+	[DeclCond] {
+	  CN_decl (
+	    T_type (
+	      spec,
+	      DC_decl (decl, Some (IN_expr e))))
+	}
 }
 
 nonterm ConditionOpt {
   (* an empty condition (e.g. in a for loop) is interpreted as true *)
-  -> empty             { CN_expr (FullExpression (E_boolLit true)) }
-  -> c:Condition       { c }
+  -> empty		{ CN_expr (FullExpression (E_boolLit true)) }
+  -> c:Condition	{ c }
 }
 
 nonterm ForInitStatement {
@@ -886,8 +886,8 @@ nonterm ForInitStatement {
    * could be an expression or a declaration *)
   fun merge(l,r) { unimplemented 203 }
 
-  -> s:ExpressionStatement     { s }
-  -> s:SimpleDeclaration       { S_decl (s) }
+  -> s:ExpressionStatement	{ s }
+  -> s:SimpleDeclaration	{ S_decl (s) }
 }
 
 
@@ -895,32 +895,32 @@ nonterm ForInitStatement {
 (*
 nonterm DeclarationSeqOpt {
   -> empty
-       { unimplemented 206 }
+	{ unimplemented 206 }
   -> seq:DeclarationSeqOpt d:Declaration
-       { seq->append(d); return seq; }
+	{ seq->append(d); return seq; }
 }
 *)
 
 nonterm Declaration {
   fun merge(l,r) { unimplemented 1302 }
 
-  -> e:EmptyDeclaration        [Empty] { unimplemented 1200 }
-  -> d:BlockDeclaration        [Block] { TF_decl (d) }
-  -> f:FunctionDefinition      [Function] { TF_func (f) }
-  -> t:TemplateDeclaration     [Template] { TF_template (t) }
-  -> d:ExplicitInstantiation   [ExplInst] { d }
-  (*-> e:ExplicitSpecialisation  [ExplSpec] { e } [> folded into TemplateDeclaration <]*)
-  -> s:LinkageSpecification    [LinkageSpec] { s }
+  -> e:EmptyDeclaration			[Empty]			{ unimplemented 1200 }
+  -> d:BlockDeclaration			[Block]			{ TF_decl (d) }
+  -> f:FunctionDefinition		[Function]		{ TF_func (f) }
+  -> t:TemplateDeclaration		[Template]		{ TF_template (t) }
+  -> d:ExplicitInstantiation		[ExplInst]		{ d }
+  (*-> e:ExplicitSpecialisation		[ExplSpec]		{ e } [> folded into TemplateDeclaration <]*)
+  -> s:LinkageSpecification		[LinkageSpec]		{ s }
 
   (* substituted from BlockDeclaration *)
-  -> a:AsmDefinition           [Asm] { TF_asm (a) }
-  -> n:NamespaceDefinition     [NamespaceDefn] { n }
-  -> n:NamespaceDecl           [NamespaceDecl] { TF_namespaceDecl (n) }
+  -> a:AsmDefinition			[Asm]			{ TF_asm (a) }
+  -> n:NamespaceDefinition		[NamespaceDefn]		{ n }
+  -> n:NamespaceDecl			[NamespaceDecl]		{ TF_namespaceDecl (n) }
 }
 
 nonterm EmptyDeclaration {
   (* arg!  Mozilla is littered with toplevel semicolons.. *)
-  -> ";"                       { unimplemented 206 }
+  -> ";"			{ unimplemented 206 }
 }
 
 nonterm BlockDeclaration {
@@ -945,13 +945,13 @@ nonterm SimpleDeclaration {
   fun keep(d) { Factory.keep_declaration d }
 
   (* destructive action on 'spec' *)
-  (*e.g.: int                x                  ; *)
+  (*e.g.: int		     x			; *)
   -> spec:DeclSpecifier decllist:InitDeclaratorList ";"
-       [Defn] { { spec with decllist } }
+	[Defn] { { spec with decllist } }
 
   (* a bare specifier is a type definition or forward declaration *)
   -> spec:DeclSpecifier ";"
-       [Decl] { spec }
+	[Decl] { spec }
 
 }
 
@@ -974,140 +974,140 @@ nonterm SimpleDeclaration {
  * I explicitly substitute UberModifierSeqOpt into the left sides of
  * the productions below as a performance optimisation to avoid
  * shift/reduce conflicts.  That is, I write
- *   ->                    PQTypeName UberModifierSeqOpt
- *   -> UberModifierSeq    PQTypeName UberModifierSeqOpt
+ *   ->			PQTypeName UberModifierSeqOpt
+ *   -> UberModifierSeq PQTypeName UberModifierSeqOpt
  * instead of
  *   -> UberModifierSeqOpt PQTypeName UberModifierSeqOpt
  * because the latter would cause shift/reduce conflicts. *)
 nonterm DeclSpecifier {
-  (*fun dup(d) { unimplemented 210 }    [> prevent multi-yield <]*)
+  (*fun dup(d) { unimplemented 210 }	[> prevent multi-yield <]*)
 
   (* TS_name: triggered by PQTypeName *)
   -> n:PQTypeName m2:UberModifierSeqOpt
-       [Name] {
-         let m = m2 in
-         (* new declaration *)
-         {
-           dflags = Flags.dflags_of_modifiers m;
-           spec = TS_name (
-             Flags.cv_of_modifiers m,
-             n, (*~typenameUsed*)false);
-           decllist = [];
-         }
-       }
+	[Name] {
+	  let m = m2 in
+	  (* new declaration *)
+	  {
+	    dflags = Flags.dflags_of_modifiers m;
+	    spec = TS_name (
+	      Flags.cv_of_modifiers m,
+	      n, (*~typenameUsed*)false);
+	    decllist = [];
+	  }
+	}
 
   -> m1:UberModifierSeq n:PQTypeName m2:UberModifierSeqOpt
-       [ModName] {
-         let m = m1 @ m2 in
-         {
-           dflags = Flags.dflags_of_modifiers m;
-           spec = TS_name (
-             Flags.cv_of_modifiers m,
-             n, (*~typenameUsed*)false);
-           decllist = [];
-         }
-       }
+	[ModName] {
+	  let m = m1 @ m2 in
+	  {
+	    dflags = Flags.dflags_of_modifiers m;
+	    spec = TS_name (
+	      Flags.cv_of_modifiers m,
+	      n, (*~typenameUsed*)false);
+	    decllist = [];
+	  }
+	}
 
   (* TS_simple: triggered by SimpleTypeSpecifier *)
   -> k1:SimpleTypeSpecifier m2:UberTypeAndModifierSeqOpt
-       [Simple] {
-         let m = m2 in
-         let k = k1 :: m2 in
-         {
-           dflags = Flags.dflags_of_modifiers m;
-           spec = TS_simple (
-             Flags.cv_of_modifiers m,
-             Flags.stype_of_modifiers k);
-           decllist = [];
-         }
-       }
+	[Simple] {
+	  let m = m2 in
+	  let k = k1 :: m2 in
+	  {
+	    dflags = Flags.dflags_of_modifiers m;
+	    spec = TS_simple (
+	      Flags.cv_of_modifiers m,
+	      Flags.stype_of_modifiers k);
+	    decllist = [];
+	  }
+	}
 
   -> m1:UberModifierSeq k1:SimpleTypeSpecifier m2:UberTypeAndModifierSeqOpt
-       [ModSimple] {
-         let m = m1 @ m2 in
-         let k = k1 :: m2 in
-         {
-           dflags = Flags.dflags_of_modifiers m;
-           spec = TS_simple (
-             Flags.cv_of_modifiers m,
-             Flags.stype_of_modifiers k);
-           decllist = [];
-         }
-       }
+	[ModSimple] {
+	  let m = m1 @ m2 in
+	  let k = k1 :: m2 in
+	  {
+	    dflags = Flags.dflags_of_modifiers m;
+	    spec = TS_simple (
+	      Flags.cv_of_modifiers m,
+	      Flags.stype_of_modifiers k);
+	    decllist = [];
+	  }
+	}
 
   (* TS_elaborated, TS_classSpec, TS_enumSpec:
    * triggered by one of "class", "struct", "union", "enum", "typename",
    * with the particular instance sorted out by ElaboratedOrSpecifier *)
   -> e:ElaboratedOrSpecifier m2:UberModifierSeqOpt
-       [Elab] {
-         let m = m2 in
-         let e = Flags.set_cv (Flags.cv_of_modifiers m) e in
-         {
-           dflags = Flags.dflags_of_modifiers m;
-           spec = e;
-           decllist = [];
-         }
-       }
+	[Elab] {
+	  let m = m2 in
+	  let e = Flags.set_cv (Flags.cv_of_modifiers m) e in
+	  {
+	    dflags = Flags.dflags_of_modifiers m;
+	    spec = e;
+	    decllist = [];
+	  }
+	}
 
   -> m1:UberModifierSeq e:ElaboratedOrSpecifier m2:UberModifierSeqOpt
-       [ModElab] {
-         let m = m1 @ m2 in
-         let e = Flags.set_cv (Flags.cv_of_modifiers m) e in
-         {
-           dflags = Flags.dflags_of_modifiers m;
-           spec = e;
-           decllist = [];
-         }
-       }
+	[ModElab] {
+	  let m = m1 @ m2 in
+	  let e = Flags.set_cv (Flags.cv_of_modifiers m) e in
+	  {
+	    dflags = Flags.dflags_of_modifiers m;
+	    spec = e;
+	    decllist = [];
+	  }
+	}
 }
 
 (* choose among TS_elaborated, TS_classSpec and TS_enumSpec *)
 nonterm ElaboratedOrSpecifier {
   (* Note: This can multi-yield in cases like in/k0072.cc. *)
 
-  -> s:ElaboratedTypeSpecifier;
-  -> s:ClassSpecifier;
-  -> s:EnumSpecifier;
+  -> s:ElaboratedTypeSpecifier [Elab];
+  -> s:ClassSpecifier [Class];
+  -> s:EnumSpecifier [Enum];
 }
 
 
 (* nonempty sequence of UberModifiers; note that the act of combining
  * UberModifiers sets checks for and complains about duplication *)
 nonterm(modifiers) UberModifierSeq {
-  -> u:UberModifier                    { [u] }
-  -> s:UberModifierSeq u:UberModifier  { u :: s }
+  -> u:UberModifier			{ [u] }
+  -> s:UberModifierSeq u:UberModifier	{ u :: s }
 }
 
 nonterm(modifiers) UberModifierSeqOpt {
-  -> empty                    { [] }
-  -> s:UberModifierSeq        { s }
+  -> empty			{ [] }
+  -> s:UberModifierSeq		{ s }
 }
 
 
 (* possibly empty sequence of modifiers (e.g. "static") or type
  * keywords (e.g. "int") *)
 nonterm(modifiers) UberTypeAndModifierSeqOpt {
-  -> empty                                              [Empty]         { [] }
-  -> s:UberTypeAndModifierSeqOpt u:UberModifier         [ModSeq]        { u :: s }
-  -> s:UberTypeAndModifierSeqOpt u:SimpleTypeSpecifier  [TypeSeq]       { u :: s }
+  -> empty						[Empty]		{ [] }
+  -> s:UberTypeAndModifierSeqOpt u:UberModifier		[ModSeq]	{ u :: s }
+  -> s:UberTypeAndModifierSeqOpt u:SimpleTypeSpecifier	[TypeSeq]	{ u :: s }
 }
 
 
 (* repetition of above rules when the only modifiers allowed
  * are "const" and "volatile"; this is for TypeSpecifier *)
 nonterm(cv_flags) UberCVQualifierSeq {
-  -> u:UberCVQualifier                       { [u] }
-  -> s:UberCVQualifierSeq u:UberCVQualifier  { u :: s }
+  -> u:UberCVQualifier				{ [u] }
+  -> s:UberCVQualifierSeq u:UberCVQualifier	{ u :: s }
 }
 
 nonterm(cv_flags) UberCVQualifierSeqOpt {
-  -> empty                       { [] }
-  -> s:UberCVQualifierSeq        { s }
+  -> empty			{ [] }
+  -> s:UberCVQualifierSeq	{ s }
 }
 
 nonterm(modifiers) UberTypeAndCVQualifierSeqOpt {
-  -> empty                                                      { [] }
-  -> s:UberTypeAndCVQualifierSeqOpt u:UberTypeAndCVQualifier    { u :: s }
+  -> empty							{ [] }
+  -> s:UberTypeAndCVQualifierSeqOpt u:UberTypeAndCVQualifier	{ u :: s }
 }
 
 nonterm(modifier) UberTypeAndCVQualifier {
@@ -1119,55 +1119,55 @@ nonterm(modifier) UberTypeAndCVQualifier {
 (* modifiers *)
 nonterm(modifier) UberModifier {
   (* storage-class-specifier *)
-  -> "auto"             [Auto]         { `UM_AUTO }
-  -> "register"         [Register]     { `UM_REGISTER }
-  -> "static"           [Static]       { `UM_STATIC }
-  -> "extern"           [Extern]       { `UM_EXTERN }
-  -> "mutable"          [Mutable]      { `UM_MUTABLE }
+  -> "auto"		[Auto]		{ `UM_AUTO }
+  -> "register"		[Register]	{ `UM_REGISTER }
+  -> "static"		[Static]	{ `UM_STATIC }
+  -> "extern"		[Extern]	{ `UM_EXTERN }
+  -> "mutable"		[Mutable]	{ `UM_MUTABLE }
 
   (* function-specifier *)
-  -> "inline"           [Inline]       { `UM_INLINE }
-  -> "virtual"          [Virtual]      { `UM_VIRTUAL }
-  (* -> "explicit"         [Explicit]     { `UM_EXPLICIT }    (* can only appear in CDtorModifier *) *)
+  -> "inline"		[Inline]	{ `UM_INLINE }
+  -> "virtual"		[Virtual]	{ `UM_VIRTUAL }
+  (* -> "explicit"	[Explicit]	{ `UM_EXPLICIT }	(* can only appear in CDtorModifier *) *)
 
   (* decl-specifier terminals *)
-  -> "friend"           [Friend]       { `UM_FRIEND }
-  -> "typedef"          [Typedef]      { `UM_TYPEDEF }
+  -> "friend"		[Friend]	{ `UM_FRIEND }
+  -> "typedef"		[Typedef]	{ `UM_TYPEDEF }
 
   (* cv-qualifier *)
-  -> "const"            [Const]        { `UM_CONST }
-  -> "volatile"         [Volatile]     { `UM_VOLATILE }
+  -> "const"		[Const]		{ `UM_CONST }
+  -> "volatile"		[Volatile]	{ `UM_VOLATILE }
 }
 
 (* just the cv-qualifiers *)
 nonterm(cv_flag) UberCVQualifier {
-  -> "const"            [Const]        { `UM_CONST }
-  -> "volatile"         [Volatile]     { `UM_VOLATILE }
+  -> "const"		[Const]		{ `UM_CONST }
+  -> "volatile"		[Volatile]	{ `UM_VOLATILE }
 }
 
 (* keywords that name a type, or part of one *)
 nonterm SimpleTypeSpecifier {
-  -> "char"             [Char]         { `UM_CHAR }
-  -> "wchar_t"          [WCharT]       { `UM_WCHAR_T }
-  -> "bool"             [Bool]         { `UM_BOOL }
-  -> "short"            [Short]        { `UM_SHORT }
-  -> "int"              [Int]          { `UM_INT }
-  -> "long"             [Long]         { `UM_LONG }
-  -> "signed"           [Signed]       { `UM_SIGNED }
-  -> "unsigned"         [Unsigned]     { `UM_UNSIGNED }
-  -> "float"            [Float]        { `UM_FLOAT }
-  -> "double"           [Double]       { `UM_DOUBLE }
-  -> "void"             [Void]         { `UM_VOID }
+  -> "char"		[Char]		{ `UM_CHAR }
+  -> "wchar_t"		[WCharT]	{ `UM_WCHAR_T }
+  -> "bool"		[Bool]		{ `UM_BOOL }
+  -> "short"		[Short]		{ `UM_SHORT }
+  -> "int"		[Int]		{ `UM_INT }
+  -> "long"		[Long]		{ `UM_LONG }
+  -> "signed"		[Signed]	{ `UM_SIGNED }
+  -> "unsigned"		[Unsigned]	{ `UM_UNSIGNED }
+  -> "float"		[Float]		{ `UM_FLOAT }
+  -> "double"		[Double]	{ `UM_DOUBLE }
+  -> "void"		[Void]		{ `UM_VOID }
 }
 
 
 nonterm ElaboratedTypeSpecifier {
-  -> k:ClassKey n:PQTypeName    [Class] { TS_elaborated ([], k, n) }
-  -> "enum" n:PQTypeName        [Enum]  { TS_elaborated ([], TI_Enum, n) }
+  -> k:ClassKey n:PQTypeName	[Class] { TS_elaborated ([], k, n) }
+  -> "enum" n:PQTypeName	[Enum]	{ TS_elaborated ([], TI_Enum, n) }
 
   (* cppstd grammar ensures "typename" is only applied to qualified
    * names, but I find that more natural to enforce during typechecking *)
-  -> "typename" n:PQTypeName    [Typename] { TS_name ([], n, (*~typenameUsed*)true) }
+  -> "typename" n:PQTypeName	[Typename] { TS_name ([], n, (*~typenameUsed*)true) }
 }
 
 
@@ -1177,43 +1177,43 @@ nonterm ElaboratedTypeSpecifier {
 nonterm TypeSpecifier {
   (* TS_name *)
   -> n:PQTypeName cv:UberCVQualifierSeqOpt
-       [Name] { TS_name (cv, n, (*~typenameUsed*)false) }
+	[Name] { TS_name (cv, n, (*~typenameUsed*)false) }
 
   -> cv1:UberCVQualifierSeq n:PQTypeName cv2:UberCVQualifierSeqOpt
-       [QualName] { TS_name (cv1 @ cv2, n, (*~typenameUsed*)false) }
+	[QualName] { TS_name (cv1 @ cv2, n, (*~typenameUsed*)false) }
 
   (* TS_simple *)
   -> k1:SimpleTypeSpecifier m2:UberTypeAndCVQualifierSeqOpt
 	[Simple]
 	{
-          let m = m2 in
-          let k = k1 :: m2 in
-          TS_simple (
-            Flags.cv_of_modifiers m,
-            Flags.stype_of_modifiers k)
-        }
+	  let m = m2 in
+	  let k = k1 :: m2 in
+	  TS_simple (
+	    Flags.cv_of_modifiers m,
+	    Flags.stype_of_modifiers k)
+	}
 
   -> m1:UberCVQualifierSeq k1:SimpleTypeSpecifier m2:UberTypeAndCVQualifierSeqOpt
-        [QualSimple] {
-          let m = (m1 :> modifiers) @ m2 in
-          let k = k1 :: m2 in
-          TS_simple (
-            Flags.cv_of_modifiers m,
-            Flags.stype_of_modifiers k)
-        }
+	[QualSimple] {
+	  let m = (m1 :> modifiers) @ m2 in
+	  let k = k1 :: m2 in
+	  TS_simple (
+	    Flags.cv_of_modifiers m,
+	    Flags.stype_of_modifiers k)
+	}
 
   (* TS_elaborated, TS_classSpec, TS_enumSpec *)
   -> e:ElaboratedOrSpecifier m2:UberCVQualifierSeqOpt
-        [Elab] {
-          let m = m2 in
-          Flags.set_cv m e
-        }
+	[Elab] {
+	  let m = m2 in
+	  Flags.set_cv m e
+	}
 
   -> m1:UberCVQualifierSeq e:ElaboratedOrSpecifier m2:UberCVQualifierSeqOpt
 	[QualElab] {
-          let m = m1 @ m2 in
-          Flags.set_cv m e
-        }
+	  let m = m1 @ m2 in
+	  Flags.set_cv m e
+	}
 }
 
 
@@ -1224,24 +1224,24 @@ nonterm PQTypeName {
   fun merge(l,r) { unimplemented 268 }
 
   -> n:PQTypeName_ncc
-       { n }
+	[Local] { n }
   -> "::" n:PQTypeName_ncc
-       { PQ_qualifier (None, [], n) }
+	[Global] { PQ_qualifier (None, [], n) }
 }
 
 (* no-colon-colon *)
 nonterm PQTypeName_ncc {
   fun merge(l,r) { unimplemented 271 }
 
-  -> n:Identifier                  precedence("::")
-       { PQ_name (n) }
-  -> id:TemplateId                 precedence("::")
-       { id }
+  -> n:Identifier			precedence("::")
+	[Id] { PQ_name (n) }
+  -> id:TemplateId			precedence("::")
+	[TemplateId] { id }
 
   -> q:Identifier "::" n:PQTypeName_notfirst
-       { PQ_qualifier (Some q, [], n) }
+	[Qualified] { PQ_qualifier (Some q, [], n) }
   -> q:Identifier "<" targs:TemplateArgumentListOpt ">" "::" n:PQTypeName_notfirst
-       { PQ_qualifier (Some q, targs, n) }
+	[QualifiedTemplateId] { PQ_qualifier (Some q, targs, n) }
 }
 
 (* after at least one qualifier other than "::"; 'template' has to be
@@ -1250,31 +1250,32 @@ nonterm PQTypeName_ncc {
 nonterm PQTypeName_notfirst {
   fun merge(l,r) { unimplemented 276 }
 
-  -> id:PQTypeName_ncc             precedence("::");
+  -> id:PQTypeName_ncc			precedence("::")
+	[Unqual];
 
   (* template declaration (in/t0254.cc) *)
-  -> "template" id:TemplateId      precedence("::")
-       {
-         match id with
-         | PQ_template (n, list) ->
-             PQ_template (n, TA_templateUsed :: list)
-         | _ ->
-             failwith "invalid TemplateId"
-       }
+  -> "template" id:TemplateId		precedence("::")
+	[TemplateDecl] {
+	  match id with
+	  | PQ_template (n, list) ->
+	      PQ_template (n, TA_templateUsed :: list)
+	  | _ ->
+	      failwith "invalid TemplateId"
+	}
 
   (* TEMPLATE_QUALIFIER_HACK *)
   (*-> "template" q:Identifier "::" n:PQTypeName_notfirst *)
-  (*     { unimplemented 279 } *)
+  (*	{ unimplemented 279 } *)
   -> "template" q:Identifier "<" targs:TemplateArgumentListOpt ">" "::" n:PQTypeName_notfirst
-       { unimplemented 280 }
+	[TemplateQual] { unimplemented 280 }
 }
 
 
 nonterm EnumSpecifier {
   -> "enum" "{" list:EnumeratorListOpt "}"
-       { TS_enumSpec ([], None, list) }
+	[Enum] { TS_enumSpec ([], None, list) }
   -> "enum" n:Identifier "{" list:EnumeratorListOpt "}"
-       { TS_enumSpec ([], Some n, list) }
+	[NamedEnum] { TS_enumSpec ([], Some n, list) }
 }
 
 
@@ -1285,17 +1286,17 @@ nonterm EnumeratorListOpt {
   fun merge(l,r) { unimplemented 1303 }
 
   -> empty
-       { [] }
+	{ [] }
   -> def:EnumeratorDefinition
-       { [def] }
+	{ [def] }
   -> def:EnumeratorDefinition "," list:EnumeratorListOpt
-       { def :: list }
+	{ def :: list }
 }
 
 
 nonterm EnumeratorDefinition {
   -> ename:Identifier eexpr:EnumeratorExpressionOpt
-       [Enum] { { ename; eexpr; } }
+	[Enum] { { ename; eexpr; } }
 }
 
 nonterm EnumeratorExpressionOpt {
@@ -1312,16 +1313,16 @@ nonterm EnumeratorExpressionOpt {
  * one, which is how it should be.  This is the AsmDefinition for
  * C++. *)
 nonterm AsmDefinition {
-  -> "asm" "(" s:StringLiteral ")" ";"    { unimplemented 288 }
+  -> "asm" "(" s:StringLiteral ")" ";"	{ unimplemented 288 }
 }
 
 
 nonterm LinkageSpecification {
   -> "extern" n:TOK_STRING_LITERAL "{" tu:TranslationUnit "}"
-       { TF_linkage (n, tu) }
+	{ TF_linkage (n, tu) }
 
   -> "extern" n:TOK_STRING_LITERAL tf:Declaration
-       { TF_one_linkage (n, tf) }
+	{ TF_one_linkage (n, tf) }
 }
 
 
@@ -1333,18 +1334,18 @@ nonterm InitDeclaratorList {
   fun merge(l,r) { unimplemented 1003 }
 
   -> d:InitDeclarator
-       [InitDecl] { [d] }
+	[InitDecl] { [d] }
   -> list:InitDeclaratorList "," d:InitDeclarator
-       [InitDecls] { d :: list }
+	[InitDecls] { d :: list }
 }
 
 (* obsolete now that I've substituted it into SimpleDeclaration *)
 (*
 nonterm InitDeclaratorListOpt {
   -> empty
-       { unimplemented 293 }
+	{ unimplemented 293 }
   -> list:InitDeclaratorList
-       { unimplemented 294 }
+	{ unimplemented 294 }
 }
 *)
 
@@ -1364,8 +1365,8 @@ nonterm InitDeclarator {
    * the latter surrounded by a redundant set of parens *)
   fun merge(l,r) { DC_ambig (l, r) }
 
-  -> d:Declarator i:InitialiserOpt      (* (int)  x (= 5) *)
-       [Decl] { DC_decl (d, i) }
+  -> d:Declarator i:InitialiserOpt	(* (int)  x (= 5) *)
+	[Decl] { DC_decl (d, i) }
 }
 
 nonterm InitialiserOpt {
@@ -1375,27 +1376,27 @@ nonterm InitialiserOpt {
 
 nonterm Initialiser {
   -> "=" i:SimpleInitialiserClause
-       [Init] { i }
+	[Init] { i }
 
   -> "(" args:ExpressionList ")"
-       [CtorInit] { IN_ctor (args) }
+	[CtorInit] { IN_ctor (args) }
 
   (* NOTE: there is no alternative for "(" ")"! *)
   (* see [cppstd. sec. 8.5 para 8] *)
 }
 
 nonterm SimpleInitialiserClause {
-  -> e:AssignmentExpression              (* scalar *)
-       [Expr] { IN_expr e }
-  -> c:CompoundInitialiser               (* array/structure initialiser *)
-       [Compound] { c }
+  -> e:AssignmentExpression		(* scalar *)
+	[Expr] { IN_expr e }
+  -> c:CompoundInitialiser		(* array/structure initialiser *)
+	[Compound] { c }
 }
 
 (* this nonterminal exists so that extensions can augment it with
  * possibilities for designated initialisers *)
 nonterm InitialiserClause {
   -> init:SimpleInitialiserClause
-       { unimplemented 302 }
+	{ unimplemented 302 }
 }
 
 nonterm CompoundInitialiser {
@@ -1413,14 +1414,14 @@ nonterm CommaOpt {
 }
 
 nonterm InitialiserList {
-  fun dup(i) { unimplemented 305 }     (* prevent multi-yield *)
+  fun dup(i) { unimplemented 305 }	(* prevent multi-yield *)
 
   -> init:InitialiserClause
-       { unimplemented 306 }
+	{ unimplemented 306 }
 
   (* destructive action on 'list' *)
   -> list:InitialiserList "," init:InitialiserClause
-       { unimplemented 307 }
+	{ unimplemented 307 }
 }
 
 
@@ -1431,21 +1432,21 @@ nonterm InitialiserList {
  * this name shift simply reflects the different interests of the
  * parser vs. subsequent phases of analysis
  *
- * regex for this nonterm: (PtrOperator)* DirectDeclarator *)
+ * regex for this nonterm: (PrefixDeclarator)* DirectDeclarator *)
 nonterm Declarator {
   -> p:PrefixDeclarator d:Declarator
-       [Prefix] { p d }
+	[Prefix] { p d }
   -> d:DirectDeclarator
-       [Direct] { d }
+	[Direct] { d }
 }
 
 nonterm PrefixDeclarator {
   -> "*" cv:CVQualifierSeqOpt
-  	[Ptr] { fun d -> D_pointer (cv, d) }
+	[Ptr] { fun d -> D_pointer (cv, d) }
   -> "&" cv:CVQualifierSeqOpt
-  	[Re] { fun d -> D_reference (cv, d) }
+	[Re] { fun d -> D_reference (cv, d) }
   -> n:PtrToMemberName "*" cv:CVQualifierSeqOpt
-  	[MemPtr] { fun d -> D_ptrToMember (n, cv, d) }
+	[MemPtr] { fun d -> D_ptrToMember (n, cv, d) }
 }
 
 nonterm DirectDeclarator {
@@ -1462,19 +1463,19 @@ nonterm DirectDeclarator {
 
   (* function declarator; the return type comes from the type
    * specifier that precedes this *)
-  -> d:DirectDeclarator                        (* name of function *)
-     "(" params:ParameterDeclarationClause ")" (* parameters *)
-     cv:CVQualifierSeqOpt                      (* optional "const" *)
-     e:ExceptionSpecificationOpt               (* optional "throw" clause *)
-       [FuncDecl] { Factory.make_d_func d params cv e }
+  -> d:DirectDeclarator				(* name of function *)
+     "(" params:ParameterDeclarationClause ")"	(* parameters *)
+     cv:CVQualifierSeqOpt			(* optional "const" *)
+     e:ExceptionSpecificationOpt		(* optional "throw" clause *)
+	[FuncDecl] { Factory.make_d_func d params cv e }
 
   (* array with optional size *)
   -> d:DirectDeclarator "[" sz:ConstantExpressionOpt "]"
-       [ArrayDecl] { Factory.make_d_array d sz }
+	[ArrayDecl] { Factory.make_d_array d sz }
 
   (* precedence grouping; must be recorded in the AST for disambiguation *)
   -> "(" d:Declarator ")"
-       [ParenDecl] { D_grouping (d) }
+	[ParenDecl] { D_grouping (d) }
 }
 
 (* I choose to encode ctor and dtor names as ordinary PQNames, because
@@ -1489,24 +1490,24 @@ nonterm PQDtorName {
   fun merge(l,r) { unimplemented 317 }
 
   -> "~" n:Identifier
-       { PQ_name ("~" ^ n) }
+	{ PQ_name ("~" ^ n) }
   -> "~" n:Identifier "<" list:TemplateArgumentListOpt ">"
-       { PQ_template ("~" ^ n, list) }
+	{ PQ_template ("~" ^ n, list) }
 
   (* as above for PQName_no_colon_colon, I'm temporarily removing an
    * ambiguity that relates to namespaces (e.g. "::F::~F()") *)
   (*-> q:Qualifier rhs:PQDtorName  { unimplemented 320 } *)
   -> q:Identifier "::" rhs:PQDtorName
-       { PQ_qualifier (Some q, [], rhs) }
+	{ PQ_qualifier (Some q, [], rhs) }
 
   -> q:Identifier "<" targs:TemplateArgumentListOpt ">" "::" rhs:PQDtorName
-       { PQ_qualifier (Some q, targs, rhs) }
+	{ PQ_qualifier (Some q, targs, rhs) }
 
   (* TEMPLATE_QUALIFIER_HACK *)
   (*-> "template" q:Identifier "::" rhs:PQDtorName *)
-  (*     { unimplemented 323 } *)
+  (*	{ unimplemented 323 } *)
   -> "template" q:Identifier "<" targs:TemplateArgumentListOpt ">" "::" rhs:PQDtorName
-       { PQ_qualifier (Some q, TA_templateUsed :: targs, rhs) }
+	{ PQ_qualifier (Some q, TA_templateUsed :: targs, rhs) }
 
   (* this rule from cppstd is partially subsumed by the "template" hack *)
   (*-> ColonColonOpt NestedNameSpecifier "template" TemplateId "::" "~" TypeName; *)
@@ -1517,38 +1518,23 @@ nonterm PQDtorName {
 nonterm PtrToMemberName {
   fun merge(l,r) { unimplemented 325 }
 
-  -> n:IdExpression "::"    { unimplemented 326 }
+  -> n:IdExpression "::"	{ unimplemented 326 }
 }
-
-
-(* I'll leave this here because it's harmless and the cppstd has it;
- * also, it reminds me that every place I've substituted PtrOperator
- * into the syntaxes elsewhere has an implicit TODO for the
- * pointer-to-member syntax *)
-(*
-nonterm PtrOperator {
-  -> "*" q:CVQualifierSeqOpt ;
-  -> "&"                     ;
-
-  (* TODO: pointer to member *)
-  (*-> ColonColonOpt NestedNameSpecifier "*" CvQualifierSeqOpt; *)
-}
-*)
 
 
 nonterm CVQualifierSeqOpt {
-  -> empty                       { [] }
-  -> s:CVQualifierSeq            { s }
+  -> empty			{ [] }
+  -> s:CVQualifierSeq		{ s }
 }
 
 nonterm CVQualifierSeq {
-  -> q:CVQualifier                      { [q] }
-  -> s:CVQualifierSeq q:CVQualifier     { q :: s }
+  -> q:CVQualifier			{ [q] }
+  -> s:CVQualifierSeq q:CVQualifier	{ q :: s }
 }
 
 nonterm CVQualifier {
-  -> "const"                 [Const]	{ `UM_CONST }
-  -> "volatile"              [Volatile]	{ `UM_VOLATILE }
+  -> "const"			[Const]		{ `UM_CONST }
+  -> "volatile"			[Volatile]	{ `UM_VOLATILE }
 }
 
 
@@ -1557,25 +1543,25 @@ nonterm CVQualifier {
  * it is, for example, what appears inside the parens of a typecast *)
 nonterm TypeId {
   -> spec:TypeSpecifier decl:AbstractDeclaratorOpt
-       { T_type (spec, DC_decl (decl, None)) }
+	[TypeId] { T_type (spec, DC_decl (decl, None)) }
 }
 
 nonterm AbstractDeclaratorOpt {
-  -> empty                 { D_name (None) }
-  -> d:AbstractDeclarator  { d }
+  -> empty			{ D_name (None) }
+  -> d:AbstractDeclarator	{ d }
 }
 
 (* an abstract declarator (not opt) must have *some* ground syntax in it *)
 nonterm AbstractDeclarator {
   -> p:PrefixDeclarator d:AbstractDeclaratorOpt
-       { p d }
+	{ p d }
   -> d:DirectAbstractDeclarator
-       { d }
+	{ d }
 }
 
 nonterm DirectAbstractDeclaratorOpt {
-  -> empty                       { D_name (None) }
-  -> d:DirectAbstractDeclarator  { d }
+  -> empty				{ D_name (None) }
+  -> d:DirectAbstractDeclarator		{ d }
 }
 
 (* this also must have some ground syntax *)
@@ -1595,24 +1581,24 @@ nonterm DirectAbstractDeclarator {
      "(" args:ParameterDeclarationClause ")"
      cv:CVQualifierSeqOpt
      e:ExceptionSpecificationOpt
-       { Factory.make_d_func d args cv e }
+	{ Factory.make_d_func d args cv e }
 
   (* array with optional size *)
   -> d:DirectAbstractDeclaratorOpt "[" sz:ConstantExpressionOpt "]"
-       { Factory.make_d_array d sz }
+	{ Factory.make_d_array d sz }
 
   (* precedence grouping; shouldn't need to record this in AST, but
    * I will for consistency with Declarator *)
   -> "(" d:AbstractDeclarator ")"
-       { D_grouping (d) }
+	{ D_grouping (d) }
 }
 
 
 nonterm ParameterDeclarationClause {
-  -> empty                                   (* no args *)
-       { [] }
-  -> p:ParameterDeclarationList              (* some args *)
-       { p }
+  -> empty				(* no args *)
+	{ [] }
+  -> p:ParameterDeclarationList		(* some args *)
+	{ p }
 }
 
 (* little bending over backwards here to accomodate FakeList *)
@@ -1621,25 +1607,25 @@ nonterm ParameterDeclarationList {
 
   (* last (and perhaps only) arg is "..." *)
   -> e:Ellipsis
-       [VarArg] { [e] }
+	[VarArg] { [e] }
 
   (* last arg is "...", and 2nd-to-last is not separated by
    * a comma from the "..." *)
   -> d:ParameterDeclaration e:Ellipsis
-       [NamedVarArg] { [d; e] }
+	[NamedVarArg] { [d; e] }
 
   (* last arg is not "..." *)
   -> d:ParameterDeclaration
-       [Param] { [d] }
+	[Param] { [d] }
 
   (* argument then "," then arg or "..." or list *)
   -> d:ParameterDeclaration "," l:ParameterDeclarationList
-       [Params] { d :: l }
+	[Params] { d :: l }
 }
 
 nonterm Ellipsis {
   -> "..."
-       [Ellipsis] { Factory.make_ellipsis_type_id () }
+	[Ellipsis] { Factory.make_ellipsis_type_id () }
 }
 
 nonterm ParameterDeclaration {
@@ -1648,11 +1634,11 @@ nonterm ParameterDeclaration {
   (* NOTE: The 'register' keyword is simply ignored. *)
 
   -> s:TypeSpecifier pd:ParameterDeclarator
-       [Parm] { T_type (s, pd) }
+	[Parm] { T_type (s, pd) }
   -> "register" s:TypeSpecifier pd:ParameterDeclarator
-       [RegParm1] { T_type (s, pd) }
+	[RegParm1] { T_type (s, pd) }
   -> s:TypeSpecifier "register" pd:ParameterDeclarator
-       [RegParm2] { T_type (s, pd) }
+	[RegParm2] { T_type (s, pd) }
 }
 
 nonterm ParameterDeclarator {
@@ -1666,10 +1652,10 @@ nonterm ParameterDeclarator {
   fun merge(l,r) { DC_ambig (l, r) }
 
   -> d:UnqualifiedDeclarator e:DefaultValueOpt
-        [Decl] { DC_decl (d, e) }
+	[Decl] { DC_decl (d, e) }
 
   -> d:AbstractDeclaratorOpt e:DefaultValueOpt
-       [AbstractDecl] { DC_decl (d, e) }
+	[AbstractDecl] { DC_decl (d, e) }
 }
 
 nonterm DefaultValueOpt {
@@ -1702,89 +1688,89 @@ nonterm FunctionDefinition {
   (* return type      name/params   body *)
   -> r:DeclSpecifier  d:FDDeclarator  b:FunctionBody
 	[Ordinary] {
-          (* new function_definition *)
-          {
-            fdflags = r.dflags;
-            retspec = r.spec;
-            name_and_params = DC_decl (d, None);
-            inits = [];
-            fbody = b;
-            handlers = [];
-          }
-        }
+	  (* new function_definition *)
+	  {
+	    fdflags = r.dflags;
+	    retspec = r.spec;
+	    name_and_params = DC_decl (d, None);
+	    inits = [];
+	    fbody = b;
+	    handlers = [];
+	  }
+	}
 
   (* 2005-03-09: I didn't even realise this was possible for non-ctors *)
-  (* return type      name/params            body            handlers *)
+  (* return type      name/params	     body	     handlers *)
   -> r:DeclSpecifier  d:FDDeclarator  "try"  b:FunctionBody  h:HandlerSeq
-       	[OrdinaryTry] {
-          (* new function_definition *)
-          {
-            fdflags = r.dflags;
-            retspec = r.spec;
-            name_and_params = DC_decl (d, None);
-            inits = [];
-            fbody = b;
-            handlers = h;
-          }
-        }
+	[OrdinaryTry] {
+	  (* new function_definition *)
+	  {
+	    fdflags = r.dflags;
+	    retspec = r.spec;
+	    name_and_params = DC_decl (d, None);
+	    inits = [];
+	    fbody = b;
+	    handlers = h;
+	  }
+	}
 
   (* I've now substituted the RHSs of CDtorModifierOpt, to eliminiate
    * a few s/r conflicts at the toplevel of parsing (where they are
    * the most harmful to performance) *)
 
   (* constructor, destructor or conversion operator *)
-  (* "explicit"?         name/params     member inits          body *)
+  (* "explicit"?	 name/params	 member inits	       body *)
   -> m:CDtorModifierSeq  d:FDDeclarator  c:CtorInitialiserOpt  b:FunctionBody
-       	[CDtorMod] {
-          (* new function_definition *)
-          {
-            fdflags = m;
-            retspec = TS_simple ([], ST_CDtor);
-            name_and_params = DC_decl (d, None);
-            inits = c;
-            fbody = b;
-            handlers = [];
-          }
-        }
-  -> (*no modifier*)     d:FDDeclarator  c:CtorInitialiserOpt  b:FunctionBody
+	[CDtorMod] {
+	  (* new function_definition *)
+	  {
+	    fdflags = m;
+	    retspec = TS_simple ([], ST_CDtor);
+	    name_and_params = DC_decl (d, None);
+	    inits = c;
+	    fbody = b;
+	    handlers = [];
+	  }
+	}
+  -> (*no modifier*)	 d:FDDeclarator  c:CtorInitialiserOpt  b:FunctionBody
 	[CDtor] {
-          (* new function_definition *)
-          {
-            fdflags = [];
-            retspec = TS_simple ([], ST_CDtor);
-            name_and_params = DC_decl (d, None);
-            inits = c;
-            fbody = b;
-            handlers = [];
-          }
-        }
+	  (* new function_definition *)
+	  {
+	    fdflags = [];
+	    retspec = TS_simple ([], ST_CDtor);
+	    name_and_params = DC_decl (d, None);
+	    inits = c;
+	    fbody = b;
+	    handlers = [];
+	  }
+	}
 
   (* ctor with a try block *)
-  (* "explicit"?         name/params          member inits         body           handlers *)
+  (* "explicit"?	 name/params	      member inits	   body		  handlers *)
   -> m:CDtorModifierSeq  d:FDDeclarator "try" c:CtorInitialiserOpt b:FunctionBody h:HandlerSeq
 	[CDtorTryMod] {
-          (* new function_definition *)
-          {
-            fdflags = m;
-            retspec = TS_simple ([], ST_CDtor);
-            name_and_params = DC_decl (d, None);
-            inits = c;
-            fbody = b;
-            handlers = h;
-          }
-        }
-  -> (*no modifier*)     d:FDDeclarator "try" c:CtorInitialiserOpt b:FunctionBody h:HandlerSeq
+	  (* new function_definition *)
+	  {
+	    fdflags = m;
+	    retspec = TS_simple ([], ST_CDtor);
+	    name_and_params = DC_decl (d, None);
+	    inits = c;
+	    fbody = b;
+	    handlers = h;
+	  }
+	}
+  -> (*no modifier*)	 d:FDDeclarator "try" c:CtorInitialiserOpt b:FunctionBody h:HandlerSeq
 	[CDtorTry] {
-          (* new function_definition *)
-          {
-            fdflags = [];
-            retspec = TS_simple ([], ST_CDtor);
-            name_and_params = DC_decl (d, None);
-            inits = c;
-            fbody = b;
-            handlers = h;
-          }
-        }
+	  (* new function_definition *)
+	  {
+	    fdflags = [];
+	    retspec = TS_simple ([], ST_CDtor);
+	    name_and_params = DC_decl (d, None);
+	    inits = c;
+	    fbody = b;
+	    handlers = h;
+	  }
+	}
 }
 
 (* function definition declarator; must have D_func at the
@@ -1799,56 +1785,56 @@ nonterm FDDeclarator {
       true
   }
 
-  -> d:Declarator    { d }
+  -> d:Declarator;
 }
 
 nonterm FunctionBody -> s:CompoundStatement;
 
 nonterm CtorInitialiserOpt {
-  -> empty                        { [] }
-  -> ":" list:MemInitialiserList  { list }
+  -> empty				{ [] }
+  -> ":" list:MemInitialiserList	{ list }
 }
 
 
 (* ------ A.8 Classes ------ *)
 nonterm ClassSpecifier {
   -> k:ClassKey n:ClassHeadNameOpt b:BaseClauseOpt "{" memb:MemberDeclarationSeqOpt "}"
-       { TS_classSpec ([], k, n, b, memb) }
+	[ClassSpec] { TS_classSpec ([], k, n, b, memb) }
 }
 
 (* this is the name portion of what the standard calls "ClassHead" *)
 nonterm ClassHeadNameOpt {
   fun merge(l,r) { unimplemented 371 }
 
-  -> empty               { None }
-  -> n:ClassHeadName     { Some n }
+  -> empty			[None]		{ None }
+  -> n:ClassHeadName		[Some]		{ Some n }
 }
 
 (* a possibly-qualified Identifier or TemplateId *)
 nonterm ClassHeadName {
   fun merge(l,r) { unimplemented 374 }
 
-  -> n:Identifier             precedence("::")
-       { PQ_name (n) }
-  -> t:TemplateId             precedence("::")
-       { t }
+  -> n:Identifier		precedence("::")
+	[Id] { PQ_name (n) }
+  -> t:TemplateId		precedence("::")
+	[TemplateId] { t }
 
   -> n:Identifier "::" rest:ClassHeadName
-       { PQ_qualifier (Some n, [], rest) }
+	[Qualified] { PQ_qualifier (Some n, [], rest) }
   -> n:Identifier "<" targs:TemplateArgumentListOpt ">" "::" rest:ClassHeadName
-       { PQ_qualifier (Some n, targs, rest) }
+	[QualifiedTemplate] { PQ_qualifier (Some n, targs, rest) }
 
   (* TEMPLATE_QUALIFIER_HACK *)
   (*-> "template" n:Identifier "::" rest:ClassHeadName *)
-  (*     { unimplemented 379 } *)
+  (*	{ unimplemented 379 } *)
   -> "template" n:Identifier "<" targs:TemplateArgumentListOpt ">" "::" rest:ClassHeadName
-       { PQ_qualifier (Some n, TA_templateUsed :: targs, rest) }
+	[TemplateQualified] { PQ_qualifier (Some n, TA_templateUsed :: targs, rest) }
 }
 
 nonterm ClassKey {
-  -> "class"       [Class]  { TI_Class }
-  -> "struct"      [Struct] { TI_Struct }
-  -> "union"       [Union]  { TI_Union }
+  -> "class"		[Class]  { TI_Class }
+  -> "struct"		[Struct] { TI_Struct }
+  -> "union"		[Union]  { TI_Union }
 }
 
 
@@ -1856,33 +1842,33 @@ nonterm ClassKey {
  * since there are often many members of classes *)
 nonterm MemberDeclarationSeqOpt {
   fun merge(l,r) { unimplemented 1305 }
-  fun dup(m) { unimplemented 384 }       (* prevent multi-yield *)
+  fun dup(m) { unimplemented 384 }		(* prevent multi-yield *)
 
   -> empty
-       { [] }
+	[Empty] { [] }
 
   (* gcc allows multiple semicolons in a row in a member declaration
    * list; it would be nontrivial to confine this flexibility to an
    * extension, and it's not that big a deal, so we just tolerate it
    * always *)
   -> list:MemberDeclarationSeqOpt ";"
-       { list }
+	[Semicolon] { list }
 
   (* destructive actions on 'list' *)
   -> list:MemberDeclarationSeqOpt decl:MemberDeclaration
-       { decl :: list }
+	[Decl] { decl :: list }
 
   (* explicitly include access specifiers in the AST, instead of
    * propagating them in the parser, to avoid the complexities of
    * maintaining the state in the parser context *)
   -> list:MemberDeclarationSeqOpt k:AccessSpecifier ":"
-       { MR_access (k) :: list }
+	[Access] { MR_access (k) :: list }
 }
 
 nonterm AccessSpecifier {
-  -> "public"     { AK_PUBLIC }
-  -> "private"    { AK_PRIVATE }
-  -> "protected"  { AK_PROTECTED }
+  -> "public"		[Public]	{ AK_PUBLIC }
+  -> "private"		[Private]	{ AK_PRIVATE }
+  -> "protected"	[Protected]	{ AK_PROTECTED }
 }
 
 nonterm MemberDeclaration {
@@ -1891,31 +1877,31 @@ nonterm MemberDeclaration {
   (* destructive action on 'spec'
    * member fn decl, or data member *)
   -> spec:DeclSpecifier decllist:MemberDeclaratorList ";"
-       [Member] {
-         (* TODO: cancel embedded declarations *)
-         let spec = { spec with decllist } in
-         if not (Factory.keep_declaration spec) then
-           cancel "TYPENAME ::NAME"
-         else
-           MR_decl (spec)
-       }
+	[Member] {
+	  (* TODO: cancel embedded declarations *)
+	  let spec = { spec with decllist } in
+	  if not (Factory.keep_declaration spec) then
+	    cancel "TYPENAME ::NAME"
+	  else
+	    MR_decl (spec)
+	}
 
   (* inner class or enum with no instance defined *)
   -> spec:DeclSpecifier ";"
-       [InnerSUE] {
-         (* if the type specifier doesn't start with 'class'
-          * or 'enum' then this is useless, and might be
-          * ambiguous with superclass member publication, so
-          * cancel it [cppstd 9.2 para 7] *)
-         match spec.spec with
-         | TS_elaborated _
-         | TS_classSpec _
-         | TS_enumSpec _ ->
-             (* ok *)
-             MR_decl (spec)
-         | _ ->
-             cancel "bare DeclSpecifier not starting with type keyword"
-       }
+	[InnerSUE] {
+	  (* if the type specifier doesn't start with 'class'
+	   * or 'enum' then this is useless, and might be
+	   * ambiguous with superclass member publication, so
+	   * cancel it [cppstd 9.2 para 7] *)
+	  match spec.spec with
+	  | TS_elaborated _
+	  | TS_classSpec _
+	  | TS_enumSpec _ ->
+	      (* ok *)
+	      MR_decl (spec)
+	  | _ ->
+	      cancel "bare DeclSpecifier not starting with type keyword"
+	}
 
   (* publishing a superclass member; ambiguous with inner class
    * declaration (above) and ctor declaration (below), hence the
@@ -1923,20 +1909,20 @@ nonterm MemberDeclaration {
    *
    * equivalent to "using n ;" so parse it as such *)
   -> n:PQualifiedId ";"
-       [OldUsingDecl] { MR_usingDecl (n) }
+	[OldUsingDecl] { MR_usingDecl (n) }
 
   (* the general form *)
   -> "using" (*typename?*) n:IdExpression ";"
-       [UsingDecl] { MR_usingDecl (n) }
+	[UsingDecl] { MR_usingDecl (n) }
 
   (* inline function definition; includes c/dtor definitions *)
   -> f:FunctionDefinition
-       [InlineFunc] { MR_func f }
+	[InlineFunc] { MR_func f }
 
   (* declaration (with no definition) of a c/dtor or conversion
    * operator function *)
   -> d:CDtorProtoDecl
-       [CDtor] { MR_decl (d) }
+	[CDtor] { MR_decl (d) }
 
   (* note above that "explicit" and "virtual" can't be mixed because the former
    * is for ctors only and the latter can't be used with ctors (so a later stage
@@ -1944,7 +1930,7 @@ nonterm MemberDeclaration {
 
   (* member template *)
   -> d:TemplateDeclaration
-       [MemberTemplate] { MR_template (d) }
+	[MemberTemplate] { MR_template (d) }
 }
 
 (* declaration (with no definition) of a c/dtor or conversion
@@ -1953,34 +1939,34 @@ nonterm CDtorProtoDecl {
   (* Q: what about pure virtual? *)
   (* A: it's part of the MemberDeclarator *)
   -> dflags:CDtorModifierSeq d:MemberDeclarator ";"
-      	[ModDecl] {
-          {
-            dflags;
-            spec = TS_simple ([], ST_CDtor);
-            decllist = [d];
-          }
-       	}
+	[ModDecl] {
+	  {
+	    dflags;
+	    spec = TS_simple ([], ST_CDtor);
+	    decllist = [d];
+	  }
+	}
   -> (*no modifier*) d:MemberDeclarator ";"
-       	[Decl] {
-          (* does the declarator construct a function type?
-           * if not, this might be ambiguous (superclass
-           * member publication), so cancel the entire reduction *)
-          if not (Query.declr_is_func d) then
-            cancel "non-function c/dtor"
-          else
-            {
-              dflags = [];
-              spec = TS_simple ([], ST_CDtor);
-              decllist = [d];
-            }
-        }
+	[Decl] {
+	  (* does the declarator construct a function type?
+	   * if not, this might be ambiguous (superclass
+	   * member publication), so cancel the entire reduction *)
+	  if not (Query.declr_is_func d) then
+	    cancel "non-function c/dtor"
+	  else
+	    {
+	      dflags = [];
+	      spec = TS_simple ([], ST_CDtor);
+	      decllist = [d];
+	    }
+	}
 }
 
 nonterm MemberDeclaratorList {
   -> d:MemberDeclarator
-       { [d] }
+	{ [d] }
   -> list:MemberDeclaratorList "," d:MemberDeclarator
-       { d :: list }
+	{ d :: list }
 }
 
 (* this returns a full Declarator, instead of an IDeclarator, because
@@ -1989,26 +1975,26 @@ nonterm MemberDeclaratorList {
  * a place to put member initialisers *)
 nonterm MemberDeclarator {
   -> d:Declarator
-       { DC_decl (d, (*~init*)None) }
+	{ DC_decl (d, (*~init*)None) }
 
   (* here I merge two cases (PureSpecifier and ConstantInitialiser) that
    * the std splits; given that the parser doesn't track at this level
    * whether 'd' is a function type or not, and it can't tell the
    * difference between PureSpecifier and ConstantInitialiser just by
    * looking at their syntax, we'd be disambiguating this later anyway *)
-  -> d:Declarator "=" e:ConstantExpression       (* pure, and member inits *)
-       { DC_decl (d, Some (IN_expr e)) }
+  -> d:Declarator "=" e:ConstantExpression	(* pure, and member inits *)
+	{ DC_decl (d, Some (IN_expr e)) }
 
-  -> n:IdentifierOpt ":" e:ConstantExpression    (* bitfield *)
-       {
-         let n = BatOption.map (fun n -> PQ_name n) n in
-         DC_decl (D_bitfield (n, e), (*~init*)None)
-       }
+  -> n:IdentifierOpt ":" e:ConstantExpression	(* bitfield *)
+	{
+	  let n = BatOption.map (fun n -> PQ_name n) n in
+	  DC_decl (D_bitfield (n, e), (*~init*)None)
+	}
 }
 
 nonterm IdentifierOpt {
-  -> empty         { None }
-  -> n:Identifier  { Some n }
+  -> empty		{ None }
+  -> n:Identifier	{ Some n }
 }
 
 
@@ -2020,86 +2006,86 @@ nonterm IdentifierOpt {
  * the set of flags here must not include "static" or "typedef"; see
  * the action function associated with MemberDeclaration's first production *)
 nonterm CDtorModifier {
-  -> "explicit"    [Explicit]	{ `UM_EXPLICIT }
-  -> "virtual"     [Virtual]	{ `UM_VIRTUAL }
-  -> "inline"      [Inline]	{ `UM_INLINE }
+  -> "explicit"		[Explicit]	{ `UM_EXPLICIT }
+  -> "virtual"		[Virtual]	{ `UM_VIRTUAL }
+  -> "inline"		[Inline]	{ `UM_INLINE }
 
   (* (in/t0527.cc) this is to allow befriending another class's constructor *)
-  -> "friend"      [Friend]	{ `UM_FRIEND }
+  -> "friend"		[Friend]	{ `UM_FRIEND }
 }
 
 nonterm CDtorModifierSeq {
-  -> m:CDtorModifier                       { [m] }
-  -> s:CDtorModifierSeq m:CDtorModifier    { m :: s }
+  -> m:CDtorModifier				{ [m] }
+  -> s:CDtorModifierSeq m:CDtorModifier		{ m :: s }
 }
 
 (* I substituted this into everywhere it occurred *)
 (*
 nonterm CDtorModifierSeqOpt {
-  -> empty                         { unimplemented 414 }
-  -> m:CDtorModifierSeq            { unimplemented 415 }
+  -> empty			{ unimplemented 414 }
+  -> m:CDtorModifierSeq		{ unimplemented 415 }
 }
 *)
 
 
 (* ------ A.9 Derived classes ------ *)
 nonterm BaseClauseOpt {
-  -> empty                      { [] }
-  -> ":" b:BaseSpecifierList    { b }
+  -> empty			{ [] }
+  -> ":" b:BaseSpecifierList	{ b }
 }
 
 nonterm BaseSpecifierList {
   (* NOTE: Making this nonterminal right-recursive prevents this merge.
    * However, the resulting value from this merge is dropped soon after,
-   * so we return an empty list and drop both alternatives, already. *)
+   * so we return an empty list and drop both alternatives. *)
   fun merge(l,r) { [] }
 
   -> b:BaseSpecifier
-       { [b] }
+	[Head] { [b] }
   -> list:BaseSpecifierList "," b:BaseSpecifier
-       { b :: list }
+	[Tail] { b :: list }
 }
 
 
 (* TODO: spec allows leading "::" on the PQClassName *)
 nonterm BaseSpecifier {
   -> cname:PQClassName
-       { { is_virtual = false; access = AK_UNSPECIFIED; cname; } }
+	{ { is_virtual = false; access = AK_UNSPECIFIED; cname; } }
   -> "virtual" access:AccessSpecifierOpt cname:PQClassName
-       { { is_virtual = true; access; cname; } }
+	{ { is_virtual = true; access; cname; } }
   -> access:AccessSpecifier is_virtual:VirtualOpt cname:PQClassName
-       { { is_virtual; access; cname; } }
+	{ { is_virtual; access; cname; } }
 }
 
 nonterm VirtualOpt {
-  -> empty      { false }
-  -> "virtual"  { true }
+  -> empty	{ false }
+  -> "virtual"	{ true }
 }
 
 (* if the access specifier is missing, then it defaults to private
  * when inherited by a class, and public when inherited by a struct;
  * typechecking will replace AK_UNSPECIFIED with the right thing later *)
 nonterm AccessSpecifierOpt {
-  -> empty              { unimplemented 425 }
-  -> k:AccessSpecifier  { unimplemented 426 }
+  -> empty		{ AK_UNSPECIFIED }
+  -> k:AccessSpecifier	{ k }
 }
 
 nonterm PQClassName {
   fun merge(l,r) { unimplemented 427 }
 
-  -> n:PQTypeName;
+  -> n:PQTypeName [Name];
 }
 
 
 (* ------ A.10 Special member functions ------ *)
 nonterm ConversionFunctionId {
   -> "operator" t:ConversionTypeId
-  	{ ON_conversion (t) }
+	{ ON_conversion (t) }
 }
 
 nonterm ConversionTypeId {
   -> s:TypeSpecifier d:ConversionDeclaratorOpt
-       [ConvType] { T_type (s, DC_decl (d, (*~init*)None)) }
+	[ConvType] { T_type (s, DC_decl (d, (*~init*)None)) }
 }
 
 (* collects the stars that might follow a type specifier in a
@@ -2110,24 +2096,29 @@ nonterm ConversionDeclaratorOpt {
    * of the conversion operator's name (cppstd 12.3.2 para 4);
    * there is still an S/R conflict for "::" and I'm not sure how
    * to resolve that one... *)
-  -> empty                             precedence(TOK_PREFER_SHIFT)
-       { D_name ((*~name*)None) }
+  -> empty			precedence(TOK_PREFER_SHIFT)
+	{ D_name ((*~name*)None) }
 
+  -> d:ConversionDeclarator
+	{ d }
+}
+
+nonterm ConversionDeclarator {
   -> p:PrefixDeclarator d:ConversionDeclaratorOpt
-       { p d }
+	[ConvDecl] { p d }
 }
 
 
 nonterm MemInitialiserList {
   -> i:MemInitialiser
-       { [i] }
+	{ [i] }
   -> list:MemInitialiserList "," i:MemInitialiser
-       { i :: list }
+	{ i :: list }
 }
 
 nonterm MemInitialiser {
   -> mname:MemInitialiserId "(" args:ExpressionListOpt ")"
-        [MemInit] { { mname; args; } }
+	[MemInit] { { mname; args; } }
 }
 
 (* the std splits cases on whether we're calling a base class ctor
@@ -2160,11 +2151,11 @@ nonterm Operator {
    * lookahead token is "[" *)
 
   -> "new" precedence(TOK_PREFER_SHIFT)
-        [New]		{ ON_new }
+	[New]		{ ON_new }
   -> "delete" precedence(TOK_PREFER_SHIFT)
-        [Delete]	{ ON_delete }
+	[Delete]	{ ON_delete }
   -> "new" "[" "]"
-        [NewArray]	{ ON_newArray }
+	[NewArray]	{ ON_newArray }
   -> "delete" "[" "]"
 	[DeleteArray]	{ ON_deleteArray }
 
@@ -2173,52 +2164,52 @@ nonterm Operator {
 }
 
 nonterm OverloadableOp {
-  -> "!"     [Not]		{ OP_NOT }
-  -> "~"     [BitNot]		{ OP_BITNOT }
+  -> "!"	[Not]		{ OP_NOT }
+  -> "~"	[BitNot]	{ OP_BITNOT }
 
-  -> "++"    [PlusPlus]		{ OP_PLUSPLUS }
-  -> "--"    [MinusMinus]	{ OP_MINUSMINUS }
+  -> "++"	[PlusPlus]	{ OP_PLUSPLUS }
+  -> "--"	[MinusMinus]	{ OP_MINUSMINUS }
 
-  -> "+"     [Plus]		{ OP_PLUS }
-  -> "-"     [Minus]		{ OP_MINUS }
-  -> "*"     [Star]		{ OP_STAR }
+  -> "+"	[Plus]		{ OP_PLUS }
+  -> "-"	[Minus]		{ OP_MINUS }
+  -> "*"	[Star]		{ OP_STAR }
 
-  -> "/"     [Div]		{ OP_DIV }
-  -> "%"     [Mod]		{ OP_MOD }
-  -> "<<"    [Lsh]		{ OP_LSH }
-  -> ">>"    [Rsh]		{ OP_RSH }
-  -> "&"     [Ampersand]	{ OP_AMPERSAND }
-  -> "^"     [BitXor]		{ OP_BITXOR }
-  -> "|"     [BitOr]		{ OP_BITOR }
+  -> "/"	[Div]		{ OP_DIV }
+  -> "%"	[Mod]		{ OP_MOD }
+  -> "<<"	[Lsh]		{ OP_LSH }
+  -> ">>"	[Rsh]		{ OP_RSH }
+  -> "&"	[Ampersand]	{ OP_AMPERSAND }
+  -> "^"	[BitXor]	{ OP_BITXOR }
+  -> "|"	[BitOr]		{ OP_BITOR }
 
-  -> "="     [Assign]		{ OP_ASSIGN }
-  -> "+="    [AddEq]		{ OP_ADDEQ }
-  -> "-="    [SubEq]		{ OP_SUBEQ }
-  -> "*="    [MulEq]		{ OP_MULEQ }
-  -> "/="    [DivEq]		{ OP_DIVEQ }
-  -> "%="    [ModEq]		{ OP_MODEQ }
-  -> "<<="   [LshEq]		{ OP_LSHEQ }
-  -> ">>="   [RshEq]		{ OP_RSHEQ }
-  -> "&="    [BitAndEq]		{ OP_BITANDEQ }
-  -> "^="    [BitXorEq]		{ OP_BITXOREQ }
-  -> "|="    [BitOrEq]		{ OP_BITOREQ }
+  -> "="	[Assign]	{ OP_ASSIGN }
+  -> "+="	[AddEq]		{ OP_ADDEQ }
+  -> "-="	[SubEq]		{ OP_SUBEQ }
+  -> "*="	[MulEq]		{ OP_MULEQ }
+  -> "/="	[DivEq]		{ OP_DIVEQ }
+  -> "%="	[ModEq]		{ OP_MODEQ }
+  -> "<<="	[LshEq]		{ OP_LSHEQ }
+  -> ">>="	[RshEq]		{ OP_RSHEQ }
+  -> "&="	[BitAndEq]	{ OP_BITANDEQ }
+  -> "^="	[BitXorEq]	{ OP_BITXOREQ }
+  -> "|="	[BitOrEq]	{ OP_BITOREQ }
 
-  -> "=="    [Eq]		{ OP_EQUAL }
-  -> "!="    [Neq]		{ OP_NOTEQUAL }
-  -> "<"     [Lt]		{ OP_LESS }
-  -> ">"     [Gt]		{ OP_GREATER }
-  -> "<="    [Le]		{ OP_LESSEQ }
-  -> ">="    [Ge]		{ OP_GREATEREQ }
+  -> "=="	[Eq]		{ OP_EQUAL }
+  -> "!="	[Neq]		{ OP_NOTEQUAL }
+  -> "<"	[Lt]		{ OP_LESS }
+  -> ">"	[Gt]		{ OP_GREATER }
+  -> "<="	[Le]		{ OP_LESSEQ }
+  -> ">="	[Ge]		{ OP_GREATEREQ }
 
-  -> "&&"    [And]		{ OP_AND }
-  -> "||"    [Or]		{ OP_OR }
+  -> "&&"	[And]		{ OP_AND }
+  -> "||"	[Or]		{ OP_OR }
 
-  -> "->"    [Arrow]		{ OP_ARROW }
-  -> "->*"   [ArrowStar]	{ OP_ARROW_STAR }
+  -> "->"	[Arrow]		{ OP_ARROW }
+  -> "->*"	[ArrowStar]	{ OP_ARROW_STAR }
 
-  -> "[" "]" [Brackets]		{ OP_BRACKETS }
-  -> "(" ")" [Parens]		{ OP_PARENS }
-  -> ","     [Comma]		{ OP_COMMA }
+  -> "[" "]"	[Brackets]	{ OP_BRACKETS }
+  -> "(" ")"	[Parens]	{ OP_PARENS }
+  -> ","	[Comma]		{ OP_COMMA }
 }
 
 
@@ -2250,30 +2241,30 @@ nonterm TemplateDeclaration {
 
   (* template function definition *)
   -> plist:TemplatePreamble def:FunctionDefinition
-       {
-         if Query.any_have_default_args plist then
-           (* Function templates and definitions of members of class
-            * templates cannot have default arguments (14.1p9).
-            * Reject here because failure to do so can lead to an
-            * unhandled ambiguity (t0463.cc). *)
-           cancel "template function defn with default args"
-         else
-           TD_func (plist, def)
-       }
+	{
+	  if Query.any_have_default_args plist then
+	    (* Function templates and definitions of members of class
+	     * templates cannot have default arguments (14.1p9).
+	     * Reject here because failure to do so can lead to an
+	     * unhandled ambiguity (t0463.cc). *)
+	    cancel "template function defn with default args"
+	  else
+	    TD_func (plist, def)
+	}
 
   (* template function definition, or template class or data member decl/defn *)
   -> plist:TemplatePreamble d:SimpleDeclaration
-       { TD_decl (plist, d) }
+	{ TD_decl (plist, d) }
 
   (* definition of a template member *)
   -> plist:TemplatePreamble td:TemplateDeclaration
-       { TD_tmember (plist, td) }
+	{ TD_tmember (plist, td) }
 
   (* as a toplevel form, this is a specialisation of a template class
    * constructor; as a class member, it is a declaration of a
    * templatised constructor *)
   -> plist:TemplatePreamble d:CDtorProtoDecl
-       { TD_decl (plist, d) }
+	{ TD_decl (plist, d) }
 }
 
 (* the "template <...>" stuff *)
@@ -2283,15 +2274,15 @@ nonterm TemplatePreamble {
 
   (* template declaration *)
   -> "template" "<" plist:TemplateParameterList ">"
-       [Temlate] { plist }
+	[Temlate] { plist }
   -> "export" "template" "<" plist:TemplateParameterList ">"
-       [ExportTemplate] { plist }
+	[ExportTemplate] { plist }
 
   (* explicit specialisation *)
   -> "template" "<" ">"
-       [ExplSpecTemplate] { [] }
+	[ExplSpecTemplate] { [] }
   -> "export" "template" "<" ">"
-       [ExplSpecExportTemplate] { [] }
+	[ExplSpecExportTemplate] { [] }
 }
 
 nonterm TemplateParameterList {
@@ -2301,7 +2292,7 @@ nonterm TemplateParameterList {
 
   (* non-template type parameter *)
   -> p:TypeParameter next:TemplateParameterListContinuation
-     { p :: next }
+	{ p :: next }
 }
 
 nonterm TypeParameter {
@@ -2309,23 +2300,23 @@ nonterm TypeParameter {
 
   (* non-template type parameter *)
   -> ClassOrTypename i:IdentifierOpt t:DefaultTypeOpt
-        [TyParam] { TP_type (i, t)  }
+	[TyParam] { TP_type (i, t)  }
 
   (* non-type parameter *)
   -> p:ParameterDeclaration
-        [NonTyParam] {
-          (* if the specifier is a TS_elaborated, then it could be a type
-           * parameter; cppstd 14.1 para 3 seems to say that in that case it
-           * always *is* a type parameter *)
-          if Query.can_be_type_param (Query.spec_of_type_id p) then
-            cancel "template parameter can be type param"
-          else
-            TP_nontype (p)
-        }
+	[NonTyParam] {
+	  (* if the specifier is a TS_elaborated, then it could be a type
+	   * parameter; cppstd 14.1 para 3 seems to say that in that case it
+	   * always *is* a type parameter *)
+	  if Query.can_be_type_param (Query.spec_of_type_id p) then
+	    cancel "template parameter can be type param"
+	  else
+	    TP_nontype (p)
+	}
 
   (* template type parameter *)
   -> "template" "<" pl:TemplateParameterList ">" "class" i:IdentifierOpt t:DefaultTemplateOpt
-        [TemplTyParam] { unimplemented 1231 }
+	[TemplTyParam] { unimplemented 1231 }
 }
 
 (* what comes after a template paramter: nothing, or else
@@ -2333,40 +2324,40 @@ nonterm TypeParameter {
 nonterm TemplateParameterListContinuation {
   fun merge(l,r) { unimplemented 494 }
 
-  -> empty                             { [] }
-  -> "," next:TemplateParameterList    { next }
+  -> empty				{ [] }
+  -> "," next:TemplateParameterList	{ next }
 }
 
 nonterm ClassOrTypename {
-  -> "class"	[Class]		{ }
-  -> "typename"	[Typename]	{ }
+  -> "class"	{ }
+  -> "typename" { }
 }
 
 nonterm DefaultTypeOpt {
-  -> empty                    { None }
-  -> "=" t:TypeId             { Some t }
+  -> empty			{ None }
+  -> "=" t:TypeId		{ Some t }
 }
 
 nonterm DefaultTemplateOpt {
-  -> empty                    { None }
-  -> "=" t:IdExpression       { Some t }
+  -> empty			{ None }
+  -> "=" t:IdExpression		{ Some t }
 }
 
 
 nonterm TemplateArgumentListOpt {
-  -> empty                       { [] }
-  -> list:TemplateArgumentList   { list }
+  -> empty			{ [] }
+  -> list:TemplateArgumentList	{ List.rev list }
 }
 
 nonterm TemplateId {
   -> n:Identifier "<" list:TemplateArgumentListOpt ">"
-       { PQ_template (n, list) }
+	[Identifier] { PQ_template (n, list) }
 
   (* 9/21/04: Added this possibility (e.g. d0103.cc). *)
   -> on:OperatorFunctionId "<" list:TemplateArgumentListOpt ">"
-       (* Note: This leaks 'on', and isn't quite as operator-like
-        * as PQ_operator, so I'm not convinced it behaves perfectly... *)
-       { unimplemented 504 }
+	(* Note: This leaks 'on', and isn't quite as operator-like
+	 * as PQ_operator, so I'm not convinced it behaves perfectly... *)
+	[Operator] { unimplemented 504 }
 
   (* I suspect this one is needed too, but the problem is that
    * 'getOperatorName' loses information for conversion operators
@@ -2374,7 +2365,7 @@ nonterm TemplateId {
    * One solution would be to make a PQ_operatorTemplate with an
    * OperatorName first argument... *)
   (*-> on:ConversionFunctionId "<" list:TemplateArgumentListOpt ">" *)
-  (*     { unimplemented 505 } *)
+  (*	{ unimplemented 505 } *)
 
 
   (* version with the word "template" in front
@@ -2382,17 +2373,17 @@ nonterm TemplateId {
    * arg.. this causes some extra ambiguities, see t0255.cc.  since I
    * don't have a testcase that requires this yet, I'll just remove it *)
   (*-> "template" n:Identifier "<" list:TemplateArgumentListOpt ">" *)
-  (*     { unimplemented 506 } *)
+  (*	{ unimplemented 506 } *)
 }
 
 nonterm TemplateArgumentList {
-  fun merge(l,r) { ambiguous 1006 (Sexplib.Conv.sexp_of_list sexp_of_template_argument) l r }
+  fun merge(l,r) { ambiguous 1006 (Sexplib.Conv.sexp_of_list sexp_of_template_argument) (List.rev l) (List.rev r) }
 
   -> x:TemplateArgument
-       [Head] { [x] }
+	[Head] { [x] }
 
   -> xs:TemplateArgumentList "," x:TemplateArgument
-       [Tail] { x :: xs }
+	[Tail] { x :: xs }
 }
 
 nonterm TemplateArgument {
@@ -2401,27 +2392,27 @@ nonterm TemplateArgument {
   fun merge(l,r) { TA_ambig (l, r) }
 
   -> typeid:TypeId
-     [Type] { TA_type (typeid) }
+	[Type] { TA_type (typeid) }
 
   -> e:AssignmentExpression
-     [Expr] {
-       match Disambiguation.disambig_nontype_ta e with
-       | None ->
-         (* this is the wrong interpretation because template argument
-          * expressions aren't allowed to have unparenthesised
-          * greater-than operators [cppstd 14.1 para 15]
-          *
-          * this helps eliminate a nasty ambiguity in function
-          * declarators, as otherwise
-          *   template <class T>
-          *   Foo<T> & Foo<T>::get() {}
-          * could be interpreted as a constructor (we don't realise
-          * that 'get' != 'Foo') of a template class with template
-          * argument "T > &Foo < T" *)
-         cancel "template argument has unparenthesised greater-than operator"
-       | Some e ->
-         TA_nontype (e)
-     }
+	[Expr] {
+	  match Disambiguation.disambig_nontype_targ e with
+	  | None ->
+	    (* this is the wrong interpretation because template argument
+	     * expressions aren't allowed to have unparenthesised
+	     * greater-than operators [cppstd 14.1 para 15]
+	     *
+	     * this helps eliminate a nasty ambiguity in function
+	     * declarators, as otherwise
+	     *	 template <class T>
+	     *	 Foo<T> & Foo<T>::get() {}
+	     * could be interpreted as a constructor (we don't realise
+	     * that 'get' != 'Foo') of a template class with template
+	     * argument "T > &Foo < T" *)
+	    cancel "template argument has unparenthesised greater-than operator"
+	  | Some e ->
+	    TA_nontype (e)
+	}
 
   (* is this for template args that are templates, or what? *)
   (*-> IdExpression; *)
@@ -2429,9 +2420,9 @@ nonterm TemplateArgument {
 
 nonterm ExplicitInstantiation {
   -> "template" d:BlockDeclaration
-       { unimplemented 513 }
+	{ unimplemented 513 }
   -> "inline" "template" d:BlockDeclaration
-       { unimplemented 514 }
+	{ unimplemented 514 }
 }
 
 (* ------ A.13 Exception handling ------ *)
@@ -2440,23 +2431,23 @@ nonterm TryBlock {
 }
 
 nonterm HandlerSeq {
-  -> h:Handler                 { unimplemented 516 }
-  -> seq:HandlerSeq h:Handler  { unimplemented 517 }
+  -> h:Handler			{ unimplemented 516 }
+  -> seq:HandlerSeq h:Handler	{ unimplemented 517 }
 }
 
 nonterm Handler {
   -> "catch" "(" d:HandlerParameter ")" s:CompoundStatement
-       { unimplemented 518 }
+	{ unimplemented 518 }
 
   -> "catch" "(" "..." ")" s:CompoundStatement
-       { unimplemented 519 }
+	{ unimplemented 519 }
 }
 
 nonterm HandlerParameter {
   -> s:TypeSpecifier d:UnqualifiedDeclarator
-       { unimplemented 520 }
+	{ unimplemented 520 }
   -> s:TypeSpecifier d:AbstractDeclaratorOpt
-       { unimplemented 521 }
+	{ unimplemented 521 }
 }
 
 
@@ -2482,64 +2473,64 @@ nonterm UnqualifiedDeclarator {
 
 
 nonterm ThrowExpression {
-  -> "throw"                         [ReThrow] { unimplemented 523 }
-  -> "throw" e:AssignmentExpression  [Throw] { unimplemented 524 }
+  -> "throw"				[ReThrow] { unimplemented 523 }
+  -> "throw" e:AssignmentExpression	[Throw] { unimplemented 524 }
 }
 
 
 nonterm ExceptionSpecificationOpt {
   -> empty
-       { None }
+	{ None }
   -> s:ExceptionSpecification
-       { Some s }
+	{ Some s }
 }
 
 nonterm ExceptionSpecification {
   -> "throw" "(" ")"
-       [NoThrow] { [] }
+	[NoThrow] { [] }
   -> "throw" "(" list:TypeIdList ")"
-       [Throw] { list }
+	[Throw] { list }
 }
 
 nonterm TypeIdList {
   -> t:TypeId
-       { [t] }
+	{ [t] }
   -> list:TypeIdList "," t:TypeId
-       { t :: list }
+	{ t :: list }
 }
 
 
 (* ------------------------ namespaces ----------------------- *)
 nonterm NamespaceDefinition {
   -> "namespace" n:IdentifierOpt "{" unit:TranslationUnit "}"
-       { TF_namespaceDefn (n, unit) }
+	[NamespaceDefn] { TF_namespaceDefn (n, unit) }
 }
 
 nonterm NamespaceDecl {
   -> "namespace" alias:Identifier "=" orig:IdExpression ";"
-       { ND_alias (alias, orig) }
+	[Alias] { ND_alias (alias, orig) }
 
   (* cppstd allows "typename" after "using", but doesn't specify what
    * it means; I assume they mean to use its semantics as described
    * elsewhere, but I don't feel like tracking that down now *)
   -> "using" (*typename?*) n:IdExpression ";"
-       { ND_usingDecl (n) }
+	[UsingDecl] { ND_usingDecl (n) }
 
   -> "using" "namespace" n:IdExpression ";"
-       { ND_usingDir (n) }
+	[UsingDir] { ND_usingDir (n) }
 }
 
 
 
 (* ------------------------ annotations ----------------------- *)
 nonterm AnnotationOpt {
-  -> empty               { None }
-  -> a:AnnotationList    { Some a }
+  -> empty		{ None }
+  -> a:AnnotationList	{ Some a }
 }
 
 nonterm AnnotationList {
   -> a:TOK_ANNOTATION
-       { unimplemented 536 }
+	{ unimplemented 536 }
   -> l:AnnotationList a:TOK_ANNOTATION
-       { unimplemented 537 }
+	{ unimplemented 537 }
 }

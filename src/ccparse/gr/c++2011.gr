@@ -5,85 +5,95 @@ option reduce_reduce_conflicts 18;
 
 (* decltype *)
 nonterm DeclSpecifier {
-  -> te:DecltypeTypeSpecifier m2:UberModifierSeqOpt { unimplemented 1011 }
-  -> m1:UberModifierSeq te:DecltypeTypeSpecifier m2:UberModifierSeqOpt { unimplemented 1012 }
+  -> te:DecltypeTypeSpecifier m2:UberModifierSeqOpt 
+	{ unimplemented 1011 }
+  -> m1:UberModifierSeq te:DecltypeTypeSpecifier m2:UberModifierSeqOpt
+	{ unimplemented 1012 }
 }
 
 
 nonterm TypeSpecifier {
-  -> te:DecltypeTypeSpecifier cv2:UberCVQualifierSeqOpt { unimplemented 1013 }
-  -> cv1:UberCVQualifierSeq te:DecltypeTypeSpecifier cv2:UberCVQualifierSeqOpt { unimplemented 1014 }
+  -> te:DecltypeTypeSpecifier cv2:UberCVQualifierSeqOpt
+	{ unimplemented 1013 }
+  -> cv1:UberCVQualifierSeq te:DecltypeTypeSpecifier cv2:UberCVQualifierSeqOpt
+	{ unimplemented 1014 }
 }
 
 
 nonterm DecltypeTypeSpecifier {
   fun merge(l,r) { unimplemented 1017 }
 
-  -> e:DecltypeExpr [DeclTypeExpr] { unimplemented 1015 }
-  -> t:DecltypeType [DeclTypeType] { unimplemented 1016 }
+  -> e:DecltypeExpr	[DeclTypeExpr] { unimplemented 1015 }
+  -> t:DecltypeType	[DeclTypeType] { unimplemented 1016 }
 }
 
 
 nonterm DecltypeExpr {
-  -> "decltype" "(" e:Expression ")" { unimplemented 1018 }
-       
+  -> "decltype" "(" e:Expression ")"
+	{ unimplemented 1018 }
 }
 
 nonterm DecltypeType {
-  -> "decltype" "(" t:TypeId ")" { unimplemented 1019 }
+  -> "decltype" "(" t:TypeId ")"
+	{ unimplemented 1019 }
 }
 
 
 (* nullptr *)
 nonterm Literal {
-  -> "nullptr" { unimplemented 1020 }
+  -> "nullptr"			[Nullptr] { unimplemented 1020 }
 }
 
 (* new character types *)
 nonterm SimpleTypeSpecifier {
-  -> "char16_t"      [Char16T] { unimplemented 248 }
-  -> "char32_t"      [Char32T] { unimplemented 248 }
+  -> "char16_t"			[Char16T] { unimplemented 248 }
+  -> "char32_t"			[Char32T] { unimplemented 248 }
 }
 
 (* constexpr *)
 nonterm(modifier) UberModifier {
-  -> "constexpr"     [Constexpr] { unimplemented 248 }
+  -> "constexpr"		[Constexpr] { unimplemented 248 }
 }
 
 nonterm CDtorModifier {
   (* TODO: this gives 19 RR conflicts *)
-  -> "constexpr"     [Constexpr] { unimplemented 248 }
+  -> "constexpr"		[Constexpr] { unimplemented 248 }
 }
 
 (* noexcept *)
 nonterm UnaryExpression {
-  -> e:NoexceptExpression [NoExcept] { unimplemented 1021 }
+  -> e:NoexceptExpression	[NoExcept] { unimplemented 1021 }
 }
 
 nonterm NoexceptExpression {
-  -> "noexcept" "(" e:ParenthesizedExpression ")" { unimplemented 1022 }
+  -> "noexcept" "(" e:ParenthesizedExpression ")"
+	{ unimplemented 1022 }
 }
 
 nonterm ExceptionSpecification {
-  -> s:NoexceptSpecification { unimplemented 1023 }
+  -> s:NoexceptSpecification
+	{ unimplemented 1023 }
 }
 
 nonterm NoexceptSpecification {
-  -> "noexcept" [NoExcept] { unimplemented 1024 }
+  -> "noexcept"
+	[NoExcept] { unimplemented 1024 }
 }
 
 (* variadic templates *)
 nonterm TypeParameter {
   (* non-template type parameter *)
-  -> ClassOrTypename "..." i:IdentifierOpt t:DefaultTypeOpt { unimplemented 1025 }
+  -> ClassOrTypename "..." i:IdentifierOpt t:DefaultTypeOpt
+	{ unimplemented 1025 }
 
   (* template type parameter *)
-  -> "template" "<" pl:TemplateParameterList ">" "class" "..." i:IdentifierOpt { unimplemented 1026 }
+  -> "template" "<" pl:TemplateParameterList ">" "class" "..." i:IdentifierOpt
+	{ unimplemented 1026 }
 }
 
 nonterm TemplateArgument {
   -> typeid:TypeId "..."
-     { unimplemented 511 }
+	{ unimplemented 511 }
 }
 
 (* rvalue references *)

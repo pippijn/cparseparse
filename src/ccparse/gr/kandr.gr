@@ -9,35 +9,27 @@
 
 (* only allow K&R func defns at toplevel *)
 nonterm Declaration {
-  -> k:KandRFunctionDefinition             { unimplemented 1244 }
-  -> k:KandRFunctionDefinition_implInt     { unimplemented 1245 }
+  -> k:KandRFunctionDefinition		[KandrFunction]		{ unimplemented 1244 }
+  -> k:KandRFunctionDefinition_implInt	[ImplIntFunction]	{ unimplemented 1245 }
 }
 
 nonterm KandRFunctionDefinition {
   (* K&R function: *)
 
-  (* return type        name/params *)
-  -> rds:DeclSpecifier  id:KandRDeclarator
-  (*     parameters in K&R style *)
-         ds:KandRSimpleDeclarationSeq
-  (*     body *)
-         b:FunctionBody
-    { unimplemented 713 }
+  (* [return type]	[name/params]	   [parameters in K&R style]	[body] *)
+  -> rds:DeclSpecifier	id:KandRDeclarator ds:KandRSimpleDeclarationSeq b:FunctionBody
+	[Defn] { unimplemented 713 }
 }
 
 (* split from above so ambiguity will bubble up to the Declaration level *)
 nonterm KandRFunctionDefinition_implInt {
-  (* no return type!      name/params *)
-  ->                      id:KandRDeclarator
-  (*     parameters in K&R style *)
-         ds:KandRSimpleDeclarationSeq
-  (*     body *)
-         b:FunctionBody
-    { unimplemented 714 }
+  (* [no return type]  [name/params]	  [parameters in K&R style]    [body] *)
+  ->		       id:KandRDeclarator ds:KandRSimpleDeclarationSeq b:FunctionBody
+	[Defn] { unimplemented 714 }
 
-  (* one more, for "static" (etc.) *)
+  (* ["static", etc.]  [name/params]	  [parameters in K&R style]    [body] *)
   -> m:UberModifierSeq id:KandRDeclarator ds:KandRSimpleDeclarationSeq b:FunctionBody
-    { unimplemented 715 }
+	[ModDefn] { unimplemented 715 }
 }
 
 nonterm KandRSimpleDeclarationSeq {
@@ -46,28 +38,28 @@ nonterm KandRSimpleDeclarationSeq {
    * with the usual C++ no-arg function declaration *)
 (*
   -> empty
-       { unimplemented 716 }
+	{ unimplemented 716 }
 *)
   -> s:KandRSimpleDeclaration
-    { unimplemented 717 }
+	{ unimplemented 717 }
   -> c:KandRSimpleDeclarationSeq s:KandRSimpleDeclaration
-       { unimplemented 718 }
+	{ unimplemented 718 }
 }
 
 
 nonterm KandRSimpleDeclaration {
   (* destructive action on 'spec' *)
-  (*e.g.: int                x                  ; *)
+  (*e.g.: int		x			      ; *)
   -> spec:DeclSpecifier list:KandRInitDeclaratorList ";"
-       { unimplemented 719 }
+	[Decl] { unimplemented 719 }
 }
 
 
 nonterm KandRInitDeclaratorList {
   -> d:KandRInitDeclarator
-       { unimplemented 720 }
+	{ unimplemented 720 }
   -> d:KandRInitDeclarator "," list:KandRInitDeclaratorList
-       { unimplemented 721 }
+	{ unimplemented 721 }
 }
 
 
@@ -86,13 +78,13 @@ nonterm KandRInitDeclarator {
    * the latter surrounded by a redundant set of parens *)
   fun merge(l,r) { unimplemented 722 }
 
-  -> d:Declarator                       (* (int)  x *)
-       { unimplemented 723 }
+  -> d:Declarator			(* (int)  x *)
+	{ unimplemented 723 }
 
   (* The whole point is to omit this possibility *)
 (*
-  -> d:Declarator i:Initialiser         (* (int)  x = 5 *)
-       { unimplemented 724 }
+  -> d:Declarator i:Initialiser		(* (int)  x = 5 *)
+	{ unimplemented 724 }
 *)
 }
 
@@ -100,88 +92,88 @@ nonterm KandRInitDeclarator {
 (* for K&R function definitions *)
 nonterm KandRDeclarator {
   -> "*" cv:CVQualifierSeqOpt d:KandRDeclarator
-       { unimplemented 725 }
+	{ unimplemented 725 }
   -> d:KandRDirectDeclarator
-       { unimplemented 726 }
+	{ unimplemented 726 }
 }
 
 (* for K&R function definitions *)
 nonterm KandRDirectDeclarator {
-  fun keep(x) { true }
+  fun keep(x) { unimplemented 1400 }
 
   (* FIX: not sure I'm not ruling out something in the grammar that
    * should be legal here *)
 (*
   -> n:IdExpression_no_colon_colon
-       { unimplemented 727 }
+	{ unimplemented 727 }
 *)
 
   (* function declarator; the return type comes from the type
    * specifier that precedes this *)
 (*
-  -> d:KandRDirectDeclarator    (* name of function *)
+  -> d:KandRDirectDeclarator	(* name of function *)
 *)
 
   (* FIX: see note above *)
-  -> d:KandRIdExpression    (* name of function *)
-         (* Scott said don't allow the empty list *)
-     "(" kAndR_params:KandRIdentifierList ")"(* parameters *)
+  -> d:KandRIdExpression			(* name of function *)
+     (* Scott said don't allow the empty list *)
+     "(" kAndR_params:KandRIdentifierList ")"	(* parameters *)
 (*
-     ql:QLiterals                      (* qualifier literals *)
+     ql:QLiterals				(* qualifier literals *)
      cv:CVQualifierSeqOpt
 *)
-      { unimplemented 728 }
+	{ unimplemented 728 }
 
   (* sm: for in/c/k0003.c; the KandR declarator structure is
    * pretty messed up, but when I made a few tweaks it introduced
    * quite a few conflicts... *)
-  -> "(" d:KandRIdExpression ")"     (* name of function, in parens *)
-         (* Scott said don't allow the empty list *)
-     "(" kAndR_params:KandRIdentifierList ")"(* parameters *)
+  -> "(" d:KandRIdExpression ")"		(* name of function, in parens *)
+     (* Scott said don't allow the empty list *)
+     "(" kAndR_params:KandRIdentifierList ")"	(* parameters *)
 (*
-     ql:QLiterals                      (* qualifier literals *)
+     ql:QLiterals				(* qualifier literals *)
      cv:CVQualifierSeqOpt
 *)
-      { unimplemented 729 }
+	{ unimplemented 729 }
 
   (* function declarator; the return type comes from the type
    * specifier that precedes this *)
-  -> d:KandRDirectDeclarator    (* name of function *)
-     "(" params:ParameterDeclarationClause ")" (* parameters *)
+  -> d:KandRDirectDeclarator	(* name of function *)
+     "(" params:ParameterDeclarationClause ")"	(* parameters *)
 (*
-    cv:CVQualifierSeqOpt                      (* optional "const" *)
-    e:ExceptionSpecificationOpt               (* optional "throw" clause *)
+    cv:CVQualifierSeqOpt			(* optional "const" *)
+    e:ExceptionSpecificationOpt			(* optional "throw" clause *)
 *)
-    { unimplemented 730 }
+	{ unimplemented 730 }
 
   (* sm: for in/c/k0009.c *)
   -> d:KandRDirectDeclarator "[" sz:ConstantExpressionOpt "]"
-       { unimplemented 731 }
+	{ unimplemented 731 }
 
   (* precedence grouping; must be recorded in the AST for disambiguation *)
   -> "(" d:KandRDeclarator ")"
-       { unimplemented 732 }
+	{ unimplemented 732 }
 }
 
 (* FIX: see note above; not sure this is necessary nor that it is not
  * too strict *)
 nonterm KandRIdExpression {
   -> n:KandRIdentifier
-       { D_name (Some n) }
+	{ D_name (Some n) }
 }
 
 (*
 nonterm IdentifierListOpt {
-  -> empty               { unimplemented 734 }
-  -> il:IdentifierList   { unimplemented 735 }
+  -> empty		{ unimplemented 734 }
+  -> il:IdentifierList	{ unimplemented 735 }
 }
 *)
 
 nonterm KandRIdentifierList {
   -> i:KandRIdentifier
-       { [i] }
+	{ [i] }
   -> i:KandRIdentifier "," e:KandRIdentifierList
-       { i :: e }
+	{ i :: e }
 }
 
 
@@ -194,25 +186,25 @@ nonterm KandRIdentifier {
 (* modifiers that can precede a function decl/defn in C; note
  * that the only intersection with CDtorModifier is "inline" *)
 nonterm CFuncModifier_no_inline {
-  -> "static"                              { `UM_STATIC }
-  -> "extern"                              { `UM_EXTERN }
-  -> "const"                               { `UM_CONST }
-  -> "volatile"                            { `UM_VOLATILE }
+  -> "static"				{ `UM_STATIC }
+  -> "extern"				{ `UM_EXTERN }
+  -> "const"				{ `UM_CONST }
+  -> "volatile"				{ `UM_VOLATILE }
 }
 
 nonterm CFuncModifier {
-  -> m:CFuncModifier_no_inline             { m }
-  -> "inline"                              { `UM_INLINE }
+  -> m:CFuncModifier_no_inline		{ m }
+  -> "inline"				{ `UM_INLINE }
 }
 
 nonterm CFuncModifierSeq {
-  -> m:CFuncModifier                       { [m] }
-  -> s:CFuncModifierSeq m:CFuncModifier    { m :: s }
+  -> m:CFuncModifier			{ [m] }
+  -> s:CFuncModifierSeq m:CFuncModifier	{ m :: s }
 }
 
 nonterm CFuncModifierSeqOpt {
-  -> empty                                 { [] }
-  -> m:CFuncModifierSeq                    { m }
+  -> empty				{ [] }
+  -> m:CFuncModifierSeq			{ m }
 }
 
 
@@ -224,81 +216,81 @@ nonterm ImplIntFunctionDefinition {
   (* make it look like the existing ctor AST, since those get
    * converted into implicit-int *)
   -> m:CFuncModifier_no_inline d:Declarator b:FunctionBody
-       { unimplemented 749 }
+	{ unimplemented 749 }
 
   (* in/k0006.c: need some more variants; I spell them out to avoid
    * introducing too many conflicts *)
   -> m1:CFuncModifier_no_inline m2:CFuncModifierSeq d:Declarator b:FunctionBody
-       { unimplemented 750 }
+	{ unimplemented 750 }
 
   (* "inline" is the common prefix with CDtorModifierSeq; so a defn
    * that begins with it will not cause a parser split until the next
    * modifier is seen; if no modifier follows "inline", it will be
    * parsed as a constructor, and later changed into implicit-int *)
   -> "inline" m1:CFuncModifier_no_inline m2:CFuncModifierSeqOpt d:Declarator b:FunctionBody
-       { unimplemented 751 }
+	{ unimplemented 751 }
 }
 
 nonterm Declaration {
-  fun keep(x) { true }
+  fun keep(x) { unimplemented 1401 }
 
   fun merge(l,r) { unimplemented 1246 }
 
   (* only allow implicit-int func defns at toplevel *)
   -> f:ImplIntFunctionDefinition
-    { unimplemented 1247 }
+	{ unimplemented 1247 }
 
-  -> m1:UberModifierSeqOpt (*implicit-int*)empty list:InitDeclaratorList ";"
-    { unimplemented 1248 }
+  -> m1:UberModifierSeqOpt (*implicit-int*) list:InitDeclaratorList ";"
+	{ unimplemented 1248 }
 }
 
 
 nonterm KandRSimpleDeclaration {
-  fun keep(x) { true }
+  fun keep(x) { unimplemented 1402 }
 
   (* I'm sure this production introduces an unhandled ambiguity,
    * but I have not yet constructed an example... *)
 
   (* (in/c/dC0026.c) *)
-  -> "register" (*implicit-int*)empty list:KandRInitDeclaratorList ";"
-     { unimplemented 752 }
+  -> "register" (*implicit-int*) list:KandRInitDeclaratorList ";"
+	{ unimplemented 752 }
 }
 
 nonterm Statement {
-  fun keep(x) { true }
+  fun keep(x) { unimplemented 1403 }
 
-  -> m1:UberModifierSeq (*implicit-int*)empty list:InitDeclaratorList ";"
-    { unimplemented 753 }
+  -> m1:UberModifierSeq (*implicit-int*) list:InitDeclaratorList ";"
+	{ unimplemented 753 }
 }
 
 nonterm ParameterDeclaration {
-  fun keep(x) { true }
+  fun keep(x) { unimplemented 1404 }
 
-  -> (*implicit-int*)empty d:UnqualifiedDeclarator
-    {
-      T_type (
-        TS_simple ([], ST_ImplInt),
-        DC_decl (d, None)
-      )
-    }
+  -> (*implicit-int*) d:UnqualifiedDeclarator
+	{
+	  T_type (
+	    TS_simple ([], ST_ImplInt),
+	    DC_decl (d, None)
+	  )
+	}
 
-  -> "register" (*implicit-int*)empty d:UnqualifiedDeclarator
-    { unimplemented 755 }
+  -> "register" (*implicit-int*) d:UnqualifiedDeclarator
+	{ unimplemented 755 }
 }
 
 
 (* ------ implicit int for cast expressions ------ *)
 nonterm CastExpression {
   -> "(" t:ImplicitIntTypeId ")" e:CastExpression
-    { unimplemented 756 }
+	{ unimplemented 756 }
 }
 
 nonterm ImplicitIntTypeSpecifier {
   -> m:UberCVQualifierSeq
-       { unimplemented 757 }
+	{ unimplemented 757 }
 }
 
 nonterm ImplicitIntTypeId {
   -> spec:ImplicitIntTypeSpecifier
-       { unimplemented 758 }
+	{ unimplemented 758 }
 }

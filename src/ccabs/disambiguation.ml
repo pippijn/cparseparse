@@ -1,7 +1,7 @@
 open Ast
 
 
-let rec disambig_nontype_ta = let open BatOption.Monad in function
+let rec disambig_nontype_targ = let open BatOption.Monad in function
   | E_ambig (l, r) ->
       (* We are asking whether an ambiguous expression has an
        * unparenthesized greater-than operator (UGTO), because the
@@ -11,7 +11,7 @@ let rec disambig_nontype_ta = let open BatOption.Monad in function
        * then return the ones that are left.  If they *all* have
        * UGTO, return None. *)
       let expr =
-        match disambig_nontype_ta l, disambig_nontype_ta r with
+        match disambig_nontype_targ l, disambig_nontype_targ r with
         (* all have UGTO *)
         | None, None -> None
 
@@ -33,61 +33,61 @@ let rec disambig_nontype_ta = let open BatOption.Monad in function
    * aren't enclosed in parentheses or brackets *)
   | E_assign (left, op, right) ->
       perform
-        left <-- disambig_nontype_ta left;
-        right <-- disambig_nontype_ta right;
+        left <-- disambig_nontype_targ left;
+        right <-- disambig_nontype_targ right;
         return (E_assign (left, op, right))
 
   | E_binary (left, op, right) ->
       perform
-        left <-- disambig_nontype_ta left;
-        right <-- disambig_nontype_ta right;
+        left <-- disambig_nontype_targ left;
+        right <-- disambig_nontype_targ right;
         return (E_binary (left, op, right))
 
   | E_cond (cond, thenExpr, elseExpr) ->
       perform
-        cond <-- disambig_nontype_ta cond;
-        thenExpr <-- disambig_nontype_ta thenExpr;
-        elseExpr <-- disambig_nontype_ta elseExpr;
+        cond <-- disambig_nontype_targ cond;
+        thenExpr <-- disambig_nontype_targ thenExpr;
+        elseExpr <-- disambig_nontype_targ elseExpr;
         return (E_cond (cond, thenExpr, elseExpr))
 
   | E_funCall (expr, args) ->
       perform
-        expr <-- disambig_nontype_ta expr;
+        expr <-- disambig_nontype_targ expr;
         return (E_funCall (expr, args))
 
   | E_fieldAcc (expr, member) ->
       perform
-        expr <-- disambig_nontype_ta expr;
+        expr <-- disambig_nontype_targ expr;
         return (E_fieldAcc (expr, member))
 
   | E_unary (op, expr) ->
       perform
-        expr <-- disambig_nontype_ta expr;
+        expr <-- disambig_nontype_targ expr;
         return (E_unary (op, expr))
 
   | E_effect (op, expr) ->
       perform
-        expr <-- disambig_nontype_ta expr;
+        expr <-- disambig_nontype_targ expr;
         return (E_effect (op, expr))
 
   | E_addrOf (expr) ->
       perform
-        expr <-- disambig_nontype_ta expr;
+        expr <-- disambig_nontype_targ expr;
         return (E_addrOf (expr))
 
   | E_deref (expr) ->
       perform
-        expr <-- disambig_nontype_ta expr;
+        expr <-- disambig_nontype_targ expr;
         return (E_deref (expr))
 
   | E_cast (ctype, expr) ->
       perform
-        expr <-- disambig_nontype_ta expr;
+        expr <-- disambig_nontype_targ expr;
         return (E_cast (ctype, expr))
 
   | E_delete (global, array, expr) ->
       perform
-        expr <-- disambig_nontype_ta expr;
+        expr <-- disambig_nontype_targ expr;
         return (E_delete (global, array, expr))
 
   (* everything else, esp. E_grouping, is false *)
