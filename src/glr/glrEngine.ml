@@ -1456,7 +1456,7 @@ let stackSummary glr =
  * critical to the end-to-end performance of the whole system.
  * It does not actually return, but it has the same return type as
  * the main entry point. *)
-let rec main_loop (glr : 'a glr) lr lexer token : 'a option =
+let rec main_loop (glr : 'a glr) lr lexer token : 'a =
   if GlrOptions._trace_parse () then (
     let open Lexerint in
     let tokType = lexer.index token in
@@ -1508,14 +1508,14 @@ let grabTopSval userAct node =
   ret
 
 
-let cleanupAfterParse (glr : 'result glr) : 'result option =
+let cleanupAfterParse (glr : 'result glr) : 'result =
   if GlrOptions._trace_parse () then
     Printf.printf "Parse succeeded!\n";
 
   if not (Arraystack.length glr.topmostParsers = 1) then (
     Printf.printf "parsing finished with %d active parsers!\n"
                   (Arraystack.length glr.topmostParsers);
-    None
+    raise (ParseError (-1, -1))
   ) else (
     let last = Arraystack.top glr.topmostParsers in
 
@@ -1534,11 +1534,11 @@ let cleanupAfterParse (glr : 'result glr) : 'result option =
     (* before pool goes away.. *)
     Arraystack.iter decRefCt glr.topmostParsers;
 
-    Some treeTop
+    treeTop
   )
 
 
-let glrParse (glr : 'result glr) lexer : 'result option =
+let glrParse (glr : 'result glr) lexer : 'result =
   glr.globalNodeColumn <- 0;
   begin
     let startState = ParseTables.getStartState glr.tables in

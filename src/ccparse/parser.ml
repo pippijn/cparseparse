@@ -27,7 +27,7 @@ let handle_return = function
 let glrparse filename glr lexer =
   let tree =
     try
-      Timing.time ~alloc:true "parsing" (GlrEngine.glrParse glr) lexer
+      Some (Timing.time ~alloc:true "parsing" (GlrEngine.glrParse glr) lexer)
     with GlrEngine.Located ((start_p, end_p), e) ->
       let open Lexing in
       (* print source position *)

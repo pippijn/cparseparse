@@ -16,7 +16,7 @@ let main =
     let input = open_in file in
     let lexbuf = Lexing.from_channel input in
 
-    Parser.parse ArithLexer.token lexbuf (Printf.printf "result: %d\n")
+    Parser.parse (Printf.printf "result: %d\n") file ArithLexer.token lexbuf
   )
 
 

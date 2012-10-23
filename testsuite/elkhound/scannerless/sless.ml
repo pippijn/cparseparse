@@ -16,7 +16,7 @@ let main =
     let input = open_in file in
     let lexbuf = Lexing.from_channel input in
 
-    Parser.parse SlessLexer.token lexbuf (fun () -> ())
+    Parser.parse (fun () -> ()) file SlessLexer.token lexbuf
   )
 
 
