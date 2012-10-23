@@ -41,10 +41,10 @@ module Make
             extra
             state token
       | Failure msg ->
-          Printf.printf "failure in user actions: %s\n" msg;
+          Printf.printf "failure in user actions:\n  %s\n" msg;
           print_endline extra
       | e ->
-          Printf.printf "exception in user actions: %s\n"
+          Printf.printf "exception in user actions:\n  %s\n"
             (Printexc.to_string e);
           print_endline extra
 

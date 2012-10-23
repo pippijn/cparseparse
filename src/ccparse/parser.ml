@@ -47,7 +47,7 @@ let glrparse actions tables filename lexer =
           Printf.printf "failure in user actions: %s\n\n" msg;
           print_string extra
       | e ->
-          Printf.printf "exception in user actions: %s\n\n"
+          Printf.printf "exception in user actions:\n  %s\n\n"
             (Printexc.to_string e);
           print_string extra
       end;
