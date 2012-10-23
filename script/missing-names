@@ -1,0 +1,17 @@
+#!/usr/bin/env perl
+
+use common::sense;
+
+system q@./cpapa.native -print -treematch `find testsuite/in -name '*.cc'` | grep -o 'P[0-9]\+' > frequency.txt@
+   if !-f "frequency.txt";
+
+open my $fh, '<', "frequency.txt" or die $!;
+
+my %freq;
+while (<$fh>) {
+   chomp;
+   $freq{$_}++;
+}
+
+my @ordered = map { "$_: $freq{$_}" } sort { $freq{$a} <=> $freq{$b} } keys %freq;
+say for @ordered
