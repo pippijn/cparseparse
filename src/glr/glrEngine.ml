@@ -192,10 +192,10 @@ and 'result stack_node = {
 and 'result path = {
   (* array of sibling links, i.e. the path; 0th element is
    * leftmost link *)
-  mutable sibLinks : 'result sibling_link array;
+  sibLinks : 'result sibling_link array;
 
   (* corresponding array of symbol ids to interpret svals *)
-  mutable symbols : ParseTablesType.symbol_id array;
+  symbols : ParseTablesType.symbol_id array;
 
   (* rightmost state's id *)
   mutable startStateId : ParseTablesType.state_id;
@@ -270,8 +270,6 @@ type lr = {
 
 (* what follows is based on elkhound/glr.cc *)
 
-(* maximum RHS length for mini-lr core *)
-let cMAX_RHSLEN = 8
 (* this is the length to make arrays which hold rhsLen many items
  * typically, but are growable *)
 let cINITIAL_RHSLEN_SIZE = 8
@@ -553,30 +551,40 @@ let checkLocalInvariants node =
 
 
 (* ----------------------------- GLR --------------------------------- *)
-let makePath () = {
+let makePath rhsLen () = {
   startStateId = cSTATE_INVALID;
   prodIndex    = -1;
   startColumn  = -1;
   leftEdgeNode = cNULL_STACK_NODE;
-  sibLinks     = Array.make cINITIAL_RHSLEN_SIZE cNULL_SIBLING_LINK;
-  symbols      = Array.make cINITIAL_RHSLEN_SIZE 0;
+  sibLinks     = Array.make rhsLen cNULL_SIBLING_LINK;
+  symbols      = Array.make rhsLen 0;
   next         = None;
 }
 
 
-let makeReductionPathQueue tables = {
+let makeReductionPathQueue tables rhsLen = {
   top = None;
-  pathPool = Objpool.make makePath;
+  pathPool = Objpool.make (makePath rhsLen);
   rpqTables = tables;
 }
 
 
+let computeMaxRhsLen tables =
+  let len = ref 0 in
+  for i = 0 to ParseTables.getNumProds tables - 1 do
+    len := max !len (ParseTables.getProdInfo_rhsLen tables i)
+  done;
+  !len
+
+
 let makeGLR userAct tables =
+  let maxRhsLen = computeMaxRhsLen tables in
+
   let glr = {
     userAct;
     tables;
-    toPass              = Array.make cMAX_RHSLEN SemanticValue.null;
-    pathQueue           = makeReductionPathQueue tables;
+    toPass              = Array.make maxRhsLen SemanticValue.null;
+    pathQueue           = makeReductionPathQueue tables maxRhsLen;
     active_parsers      = Arraystack.create ();
     prev_active         = Arraystack.create ();
     stackNodePool       = Objpool.null ();
@@ -606,26 +614,6 @@ let makeGLR userAct tables =
    *)
 
   glr.stackNodePool <- Objpool.make (fun () -> make_stack_node glr);
-
-  (* the ordinary GLR core doesn't have this limitation because
-   * it uses a growable array *)
-  if GlrOptions._use_mini_lr () then
-    (* make sure none of the productions have right-hand sides
-     * that are too long; I think it's worth doing an iteration
-     * here since going over the limit would be really hard to
-     * debug, and this ctor is of course outside the main
-     * parsing loop *)
-    for i = 0 to ParseTables.getNumProds glr.tables - 1 do
-      let len = ParseTables.getProdInfo_rhsLen glr.tables i in
-
-      if len > cMAX_RHSLEN then (
-        (* I miss token concatenation...*)
-        Printf.printf "Production %d contains %d right-hand side symbols,\n" i len;
-        Printf.printf "but the GLR core has been compiled with a limit of %d.\n" cMAX_RHSLEN;
-        Printf.printf "Please adjust cMAX_RHSLEN and recompile the GLR core.\n";
-        failwith "cannot continue";
-      )
-    done;
 
   glr
 
@@ -657,15 +645,9 @@ let initPath path ssi pi rhsLen =
   path.startStateId <- ssi;
   path.prodIndex <- pi;
 
-  (* ensure the array has at least the given index, growing its size
-   * if necessary (by doubling) *)
-  while Array.length path.sibLinks < rhsLen + 1 do
-    path.sibLinks <- Arraystack.growArray path.sibLinks (Array.length path.sibLinks * 2);
-  done;
-
-  while Array.length path.symbols < rhsLen + 1 do
-    path.symbols <- Arraystack.growArray path.symbols (Array.length path.symbols * 2);
-  done
+  (* ensure the arrays have at least the given index *)
+  assert (Array.length path.sibLinks >= rhsLen);
+  assert (Array.length path.symbols >= rhsLen)
 
 
 let newPath queue ssi pi rhsLen =
@@ -1226,10 +1208,10 @@ let rec lrParseToken glr lr tokType tokSval tokSloc =
 
       let startStateId = !parsr.state in
 
-      assert (rhsLen <= cMAX_RHSLEN);
-
       let leftEdge = ref (fst tokSloc) in
       let rightEdge = ref Lexing.dummy_pos in
+
+      assert (rhsLen <= Array.length lr.lrToPass);
 
       (* --- loop for arbitrary rhsLen ---
        * pop off 'rhsLen' stack nodes, collecting as many semantic
@@ -1441,7 +1423,7 @@ let stackSummary glr =
  * critical to the end-to-end performance of the whole system.
  * It does not actually return, but it has the same return type as
  * the main entry point. *)
-let rec main_loop (glr : 'a glr) lr lexer token : 'a =
+let rec main_loop (glr : 'result glr) lr lexer token : 'result =
   if GlrOptions._trace_parse () then (
     let open Lexerint in
     let tokType = lexer.index token in
@@ -1524,7 +1506,9 @@ let cleanupAfterParse (glr : 'result glr) : 'result =
 
 
 let glrParse (glr : 'result glr) lexer : 'result =
-  glr.globalNodeColumn <- 0;
+  if glr.globalNodeColumn <> 0 then
+    failwith "cannot reuse glr object for multiple parses";
+
   begin
     let startState = ParseTables.getStartState glr.tables in
     let first = makeStackNode glr startState in
@@ -1533,7 +1517,7 @@ let glrParse (glr : 'result glr) lexer : 'result =
 
   (* array for passing semantic values in the mini lr core *)
   let lr = {
-    lrToPass    = Array.make cMAX_RHSLEN SemanticValue.null;
+    lrToPass    = Array.make (Array.length glr.toPass) SemanticValue.null;
     lrDetShift  = 0;
     lrDetReduce = 0;
   } in
