@@ -108,3 +108,4 @@ let set_cv cv = function
   | TS_elaborated (ocv, tint, name) -> TS_elaborated (ocv @ cv, tint, name)
   | TS_classSpec (ocv, tint, name, base, mems) -> TS_classSpec (ocv @ cv, tint, name, base, mems)
   | TS_enumSpec (ocv, name, enums) -> TS_enumSpec (ocv @ cv, name, enums)
+  | TS_typeof (ocv, typeof) -> TS_typeof (ocv @ cv, typeof)
