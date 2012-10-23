@@ -56,16 +56,17 @@ let glrparse actions tables filename lexer =
   in
 
   (* print accounting statistics from glr.ml *)
-  if Options._stats () then (
+  if GlrOptions._accounting () then (
     let open GlrEngine in
+    let stats = stats_of_glr glr in
 
     Printf.printf "stack nodes: num=%d max=%d\n"
-      !GlrEngine.numStackNodesAllocd
-      !GlrEngine.maxStackNodesAllocd;
-    Printf.printf "detShift:     %d\n" glr.stats.detShift;
-    Printf.printf "detReduce:    %d\n" glr.stats.detReduce;
-    Printf.printf "nondetShift:  %d\n" glr.stats.nondetShift;
-    Printf.printf "nondetReduce: %d\n" glr.stats.nondetReduce;
+      stats.numStackNodesAllocd
+      stats.maxStackNodesAllocd;
+    Printf.printf "detShift:     %d\n" stats.detShift;
+    Printf.printf "detReduce:    %d\n" stats.detReduce;
+    Printf.printf "nondetShift:  %d\n" stats.nondetShift;
+    Printf.printf "nondetReduce: %d\n" stats.nondetReduce;
   );
 
   tree

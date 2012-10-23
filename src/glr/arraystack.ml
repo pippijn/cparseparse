@@ -26,6 +26,9 @@ let length { len } = len
 
 let is_empty { len } = len = 0
 
+let clear rep =
+  rep.len <- 0
+
 
 (* get topmost element but don't change what is stored *)
 let top { len; arr } = arr.(len - 1)

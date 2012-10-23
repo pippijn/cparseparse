@@ -1,6 +1,6 @@
 let _terminal_names = ref false
 let _trace_parse = ref false
-let _accounting = ref true
+let _accounting = ref false
 let _use_keep = ref true
 let _use_mini_lr = ref true
 

@@ -8,7 +8,6 @@ let _dump_toks = ref false
 let _load_toks = ref false
 let _dump_tree = ref false
 let _sizeof_tree = ref false
-let _stats = ref false
 let _trivial = ref false
 let _verbose = ref false
 let _xc = ref false
@@ -27,7 +26,6 @@ let () =
     "-load-toks",	Set _load_toks,		" load tokens from file";
     "-dump-tree",	Set _dump_tree,		" dump result of the parse to file";
     "-sizeof-tree",	Set _sizeof_tree,	" compute memory size of parse result";
-    "-stats",		Set _stats,		" print parsing statistics";
     "-trivial",		Set _trivial,		" use trivial user actions";
     "-verbose",		Set _verbose,		" show each file name as it is processed";
     "-xc",		Set _xc,		" parse code as C, not as C++ (implicit if any input file name ends with .c)";
@@ -51,7 +49,6 @@ let _dump_toks () = !_dump_toks
 let _load_toks () = !_load_toks
 let _dump_tree () = !_dump_tree
 let _sizeof_tree () = !_sizeof_tree
-let _stats () = !_stats
 let _trivial () = !_trivial
 let _verbose () = !_verbose
 let _xc () = !_xc
