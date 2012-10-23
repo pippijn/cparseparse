@@ -99,7 +99,7 @@ let lexer_from_dump input =
     BatStd.with_dispose ~dispose:close_in
       input_value (open_in_bin (input ^ ".tkd"))
   in
-  lexer_from_list tokens
+  lexer_from_list tokens, BatPervasives.identity
 
 
 let lexer_from_lexing lexbuf =
@@ -111,36 +111,39 @@ let lexer_from_lexing lexbuf =
 
 
 let lexer_from_file input =
-  (* FIXME: this is never closed *)
   let cin = Unix.open_process_in ("gcc -I /usr/include/qt4 -xc++ -E -P " ^ input) in
 
   let lexbuf = Lexing.from_channel cin in
 
   assert (not (Options._load_toks ()));
-  if Options._pp () then (
-    let tokens =
-      Timing.time ~alloc:true "lexing" (tokenise [] Lexer.token) lexbuf
-    in
+  let lexer =
+    if Options._pp () then (
+      let tokens =
+        Timing.time ~alloc:true "lexing" (tokenise [] Lexer.token) lexbuf
+      in
 
-    if Options._dump_toks () then (
-      if Options._load_toks () then
-        failwith "-dump-toks and -load-toks are mutually exclusive";
-      BatStd.with_dispose ~dispose:close_out
-        (fun out -> output_value out tokens) (open_out_bin (input ^ ".tkd"));
-    );
+      if Options._dump_toks () then (
+        if Options._load_toks () then
+          failwith "-dump-toks and -load-toks are mutually exclusive";
+        BatStd.with_dispose ~dispose:close_out
+          (fun out -> output_value out tokens) (open_out_bin (input ^ ".tkd"));
+      );
 
-    lexer_from_list tokens
-  ) else (
-    assert (not (Options._dump_toks ()));
-    lexer_from_lexing lexbuf
-  )
+      lexer_from_list tokens
+    ) else (
+      assert (not (Options._dump_toks ()));
+      lexer_from_lexing lexbuf
+    )
+  in
+
+  lexer, (fun () -> ignore (Unix.close_process_in cin))
 
 
 let parse_file actions tables input =
   if Options._verbose () then
     print_endline ("%%% processing " ^ input);
 
-  let lexer =
+  let lexer, cleanup =
     if Options._load_toks () then
       lexer_from_dump input
     else
@@ -154,10 +157,15 @@ let parse_file actions tables input =
       lexer
   in
 
-  if Options._tokens () then
-    None
-  else
-    glrparse actions tables input lexer
+  let tree =
+    if Options._tokens () then
+      None
+    else
+      glrparse actions tables input lexer
+  in
+
+  cleanup ();
+  tree
 
 
 let dump_tree tree =
@@ -166,7 +174,7 @@ let dump_tree tree =
 
 
 let parse_files actions tables files =
-  let result = Timing.alloc "parsing all files" (List.map (parse_file actions tables)) files in
+  let result = Timing.alloc "parsing all files" (List.rev_map (parse_file actions tables)) files in
 
   if Options._sizeof_tree () then (
     let size =
