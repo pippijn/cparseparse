@@ -886,8 +886,8 @@ nonterm ForInitStatement {
    * could be an expression or a declaration *)
   fun merge(l,r) { unimplemented 203 }
 
-  -> s:ExpressionStatement	{ s }
-  -> s:SimpleDeclaration	{ S_decl (s) }
+  -> s:ExpressionStatement	[Expr]	{ s }
+  -> s:SimpleDeclaration	[Decl]	{ S_decl (s) }
 }
 
 

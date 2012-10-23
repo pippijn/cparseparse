@@ -238,10 +238,10 @@ nonterm Declaration {
 
   (* only allow implicit-int func defns at toplevel *)
   -> f:ImplIntFunctionDefinition
-	{ unimplemented 1247 }
+        [ImplIntFunDef] { unimplemented 1247 }
 
   -> m1:UberModifierSeqOpt (*implicit-int*) list:InitDeclaratorList ";"
-	{ unimplemented 1248 }
+        [ImplIntDecls] { unimplemented 1248 }
 }
 
 
@@ -253,21 +253,21 @@ nonterm KandRSimpleDeclaration {
 
   (* (in/c/dC0026.c) *)
   -> "register" (*implicit-int*) list:KandRInitDeclaratorList ";"
-	{ unimplemented 752 }
+        [Declrs] { unimplemented 752 }
 }
 
 nonterm Statement {
   fun keep(x) { unimplemented 1403 }
 
   -> m1:UberModifierSeq (*implicit-int*) list:InitDeclaratorList ";"
-	{ unimplemented 753 }
+        [ImplIntDeclrs] { unimplemented 753 }
 }
 
 nonterm ParameterDeclaration {
   fun keep(x) { unimplemented 1404 }
 
   -> (*implicit-int*) d:UnqualifiedDeclarator
-	{
+        [ImplInt] {
 	  T_type (
 	    TS_simple ([], ST_ImplInt),
 	    DC_decl (d, None)
@@ -275,7 +275,12 @@ nonterm ParameterDeclaration {
 	}
 
   -> "register" (*implicit-int*) d:UnqualifiedDeclarator
-	{ unimplemented 755 }
+        [RegisterImplInt] {
+	  T_type (
+	    TS_simple ([], ST_ImplInt),
+	    DC_decl (d, None)
+	  )
+	}
 }
 
 
