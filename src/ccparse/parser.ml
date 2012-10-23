@@ -30,7 +30,7 @@ let glrparse actions tables filename lexer =
   let tree =
     try
       Some (Timing.time ~alloc:true "parsing" (GlrEngine.glrParse glr) lexer)
-    with GlrEngine.Located ((start_p, end_p), e, backtrace) ->
+    with GlrEngine.Located ((start_p, end_p), e, extra) ->
       let open Lexing in
       (* print source position *)
       Printf.printf "\n%s:%d:%d: "
@@ -41,15 +41,15 @@ let glrparse actions tables filename lexer =
       (* print exception info *)
       begin match e with
       | GlrEngine.ParseError (state, token) ->
-          Printf.printf "parse error (state: %d, token: %d)\n"
-            state token
+          Printf.printf "parse error near \"%s\" (state: %d, token: %d)\n"
+            extra state token
       | Failure msg ->
-          Printf.printf "failure in user actions: %s" msg;
-          print_endline backtrace
+          Printf.printf "failure in user actions: %s\n\n" msg;
+          print_string extra
       | e ->
-          Printf.printf "exception in user actions: %s\n"
+          Printf.printf "exception in user actions: %s\n\n"
             (Printexc.to_string e);
-          print_endline backtrace
+          print_string extra
       end;
 
       None
