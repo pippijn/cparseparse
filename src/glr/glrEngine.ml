@@ -823,11 +823,33 @@ let rwlShiftActive glr tokType leftSibling rightSibling lhsIndex sval start_p en
       (* didn't add a link, no potential for new paths *)
 
   | None ->
-      (* no suitable sibling link already, so add it *)
+      (* we get here if there is no suitable sibling link already
+       * existing; so add the link (and keep the ptr for loop below) *)
       let sibLink = addSiblingLink rightSibling leftSibling sval start_p end_p in
 
-      (* recompute depths; TODO: do the topological sort thing *)
+      (* adding a new sibling link may have introduced additional
+       * opportunities to do reductions from parsers we thought
+       * we were finished with.
+       *
+       * what's more, it's not just the parser ('rightSibling') we
+       * added the link to -- if rightSibling's itemSet contains 'A ->
+       * alpha . B beta' and B ->* empty (so A's itemSet also has 'B
+       * -> .'), then we reduced it (if lookahead ok), so
+       * 'rightSibling' now has another left sibling with 'A -> alpha
+       * B . beta'.  We need to let this sibling re-try its reductions
+       * also.
+       *
+       * so, the strategy is to let all 'finished' parsers re-try
+       * reductions, and process those that actually use the just-
+       * added link *)
+
+      (* we don't have to recompute if nothing else points at
+       * 'rightSibling'; the refct is always at least 1 because we found
+       * it on the "active parsers" worklist *)
       if rightSibling.referenceCount > 1 then (
+        (* since we added a new link *all* determinDepths might
+         * be compromised; iterating more than once should be very
+         * rare (and this code path should already be unusual) *)
         let changes = ref true in
         let iters   = ref 0 in
 
@@ -845,7 +867,7 @@ let rwlShiftActive glr tokType leftSibling rightSibling lhsIndex sval start_p en
         done
       );
 
-      (* inform caller of new link *)
+      (* inform the caller that a new sibling link was added *)
       Some sibLink
 
 
@@ -886,7 +908,7 @@ let rwlShiftNonterminal glr tokType leftSibling lhsIndex sval start_p end_p =
       rwlShiftNew glr tokType leftSibling rightSiblingState sval start_p end_p
 
 
-let rwlProcessWorklist glr tokType tokSloc =
+let rwlProcessWorklist glr tokType (start_p, end_p) =
   while (queueIsNotEmpty glr) do
     (* process the enabled reductions in priority order *)
     let path = dequeue glr in
@@ -907,7 +929,7 @@ let rwlProcessWorklist glr tokType tokSloc =
 
     (* record location of left edge; initially is location of
      * the lookahead token *)
-    let leftEdge = ref (fst tokSloc) in
+    let leftEdge = ref start_p in
     let rightEdge = ref Lexing.dummy_pos in
 
     (* before calling the user, duplicate any needed values *)
