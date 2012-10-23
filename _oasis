@@ -175,6 +175,7 @@ Library ccabs
         CompiledObject:         native
 #        NativeOpt:              -inline 999 -unsafe -noassert
         Modules:                Ast,
+                                Disambiguation,
                                 Flags,
                                 Query
 

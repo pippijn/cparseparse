@@ -130,11 +130,11 @@ impl_verbatim {
   let unimplemented s = failwith ("unimplemented " ^ string_of_int s)
 
   let ambiguous s to_sexp l r =
-    print_endline "-- unhandled ambiguity between --";
+    print_endline ";-- unhandled ambiguity between --";
     Sexplib.Sexp.output_hum stdout (to_sexp l);
-    print_endline "\n-- and --";
+    print_endline "\n;-- and --";
     Sexplib.Sexp.output_hum stdout (to_sexp r);
-    print_endline "\n-- aborting parse --";
+    print_endline "\n;-- aborting parse --";
     unimplemented s
 }
 
@@ -320,7 +320,7 @@ nonterm PostfixExpression {
    * "typename" can only be used with a qualified name, whereas I
    * enforce that in the type checker (more informative message). *)
   -> "typename" t:IdExpression a:ArgumentList
-       { unimplemented 37 }
+       [DepCtorCall] { E_constructor (TS_name ([], t, (*~typenameUsed*)true), a) }
 
   (* function-style cast, or (equivalently) call to constructor; will
    * almost always be ambiguous with function call, so the distinction
@@ -594,7 +594,7 @@ nonterm BinExp_high {
    * it could be negation of expression y, cast to type x *)
   fun merge(l,r) { unimplemented 120 }
 
-  -> e:CastExpression                          [P];
+  -> e:CastExpression [P];
 
   -> left:BinExp_high ".*"  right:BinExp_high  [DotStar]	{ E_binary (left, BIN_DSTAR, right) }
   -> left:BinExp_high "->*" right:BinExp_high  [ArrowStar]	{ E_binary (left, BIN_ASTAR, right) }
@@ -623,7 +623,7 @@ nonterm BinExp_mid {
    * object (E_constructor), depending on whether 'x' names a type *)
   fun merge(l,r) { E_ambig (l, r) }
 
-  -> e:BinExp_high                             [P];
+  -> e:BinExp_high [P];
 
   (* must express associativity directly; since these are all
    * left-associative, we require that there not be any reduced
@@ -640,18 +640,18 @@ nonterm BinExp_low {
    *   (x) & (y)
    * could either be the bitwise AND of expressions x and y, or
    * it could be the address of expression y, cast to type x *)
-  fun merge(l,r) { unimplemented 137 }
+  fun merge(l,r) { E_ambig (l, r) }
 
-  -> e:BinExp_mid                                        [P];
+  -> e:BinExp_mid [P];
 
-  -> left:BinExp_low "==" right:BinExp_low   [Eq]		{ E_binary (left, BIN_EQUAL, right) }
-  -> left:BinExp_low "!=" right:BinExp_low   [Neq]		{ E_binary (left, BIN_NOTEQUAL, right) }
+  -> left:BinExp_low "==" right:BinExp_low   [Eq]	{ E_binary (left, BIN_EQUAL, right) }
+  -> left:BinExp_low "!=" right:BinExp_low   [Neq]	{ E_binary (left, BIN_NOTEQUAL, right) }
   -> left:BinExp_low "&"  right:BinExp_low   [BitAnd]	{ E_binary (left, BIN_BITAND, right) }
   -> left:BinExp_low "^"  right:BinExp_low   [BitXor]	{ E_binary (left, BIN_BITXOR, right) }
   -> left:BinExp_low "|"  right:BinExp_low   [BitOr]	{ E_binary (left, BIN_BITOR, right) }
 
-  -> left:BinExp_low "&&" right:BinExp_low   [Or]		{ E_binary (left, BIN_OR, right) }
-  -> left:BinExp_low "||" right:BinExp_low   [And]		{ E_binary (left, BIN_AND, right) }
+  -> left:BinExp_low "&&" right:BinExp_low   [Or]	{ E_binary (left, BIN_OR, right) }
+  -> left:BinExp_low "||" right:BinExp_low   [And]	{ E_binary (left, BIN_AND, right) }
 }
 
 
@@ -709,7 +709,7 @@ nonterm Expression {
    * could either be a comma-exp with two relationals, or
    * it could be creating an instance of template a with template
    * arguments b,c and ctor argument d *)
-  fun merge(l,r) { unimplemented 163 }
+  fun merge(l,r) { E_ambig (l, r) }
 
   -> ae:AssignmentExpression
        [Head] { ae }
@@ -1663,7 +1663,7 @@ nonterm ParameterDeclarator {
    * AbstractDeclarator
    *
    * see D_name_tcheck in tcheck.cc for resolution *)
-  fun merge(l,r) { unimplemented 355 }
+  fun merge(l,r) { DC_ambig (l, r) }
 
   -> d:UnqualifiedDeclarator e:DefaultValueOpt
         [Decl] { DC_decl (d, e) }
@@ -2049,7 +2049,10 @@ nonterm BaseClauseOpt {
 }
 
 nonterm BaseSpecifierList {
-  fun merge(l,r) { ambiguous 1307 (Sexplib.Conv.sexp_of_list sexp_of_base_class_spec) l r }
+  (* NOTE: Making this nonterminal right-recursive prevents this merge.
+   * However, the resulting value from this merge is dropped soon after,
+   * so we return an empty list and drop both alternatives, already. *)
+  fun merge(l,r) { [] }
 
   -> b:BaseSpecifier
        { [b] }
@@ -2383,7 +2386,7 @@ nonterm TemplateId {
 }
 
 nonterm TemplateArgumentList {
-  fun merge(l,r) { unimplemented 1006 }
+  fun merge(l,r) { ambiguous 1006 (Sexplib.Conv.sexp_of_list sexp_of_template_argument) l r }
 
   -> x:TemplateArgument
        [Head] { [x] }
@@ -2402,7 +2405,7 @@ nonterm TemplateArgument {
 
   -> e:AssignmentExpression
      [Expr] {
-       match Query.disambig_nontype_ta e with
+       match Disambiguation.disambig_nontype_ta e with
        | None ->
          (* this is the wrong interpretation because template argument
           * expressions aren't allowed to have unparenthesised
