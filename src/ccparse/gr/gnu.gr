@@ -88,24 +88,24 @@ nonterm PostfixExpression {
    * of no way to handle this other than putting it into the grammar
    * directly. *)
   -> "__builtin_constant_p" e:ParenthesizedExpression
-	{ unimplemented 542 }
+	[BuiltinConstantP] { unimplemented 542 }
 
   (* http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Alignment.html *)
   -> "__alignof__" "(" t:TypeId ")"
-	{ unimplemented 543 }
+	[AlignofType] { unimplemented 543 }
   -> "__alignof__" "(" e:Expression ")"
-	{ unimplemented 544 }
+	[AlignofExpr] { unimplemented 544 }
 
   (* quarl 2006-07-12 *)
   (*	Handle __offsetof__ (gcc-3.4), __builtin_offsetof (gcc-4.x) *)
   -> "__builtin_offsetof" "(" t:TypeId "," n:MemberNameSeq ")"
-	{ unimplemented 546 }
+	[BuiltinOffsetof] { unimplemented 546 }
 
   -> "__offsetof__" "(" e:Expression ")"
-	{ unimplemented 547 }
+	[Offsetof] { unimplemented 547 }
 
   -> "__builtin_va_arg" "(" e:Expression "," t:TypeId ")"
-	{ unimplemented 551 }
+	[BuiltinVaArg] { unimplemented 551 }
 }
 
 (* dmandelin@mozilla.com  bug 416051 *)
@@ -116,11 +116,11 @@ nonterm PostfixExpression {
  * the context fill in the cast and NULL in the offsetof action. *)
 nonterm MemberNameSeq {
   -> n:MemberName
-	{ unimplemented 553 }
+	[Name] { unimplemented 553 }
   -> n:MemberNameSeq "." n2:MemberName
-	{ unimplemented 554 }
+	[Member] { unimplemented 554 }
   -> n:MemberNameSeq "[" e:Expression "]"
-	{ unimplemented 555 }
+	[Array] { unimplemented 555 }
 }
 
 (* dsw: had to break this out for location recording reasons *)
@@ -133,7 +133,7 @@ nonterm ParenthesizedExpression {
 (* http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Conditionals.html *)
 nonterm ConditionalExpression {
   -> cond:BinaryExpression "?" (*th:Expression*) ":" el:AssignmentExpression
-	{ unimplemented 557 }
+	[ConditionalNoThen] { unimplemented 557 }
 }
 
 
@@ -154,7 +154,7 @@ nonterm ExplicitInstantiation {
   (* here's one for things like (in/gnu/g0002.cc)
    *   extern template class allocator<char>; *)
   -> "extern" "template" d:BlockDeclaration
-	{ unimplemented 560 }
+	[Extern] { unimplemented 560 }
 }
 
 
@@ -183,19 +183,19 @@ nonterm CompoundStatement {
    * The then branch would only contain the gronk label, whereas, at
    * least in gcc, it also includes the printf() call. *)
   -> "{" seq:CompoundStmtHelper lesl:LabelledEmptyStatementList "}"
-	{ unimplemented 562 }
+	[EndsInLabel] { unimplemented 562 }
 }
 
 (* a sequence of labels with no statement following, not even a skip *)
 nonterm LabelledEmptyStatementList {
   -> n:LabelAndColon s:LabelledEmptyStatementListOpt
-	{ unimplemented 563 }
+	[Label] { unimplemented 563 }
   -> "case" e:ConstantExpression ":" s:LabelledEmptyStatementListOpt
-	{ unimplemented 564 }
+	[Case] { unimplemented 564 }
   -> "case" e:ConstantExpression "..." e2:ConstantExpression ":" s:LabelledEmptyStatementListOpt
-	{ unimplemented 565 }
+	[RangeCase] { unimplemented 565 }
   -> "default" ":" s:LabelledEmptyStatementListOpt
-	{ unimplemented 566 }
+	[Default] { unimplemented 566 }
 }
 
 nonterm LabelledEmptyStatementListOpt {
@@ -326,15 +326,19 @@ nonterm ParenthesizedExpressionOpt {
 
 (* dsw: FIX: add returning semantic value *)
 nonterm OpConstraint {
-  -> name:BracketedWordOpt constr:StringLiteral e:ParenthesizedExpressionOpt { unimplemented 903 }
+  -> name:BracketedWordOpt constr:StringLiteral e:ParenthesizedExpressionOpt
+	[Constraint] { unimplemented 903 }
 }
 
 
 (* dsw: FIX: add returning semantic value *)
 nonterm OpConstraintList {
-  -> empty { unimplemented 904 }
-  -> oc:OpConstraint { unimplemented 905 }
-  -> oc:OpConstraint "," ocl:OpConstraintList { unimplemented 906 }
+  -> empty
+	[None] { unimplemented 904 }
+  -> oc:OpConstraint
+	[Head] { unimplemented 905 }
+  -> oc:OpConstraint "," ocl:OpConstraintList
+	[Tail] { unimplemented 906 }
 }
 
 
@@ -345,8 +349,10 @@ nonterm OpConstraints {
   -> ocs:NonemptyOpConstraints { unimplemented 908 }
 }
 nonterm NonemptyOpConstraints {
-  -> ocs:OpConstraints ":" ocl:OpConstraintList { unimplemented 909 }
-  -> ocs:OpConstraints "::" ocl:OpConstraintList { unimplemented 910 }
+  -> ocs:OpConstraints ":" ocl:OpConstraintList
+	[Colon] { unimplemented 909 }
+  -> ocs:OpConstraints "::" ocl:OpConstraintList
+	[ColonColon] { unimplemented 910 }
 }
 
 
@@ -360,15 +366,15 @@ nonterm AsmDefinition {
 
   (* NOTE: CVQualifierSeqOpt is simply discarded here *)
   -> "asm" q:CVQualifierSeq "(" s:StringLiteral ")" ";"
-	{ unimplemented 584 }
+	[Qualified] { unimplemented 584 }
 
   (* I write two rules, exposing the optionality of CVQualifierSeq at
    * this level instead of pushing it down into CVQualifierSeqOpt, to
    * avoid an S/R conflict. *)
   -> "asm" q:CVQualifierSeq "(" s:StringLiteral ocs:NonemptyOpConstraints ")" ";"
-	{ unimplemented 585 }
+	[QualifiedConstrained] { unimplemented 585 }
   -> "asm" "(" s:StringLiteral ocs:NonemptyOpConstraints ")" ";"
-	{ unimplemented 586 }
+	[Constrained] { unimplemented 586 }
 }
 
 
@@ -377,11 +383,11 @@ nonterm AsmDefinition {
 nonterm Declarator {
   (* Asm Labels after declarators; see in/gnu/asm01.c *)
   -> d:DirectDeclarator "asm" "(" reg:StringLiteral ")"
-	{ d }
+	[Asm] { d }
 
   (* asm label + attributes ... *)
   -> d:DirectDeclarator "asm" "(" reg:StringLiteral ")" attr:AttributeSpecifierList
-	{ d }
+	[AsmAttr] { d }
 }
 
 
@@ -391,31 +397,31 @@ nonterm InitialiserClause {
   (* obsolescent form *)
   (* http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Designated-Inits.html *)
   -> d:Identifier ":" init:SimpleInitialiserClause
-    { unimplemented 589 }
+	[GnuDesignated] { unimplemented 589 }
   (* C99 official form; C99 standard section 6.7.8 *)
   -> dl:DesignatorList "=" init:SimpleInitialiserClause
-    { unimplemented 590 }
+	[Designated] { unimplemented 590 }
   (* dsw: another form I run into *)
   -> dl:DesignatorList init:SimpleInitialiserClause
-    { unimplemented 591 }
+	[DesignatedNoEq] { unimplemented 591 }
 }
 
 nonterm DesignatorList {
   -> d:Designator
-    { unimplemented 592 }
+	[Head] { unimplemented 592 }
   -> d:Designator dl:DesignatorList
-    { unimplemented 593 }
+	[Tail] { unimplemented 593 }
 }
 
 nonterm Designator {
   -> "." id:Identifier
-    { unimplemented 594 }
+	[Name] { unimplemented 594 }
   -> "[" idx_expr:ConstantExpression "]"
-    { unimplemented 595 }
+	[Array] { unimplemented 595 }
   (* range designator "[ 1 ... 3 ] =".	This is a gcc-ism: *)
   (* http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Designated-Inits.html *)
   -> "[" idx_expr:ConstantExpression "..." idx_expr2:ConstantExpression "]"
-    { unimplemented 596 }
+	[Range] { unimplemented 596 }
 }
 
 
@@ -438,13 +444,13 @@ nonterm DirectDeclarator {
   (* array with qualifier in the brackets; see the version for
    * DirectAbstractDeclarator for comments *)
   -> d:DirectDeclarator "[" q:CVQualifierSeq "]"
-    { unimplemented 600 }
+	[QualArray] { unimplemented 600 }
 }
 
 nonterm DirectAbstractDeclarator {
   (* array with qualifier in the brackets *)
   -> d:DirectAbstractDeclaratorOpt "[" q:CVQualifierSeq "]"
-    { unimplemented 601 }
+	[QualArray] { unimplemented 601 }
 }
 
 
@@ -455,10 +461,10 @@ nonterm DirectAbstractDeclarator {
  * a limited degree) *)
 nonterm DeclSpecifier {
   -> n:PQTypeName BuggyGccTypeModifier(*ignored*) m2:UberModifierSeqOpt
-	{ unimplemented 602 }
+	[ModifiedTypedef] { unimplemented 602 }
 
   -> m1:UberModifierSeq n:PQTypeName BuggyGccTypeModifier(*ignored*) m2:UberModifierSeqOpt
-	{ unimplemented 603 }
+	[ModModifiedTypedef] { unimplemented 603 }
 }
 
 (* these are the only ones that could be meaningfully combined with
@@ -519,7 +525,7 @@ nonterm PrimaryExpression {
  * them with the next declaration. *)
 nonterm LabelAndColon {
   -> n:Identifier ":" attr:AttributeSpecifierList     precedence(TOK_PREFER_REDUCE)
-	{ unimplemented 610 }
+	[LabelAttr] { unimplemented 610 }
 }
 
 (* tglek: Commenting this out so I can attach attributes to classes below *)
@@ -527,35 +533,36 @@ nonterm LabelAndColon {
 (* attributes between classkeys and their names *)
 nonterm ClassKey {
   (* *not* AttributeSpecifierList; this context is naturally repeating *)
-  -> k:ClassKey attr:AttributeSpecifier       { unimplemented 611 }
+  -> k:ClassKey attr:AttributeSpecifier		{ unimplemented 611 }
 }
 *)
 
 
 nonterm ElaboratedTypeSpecifier {
-  -> k:ClassKey attr:AttributeSpecifier n:PQTypeName	{ unimplemented 612 }
+  -> k:ClassKey attr:AttributeSpecifier n:PQTypeName
+	[ClassNameAttr] { unimplemented 612 }
 }
 
 nonterm ClassSpecifier {
   -> k:ClassKey s:AttributeSpecifierList n:ClassHeadNameOpt b:BaseClauseOpt "{" memb:MemberDeclarationSeqOpt "}"
-    { unimplemented 613 }
+	[ClassSpecAttr] { unimplemented 613 }
 }
 
 (* attributes after "enum" *)
 nonterm ElaboratedTypeSpecifier {
   -> "enum" attr:AttributeSpecifierList n:PQTypeName
-	{ unimplemented 614 }
+	[EnumAttr] { unimplemented 614 }
 }
 
 nonterm EnumSpecifier {
   -> "enum" attr:AttributeSpecifierList "{" list:EnumeratorListOpt "}"
-	{ unimplemented 615 }
+	[EnumAttr] { unimplemented 615 }
 
   (* Adding this adds one S/R conflict... it was 3 until I changed
    * Identifier to PQTypeName.	I think cc.gr should similarly use
    * PQName instead of Identifier, and catch qualifiers in tcheck... *)
   -> "enum" attr:AttributeSpecifierList n:PQTypeName "{" list:EnumeratorListOpt "}"
-	{ unimplemented 616 }
+	[NamedEnumAttr] { unimplemented 616 }
 }
 
 
@@ -575,11 +582,11 @@ nonterm EnumSpecifier {
  * no arguments, you could get by with a new UberModifier flag and
  * associated DeclFlag. *)
 nonterm(modifier) UberModifier {
-  -> AttributeSpecifier      { unimplemented 617 }
+  -> AttributeSpecifier      [Attr]	{ unimplemented 617 }
 }
 
 nonterm(cv_flag) UberCVQualifier {
-  -> AttributeSpecifier      { failwith "unimplemented 618" }
+  -> AttributeSpecifier      [Attr]	{ failwith "unimplemented 618" }
 }
 
 
@@ -597,13 +604,13 @@ nonterm CVQualAttrSeqOpt {
 }
 
 nonterm CVQualAttrSeq {
-  -> q:CVQualAttr			{ unimplemented 622 }
-  -> q:CVQualAttr s:CVQualAttrSeq	{ unimplemented 623 }
+  -> q:CVQualAttr			[Head]	{ unimplemented 622 }
+  -> q:CVQualAttr s:CVQualAttrSeq	[Tail]	{ unimplemented 623 }
 }
 
 nonterm CVQualAttr {
-  -> q:CVQualifier			{ unimplemented 624 }
-  -> AttributeSpecifier			{ unimplemented 625 }
+  -> q:CVQualifier			[Cv]	{ unimplemented 624 }
+  -> AttributeSpecifier			[Attr]	{ unimplemented 625 }
 }
 
 
@@ -611,7 +618,7 @@ nonterm Declarator {
   (* "*", then some cv, then *one* __attribute__, which causes the
    * parser to commit to this production, then cv+attr seq *)
   -> "*" cv:CVQualifierSeqOpt attr:AttributeSpecifier cv2:CVQualAttrSeqOpt d:Declarator
-	{ unimplemented 913 }
+	[Attr] { unimplemented 913 }
 
   (* perhaps attributes should be allowed after "&" and "C::*"? *)
 
@@ -619,27 +626,27 @@ nonterm Declarator {
    * attributes just inside the ")" of a D_grouping, whereas gcc
    * doesn't *)
   -> d:DirectDeclarator attr:AttributeSpecifierList
-	{ D_attribute (d, attr) }
+	[AttrDirect] { D_attribute (d, attr) }
 }
 
 
 nonterm DirectDeclarator {
   -> "(" attr:AttributeSpecifierList d:Declarator ")"
-	{ unimplemented 628 }
+	[Attr] { unimplemented 628 }
 }
 
 
 nonterm AbstractDeclarator {
   -> "*" cv:CVQualifierSeqOpt attrspec:AttributeSpecifier cv2:CVQualAttrSeqOpt d:AbstractDeclaratorOpt
-	{ unimplemented 629 }
+	[Attr] { unimplemented 629 }
 
   -> d:DirectAbstractDeclarator attr:AttributeSpecifierList
-	{ unimplemented 630 }
+	[AttrDirect] { unimplemented 630 }
 }
 
 nonterm DirectAbstractDeclarator {
   -> "(" attr:AttributeSpecifierList d:AbstractDeclarator ")"
-	{ unimplemented 631 }
+	[Attr] { unimplemented 631 }
 }
 
 (* dsw: attributes after bitfields; from the kernel:
@@ -652,18 +659,19 @@ nonterm MemberDeclarator {
   (* bitfield *)
   -> n:IdentifierOpt ":" e:ConstantExpression attr:AttributeSpecifierList
 	(* this body is an exact copy of the cc.gr one without attributes *)
-	{ unimplemented 632 }
+	[Attr] { unimplemented 632 }
 }
 
 (* dsw: from Taras Glek, tglek at mozilla dot com *)
 nonterm CDtorModifier {
- -> attr:AttributeSpecifier		{ unimplemented 633 }
+ -> attr:AttributeSpecifier
+	[Attr] { unimplemented 633 }
 }
 
 (* 2007-09-15: This is in the gcc-4.2.1 headers. *)
 nonterm NamespaceDefinition {
   -> "namespace" n:IdentifierOpt attr:AttributeSpecifierList "{" unit:TranslationUnit "}"
-	{ TF_namespaceDefn (n, unit) }
+	[NamespaceDefnAttr] { TF_namespaceDefn (n, unit) }
 }
 
 
@@ -760,21 +768,21 @@ nonterm AttributeParameters {
 
 nonterm Attribute {
   -> empty
-	{ AT_empty }
+	[Empty] { AT_empty }
 
   -> w:AttributeWord
-	{ AT_word (w) }
+	[Word] { AT_word (w) }
 
   -> w:AttributeWord "(" ap:AttributeParameters ")"
-	{ AT_func (w, ap) }
+	[Func] { AT_func (w, ap) }
 }
 
 nonterm AttributeList {
   -> at:Attribute
-	{ [at] }
+	[Head] { [at] }
 
   -> at:Attribute "," ap:AttributeList
-	{ at :: ap }
+	[Tail] { at :: ap }
 }
 
 nonterm AttributeSpecifier {
@@ -784,10 +792,10 @@ nonterm AttributeSpecifier {
 
 nonterm AttributeSpecifierList {
   -> s:AttributeSpecifier
-	{ s }
+	[Head] { s }
 
   -> s:AttributeSpecifier sl:AttributeSpecifierList
-	{ s @ sl }
+	[Tail] { s @ sl }
 }
 
 (* quarl 2006-06-14
@@ -797,7 +805,7 @@ nonterm AttributeSpecifierList {
 
 nonterm NamespaceDecl {
   -> "using" "namespace" n:IdExpression AttributeSpecifierList ";"
-	{ unimplemented 712 }
+	[UsingDeclAttr] { unimplemented 712 }
 }
 
 

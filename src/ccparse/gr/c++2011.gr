@@ -6,25 +6,25 @@ option reduce_reduce_conflicts 18;
 (* decltype *)
 nonterm DeclSpecifier {
   -> te:DecltypeTypeSpecifier m2:UberModifierSeqOpt 
-	{ unimplemented 1011 }
+	[Decltype] { unimplemented 1011 }
   -> m1:UberModifierSeq te:DecltypeTypeSpecifier m2:UberModifierSeqOpt
-	{ unimplemented 1012 }
+	[ModDecltype] { unimplemented 1012 }
 }
 
 
 nonterm TypeSpecifier {
   -> te:DecltypeTypeSpecifier cv2:UberCVQualifierSeqOpt
-	{ unimplemented 1013 }
+	[Decltype] { unimplemented 1013 }
   -> cv1:UberCVQualifierSeq te:DecltypeTypeSpecifier cv2:UberCVQualifierSeqOpt
-	{ unimplemented 1014 }
+	[ModDecltype] { unimplemented 1014 }
 }
 
 
 nonterm DecltypeTypeSpecifier {
   fun merge(l,r) { unimplemented 1017 }
 
-  -> e:DecltypeExpr	[DeclTypeExpr] { unimplemented 1015 }
-  -> t:DecltypeType	[DeclTypeType] { unimplemented 1016 }
+  -> e:DecltypeExpr	[DeclTypeExpr]	{ unimplemented 1015 }
+  -> t:DecltypeType	[DeclTypeType]	{ unimplemented 1016 }
 }
 
 
@@ -71,29 +71,29 @@ nonterm NoexceptExpression {
 }
 
 nonterm ExceptionSpecification {
-  -> s:NoexceptSpecification
-	{ unimplemented 1023 }
+  -> NoexceptSpecification
+	[NoExcept] { unimplemented 1023 }
 }
 
 nonterm NoexceptSpecification {
   -> "noexcept"
-	[NoExcept] { unimplemented 1024 }
+	{ unimplemented 1024 }
 }
 
 (* variadic templates *)
 nonterm TypeParameter {
   (* non-template type parameter *)
   -> ClassOrTypename "..." i:IdentifierOpt t:DefaultTypeOpt
-	{ unimplemented 1025 }
+	[Variadic] { unimplemented 1025 }
 
   (* template type parameter *)
   -> "template" "<" pl:TemplateParameterList ">" "class" "..." i:IdentifierOpt
-	{ unimplemented 1026 }
+	[VariadicTemplate] { unimplemented 1026 }
 }
 
 nonterm TemplateArgument {
   -> typeid:TypeId "..."
-	{ unimplemented 511 }
+	[UnpackVarArg] { unimplemented 511 }
 }
 
 (* rvalue references *)

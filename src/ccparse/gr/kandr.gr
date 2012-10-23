@@ -57,9 +57,9 @@ nonterm KandRSimpleDeclaration {
 
 nonterm KandRInitDeclaratorList {
   -> d:KandRInitDeclarator
-	{ unimplemented 720 }
+	[Head] { unimplemented 720 }
   -> d:KandRInitDeclarator "," list:KandRInitDeclaratorList
-	{ unimplemented 721 }
+	[Tail] { unimplemented 721 }
 }
 
 
@@ -79,7 +79,7 @@ nonterm KandRInitDeclarator {
   fun merge(l,r) { unimplemented 722 }
 
   -> d:Declarator			(* (int)  x *)
-	{ unimplemented 723 }
+	[Declr] { unimplemented 723 }
 
   (* The whole point is to omit this possibility *)
 (*
@@ -92,9 +92,9 @@ nonterm KandRInitDeclarator {
 (* for K&R function definitions *)
 nonterm KandRDeclarator {
   -> "*" cv:CVQualifierSeqOpt d:KandRDeclarator
-	{ unimplemented 725 }
+	[Pointer] { unimplemented 725 }
   -> d:KandRDirectDeclarator
-	{ unimplemented 726 }
+	[Direct] { unimplemented 726 }
 }
 
 (* for K&R function definitions *)
@@ -122,7 +122,7 @@ nonterm KandRDirectDeclarator {
      ql:QLiterals				(* qualifier literals *)
      cv:CVQualifierSeqOpt
 *)
-	{ unimplemented 728 }
+	[Function] { unimplemented 728 }
 
   (* sm: for in/c/k0003.c; the KandR declarator structure is
    * pretty messed up, but when I made a few tweaks it introduced
@@ -134,7 +134,7 @@ nonterm KandRDirectDeclarator {
      ql:QLiterals				(* qualifier literals *)
      cv:CVQualifierSeqOpt
 *)
-	{ unimplemented 729 }
+	[ParenFunction] { unimplemented 729 }
 
   (* function declarator; the return type comes from the type
    * specifier that precedes this *)
@@ -144,15 +144,15 @@ nonterm KandRDirectDeclarator {
     cv:CVQualifierSeqOpt			(* optional "const" *)
     e:ExceptionSpecificationOpt			(* optional "throw" clause *)
 *)
-	{ unimplemented 730 }
+	[DirectFunction] { unimplemented 730 }
 
   (* sm: for in/c/k0009.c *)
   -> d:KandRDirectDeclarator "[" sz:ConstantExpressionOpt "]"
-	{ unimplemented 731 }
+	[Array] { unimplemented 731 }
 
   (* precedence grouping; must be recorded in the AST for disambiguation *)
   -> "(" d:KandRDeclarator ")"
-	{ unimplemented 732 }
+	[Grouping] { unimplemented 732 }
 }
 
 (* FIX: see note above; not sure this is necessary nor that it is not
@@ -171,9 +171,9 @@ nonterm IdentifierListOpt {
 
 nonterm KandRIdentifierList {
   -> i:KandRIdentifier
-	{ [i] }
+	[Head] { [i] }
   -> i:KandRIdentifier "," e:KandRIdentifierList
-	{ i :: e }
+	[Tail] { i :: e }
 }
 
 
@@ -186,25 +186,25 @@ nonterm KandRIdentifier {
 (* modifiers that can precede a function decl/defn in C; note
  * that the only intersection with CDtorModifier is "inline" *)
 nonterm CFuncModifier_no_inline {
-  -> "static"				{ `UM_STATIC }
-  -> "extern"				{ `UM_EXTERN }
-  -> "const"				{ `UM_CONST }
-  -> "volatile"				{ `UM_VOLATILE }
+  -> "static"				[Static]	{ `UM_STATIC }
+  -> "extern"				[Extern]	{ `UM_EXTERN }
+  -> "const"				[Const]		{ `UM_CONST }
+  -> "volatile"				[Volatile]	{ `UM_VOLATILE }
 }
 
 nonterm CFuncModifier {
-  -> m:CFuncModifier_no_inline		{ m }
-  -> "inline"				{ `UM_INLINE }
+  -> m:CFuncModifier_no_inline		[NoInline]	{ m }
+  -> "inline"				[Inline]	{ `UM_INLINE }
 }
 
 nonterm CFuncModifierSeq {
-  -> m:CFuncModifier			{ [m] }
-  -> s:CFuncModifierSeq m:CFuncModifier	{ m :: s }
+  -> m:CFuncModifier					{ [m] }
+  -> s:CFuncModifierSeq m:CFuncModifier			{ m :: s }
 }
 
 nonterm CFuncModifierSeqOpt {
-  -> empty				{ [] }
-  -> m:CFuncModifierSeq			{ m }
+  -> empty						{ [] }
+  -> m:CFuncModifierSeq					{ m }
 }
 
 
@@ -216,19 +216,19 @@ nonterm ImplIntFunctionDefinition {
   (* make it look like the existing ctor AST, since those get
    * converted into implicit-int *)
   -> m:CFuncModifier_no_inline d:Declarator b:FunctionBody
-	{ unimplemented 749 }
+	[Func] { unimplemented 749 }
 
   (* in/k0006.c: need some more variants; I spell them out to avoid
    * introducing too many conflicts *)
   -> m1:CFuncModifier_no_inline m2:CFuncModifierSeq d:Declarator b:FunctionBody
-	{ unimplemented 750 }
+	[ModFunc] { unimplemented 750 }
 
   (* "inline" is the common prefix with CDtorModifierSeq; so a defn
    * that begins with it will not cause a parser split until the next
    * modifier is seen; if no modifier follows "inline", it will be
    * parsed as a constructor, and later changed into implicit-int *)
   -> "inline" m1:CFuncModifier_no_inline m2:CFuncModifierSeqOpt d:Declarator b:FunctionBody
-	{ unimplemented 751 }
+	[InlineFunc] { unimplemented 751 }
 }
 
 nonterm Declaration {
@@ -287,7 +287,7 @@ nonterm ParameterDeclaration {
 (* ------ implicit int for cast expressions ------ *)
 nonterm CastExpression {
   -> "(" t:ImplicitIntTypeId ")" e:CastExpression
-	{ unimplemented 756 }
+	[ImplInt] { unimplemented 756 }
 }
 
 nonterm ImplicitIntTypeSpecifier {

@@ -168,10 +168,11 @@ nonterm TypeName {
 
 (* ------ A.3 Basic Concepts ------ *)
 nonterm TranslationUnit {
+  fun merge (l, r) { unimplemented 1552 }
   fun dup(n) { unimplemented 1234 }	(* prevent multi-yield *)
 
-  -> empty					{ [] }
-  -> xs:TranslationUnit x:Declaration		{ x :: xs }
+  -> empty					[Empty]		{ [] }
+  -> xs:TranslationUnit x:Declaration		[List]		{ x :: xs }
 }
 
 (* ------ A.4 Expressions ------ *)
@@ -444,9 +445,9 @@ nonterm NewExpression {
   fun merge(l,r) { unimplemented 83 }
 
   -> c:ColonColonOpt "new" p:NewPlacementOpt t:NewTypeId i:NewInitialiserOpt
-	{ unimplemented 84 }
+	[Normal] { unimplemented 84 }
   -> c:ColonColonOpt "new" p:NewPlacementOpt "(" t:TypeId ")" i:NewInitialiserOpt
-	{ unimplemented 85 }
+	[Parenthesised] { unimplemented 85 }
 }
 
 nonterm NewPlacementOpt {
@@ -456,7 +457,7 @@ nonterm NewPlacementOpt {
 
 nonterm NewTypeId {
   -> spec:TypeSpecifier decl:NewDeclaratorOpt
-	{ unimplemented 88 }
+	[NewTypeId] { unimplemented 88 }
 }
 
 (* NewDeclaratorOpt is, as a regular expression:
@@ -469,24 +470,25 @@ nonterm NewTypeId {
  * it (so I'll see the counterexample syntax if it exists) *)
 nonterm NewDeclaratorOpt {
   -> empty
-	{ unimplemented 89 }
+	[Empty] { unimplemented 89 }
 
   (* pointers *)
   -> "*" cv:CVQualifierSeqOpt d:NewDeclaratorOpt
-	{ unimplemented 90 }
+	[Pointer] { unimplemented 90 }
   -> n:PtrToMemberName "*" cv:CVQualifierSeqOpt d:NewDeclaratorOpt
-	{ unimplemented 91 }
+	[MemPtr] { unimplemented 91 }
 
   (* commit to at least one "[" ... "]" *)
-  -> d:DirectNewDeclarator		{ unimplemented 92 }
+  -> d:DirectNewDeclarator
+	[Direct] { unimplemented 92 }
 }
 nonterm DirectNewDeclarator {
   fun keep(x) { unimplemented 1310 }
 
   -> (*abstract declarator*) "[" sz:Expression "]"
-	{ unimplemented 93 }
+	[Array] { unimplemented 93 }
   -> d:DirectNewDeclarator "[" sz:ConstantExpression "]"
-	{ unimplemented 94 }
+	[ConstArray] { unimplemented 94 }
 }
 
 nonterm NewInitialiserOpt {
@@ -496,9 +498,9 @@ nonterm NewInitialiserOpt {
 
 nonterm DeleteExpression {
   -> c:ColonColonOpt "delete" e:CastExpression
-	{ unimplemented 97 }
+	[Delete] { unimplemented 97 }
   -> c:ColonColonOpt "delete" "[" "]" e:CastExpression
-	{ unimplemented 98 }
+	[DeleteArray] { unimplemented 98 }
 }
 (* ------------ end of "new" and "delete" expressions ------------- *)
 
@@ -527,21 +529,22 @@ nonterm MemberName {
 nonterm SpecialMemberName {
   fun merge(l,r) { unimplemented 102 }
 
-  -> n:IdentifierMemberName;
+  -> n:IdentifierMemberName
+	[Identifier];
 
   (* final names *)
   -> "template" n:Identifier "<" list:TemplateArgumentListOpt ">"
-	{ PQ_template (n, TA_templateUsed :: list) }
+	[Template] { PQ_template (n, TA_templateUsed :: list) }
   -> "~" n:Identifier
-	{ PQ_name ("~" ^ n) }
+	[Dtor] { PQ_name ("~" ^ n) }
   -> "~" n:Identifier "<" list:TemplateArgumentListOpt ">"
-	{ PQ_template ("~" ^ n, list) }
+	[DtorTemplate] { PQ_template ("~" ^ n, list) }
   -> on:ConversionFunctionId
-	{ PQ_operator (on) }
+	[Conversion] { PQ_operator (on) }
 
   (* qualifier name *)
   -> "template" n:Identifier "<" list:TemplateArgumentListOpt ">" "::" rest:SpecialMemberName
-	{ PQ_qualifier (Some n, TA_templateUsed :: list, rest) }
+	[TemplateQual] { PQ_qualifier (Some n, TA_templateUsed :: list, rest) }
 }
 
 (* can begin with Identifier, "template" or "operator"; this is
@@ -551,24 +554,24 @@ nonterm IdentifierMemberName {
 
   (* final names *)
   -> n:Identifier "<" list:TemplateArgumentListOpt ">"
-	{ PQ_template (n, list) }
+	[Template] { PQ_template (n, list) }
   -> n:Identifier
-	{ PQ_name (n) }
+	[Name] { PQ_name (n) }
   -> on:OperatorFunctionId
-	{ PQ_operator (on) }
+	[Operator] { PQ_operator (on) }
 
   (* unqualified templatised operator *)
   -> on:OperatorFunctionId "<" list:TemplateArgumentListOpt ">"
-	{ unimplemented 113 }
+	[OperatorTemplate] { unimplemented 113 }
   (* template-qualified templatised operator *)
   -> "template" on:OperatorFunctionId "<" list:TemplateArgumentListOpt ">"
-	{ unimplemented 114 }
+	[TemplateQualOperator] { unimplemented 114 }
 
   (* qualifier names *)
   -> n:Identifier "<" list:TemplateArgumentListOpt ">" "::" rest:SpecialMemberName
-	{ PQ_qualifier (Some n, list, rest) }
+	[TemplateQualifier] { PQ_qualifier (Some n, list, rest) }
   -> n:Identifier "::" rest:SpecialMemberName
-	{ PQ_qualifier (Some n, [], rest) }
+	[Qualifier] { PQ_qualifier (Some n, [], rest) }
 }
 (* -------------- END: syntax after "." or "->" ------------------- *)
 
@@ -581,6 +584,7 @@ nonterm CastExpression {
   fun merge(l,r) { E_ambig (l, r) }
 
   -> e:UnaryExpression [UnaryExpression];
+
   -> "(" t:TypeId ")" e:CastExpression
 	[Cast] { E_cast (t, e) }
 }
@@ -761,7 +765,7 @@ nonterm LabelAndColon {
   (* 10/20/04: The precedence specification here fixes in/c/t0018.c by
    * telling the parser to shift any __attribute__ that follows the ":". *)
   -> n:Identifier ":"	precedence(TOK_PREFER_SHIFT)
-	{ unimplemented 171 }
+	[Label] { unimplemented 171 }
 }
 
 (* labelled-statement *)
@@ -920,7 +924,7 @@ nonterm Declaration {
 
 nonterm EmptyDeclaration {
   (* arg!  Mozilla is littered with toplevel semicolons.. *)
-  -> ";"			{ unimplemented 206 }
+  -> ";"				[Empty]			{ unimplemented 206 }
 }
 
 nonterm BlockDeclaration {
@@ -1286,11 +1290,11 @@ nonterm EnumeratorListOpt {
   fun merge(l,r) { unimplemented 1303 }
 
   -> empty
-	{ [] }
+	[Empty] { [] }
   -> def:EnumeratorDefinition
-	{ [def] }
+	[Head] { [def] }
   -> def:EnumeratorDefinition "," list:EnumeratorListOpt
-	{ def :: list }
+	[Tail] { def :: list }
 }
 
 
@@ -1313,16 +1317,17 @@ nonterm EnumeratorExpressionOpt {
  * one, which is how it should be.  This is the AsmDefinition for
  * C++. *)
 nonterm AsmDefinition {
-  -> "asm" "(" s:StringLiteral ")" ";"	{ unimplemented 288 }
+  -> "asm" "(" s:StringLiteral ")" ";"
+	[Standard] { unimplemented 288 }
 }
 
 
 nonterm LinkageSpecification {
   -> "extern" n:TOK_STRING_LITERAL "{" tu:TranslationUnit "}"
-	{ TF_linkage (n, tu) }
+	[Linkage] { TF_linkage (n, tu) }
 
   -> "extern" n:TOK_STRING_LITERAL tf:Declaration
-	{ TF_one_linkage (n, tf) }
+	[OneLinkage] { TF_one_linkage (n, tf) }
 }
 
 
@@ -1396,15 +1401,15 @@ nonterm SimpleInitialiserClause {
  * possibilities for designated initialisers *)
 nonterm InitialiserClause {
   -> init:SimpleInitialiserClause
-	{ unimplemented 302 }
+	[Simple] { unimplemented 302 }
 }
 
 nonterm CompoundInitialiser {
   (* zero whatever it is *)
-  -> "{" "}"  { unimplemented 304 }
+  -> "{" "}"	{ unimplemented 304 }
 
   (* array/structure initialiser *)
-  -> "{" list:InitialiserList CommaOpt "}"  { unimplemented 303 }
+  -> "{" list:InitialiserList CommaOpt "}"	{ unimplemented 303 }
 }
 
 (* useful syntactic quirk *)
@@ -1414,14 +1419,15 @@ nonterm CommaOpt {
 }
 
 nonterm InitialiserList {
+  fun merge (l, r) { unimplemented 1553 }
   fun dup(i) { unimplemented 305 }	(* prevent multi-yield *)
 
   -> init:InitialiserClause
-	{ unimplemented 306 }
+	[Head] { unimplemented 306 }
 
   (* destructive action on 'list' *)
   -> list:InitialiserList "," init:InitialiserClause
-	{ unimplemented 307 }
+	[Tail] { unimplemented 307 }
 }
 
 
@@ -1490,24 +1496,24 @@ nonterm PQDtorName {
   fun merge(l,r) { unimplemented 317 }
 
   -> "~" n:Identifier
-	{ PQ_name ("~" ^ n) }
+	[Name] { PQ_name ("~" ^ n) }
   -> "~" n:Identifier "<" list:TemplateArgumentListOpt ">"
-	{ PQ_template ("~" ^ n, list) }
+	[Template] { PQ_template ("~" ^ n, list) }
 
   (* as above for PQName_no_colon_colon, I'm temporarily removing an
    * ambiguity that relates to namespaces (e.g. "::F::~F()") *)
-  (*-> q:Qualifier rhs:PQDtorName  { unimplemented 320 } *)
+  (*-> q:Qualifier rhs:PQDtorName	{ unimplemented 320 } *)
   -> q:Identifier "::" rhs:PQDtorName
-	{ PQ_qualifier (Some q, [], rhs) }
+	[QualName] { PQ_qualifier (Some q, [], rhs) }
 
   -> q:Identifier "<" targs:TemplateArgumentListOpt ">" "::" rhs:PQDtorName
-	{ PQ_qualifier (Some q, targs, rhs) }
+	[QualTemplate] { PQ_qualifier (Some q, targs, rhs) }
 
   (* TEMPLATE_QUALIFIER_HACK *)
   (*-> "template" q:Identifier "::" rhs:PQDtorName *)
   (*	{ unimplemented 323 } *)
   -> "template" q:Identifier "<" targs:TemplateArgumentListOpt ">" "::" rhs:PQDtorName
-	{ PQ_qualifier (Some q, TA_templateUsed :: targs, rhs) }
+	[TemplateQual] { PQ_qualifier (Some q, TA_templateUsed :: targs, rhs) }
 
   (* this rule from cppstd is partially subsumed by the "template" hack *)
   (*-> ColonColonOpt NestedNameSpecifier "template" TemplateId "::" "~" TypeName; *)
@@ -1518,7 +1524,7 @@ nonterm PQDtorName {
 nonterm PtrToMemberName {
   fun merge(l,r) { unimplemented 325 }
 
-  -> n:IdExpression "::"	{ unimplemented 326 }
+  -> n:IdExpression "::"	[ClassName]	{ unimplemented 326 }
 }
 
 
@@ -1554,9 +1560,9 @@ nonterm AbstractDeclaratorOpt {
 (* an abstract declarator (not opt) must have *some* ground syntax in it *)
 nonterm AbstractDeclarator {
   -> p:PrefixDeclarator d:AbstractDeclaratorOpt
-	{ p d }
+	[Prefixed] { p d }
   -> d:DirectAbstractDeclarator
-	{ d }
+	[Direct] { d }
 }
 
 nonterm DirectAbstractDeclaratorOpt {
@@ -1566,6 +1572,8 @@ nonterm DirectAbstractDeclaratorOpt {
 
 (* this also must have some ground syntax *)
 nonterm DirectAbstractDeclarator {
+  fun merge (l, r) { unimplemented 1554 }
+
   (* note: the "opt" in the DirectAbstractDeclarator part of the
    * function type constructor creates an ambiguity:
    *   typedef int x;
@@ -1581,16 +1589,16 @@ nonterm DirectAbstractDeclarator {
      "(" args:ParameterDeclarationClause ")"
      cv:CVQualifierSeqOpt
      e:ExceptionSpecificationOpt
-	{ Factory.make_d_func d args cv e }
+	[Func] { Factory.make_d_func d args cv e }
 
   (* array with optional size *)
   -> d:DirectAbstractDeclaratorOpt "[" sz:ConstantExpressionOpt "]"
-	{ Factory.make_d_array d sz }
+	[Array] { Factory.make_d_array d sz }
 
   (* precedence grouping; shouldn't need to record this in AST, but
    * I will for consistency with Declarator *)
   -> "(" d:AbstractDeclarator ")"
-	{ D_grouping (d) }
+	[Grouping] { D_grouping (d) }
 }
 
 
@@ -1832,9 +1840,9 @@ nonterm ClassHeadName {
 }
 
 nonterm ClassKey {
-  -> "class"		[Class]  { TI_Class }
-  -> "struct"		[Struct] { TI_Struct }
-  -> "union"		[Union]  { TI_Union }
+  -> "class"		[Class]		{ TI_Class }
+  -> "struct"		[Struct]	{ TI_Struct }
+  -> "union"		[Union]		{ TI_Union }
 }
 
 
@@ -1963,10 +1971,12 @@ nonterm CDtorProtoDecl {
 }
 
 nonterm MemberDeclaratorList {
+  fun merge (l, r) { unimplemented 1551 }
+
   -> d:MemberDeclarator
-	{ [d] }
+	[Head] { [d] }
   -> list:MemberDeclaratorList "," d:MemberDeclarator
-	{ d :: list }
+	[Tail] { d :: list }
 }
 
 (* this returns a full Declarator, instead of an IDeclarator, because
@@ -1975,7 +1985,7 @@ nonterm MemberDeclaratorList {
  * a place to put member initialisers *)
 nonterm MemberDeclarator {
   -> d:Declarator
-	{ DC_decl (d, (*~init*)None) }
+	[Decl] { DC_decl (d, (*~init*)None) }
 
   (* here I merge two cases (PureSpecifier and ConstantInitialiser) that
    * the std splits; given that the parser doesn't track at this level
@@ -1983,10 +1993,10 @@ nonterm MemberDeclarator {
    * difference between PureSpecifier and ConstantInitialiser just by
    * looking at their syntax, we'd be disambiguating this later anyway *)
   -> d:Declarator "=" e:ConstantExpression	(* pure, and member inits *)
-	{ DC_decl (d, Some (IN_expr e)) }
+	[InitDecl] { DC_decl (d, Some (IN_expr e)) }
 
   -> n:IdentifierOpt ":" e:ConstantExpression	(* bitfield *)
-	{
+	[Bitfield] {
 	  let n = BatOption.map (fun n -> PQ_name n) n in
 	  DC_decl (D_bitfield (n, e), (*~init*)None)
 	}
@@ -2050,11 +2060,11 @@ nonterm BaseSpecifierList {
 (* TODO: spec allows leading "::" on the PQClassName *)
 nonterm BaseSpecifier {
   -> cname:PQClassName
-	{ { is_virtual = false; access = AK_UNSPECIFIED; cname; } }
+	[Base] { { is_virtual = false; access = AK_UNSPECIFIED; cname; } }
   -> "virtual" access:AccessSpecifierOpt cname:PQClassName
-	{ { is_virtual = true; access; cname; } }
+	[VirtualBase] { { is_virtual = true; access; cname; } }
   -> access:AccessSpecifier is_virtual:VirtualOpt cname:PQClassName
-	{ { is_virtual; access; cname; } }
+	[AccessBase] { { is_virtual; access; cname; } }
 }
 
 nonterm VirtualOpt {
@@ -2241,7 +2251,7 @@ nonterm TemplateDeclaration {
 
   (* template function definition *)
   -> plist:TemplatePreamble def:FunctionDefinition
-	{
+	[Func] {
 	  if Query.any_have_default_args plist then
 	    (* Function templates and definitions of members of class
 	     * templates cannot have default arguments (14.1p9).
@@ -2254,17 +2264,17 @@ nonterm TemplateDeclaration {
 
   (* template function definition, or template class or data member decl/defn *)
   -> plist:TemplatePreamble d:SimpleDeclaration
-	{ TD_decl (plist, d) }
+	[Decl] { TD_decl (plist, d) }
 
   (* definition of a template member *)
   -> plist:TemplatePreamble td:TemplateDeclaration
-	{ TD_tmember (plist, td) }
+	[TMember] { TD_tmember (plist, td) }
 
   (* as a toplevel form, this is a specialisation of a template class
    * constructor; as a class member, it is a declaration of a
    * templatised constructor *)
   -> plist:TemplatePreamble d:CDtorProtoDecl
-	{ TD_decl (plist, d) }
+	[CDtor] { TD_decl (plist, d) }
 }
 
 (* the "template <...>" stuff *)
@@ -2290,9 +2300,12 @@ nonterm TemplateParameterList {
    * list, we do not currently disambiguate it properly; see in/t0465.cc *)
   fun merge(l,r) { unimplemented 490 }
 
+  -> p:TypeParameter
+	[Head] { [p] }
+
   (* non-template type parameter *)
-  -> p:TypeParameter next:TemplateParameterListContinuation
-	{ p :: next }
+  -> l:TemplateParameterList "," p:TypeParameter
+	[Tail] { p :: l }
 }
 
 nonterm TypeParameter {
@@ -2317,15 +2330,6 @@ nonterm TypeParameter {
   (* template type parameter *)
   -> "template" "<" pl:TemplateParameterList ">" "class" i:IdentifierOpt t:DefaultTemplateOpt
 	[TemplTyParam] { unimplemented 1231 }
-}
-
-(* what comes after a template paramter: nothing, or else
- * a comma and then more parameters *)
-nonterm TemplateParameterListContinuation {
-  fun merge(l,r) { unimplemented 494 }
-
-  -> empty				{ [] }
-  -> "," next:TemplateParameterList	{ next }
 }
 
 nonterm ClassOrTypename {
@@ -2420,14 +2424,14 @@ nonterm TemplateArgument {
 
 nonterm ExplicitInstantiation {
   -> "template" d:BlockDeclaration
-	{ unimplemented 513 }
+	[Normal] { unimplemented 513 }
   -> "inline" "template" d:BlockDeclaration
-	{ unimplemented 514 }
+	[Inline] { unimplemented 514 }
 }
 
 (* ------ A.13 Exception handling ------ *)
 nonterm TryBlock {
-  -> "try" s:CompoundStatement h:HandlerSeq  { unimplemented 515 }
+  -> "try" s:CompoundStatement h:HandlerSeq	[Try]	{ unimplemented 515 }
 }
 
 nonterm HandlerSeq {
@@ -2437,17 +2441,17 @@ nonterm HandlerSeq {
 
 nonterm Handler {
   -> "catch" "(" d:HandlerParameter ")" s:CompoundStatement
-	{ unimplemented 518 }
+	[CatchType] { unimplemented 518 }
 
   -> "catch" "(" "..." ")" s:CompoundStatement
-	{ unimplemented 519 }
+	[CatchAll] { unimplemented 519 }
 }
 
 nonterm HandlerParameter {
   -> s:TypeSpecifier d:UnqualifiedDeclarator
-	{ unimplemented 520 }
+	[Normal] { unimplemented 520 }
   -> s:TypeSpecifier d:AbstractDeclaratorOpt
-	{ unimplemented 521 }
+	[Abstract] { unimplemented 521 }
 }
 
 
