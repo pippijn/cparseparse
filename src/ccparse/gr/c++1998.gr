@@ -127,6 +127,8 @@ impl_verbatim {
   open Ccabs
   open Ast
   let unimplemented s = failwith ("unimplemented " ^ string_of_int s)
+
+  let cancel = GlrEngine.cancel
 }
 
 
@@ -347,7 +349,7 @@ nonterm PostfixExpression {
 nonterm CtorExpressionType {
   (*-> ColonColonOpt NestedNameSpecifier "template" TemplateId; *)
 
-  -> n:PQTypeName        [TypeName]     { TS_name ([], n) }
+  -> n:PQTypeName        [TypeName]     { TS_name ([], n, false) }
   -> "char"              [Char]         { TS_simple ([], ST_Char) }
   -> "wchar_t"           [WCharT]       { TS_simple ([], ST_WCharT) }
   -> "bool"              [Bool]         { TS_simple ([], ST_Bool) }
@@ -790,13 +792,13 @@ nonterm Statement {
    * of buried in ForInitStatement; it's this way now because that is how
    * the standard does it. *)
   -> "for" "(" s1:ForInitStatement c:ConditionOpt ";" e:ForConditionOpt ")" s2:Statement
-	[For] { S_for (s1, c, e, s2) }
+        [For] { S_for (s1, c, FullExpression e, s2) }
 
   -> "break" ";"                        [Break] { unimplemented 184 }
 
   -> "continue" ";"                     [Continue] { unimplemented 185 }
 
-  -> "return" e:Expression ";"          [ReturnExpr] { S_return (Some e) }
+  -> "return" e:Expression ";"          [ReturnExpr] { S_return (Some (FullExpression e)) }
 
   -> "return" ";"                       [ReturnVoid] { S_return (None) }
 
@@ -817,7 +819,7 @@ nonterm Statement {
 
 nonterm ExpressionStatement {
   -> ";"                  { S_skip }
-  -> e:Expression ";"     { S_expr (e) }
+  -> e:Expression ";"     { S_expr (FullExpression e) }
 }
 
 nonterm CompoundStatement {
@@ -846,7 +848,7 @@ nonterm Condition {
   fun merge(l,r) { unimplemented 198 }
 
   -> e:Expression
-       [ExprCond] { CN_expr (e) }
+       [ExprCond] { CN_expr (FullExpression e) }
 
   (* variable declaration in the condition clause *)
   -> spec:TypeSpecifier decl:Declarator "=" e:AssignmentExpression
@@ -860,7 +862,7 @@ nonterm Condition {
 
 nonterm ConditionOpt {
   (* an empty condition (e.g. in a for loop) is interpreted as true *)
-  -> empty             { CN_expr (E_boolLit true) }
+  -> empty             { CN_expr (FullExpression (E_boolLit true)) }
   -> c:Condition       { c }
 }
 
@@ -973,7 +975,7 @@ nonterm DeclSpecifier {
            dflags = Flags.dflags_of_modifiers m2;
            spec = TS_name (
              Flags.cv_of_modifiers m2,
-             n);
+             n, false);
            decllist = [];
          }
        }
@@ -1012,7 +1014,14 @@ nonterm DeclSpecifier {
    * triggered by one of "class", "struct", "union", "enum", "typename",
    * with the particular instance sorted out by ElaboratedOrSpecifier *)
   -> e:ElaboratedOrSpecifier m2:UberModifierSeqOpt
-       [ElabName] { unimplemented 215 }
+       [ElabName] {
+         let e = Flags.set_cv (Flags.cv_of_modifiers m2) e in
+         {
+           dflags = Flags.dflags_of_modifiers m2;
+           spec = e;
+           decllist = [];
+         }
+       }
 
   -> m1:UberModifierSeq e:ElaboratedOrSpecifier m2:UberModifierSeqOpt
        [PreModElabName] { unimplemented 216 }
@@ -1124,7 +1133,7 @@ nonterm ElaboratedTypeSpecifier {
 
   (* cppstd grammar ensures "typename" is only applied to qualified
    * names, but I find that more natural to enforce during typechecking *)
-  -> "typename" n:PQTypeName    [Typename] { TS_name ([], n) }
+  -> "typename" n:PQTypeName    [Typename] { TS_name ([], n, true) }
 }
 
 
@@ -1134,10 +1143,10 @@ nonterm ElaboratedTypeSpecifier {
 nonterm TypeSpecifier {
   (* TS_name *)
   -> n:PQTypeName cv:UberCVQualifierSeqOpt
-       [Name] { TS_name (cv, n) }
+       [Name] { TS_name (cv, n, false) }
 
   -> cv1:UberCVQualifierSeq n:PQTypeName cv2:UberCVQualifierSeqOpt
-       [QualName] { TS_name (cv1 @ cv2, n) }
+       [QualName] { TS_name (cv1 @ cv2, n, false) }
 
   (* TS_simple *)
   -> k1:SimpleTypeSpecifier m2:UberTypeAndCVQualifierSeqOpt
@@ -1493,7 +1502,7 @@ nonterm CVQualifier {
  * it is, for example, what appears inside the parens of a typecast *)
 nonterm TypeId {
   -> spec:TypeSpecifier decl:AbstractDeclaratorOpt
-       { unimplemented 333 }
+       { T_type (spec, DC_decl (decl, None)) }
 }
 
 nonterm AbstractDeclaratorOpt {
@@ -1733,9 +1742,9 @@ nonterm ClassHeadName {
 }
 
 nonterm ClassKey {
-  -> "class"       [Class] { unimplemented 381 }
-  -> "struct"      [Struct] { unimplemented 382 }
-  -> "union"       [Union] { unimplemented 383 }
+  -> "class"       [Class]  { TI_Class }
+  -> "struct"      [Struct] { TI_Struct }
+  -> "union"       [Union]  { TI_Union }
 }
 
 
@@ -2074,7 +2083,6 @@ nonterm ExportOpt {
 
 nonterm TemplateDeclaration {
   fun merge(l,r) { unimplemented 1308 }
-  fun keep(d) { unimplemented 1316 }
 
   (* these are the std's rules for template declarations and specialisations:
    *   -> ExportOpt "template" "<" TemplateParameterList ">" Declaration;
@@ -2091,21 +2099,30 @@ nonterm TemplateDeclaration {
 
   (* template function definition *)
   -> plist:TemplatePreamble def:FunctionDefinition
-       { unimplemented 482 }
+       {
+         if Query.any_have_default_args plist then
+           (* Function templates and definitions of members of class
+            * templates cannot have default arguments (14.1p9).
+            * Reject here because failure to do so can lead to an
+            * unhandled ambiguity (t0463.cc). *)
+           cancel "template function defn with default args"
+         else
+           TD_func (plist, def)
+       }
 
   (* template function definition, or template class or data member decl/defn *)
   -> plist:TemplatePreamble d:SimpleDeclaration
-       { unimplemented 483 }
+       { TD_decl (plist, d) }
 
   (* definition of a template member *)
   -> plist:TemplatePreamble td:TemplateDeclaration
-       { unimplemented 484 }
+       { TD_tmember (plist, td) }
 
   (* as a toplevel form, this is a specialisation of a template class
    * constructor; as a class member, it is a declaration of a
    * templatised constructor *)
   -> plist:TemplatePreamble d:CDtorProtoDecl
-       { unimplemented 485 }
+       { TD_decl (plist, d) }
 }
 
 (* the "template <...>" stuff *)
@@ -2115,40 +2132,49 @@ nonterm TemplatePreamble {
 
   (* template declaration *)
   -> "template" "<" plist:TemplateParameterList ">"
-       [Temlate] { unimplemented 486 }
+       [Temlate] { plist }
   -> "export" "template" "<" plist:TemplateParameterList ">"
-       [ExportTemplate] { unimplemented 487 }
+       [ExportTemplate] { plist }
 
   (* explicit specialisation *)
   -> "template" "<" ">"
-       [ExplSpecTemplate] { unimplemented 488 }
+       [ExplSpecTemplate] { [] }
   -> "export" "template" "<" ">"
-       [ExplSpecExportTemplate] { unimplemented 489 }
+       [ExplSpecExportTemplate] { [] }
 }
 
 nonterm TemplateParameterList {
-  fun keep(x) { unimplemented 1317 }
-
   (* unfortunately, while we can record an ambiguous template parameter
    * list, we do not currently disambiguate it properly; see in/t0465.cc *)
   fun merge(l,r) { unimplemented 490 }
 
   (* non-template type parameter *)
   -> p:TypeParameter next:TemplateParameterListContinuation
-     { unimplemented 491 }
+     { p :: next }
 }
 
 nonterm TypeParameter {
-  fun merge(l,r) { unimplemented 1005 }
+  fun merge(l,r) { TP_ambig (l, r) }
 
   (* non-template type parameter *)
-  -> ClassOrTypename i:IdentifierOpt t:DefaultTypeOpt { unimplemented 1230 }
+  -> ClassOrTypename i:IdentifierOpt t:DefaultTypeOpt
+        [TyParam] { TP_type (i, t)  }
 
   (* non-type parameter *)
-  -> p:ParameterDeclaration;
+  -> p:ParameterDeclaration
+        [NonTyParam] {
+          (* if the specifier is a TS_elaborated, then it could be a type
+           * parameter; cppstd 14.1 para 3 seems to say that in that case it
+           * always *is* a type parameter *)
+          if Query.can_be_type_param (Query.spec_of_type_id p) then
+            cancel "template parameter can be type param"
+          else
+            TP_nontype (p)
+        }
 
   (* template type parameter *)
-  -> "template" "<" pl:TemplateParameterList ">" "class" i:IdentifierOpt t:DefaultTemplateOpt { unimplemented 1231 }
+  -> "template" "<" pl:TemplateParameterList ">" "class" i:IdentifierOpt t:DefaultTemplateOpt
+        [TemplTyParam] { unimplemented 1231 }
 }
 
 (* what comes after a template paramter: nothing, or else
@@ -2156,8 +2182,8 @@ nonterm TypeParameter {
 nonterm TemplateParameterListContinuation {
   fun merge(l,r) { unimplemented 494 }
 
-  -> empty                             { unimplemented 495 }
-  -> "," next:TemplateParameterList    { unimplemented 496 }
+  -> empty                             { [] }
+  -> "," next:TemplateParameterList    { next }
 }
 
 nonterm ClassOrTypename {
@@ -2223,13 +2249,28 @@ nonterm TemplateArgument {
    * due to angle brackets vs. less-than *)
   fun merge(l,r) { unimplemented 510 }
 
-  fun keep(n) { unimplemented 1318 }
-
   -> typeid:TypeId
-     [Type] { unimplemented 511 }
+     [Type] { TA_type (typeid) }
 
   -> e:AssignmentExpression
-     [Expr] { unimplemented 512 }
+     [Expr] {
+       match Query.disambig_nontype_ta e with
+       | None ->
+         (* this is the wrong interpretation because template argument
+          * expressions aren't allowed to have unparenthesized
+          * greater-than operators [cppstd 14.1 para 15]
+          *
+          * this helps eliminate a nasty ambiguity in function
+          * declarators, as otherwise
+          *   template <class T>
+          *   Foo<T> & Foo<T>::get() {}
+          * could be interpreted as a constructor (we don't realize
+          * that 'get' != 'Foo') of a template class with template
+          * argument "T > &Foo < T" *)
+         cancel "template argument has unparenthesized greater-than operator"
+       | Some e ->
+         TA_nontype (e)
+     }
 
   (* is this for template args that are templates, or what? *)
   (*-> IdExpression; *)
