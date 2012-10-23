@@ -101,6 +101,8 @@ type simple_type_id =
 
   | ST_Void
   | ST_Ellipsis
+
+  | ST_CDtor
   with sexp
 
 type type_intr =
@@ -132,13 +134,13 @@ type binary_op =
   | BIN_GREATER
   | BIN_LESSEQ
   | BIN_GREATEREQ
-  | BIN_MULT
+  | BIN_MUL
   | BIN_DIV
   | BIN_MOD
-  | BIN_PLUS
-  | BIN_MINUS
-  | BIN_LSHIFT
-  | BIN_RSHIFT
+  | BIN_ADD
+  | BIN_SUB
+  | BIN_LSH
+  | BIN_RSH
   | BIN_BITAND
   | BIN_BITXOR
   | BIN_BITOR
@@ -149,8 +151,8 @@ type binary_op =
   | BIN_MAXIMUM
   | BIN_BRACKETS
   | BIN_ASSIGN
-  | BIN_DOT_STAR
-  | BIN_ARROW_STAR
+  | BIN_DSTAR
+  | BIN_ASTAR
   with sexp
 
 
@@ -188,20 +190,20 @@ type overloadable_op =
     (* arithmetic *)
   | OP_DIV           (* / *)
   | OP_MOD           (* % *)
-  | OP_LSHIFT        (* << *)
-  | OP_RSHIFT        (* >> *)
+  | OP_LSH           (* "<<" *)
+  | OP_RSH           (* ">>" *)
   | OP_BITXOR        (* ^ *)
   | OP_BITOR         (* | *)
   
     (* arithmetic+assignment *)
   | OP_ASSIGN        (* = *)
-  | OP_PLUSEQ        (* += *)
-  | OP_MINUSEQ       (* -= *)
-  | OP_MULTEQ        (* *= *)
+  | OP_ADDEQ         (* += *)
+  | OP_SUBEQ         (* -= *)
+  | OP_MULEQ         (* *= *)
   | OP_DIVEQ         (* /= *)
   | OP_MODEQ         (* %= *)
-  | OP_LSHIFTEQ      (* <<= *)
-  | OP_RSHIFTEQ      (* >>= *)
+  | OP_LSHEQ         (* "<<=" *)
+  | OP_RSHEQ         (* ">>=" *)
   | OP_BITANDEQ      (* &= *)
   | OP_BITXOREQ      (* ^= *)
   | OP_BITOREQ       (* |= *)
@@ -292,7 +294,7 @@ and member_init = {
   (* name of member or base class *)
   mname : pq_name;
   (* arguments to its constructor *)
-  args : arg_expression;
+  args : arg_expression list;
 }
 
 
@@ -329,9 +331,8 @@ and pq_name =
    * NOTE: 'name' here is *never* NULL--instead, I use NULL
    * PQName pointers in abstract declarators *)
   | PQ_name of (*name*)string
-  (* "operator" names; 'o' has the full info, while 'fakeName' is
-   * for getName(), which is sometimes used for string maps *)
-  | PQ_operator of (*o*)operator_name * (*fakeName*)string
+  (* "operator" names; 'o' has the full info *)
+  | PQ_operator of (*o*)operator_name
   (* template instances: a template function or class name, plus
    * some template arguments *)
   | PQ_template of (*name*)string * (*templArgs*)template_argument list
@@ -361,13 +362,15 @@ and type_specifier =
                      *   - it could be a definition or specialization of a class
                      *     declared in another namespace
                      * See cppstd 14.5.4 para 6 for an example of both at once. *)
-                  * (*name*)pq_name
+                  * (*name*)pq_name option
                   * (*bases*)base_class_spec list (* base classes *)
                   * (*members*)member list (* field and methods of the class *)
   (* "enum { ... }" *)
   | TS_enumSpec of (*cv*)cv_flags
   		 * (*name*)string option (* name of enum, if any *)
                  * (*elts*)enumerator list (* elements of the enumeration *)
+
+  | TS_typeof of (*cv*)cv_flags * (*atype*)typeof
 
 (* base class specification *)
 and base_class_spec = {
@@ -379,7 +382,7 @@ and base_class_spec = {
 (* a binding of a name to a constant value *)
 and enumerator = {
   ename : string; (* name of this constant *)
-  expr : expression option; (* constant expr, or None for "next" *)
+  eexpr : expression option; (* constant expr, or None for "next" *)
 }
 
 (* member of a class *)
@@ -438,7 +441,7 @@ and ideclarator =
    * disambiguation *)
   | D_grouping of (*base*)ideclarator
   (* __attribute__ occurring directly after a declarator *)
-  | D_attribute of (*alist*)attribute list
+  | D_attribute of (*base*)ideclarator * (*alist*)attribute list
 
 (* specification of what a function can throw; if an exception_spec option
  * pointer is None, it means there is no specification, i.e. anything
@@ -647,6 +650,7 @@ and namespace_decl =
   | ND_usingDir of (*name*)pq_name
 
 
+(* ----------- gcc attributes ----------- *)
 (* one attribute, somewhere inside __attribute((...)); syntactically,
  * attributes are separated by commas in the parens *)
 and attribute =
@@ -667,5 +671,15 @@ and attribute =
    * is still different from AT_word) *)
   | AT_func of string * arg_expression list
 
+
+(* ----------- gcc typeof ----------- *)
+(* types denoted with 'typeof' keyword *)
+and typeof =
+  | TO_ambig of typeof * typeof
+  | TO_expr of (*expr*)full_expression
+  | TO_type of (*atype*)type_id
+
+
+(* ----------- END OF AST ----------- *)
   (* all of the above gets sexp *)
   with sexp

@@ -40,8 +40,24 @@ let make_ellipsis_type_id () =
 
 
 let declarator = function
-  | DC_ambig _ -> failwith "ambiguous decl"
   | DC_decl (decl, _) -> decl
+  | DC_ambig _ as declr ->
+      Printf.printf "ambiguous decls: %s\n" (Sexplib.Sexp.to_string_hum (sexp_of_declarator declr));
+      failwith "ambiguous decls"
+
+
+let rec map_ambig_decls f result d =
+  match d with
+  | DC_decl _ ->
+      (f d) :: result
+  | DC_ambig (l, r) ->
+      let result = map_ambig_decls f result l in
+      let result = map_ambig_decls f result r in
+      result
+
+let map_ambig_decls f declr =
+  map_ambig_decls f [] declr
+
 
 
 let ends_with_identifier = function
@@ -84,11 +100,21 @@ let keep_declaration d =
             true
       in
 
-      let keep = loop (declarator hd) in
-      
-      if not keep then
+      let keeps =
+        map_ambig_decls (fun declr ->
+          loop (declarator declr)
+        ) hd
+      in
+
+      let keep = List.for_all BatPervasives.identity keeps in
+
+      if keep then (
+        (* either all ambiguous alternatives say "keep" *)
+      ) else (
+        (* or none say "keep" *)
+        assert (not (List.exists BatPervasives.identity keeps));
         (* TODO: trace ("cancel due to TYPENAME ::NAME") *)
-        ();
+      );
 
       keep
 

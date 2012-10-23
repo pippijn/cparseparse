@@ -7,6 +7,7 @@ let rec bottom d prev =
   | D_name _ ->
       prev
 
+  | D_attribute (base, _)
   | D_grouping (base) ->
       bottom base prev
 
@@ -16,9 +17,6 @@ let rec bottom d prev =
   | D_func (base, _, _, _)
   | D_array (base, _) ->
       bottom base d
-
-  | D_attribute _ ->
-      failwith "don't know what to do with attributes, yet"
 
 
 (* true if this declarator is "obviously" declaring a function type,
@@ -37,6 +35,7 @@ let rec id_of_declarator = function
   | D_bitfield (n, _)
   | D_name n -> n
 
+  | D_attribute (base, _)
   | D_grouping (base)
   | D_pointer (_, base)
   | D_reference (_, base)
@@ -44,9 +43,6 @@ let rec id_of_declarator = function
   | D_func (base, _, _, _)
   | D_array (base, _) ->
       id_of_declarator base
-
-  | D_attribute _ ->
-      failwith "don't know what to do with attributes, yet"
 
 
 let name_has_qualifiers = function
@@ -92,7 +88,7 @@ let tp_has_default_arg = function
 
   | TP_nontype (T_type (_, DC_decl (_, None)))
   | TP_template (_, _, None)
-  | TP_type (_, None) -> true
+  | TP_type (_, None) -> false
 
   | TP_nontype (T_type (_, DC_ambig _)) -> failwith "ambiguous declaration in non-type template parameter"
   | TP_ambig _ -> failwith "ambiguous template parameter"
@@ -185,3 +181,14 @@ let rec disambig_nontype_ta = function
         None
       else
         Some expr
+
+
+let rec ideclr_is_func = function
+  | D_grouping (base) -> ideclr_is_func base
+  | D_func _ -> true
+  | _ -> false
+
+
+let rec declr_is_func = function
+  | DC_decl (decl, init) -> ideclr_is_func decl
+  | DC_ambig _ -> failwith "ambiguous declarator"

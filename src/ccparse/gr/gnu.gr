@@ -98,7 +98,7 @@ nonterm PostfixExpression {
 
   (* quarl 2006-07-12 *)
   (*    Handle __offsetof__ (gcc-3.4), __builtin_offsetof (gcc-4.x) *)
-  -> "__builtin_offsetof" "(" t:TypeId "," n:NamesAfterDot ")"
+  -> "__builtin_offsetof" "(" t:TypeId "," n:MemberNameSeq ")"
        { unimplemented 546 }
 
   -> "__offsetof__" "(" e:Expression ")"
@@ -114,12 +114,12 @@ nonterm PostfixExpression {
  *    (( A* ) NULL)->a.b
  * so we construct the right-hand part of that expression here, and let
  * the context fill in the cast and NULL in the offsetof action. *)
-nonterm NamesAfterDot {
-  -> n:NameAfterDot
+nonterm MemberNameSeq {
+  -> n:MemberName
        { unimplemented 553 }
-  -> n:NamesAfterDot "." n2:NameAfterDot
+  -> n:MemberNameSeq "." n2:MemberName
        { unimplemented 554 }
-  -> n:NamesAfterDot "[" e:Expression "]"
+  -> n:MemberNameSeq "[" e:Expression "]"
        { unimplemented 555 }
 }
 
@@ -213,20 +213,44 @@ nonterm LabelledEmptyStatementListOpt {
 nonterm DeclSpecifier {
   (* TS_typeof: triggered by TypeTypeSpecifier *)
   -> te:TypeofTypeSpecifier m2:UberModifierSeqOpt
-       { unimplemented 569 }
+	[Typeof] {
+          let m = m2 in
+          {
+            dflags = Flags.dflags_of_modifiers m;
+            spec = TS_typeof (
+              Flags.cv_of_modifiers m,
+              te);
+            decllist = [];
+          }
+        }
 
   -> m1:UberModifierSeq te:TypeofTypeSpecifier m2:UberModifierSeqOpt
-       { unimplemented 570 }
+	[ModTypeof] {
+          let m = m1 @ m2 in
+          {
+            dflags = Flags.dflags_of_modifiers m;
+            spec = TS_typeof (
+              Flags.cv_of_modifiers m,
+              te);
+            decllist = [];
+          }
+        }
 }
 
 
 nonterm TypeSpecifier {
   (* TS_typeof *)
   -> te:TypeofTypeSpecifier cv2:UberCVQualifierSeqOpt
-       { unimplemented 571 }
+       [Typeof] {
+         let cv = cv2 in
+         TS_typeof (cv, te)
+       }
 
   -> cv1:UberCVQualifierSeq te:TypeofTypeSpecifier cv2:UberCVQualifierSeqOpt
-       { unimplemented 572 }
+       [QualTypeof] {
+         let cv = cv1 @ cv2 in
+         TS_typeof (cv, te)
+       }
 }
 
 
@@ -237,23 +261,23 @@ nonterm TypeofTypeSpecifier {
    *   typeof(x)
    * could either be type of an expression 'x', or
    * type (of a type) called 'x' *)
-  fun merge(l,r) { unimplemented 573 }
+  fun merge(l,r) { TO_ambig (l, r) }
 
-  -> e:TypeofExpr       [TypeofExpr] { unimplemented 574 }
-  -> t:TypeofType       [TypeofType] { unimplemented 575 }
+  -> e:TypeofExpr       [TypeofExpr] { TO_expr (e) }
+  -> t:TypeofType       [TypeofType] { TO_type (t) }
 }
 
 
 (* gnu extension *)
 nonterm TypeofExpr {
   -> "__typeof__" "(" e:Expression ")"
-       { unimplemented 576 }
+       { FullExpression (e) }
 }
 
 (* gnu extension *)
 nonterm TypeofType {
   -> "__typeof__" "(" t:TypeId ")"
-       { unimplemented 577 }
+       { t }
 }
 
 
@@ -352,12 +376,12 @@ nonterm AsmDefinition {
 (* http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Asm-Labels.html *)
 nonterm Declarator {
   (* Asm Labels after declarators; see in/gnu/asm01.c *)
-  -> d:DirectDeclarator "asm" "(" StringLiteral ")"
-       { unimplemented 911 }
+  -> d:DirectDeclarator "asm" "(" reg:StringLiteral ")"
+       { d }
 
   (* asm label + attributes ... *)
-  -> d:DirectDeclarator "asm" "(" StringLiteral ")" attr:AttributeSpecifierList
-       { unimplemented 912 }
+  -> d:DirectDeclarator "asm" "(" reg:StringLiteral ")" attr:AttributeSpecifierList
+       { d }
 }
 
 
@@ -595,7 +619,7 @@ nonterm Declarator {
    * attributes just inside the ")" of a D_grouping, whereas gcc
    * doesn't *)
   -> d:DirectDeclarator attr:AttributeSpecifierList
-       { unimplemented 914 }
+       { D_attribute (d, attr) }
 }
 
 
@@ -638,7 +662,7 @@ nonterm CDtorModifier {
 (* 2007-09-15: This is in the gcc-4.2.1 headers. *)
 nonterm NamespaceDefinition {
   -> "namespace" n:IdentifierOpt attr:AttributeSpecifierList "{" unit:TranslationUnit "}"
-       { unimplemented 634 }
+       { TF_namespaceDefn (n, unit) }
 }
 
 
@@ -759,10 +783,10 @@ nonterm AttributeSpecifier {
 
 nonterm AttributeSpecifierList {
   -> s:AttributeSpecifier
-     { [s] }
+     { s }
 
   -> s:AttributeSpecifier sl:AttributeSpecifierList
-     { s :: sl }
+     { s @ sl }
 }
 
 (* quarl 2006-06-14

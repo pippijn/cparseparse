@@ -63,10 +63,41 @@ let cv_of_modifiers mods =
 let stype_of_modifiers mods =
   (* implement cppstd Table 7, p.109 *)
   match List.sort compare (List.filter is_type_keyword mods) with
-  | [`UM_CHAR] -> ST_Char
-  | [`UM_INT] -> ST_SInt
-  | [`UM_LONG; `UM_INT] -> ST_SLong
-  | [`UM_UNSIGNED; `UM_LONG; `UM_INT] -> ST_ULong
+  | [`UM_BOOL					] -> ST_Bool
+
+  | [`UM_FLOAT					] -> ST_Float
+  | [`UM_DOUBLE					] -> ST_Double
+  | [`UM_LONG; `UM_DOUBLE			] -> ST_LDouble
+
+  | [`UM_CHAR					] -> ST_Char
+  | [`UM_CHAR; `UM_SIGNED			] -> ST_SChar
+  | [`UM_CHAR; `UM_UNSIGNED			] -> ST_UChar
+
+  | [`UM_WCHAR_T				] -> ST_WCharT
+
+  | [`UM_SHORT					] -> ST_SShort
+  | [`UM_SHORT; `UM_UNSIGNED			]
+  | [`UM_SHORT; `UM_UNSIGNED; `UM_INT		] -> ST_UShort
+
+  | [`UM_INT					]
+  | [`UM_SIGNED; `UM_INT			] -> ST_SInt
+  | [`UM_UNSIGNED;				]
+  | [`UM_UNSIGNED; `UM_INT			] -> ST_UInt
+
+  | [`UM_LONG;					]
+  | [`UM_LONG; `UM_INT				] -> ST_SLong
+
+  | [`UM_UNSIGNED; `UM_LONG;			]
+  | [`UM_UNSIGNED; `UM_LONG; `UM_INT		] -> ST_ULong
+
+  | [`UM_LONG; `UM_LONG				]
+  | [`UM_LONG; `UM_LONG; `UM_INT		] -> ST_SLLong
+
+  | [`UM_UNSIGNED; `UM_LONG; `UM_LONG		]
+  | [`UM_UNSIGNED; `UM_LONG; `UM_LONG; `UM_INT	] -> ST_ULLong
+
+  | [`UM_VOID					] -> ST_Void
+
   | mods -> failwith ("malformed type: " ^ Sexplib.Sexp.to_string_hum (sexp_of_modifiers mods))
 
 

@@ -179,9 +179,9 @@ nonterm IdentifierListOpt {
 
 nonterm KandRIdentifierList {
   -> i:KandRIdentifier
-       { unimplemented 736 }
+       { [i] }
   -> i:KandRIdentifier "," e:KandRIdentifierList
-       { unimplemented 737 }
+       { i :: e }
 }
 
 
@@ -194,25 +194,25 @@ nonterm KandRIdentifier {
 (* modifiers that can precede a function decl/defn in C; note
  * that the only intersection with CDtorModifier is "inline" *)
 nonterm CFuncModifier_no_inline {
-  -> "static"                              { unimplemented 739 }
-  -> "extern"                              { unimplemented 740 }
-  -> "const"                               { unimplemented 741 }
-  -> "volatile"                            { unimplemented 742 }
+  -> "static"                              { `UM_STATIC }
+  -> "extern"                              { `UM_EXTERN }
+  -> "const"                               { `UM_CONST }
+  -> "volatile"                            { `UM_VOLATILE }
 }
 
 nonterm CFuncModifier {
-  -> m:CFuncModifier_no_inline             { unimplemented 743 }
-  -> "inline"                              { unimplemented 744 }
+  -> m:CFuncModifier_no_inline             { m }
+  -> "inline"                              { `UM_INLINE }
 }
 
 nonterm CFuncModifierSeq {
-  -> m:CFuncModifier                       { unimplemented 745 }
-  -> s:CFuncModifierSeq m:CFuncModifier    { unimplemented 746 }
+  -> m:CFuncModifier                       { [m] }
+  -> s:CFuncModifierSeq m:CFuncModifier    { m :: s }
 }
 
 nonterm CFuncModifierSeqOpt {
-  -> empty                                 { unimplemented 747 }
-  -> m:CFuncModifier                       { unimplemented 748 }
+  -> empty                                 { [] }
+  -> m:CFuncModifierSeq                    { m }
 }
 
 
@@ -235,8 +235,7 @@ nonterm ImplIntFunctionDefinition {
    * that begins with it will not cause a parser split until the next
    * modifier is seen; if no modifier follows "inline", it will be
    * parsed as a constructor, and later changed into implicit-int *)
-  -> "inline" m1:CFuncModifier_no_inline m2:CFuncModifierSeqOpt
-     d:Declarator b:FunctionBody
+  -> "inline" m1:CFuncModifier_no_inline m2:CFuncModifierSeqOpt d:Declarator b:FunctionBody
        { unimplemented 751 }
 }
 
@@ -249,7 +248,7 @@ nonterm Declaration {
   -> f:ImplIntFunctionDefinition
     { unimplemented 1247 }
 
-  -> m1:UberModifierSeqOpt (*implicit-int*) list:InitDeclaratorList ";"
+  -> m1:UberModifierSeqOpt (*implicit-int*)empty list:InitDeclaratorList ";"
     { unimplemented 1248 }
 }
 
@@ -261,21 +260,21 @@ nonterm KandRSimpleDeclaration {
    * but I have not yet constructed an example... *)
 
   (* (in/c/dC0026.c) *)
-  -> "register" (*implicit-int*) list:KandRInitDeclaratorList ";"
+  -> "register" (*implicit-int*)empty list:KandRInitDeclaratorList ";"
      { unimplemented 752 }
 }
 
 nonterm Statement {
   fun keep(x) { true }
 
-  -> m1:UberModifierSeq (*implicit-int*) list:InitDeclaratorList ";"
+  -> m1:UberModifierSeq (*implicit-int*)empty list:InitDeclaratorList ";"
     { unimplemented 753 }
 }
 
 nonterm ParameterDeclaration {
   fun keep(x) { true }
 
-  -> (*implicit-int*) d:UnqualifiedDeclarator
+  -> (*implicit-int*)empty d:UnqualifiedDeclarator
     {
       T_type (
         TS_simple ([], ST_ImplInt),
@@ -283,7 +282,7 @@ nonterm ParameterDeclaration {
       )
     }
 
-  -> "register" (*implicit-int*) d:UnqualifiedDeclarator
+  -> "register" (*implicit-int*)empty d:UnqualifiedDeclarator
     { unimplemented 755 }
 }
 
