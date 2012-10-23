@@ -7,7 +7,8 @@
 /* ===================== tokens ============================ */
 /* tokens that have many lexical spellings */
 %token <int> TOK_INTEGER
-%token <string> TOK_NAME
+%token <string> TOK_UNAME
+%token <string> TOK_LNAME
 %token <string> TOK_STRING
 %token <string> TOK_LIT_CODE
 
@@ -78,9 +79,9 @@ verbatim
 
 /* options without specified values default to a value of 1 */
 parser_option
-	: TOK_OPTION TOK_NAME		  TOK_SEMICOLON { TF_option ($2,  1) }
-	| TOK_OPTION TOK_NAME TOK_INTEGER TOK_SEMICOLON { TF_option ($2, $3) }
-	| TOK_OPTION TOK_NAME TOK_NAME    TOK_SEMICOLON { TF_option ($2, (if $3 = "true" then 1 else 0)) }
+	: TOK_OPTION TOK_LNAME		   TOK_SEMICOLON { TF_option ($2,  1) }
+	| TOK_OPTION TOK_LNAME TOK_INTEGER TOK_SEMICOLON { TF_option ($2, $3) }
+	| TOK_OPTION TOK_LNAME TOK_LNAME   TOK_SEMICOLON { TF_option ($2, (if $3 = "true" then 1 else 0)) }
 
 
 /* ------ terminals ------ */
@@ -104,9 +105,9 @@ terminal_decls
  * canonical name, and an optional alias; the name/alias appears in
  * the forms, rather than the integer code itself */
 terminal_decl
-	: TOK_INTEGER TOK_COLON TOK_NAME	    TOK_SEMICOLON
+	: TOK_INTEGER TOK_COLON TOK_UNAME	     TOK_SEMICOLON
 		{ TermDecl ($1, $3, "") }
-	| TOK_INTEGER TOK_COLON TOK_NAME TOK_STRING TOK_SEMICOLON
+	| TOK_INTEGER TOK_COLON TOK_UNAME TOK_STRING TOK_SEMICOLON
 		{ TermDecl ($1, $3, $4) }
 
 
@@ -116,9 +117,9 @@ term_types
 
 
 term_type
-	: TOK_TOKEN TOK_LIT_CODE TOK_NAME TOK_SEMICOLON
+	: TOK_TOKEN TOK_LIT_CODE TOK_UNAME TOK_SEMICOLON
 		{ TermType ($3, $2, []) }
-	| TOK_TOKEN TOK_LIT_CODE TOK_NAME TOK_LBRACE spec_funcs TOK_RBRACE
+	| TOK_TOKEN TOK_LIT_CODE TOK_UNAME TOK_LBRACE spec_funcs TOK_RBRACE
 		{ TermType ($3, $2, List.rev $5) }
 
 
@@ -130,7 +131,7 @@ precedence
 prec_specs
 	: /* empty */
 		{ [] }
-	| prec_specs TOK_NAME TOK_INTEGER name_or_string_list TOK_SEMICOLON
+	| prec_specs TOK_LNAME TOK_INTEGER name_or_string_list TOK_SEMICOLON
 		{ PrecSpec (Assoc.of_string $2, $3, List.rev $4) :: $1 }
 
 
@@ -140,7 +141,7 @@ name_or_string_list
 
 
 name_or_string
-	: TOK_NAME		{ $1 }
+	: TOK_UNAME		{ $1 }
 	| TOK_STRING		{ $1 }
 
 
@@ -152,18 +153,18 @@ spec_funcs
 
 
 spec_func
-	: TOK_FUN TOK_NAME TOK_LPAREN formals_opt TOK_RPAREN TOK_LIT_CODE
+	: TOK_FUN TOK_LNAME TOK_LPAREN formals_opt(TOK_LNAME) TOK_RPAREN TOK_LIT_CODE
 		{ SpecFunc ($2, $4, $6) }
 
 
-formals_opt
+formals_opt(NAME)
 	: /* empty */		      { [] }
-	| formals		      { List.rev $1 }
+	| formals(NAME)		      { List.rev $1 }
 
 
-formals
-	: TOK_NAME			{ [$1] }
-	| formals TOK_COMMA TOK_NAME	{ $3 :: $1 }
+formals(NAME)
+	: NAME				{ [$1] }
+	| formals(NAME) TOK_COMMA NAME	{ $3 :: $1 }
 
 
 
@@ -174,9 +175,9 @@ formals
  * attribute info, etc.
  */
 nonterminal
-	: TOK_NONTERM type_decl TOK_NAME production
+	: TOK_NONTERM type_decl TOK_UNAME production
 		{ TF_nonterm ($3, $2, [], [$4], []) }
-	| TOK_NONTERM type_decl TOK_NAME TOK_LBRACE spec_funcs productions subsets TOK_RBRACE
+	| TOK_NONTERM type_decl TOK_UNAME TOK_LBRACE spec_funcs productions subsets TOK_RBRACE
 		{ TF_nonterm ($3, $2, List.rev $5, List.rev $6, $7) }
 
 
@@ -202,7 +203,7 @@ production
 
 
 production_name
-	: TOK_LBRACK TOK_NAME TOK_RBRACK
+	: TOK_LBRACK TOK_UNAME TOK_RBRACK
 		{ Some $2 }
 
 
@@ -222,13 +223,13 @@ rhs
  * are to be referenced anywhere in the actions or conditions for the form
  */
 rhs_elt
-	: TOK_NAME
+	: TOK_UNAME
 		{ RH_name ("", $1) }
-	| TOK_NAME TOK_COLON TOK_NAME
+	| TOK_LNAME TOK_COLON TOK_UNAME
 		{ RH_name ($1, $3) }
 	| TOK_STRING
 		{ RH_string ("", $1) }
-	| TOK_NAME TOK_COLON TOK_STRING
+	| TOK_LNAME TOK_COLON TOK_STRING
 		{ RH_string ($1, $3) }
 	| TOK_PRECEDENCE TOK_LPAREN name_or_string TOK_RPAREN
 		{ RH_prec ($3) }
@@ -237,5 +238,5 @@ rhs_elt
 
 
 subsets
-	: /*empty*/				{ [] }
-	| TOK_SUBSETS formals TOK_SEMICOLON	{ List.rev $2 }
+	: /*empty*/					{ [] }
+	| TOK_SUBSETS formals(TOK_UNAME) TOK_SEMICOLON	{ List.rev $2 }
