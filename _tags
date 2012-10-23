@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 82004a00c38aff7a5b4e9f55912ead12)
+# DO NOT EDIT (digest: 4bbcc29ad08bc6892f8c9a33d27e12a9)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -21,6 +21,15 @@
 "src/cabs/tqual.cmx": for-pack(Cabs)
 <src/cabs/*.ml{,i}>: pkg_batteries
 <src/cabs/*.ml{,i}>: pkg_sexplib
+# Library ccabs
+"src/ccabs/ccabs.cmxs": use_ccabs
+"src/ccabs/ast.cmx": for-pack(Ccabs)
+"src/ccabs/disambiguation.cmx": for-pack(Ccabs)
+"src/ccabs/flags.cmx": for-pack(Ccabs)
+"src/ccabs/query.cmx": for-pack(Ccabs)
+<src/ccabs/*.ml{,i}>: pkg_batteries
+<src/ccabs/*.ml{,i}>: pkg_sexplib
+<src/ccabs/*.ml{,i}>: pkg_monad
 # Library baselib
 "src/baselib/baselib.cmxs": use_baselib
 "src/baselib/baselib.cmxa": oasis_library_baselib_cclib
@@ -77,36 +86,41 @@
 # Library ccparse
 "src/ccparse/ccparse.cmxs": use_ccparse
 "src/ccparse/cc_keywords.cmx": for-pack(Ccparse)
+"src/ccparse/factory.cmx": for-pack(Ccparse)
 "src/ccparse/lexer.cmx": for-pack(Ccparse)
 "src/ccparse/parser.cmx": for-pack(Ccparse)
 "src/ccparse/options.cmx": for-pack(Ccparse)
-<src/ccparse/*.ml{,i}>: use_cabs
+<src/ccparse/*.ml{,i}>: use_ccabs
 <src/ccparse/*.ml{,i}>: use_glr
 <src/ccparse/*.ml{,i}>: use_baselib
 <src/ccparse/*.ml{,i}>: pkg_batteries
 <src/ccparse/*.ml{,i}>: pkg_sexplib
 <src/ccparse/*.ml{,i}>: pkg_unix
-<src/ccparse/gr/*.ml{,i}>: use_cabs
+<src/ccparse/*.ml{,i}>: pkg_monad
+<src/ccparse/gr/*.ml{,i}>: use_ccabs
 <src/ccparse/gr/*.ml{,i}>: use_glr
 <src/ccparse/gr/*.ml{,i}>: use_baselib
 <src/ccparse/gr/*.ml{,i}>: pkg_batteries
 <src/ccparse/gr/*.ml{,i}>: pkg_sexplib
 <src/ccparse/gr/*.ml{,i}>: pkg_unix
+<src/ccparse/gr/*.ml{,i}>: pkg_monad
 # Executable cpapa
 "src/cpapa/cpapa.native": use_ccparse
-"src/cpapa/cpapa.native": use_cabs
+"src/cpapa/cpapa.native": use_ccabs
 "src/cpapa/cpapa.native": use_glr
 "src/cpapa/cpapa.native": use_baselib
 "src/cpapa/cpapa.native": pkg_batteries
 "src/cpapa/cpapa.native": pkg_sexplib
 "src/cpapa/cpapa.native": pkg_unix
+"src/cpapa/cpapa.native": pkg_monad
 <src/cpapa/*.ml{,i}>: use_ccparse
-<src/cpapa/*.ml{,i}>: use_cabs
+<src/cpapa/*.ml{,i}>: use_ccabs
 <src/cpapa/*.ml{,i}>: use_glr
 <src/cpapa/*.ml{,i}>: use_baselib
 <src/cpapa/*.ml{,i}>: pkg_batteries
 <src/cpapa/*.ml{,i}>: pkg_sexplib
 <src/cpapa/*.ml{,i}>: pkg_unix
+<src/cpapa/*.ml{,i}>: pkg_monad
 # Library gramanl
 "src/gramanl/gramanl.cmxs": use_gramanl
 "src/gramanl/analysisEnv.cmx": for-pack(Gramanl)
