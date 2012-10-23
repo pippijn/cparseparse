@@ -118,12 +118,18 @@ let getSome = function
  * elkhound/glr.h, as these data structures mirror the ones
  * defined there *)
 
+(* when true, print some diagnosis of failed parses *)
+let noisyFailedParse = true
+
 
 (* We define our own versions of these exceptions, so that user code raising
  * the ones in Pervasives will not interfere with parser internals. *)
 exception End_of_file
-exception Exit
 exception Cancel of string
+
+(* These exceptions are part of the public interface. *)
+exception ParseError of ParseTablesType.state_id * (*token*)int
+exception Located of SourceLocation.t * exn
 
 
 let cancel reason =
@@ -247,9 +253,6 @@ and 'result glr = {
   (* node allocation pool; shared with glrParse *)
   mutable stackNodePool : 'result stack_node Objpool.t;
 
-  (* when true, print some diagnosis of failed parses *)
-  noisyFailedParse : bool;
-
   (* current token number *)
   mutable globalNodeColumn : int;
 
@@ -258,7 +261,7 @@ and 'result glr = {
 }
 
 (* Mini-LR parser object *)
-type tLR = {
+type lr = {
   lrToPass : SemanticValue.t array;
 
   mutable lrDetShift : int;
@@ -579,7 +582,6 @@ let makeGLR userAct tables =
     topmostParsers      = Arraystack.create ();
     prevTopmost         = Arraystack.create ();
     stackNodePool       = Objpool.null ();
-    noisyFailedParse    = true;
     globalNodeColumn    = 0;
     stats = {
       detShift          = 0;
@@ -1138,12 +1140,8 @@ let rwlShiftTerminals glr tokType tokSval tokSloc =
  * :: Non-deterministic parser core
  **********************************************************)
 
-let printParseErrorMessage ?reason glr tokType tokSloc lastToDie =
-  if not glr.noisyFailedParse then
-    ()
-  else begin
-    let start_p, end_p = tokSloc in
-
+let parse_error ?reason glr tokType tokSloc lastToDie =
+  if noisyFailedParse then (
     if lastToDie <> cSTATE_INVALID then (
       Printf.printf "In state %d, I expected one of these tokens:\n" lastToDie;
       for i = 0 to ParseTables.getNumTerms glr.tables - 1 do
@@ -1156,16 +1154,16 @@ let printParseErrorMessage ?reason glr tokType tokSloc lastToDie =
     );
 
     let open Lexing in
-    Printf.printf (*loc*) "Parse error (state %d) at %s (%d:%d)\n"
+    Printf.printf (*loc*) "Parse error (state %d) at %s\n"
                   lastToDie
-                  (terminalName glr.userAct tokType)
-                  start_p.pos_lnum
-                  (start_p.pos_cnum - start_p.pos_bol);
+                  (terminalName glr.userAct tokType);
     match reason with
     | None -> ()
     | Some reason ->
         Printf.printf "Last reduction was cancelled because: %s\n" reason
-  end
+  );
+
+  raise (Located (tokSloc, ParseError (lastToDie, tokType)))
 
 
 let nondeterministicParseToken glr tokType tokSval tokSloc =
@@ -1190,43 +1188,30 @@ let nondeterministicParseToken glr tokType tokSval tokSloc =
   rwlShiftTerminals glr tokType tokSval tokSloc;
 
   (* error? *)
-  if Arraystack.is_empty glr.topmostParsers then (
-    printParseErrorMessage glr tokType tokSloc !lastToDie;
-    false
-  ) else (
-    true
-  )
+  if Arraystack.is_empty glr.topmostParsers then
+    parse_error glr tokType tokSloc !lastToDie
 
 
 (* pulled out so I can use this block of statements in several places *)
-let glrParseToken glr lexer token =
+let glrParseToken glr tokType tokSval tokSloc =
   let open Lexerint in
 
-  (* grab current token since we'll need it and the access
-   * isn't all that fast here in ML *)
-  let tokType, tokSval, tokSloc = reclassifiedToken glr.userAct lexer token in
-
-  if not (nondeterministicParseToken glr tokType tokSval tokSloc) then
-    raise Exit;              (* "return false" *)
+  (* raises ParseError on failure *)
+  nondeterministicParseToken glr tokType tokSval tokSloc;
 
   (* goto label: getNextToken *)
   (* last token? *)
   if tokType = 0 then
-    raise End_of_file;       (* "break" *)
-
-  (* get the next token *)
-  lexer.token ()
+    raise End_of_file       (* "break" *)
 
 
 (**********************************************************
  * :: Mini-LR core
  **********************************************************)
 
-let rec lrParseToken glr lr lexer token =
+let rec lrParseToken glr lr lexer tokType tokSval tokSloc =
   let parsr = ref (Arraystack.top glr.topmostParsers) in
   assert (!parsr.referenceCount = 1);
-
-  let tokType, tokSval, tokSloc = reclassifiedToken glr.userAct lexer token in
 
   let action = ParseTables.getActionEntry_noError glr.tables !parsr.state tokType in
 
@@ -1335,22 +1320,20 @@ let rec lrParseToken glr lr lexer token =
 
       (* does the user want to keep it? *)
       if not keep then (
-        printParseErrorMessage ~reason glr tokType tokSloc newNode.state;
         if GlrOptions._accounting () then (
           glr.stats.detShift  <- glr.stats.detShift  + lr.lrDetShift;
           glr.stats.detReduce <- glr.stats.detReduce + lr.lrDetReduce;
         );
 
-        raise Exit               (* "return false" *)
+        parse_error ~reason glr tokType tokSloc newNode.state;
       );
 
       (* we have not shifted a token, so again try to use
        * the deterministic core *)
-      (* "goto tryDeterministic;" *)
-      lrParseToken glr lr lexer token
+      lrParseToken glr lr lexer tokType tokSval tokSloc
     ) else (
       (* deterministic depth insufficient: use GLR *)
-      glrParseToken glr lexer token
+      glrParseToken glr tokType tokSval tokSloc
     )
 
   ) else if ParseTables.isShiftAction glr.tables action then (
@@ -1389,12 +1372,16 @@ let rec lrParseToken glr lr lexer token =
       raise End_of_file;       (* "break" *)
 
     (* get the next token *)
-    lrParseToken glr lr lexer Lexerint.(lexer.token ())
+    let tokType, tokSval, tokSloc = reclassifiedToken glr.userAct lexer Lexerint.(lexer.token ()) in
+
+    (* and parse it with the mini-LR core *)
+    lrParseToken glr lr lexer tokType tokSval tokSloc
 
   ) else (
     (* error or ambig; not deterministic *)
-    glrParseToken glr lexer token
+    glrParseToken glr tokType tokSval tokSloc
   )
+
 
 
 (**********************************************************
@@ -1466,8 +1453,10 @@ let stackSummary glr =
  **********************************************************)
 
 (* This function is the core of the parser, and its performance is
- * critical to the end-to-end performance of the whole system. *)
-let rec main_loop glr lr lexer token =
+ * critical to the end-to-end performance of the whole system.
+ * It does not actually return, but it has the same return type as
+ * the main entry point. *)
+let rec main_loop (glr : 'a glr) lr lexer token : 'a option =
   if GlrOptions._trace_parse () then (
     let open Lexerint in
     let tokType = lexer.index token in
@@ -1479,12 +1468,28 @@ let rec main_loop glr lr lexer token =
     flush stdout
   );
 
-  if GlrOptions._use_mini_lr () && Arraystack.length glr.topmostParsers = 1 then
-    (* try deterministic parsing *)
-    main_loop glr lr lexer (lrParseToken glr lr lexer token)
-  else
-    (* mini lr core disabled, use full GLR *)
-    main_loop glr lr lexer (glrParseToken glr lexer token)
+  (* classify and decompose current token *)
+  let tokType, tokSval, tokSloc = reclassifiedToken glr.userAct lexer token in
+
+  begin try
+    if GlrOptions._use_mini_lr () && Arraystack.length glr.topmostParsers = 1 then
+      (* try deterministic parsing *)
+      lrParseToken glr lr lexer tokType tokSval tokSloc
+    else
+      (* mini lr core disabled, use full GLR *)
+      glrParseToken glr tokType tokSval tokSloc;
+  with
+  | Located _
+  | End_of_file as e ->
+      (* propagate internal exceptions and ones
+       * already wrapped in Located *)
+      raise e
+  | e ->
+      raise (Located (tokSloc, e))
+  end;
+
+  (* parse next token *)
+  main_loop glr lr lexer Lexerint.(lexer.token ())
 
 
 (**********************************************************
@@ -1553,12 +1558,10 @@ let glrParse (glr : 'result glr) lexer : 'result option =
 
     (* this loop never returns normally *)
     Valgrind.Callgrind.instrumented
+      (* get first token and start parsing *)
       (main_loop glr lr lexer) Lexerint.(lexer.token ())
 
   with
-  | Exit ->
-      None
-
   | End_of_file ->
       if GlrOptions._accounting () then (
         glr.stats.detShift  <- glr.stats.detShift  + lr.lrDetShift;

@@ -24,9 +24,32 @@ let handle_return = function
       raise (ExitStatus 1)
 
 
-let glrparse glr lexer =
+let glrparse filename glr lexer =
   let tree =
-    Timing.time ~alloc:true "parsing" (GlrEngine.glrParse glr) lexer
+    try
+      Timing.time ~alloc:true "parsing" (GlrEngine.glrParse glr) lexer
+    with GlrEngine.Located ((start_p, end_p), e) ->
+      let open Lexing in
+      (* print source position *)
+      Printf.printf "\n%s:%d:%d: "
+        filename
+        (start_p.pos_lnum)
+        (start_p.pos_cnum - start_p.pos_bol + 1);
+
+      (* print exception info *)
+      begin match e with
+      | GlrEngine.ParseError (state, token) ->
+          Printf.printf "parse error (state: %d, token: %d)"
+            state token
+      | e ->
+          Printf.printf "exception in user actions: %s"
+            (Printexc.to_string e)
+      end;
+
+      (* finish printing error *)
+      print_newline ();
+
+      None
   in
 
   (* print accounting statistics from glr.ml *)
@@ -128,11 +151,7 @@ let parse_file glr actions input =
   if Options._tokens () then
     None
   else
-    match glrparse glr lexer with
-    | Some _ as result -> result
-    | None ->
-        Printf.printf "near line %d\n" 0;
-        None
+    glrparse input glr lexer
 
 
 let dump_tree tree =
