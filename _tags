@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 4bbcc29ad08bc6892f8c9a33d27e12a9)
+# DO NOT EDIT (digest: 3b8753e07a6972d693b84ca8fc842a3b)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -29,7 +29,7 @@
 "src/ccabs/query.cmx": for-pack(Ccabs)
 <src/ccabs/*.ml{,i}>: pkg_batteries
 <src/ccabs/*.ml{,i}>: pkg_sexplib
-<src/ccabs/*.ml{,i}>: pkg_monad
+<src/ccabs/*.ml{,i}>: pkg_monad-custom
 # Library baselib
 "src/baselib/baselib.cmxs": use_baselib
 "src/baselib/baselib.cmxa": oasis_library_baselib_cclib
@@ -96,14 +96,14 @@
 <src/ccparse/*.ml{,i}>: pkg_batteries
 <src/ccparse/*.ml{,i}>: pkg_sexplib
 <src/ccparse/*.ml{,i}>: pkg_unix
-<src/ccparse/*.ml{,i}>: pkg_monad
+<src/ccparse/*.ml{,i}>: pkg_monad-custom
 <src/ccparse/gr/*.ml{,i}>: use_ccabs
 <src/ccparse/gr/*.ml{,i}>: use_glr
 <src/ccparse/gr/*.ml{,i}>: use_baselib
 <src/ccparse/gr/*.ml{,i}>: pkg_batteries
 <src/ccparse/gr/*.ml{,i}>: pkg_sexplib
 <src/ccparse/gr/*.ml{,i}>: pkg_unix
-<src/ccparse/gr/*.ml{,i}>: pkg_monad
+<src/ccparse/gr/*.ml{,i}>: pkg_monad-custom
 # Executable cpapa
 "src/cpapa/cpapa.native": use_ccparse
 "src/cpapa/cpapa.native": use_ccabs
@@ -112,7 +112,7 @@
 "src/cpapa/cpapa.native": pkg_batteries
 "src/cpapa/cpapa.native": pkg_sexplib
 "src/cpapa/cpapa.native": pkg_unix
-"src/cpapa/cpapa.native": pkg_monad
+"src/cpapa/cpapa.native": pkg_monad-custom
 <src/cpapa/*.ml{,i}>: use_ccparse
 <src/cpapa/*.ml{,i}>: use_ccabs
 <src/cpapa/*.ml{,i}>: use_glr
@@ -120,7 +120,7 @@
 <src/cpapa/*.ml{,i}>: pkg_batteries
 <src/cpapa/*.ml{,i}>: pkg_sexplib
 <src/cpapa/*.ml{,i}>: pkg_unix
-<src/cpapa/*.ml{,i}>: pkg_monad
+<src/cpapa/*.ml{,i}>: pkg_monad-custom
 # Library gramanl
 "src/gramanl/gramanl.cmxs": use_gramanl
 "src/gramanl/analysisEnv.cmx": for-pack(Gramanl)
