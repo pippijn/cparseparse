@@ -1,7 +1,7 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: ef22f83727da07c0027720287cd3111c) *)
+(* DO NOT EDIT (digest: d5670a0368d00b357bf276436f944cf7) *)
 module OASISGettext = struct
-# 21 "/tmp/oasis-0.3.0/src/oasis/OASISGettext.ml"
+(* # 21 "/tmp/oasis-0.3.0/src/oasis/OASISGettext.ml" *)
 
   let ns_ str =
     str
@@ -24,7 +24,7 @@ module OASISGettext = struct
 end
 
 module OASISExpr = struct
-# 21 "/tmp/oasis-0.3.0/src/oasis/OASISExpr.ml"
+(* # 21 "/tmp/oasis-0.3.0/src/oasis/OASISExpr.ml" *)
 
 
 
@@ -116,7 +116,7 @@ end
 
 # 117 "myocamlbuild.ml"
 module BaseEnvLight = struct
-# 21 "/tmp/oasis-0.3.0/src/base/BaseEnvLight.ml"
+(* # 21 "/tmp/oasis-0.3.0/src/base/BaseEnvLight.ml" *)
 
   module MapString = Map.Make(String)
 
@@ -214,7 +214,7 @@ end
 
 # 215 "myocamlbuild.ml"
 module MyOCamlbuildFindlib = struct
-# 21 "/tmp/oasis-0.3.0/src/plugins/ocamlbuild/MyOCamlbuildFindlib.ml"
+(* # 21 "/tmp/oasis-0.3.0/src/plugins/ocamlbuild/MyOCamlbuildFindlib.ml" *)
 
   (** OCamlbuild extension, copied from 
     * http://brion.inria.fr/gallium/index.php/Using_ocamlfind_with_ocamlbuild
@@ -323,7 +323,7 @@ module MyOCamlbuildFindlib = struct
 end
 
 module MyOCamlbuildBase = struct
-# 21 "/tmp/oasis-0.3.0/src/plugins/ocamlbuild/MyOCamlbuildBase.ml"
+(* # 21 "/tmp/oasis-0.3.0/src/plugins/ocamlbuild/MyOCamlbuildBase.ml" *)
 
   (** Base functions for writing myocamlbuild.ml
       @author Sylvain Le Gall
@@ -339,7 +339,7 @@ module MyOCamlbuildBase = struct
   type name = string 
   type tag = string 
 
-# 56 "/tmp/oasis-0.3.0/src/plugins/ocamlbuild/MyOCamlbuildBase.ml"
+(* # 56 "/tmp/oasis-0.3.0/src/plugins/ocamlbuild/MyOCamlbuildBase.ml" *)
 
   type t =
       {
@@ -480,6 +480,7 @@ let package_default =
      MyOCamlbuildBase.lib_ocaml =
        [
           ("cabs", ["src/cabs"]);
+          ("ccabs", ["src/ccabs"]);
           ("baselib", ["src/baselib"]);
           ("glr", ["src/glr"]);
           ("ccparse", ["src/ccparse"; "src/ccparse/gr"]);
@@ -507,17 +508,19 @@ let package_default =
           ("src/elkhound", ["src/gramanl"]);
           ("src/cpapa", ["src/ccparse"; "src/ccparse/gr"]);
           ("src/ccparse/gr",
-            ["src/baselib"; "src/cabs"; "src/ccparse"; "src/glr"]);
+            ["src/baselib"; "src/ccabs"; "src/ccparse"; "src/glr"]);
           ("src/ccparse",
-            ["src/baselib"; "src/cabs"; "src/ccparse/gr"; "src/glr"])
+            ["src/baselib"; "src/ccabs"; "src/ccparse/gr"; "src/glr"])
        ];
      }
   ;;
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default package_default;;
 
-# 520 "myocamlbuild.ml"
+# 521 "myocamlbuild.ml"
 (* OASIS_STOP *)
+let atomize = Command.atomize
+
 let tokens = [
   "src/ccparse/tok/c++1998.tok";
   "src/ccparse/tok/c++2011.tok";
@@ -535,7 +538,7 @@ let configure fl =
   if Sys.command cmd = 0 then
     []
   else
-    [A ("-DHAS_" ^ fl)]
+    ["-DHAS_" ^ fl]
 
 let dispatch_mine = function
   | After_rules ->
@@ -543,12 +546,12 @@ let dispatch_mine = function
         ~prod:"%.o"
         ~dep:"%.cpp"
         begin fun env build ->
-          Cmd(S([A"g++"; A(env "%.cpp"); A"-c"; A"-o"; A(env "%.o");
-            A"-fPIC";
-            A"-O3";
-            A"-ggdb3";
-            A"-std=c++0x";
-            A"-I../src/baselib";
+          Cmd(atomize (["g++"; env "%.cpp"; "-c"; "-o"; env "%.o";
+            "-fPIC";
+            "-O3";
+            "-ggdb3";
+            "-std=c++0x";
+            "-I../src/baselib";
           ] @ configure "OLD_CXX"))
         end;
 
@@ -562,7 +565,7 @@ let dispatch_mine = function
           "src/ccparse/tok/make-token-files";
         ] @ tokens)
         begin fun env build ->
-          Cmd(S([A"perl"; A"src/ccparse/tok/make-token-files"; A"-o"; A"src/ccparse/tok/cc_tokens"] @ List.map (fun a -> A a) tokens))
+          Cmd(atomize (["perl"; "src/ccparse/tok/make-token-files"; "-o"; "src/ccparse/tok/cc_tokens"] @ tokens))
         end;
 
 
@@ -590,7 +593,7 @@ let dispatch_mine = function
           "src/elkhound/elkhound.native";
         ] @ grammars)
         begin fun env build ->
-          Cmd(S([A"src/elkhound/elkhound.native"; A"-timing"; A"-module-prefix"; A"Cc"] @ List.map (fun a -> A a) grammars))
+          Cmd(atomize (["src/elkhound/elkhound.native"; "-timing"; "-module-prefix"; "Cc"] @ grammars))
         end;
 
 
@@ -633,7 +636,7 @@ let dispatch_mine = function
           "src/elkhound/elkhound.native";
         ]
         begin fun env build ->
-          Cmd(S[A"src/elkhound/elkhound.native"; A"-timing"; A(env "%.gr")])
+          Cmd(atomize ["src/elkhound/elkhound.native"; "-timing"; env "%.gr"])
         end;
 
   | _ ->
