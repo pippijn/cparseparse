@@ -126,9 +126,16 @@ terminals {
 impl_verbatim {
   open Ccabs
   open Ast
-  let unimplemented s = failwith ("unimplemented " ^ string_of_int s)
-
   let cancel = GlrEngine.cancel
+  let unimplemented s = cancel ("unimplemented " ^ string_of_int s)
+
+  let ambiguous s to_sexp l r =
+    print_endline "-- unhandled ambiguity between --";
+    Sexplib.Sexp.output_hum stdout (to_sexp l);
+    print_endline "\n-- and --";
+    Sexplib.Sexp.output_hum stdout (to_sexp r);
+    print_endline "\n-- aborting parse --";
+    unimplemented s
 }
 
 
@@ -658,7 +665,7 @@ nonterm ConditionalExpression {
   -> e:BinaryExpression [P];
 
   -> cond:BinaryExpression "?" th:Expression ":" el:AssignmentExpression
-       [Conditional] { unimplemented 148 }
+       [Conditional] { E_cond (cond, th, el) }
 }
 
 (* why is conditional not allowed on left side of = ?  can I confirm
@@ -779,32 +786,37 @@ nonterm Statement {
 
   (* selection-statement
    * (prefer to shift "else" over reducing by this rule) *)
-  -> "if" "(" e:Condition ")" s:Statement     precedence(TOK_PREFER_SHIFT) [If] { unimplemented 178 }
+  -> "if" "(" e:Condition ")" s:Statement     precedence(TOK_PREFER_SHIFT)
+  	[If] { S_if (e, s, S_skip) }
 
   (* if-then-else preferred over if-then when ambiguous *)
-  -> "if" "(" e:Condition ")" s1:Statement "else" s2:Statement [IfElse] { unimplemented 179 }
+  -> "if" "(" e:Condition ")" s1:Statement "else" s2:Statement
+  	[IfElse] { S_if (e, s1, s2) }
 
-  -> "switch" "(" e:Condition ")" s:Statement [Switch] { unimplemented 180 }
+  -> "switch" "(" e:Condition ")" s:Statement 
+  	[Switch] { S_switch (e, s) }
 
-  -> "while" "(" e:Condition ")" s:Statement [While] { unimplemented 181 }
+  -> "while" "(" e:Condition ")" s:Statement 
+  	[While] { S_while (e, s) }
 
-  -> "do" s:Statement "while" "(" e:Expression ")" ";" [DoWhile] { unimplemented 182 }
+  -> "do" s:Statement "while" "(" e:Expression ")" ";" 
+  	[DoWhile] { S_doWhile (s, FullExpression e) }
 
   (* I might like to rework this so both semicolons appear here instead
    * of buried in ForInitStatement; it's this way now because that is how
    * the standard does it. *)
   -> "for" "(" s1:ForInitStatement c:ConditionOpt ";" e:ForConditionOpt ")" s2:Statement
-        [For] { S_for (s1, c, FullExpression e, s2) }
+       	[For] { S_for (s1, c, FullExpression e, s2) }
 
-  -> "break" ";"                        [Break] { unimplemented 184 }
+  -> "break" ";"                        [Break] { S_break }
 
-  -> "continue" ";"                     [Continue] { unimplemented 185 }
+  -> "continue" ";"                     [Continue] { S_continue }
 
   -> "return" e:Expression ";"          [ReturnExpr] { S_return (Some (FullExpression e)) }
 
   -> "return" ";"                       [ReturnVoid] { S_return (None) }
 
-  -> "goto" n:Identifier ";"            [Goto] { unimplemented 188 }
+  -> "goto" n:Identifier ";"            [Goto] { S_goto (n) }
 
   (* declaration-statement *)
   -> d:BlockDeclaration                 [DeclStmt] { S_decl (d) }
@@ -2037,7 +2049,7 @@ nonterm BaseClauseOpt {
 }
 
 nonterm BaseSpecifierList {
-  fun merge(l,r) { unimplemented 1307 }
+  fun merge(l,r) { ambiguous 1307 (Sexplib.Conv.sexp_of_list sexp_of_base_class_spec) l r }
 
   -> b:BaseSpecifier
        { [b] }

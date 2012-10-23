@@ -171,7 +171,7 @@ Library ccabs
         Path:                   src/ccabs
         Pack:                   true
         BuildTools:             ocamlbuild,camlp4o
-        BuildDepends:           batteries,sexplib                       # external
+        BuildDepends:           batteries,sexplib,monad                 # external
         CompiledObject:         native
 #        NativeOpt:              -inline 999 -unsafe -noassert
         Modules:                Ast,

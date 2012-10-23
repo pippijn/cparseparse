@@ -1,2 +1,5 @@
 # sexplib
 "ast.ml":	syntax_camlp4o, pkg_sexplib.syntax
+
+# monad
+"query.ml":	syntax_camlp4o
