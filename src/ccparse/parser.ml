@@ -24,7 +24,9 @@ let handle_return = function
       raise (ExitStatus 1)
 
 
-let glrparse filename glr lexer =
+let glrparse actions tables filename lexer =
+  let glr = GlrEngine.makeGLR actions tables in
+
   let tree =
     try
       Some (Timing.time ~alloc:true "parsing" (GlrEngine.glrParse glr) lexer)
@@ -134,8 +136,9 @@ let lexer_from_file input =
   )
 
 
-let parse_file tables actions input =
-  let glr = GlrEngine.makeGLR actions tables in
+let parse_file actions tables input =
+  if Options._verbose () then
+    print_endline ("%%% processing " ^ input);
 
   let lexer =
     if Options._load_toks () then
@@ -154,7 +157,7 @@ let parse_file tables actions input =
   if Options._tokens () then
     None
   else
-    glrparse input glr lexer
+    glrparse actions tables input lexer
 
 
 let dump_tree tree =
@@ -163,7 +166,7 @@ let dump_tree tree =
 
 
 let parse_files actions tables files =
-  let result = Timing.alloc "parsing all files" (List.map (parse_file tables actions)) files in
+  let result = Timing.alloc "parsing all files" (List.map (parse_file actions tables)) files in
 
   if Options._sizeof_tree () then (
     let size =
