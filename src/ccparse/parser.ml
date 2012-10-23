@@ -41,6 +41,8 @@ let glrparse filename glr lexer =
       | GlrEngine.ParseError (state, token) ->
           Printf.printf "parse error (state: %d, token: %d)"
             state token
+      | Failure msg ->
+          Printf.printf "failure in user actions: %s" msg
       | e ->
           Printf.printf "exception in user actions: %s"
             (Printexc.to_string e)

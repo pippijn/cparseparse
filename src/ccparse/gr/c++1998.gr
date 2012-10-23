@@ -127,7 +127,7 @@ impl_verbatim {
   open Ccabs
   open Ast
   let cancel = GlrEngine.cancel
-  let unimplemented s = cancel ("unimplemented " ^ string_of_int s)
+  let unimplemented s = failwith ("unimplemented " ^ string_of_int s)
 
   let ambiguous s to_sexp l r =
     print_endline "-- unhandled ambiguity between --";
