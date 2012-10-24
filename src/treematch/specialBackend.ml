@@ -115,12 +115,12 @@ module Emit = struct
  | Tree.Const (Tree.Int i) -> <:patt<$int:string_of_int i$>>
 
  and exTree t = function
- | Tree.Tree (_,(nm, lst)) -> constr t (nm, lst)
+ | Tree.Tree (Constr.Tycon ty,(nm, lst)) -> constr t ty (nm, lst)
  | Tree.Var (ty,nm) ->
      let id str = Ident.string_of_lident (Ident.lident_of_uident str) in
      let rec tycon = function
      | Constr.List ty -> <:expr<List.map (fun $lid:Ident.string_of_lident nm$ -> $tycon ty$) $lid:Ident.string_of_lident nm$>>
-     | Constr.Option ty -> <:expr<(match $lid:Ident.string_of_lident nm$ with Some -> $tycon ty$ | None -> $lid:Ident.string_of_lident nm$)>>
+     | Constr.Option ty -> <:expr<(match $lid:Ident.string_of_lident nm$ with Some $lid:Ident.string_of_lident nm$ -> Some ($tycon ty$) | None -> None )>>
      | Constr.Tycon ty ->
          match id ty with
          | "string"|"int"|"int32"|"int64"|"bool"->
@@ -132,9 +132,9 @@ module Emit = struct
  | Tree.Const (Tree.String str) -> <:expr<$str:str$>>
  | Tree.Const (Tree.Int i) -> <:expr<$int:string_of_int i$>>
 
- and constr t (nm, lst) =
+ and constr t ty (nm, lst) =
    let e = List.map (exTree t) lst |> Ast.exCom_of_list in
-   List.fold_left (fun e1 e2 -> <:expr< $e1$ $e2$ >>) <:expr< $uid:Ident.string_of_uident t$ . $uid:Ident.string_of_uident nm$>>
+   List.fold_left (fun e1 e2 -> <:expr< $e1$ $e2$ >>) <:expr< $uid:Ident.string_of_uident t$ . $uid:Ident.string_of_uident ty$ . $uid:Ident.string_of_uident nm$>>
      (Ast.list_of_expr e [])
 
 end
