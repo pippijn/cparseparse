@@ -133,7 +133,7 @@ let compute_dotted_productions indexed_prods =
 
     (* one dottedproduction for every dot position, which is one
      * more than the # of RHS elements *)
-    Array.init (rhs_length + 1) (fun dot ->
+    IntegralIndexedArray.init (rhs_length + 1) (fun dot ->
       let dot_at_end = dot = rhs_length in
 
       {
@@ -171,8 +171,8 @@ let verify_nonshared indexed_nonterms indexed_prods dotted_prods =
     ) indexed_prods
   ) indexed_prods;
   (* check dotted productions with dotted productions *)
-  ProdArray.iter (Array.iter (fun dprod1 ->
-    ProdArray.iter (Array.iter (fun dprod2 ->
+  ProdArray.iter (IntegralIndexedArray.iter (fun dprod1 ->
+    ProdArray.iter (IntegralIndexedArray.iter (fun dprod2 ->
       assert (dprod1 == dprod2 || dprod1.first_set != dprod2.first_set);
     )) dotted_prods
   )) dotted_prods;
@@ -184,13 +184,13 @@ let verify_nonshared indexed_nonterms indexed_prods dotted_prods =
   ) indexed_nonterms;
   (* check productions with dottedproductions *)
   ProdArray.iter (fun prod ->
-    ProdArray.iter (Array.iter (fun dprod ->
+    ProdArray.iter (IntegralIndexedArray.iter (fun dprod ->
       assert (prod.first_rhs != dprod.first_set);
     )) dotted_prods
   ) indexed_prods;
   (* check nonterminals with dotted productions *)
   NtArray.iter (fun nonterm ->
-    ProdArray.iter (Array.iter (fun dprod ->
+    ProdArray.iter (IntegralIndexedArray.iter (fun dprod ->
       assert (nonterm.first != dprod.first_set);
     )) dotted_prods
   ) indexed_nonterms
@@ -203,7 +203,7 @@ let verify_empty indexed_nonterms indexed_prods dotted_prods =
   ProdArray.iter (fun prod ->
     assert (TerminalSet.cardinal prod.first_rhs = 0)
   ) indexed_prods;
-  ProdArray.iter (Array.iter (fun dprod ->
+  ProdArray.iter (IntegralIndexedArray.iter (fun dprod ->
     assert (TerminalSet.cardinal dprod.first_set = 0)
   )) dotted_prods
 

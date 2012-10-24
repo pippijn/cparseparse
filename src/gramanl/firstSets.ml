@@ -97,7 +97,7 @@ let compute_dprod_first derivable dotted_prods index =
     (* for each dotted production where the dot is not at the end.. *)
     let rhs_length = List.length prod.right in
     for posn = 0 to rhs_length do
-      let dprod = dprods.(posn) in
+      let dprod = IntegralIndexedArray.get dprods posn in
       assert (ProdArray.get index.prods dprod.prod == prod);
 
       let right = ExtList.nth_tl prod.right posn in

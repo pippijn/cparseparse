@@ -2,6 +2,8 @@ open Sexplib.Conv
 
 type ('a, 'mutability, 'integer) repr = 'a array with sexp
 
+let identity = BatPervasives.identity
+
 let append = Array.append
 
 module Make(T : Sig.IntegralType) = struct
@@ -16,9 +18,9 @@ module Make(T : Sig.IntegralType) = struct
   let t_of_sexp sx () = repr_of_sexp sx () ()
   let sexp_of_t ar () = sexp_of_repr ar () ()
 
-  let readonly = BatPervasives.identity
+  let readonly = identity
 
-  let to_array = BatPervasives.identity
+  let to_array = identity
   let to_list = Array.to_list
 
   let get array index =
@@ -48,3 +50,9 @@ module Make(T : Sig.IntegralType) = struct
   let sum = ExtArray.sum
   let count = ExtArray.count
 end
+
+include Make(struct
+  type t = int
+  let to_int = identity
+  let of_int = identity
+end)

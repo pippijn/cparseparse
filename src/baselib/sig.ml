@@ -30,8 +30,6 @@ module type IntegralType = sig
 
   val to_int : t -> int
   val of_int : int -> t
-
-  val domain : t -> t BatEnum.t
 end
 
 

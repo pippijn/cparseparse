@@ -51,6 +51,11 @@ and lr_item = {
 } with sexp
 
 
+type dotted_production_array =
+  (dotted_production, Sig.readonly) IntegralIndexedArray.t
+  with sexp
+
+
 (************************************************************
  * :: ItemList types
  ************************************************************)
@@ -144,7 +149,7 @@ type env = {
   (* map of production x dot_position -> dotted_production;
    * each element of the 'dotted_prods' array is a pointer to an
    * array of dotted_production objects *)
-  dotted_prods                  : (dotted_production array, Sig.readonly) ProdArray.t;
+  dotted_prods                  : (dotted_production_array, Sig.readonly) ProdArray.t;
 
   (* if entry i,j is true, then nonterminal i can derive nonterminal j
    * (this is a graph, represented (for now) as an adjacency matrix) *)

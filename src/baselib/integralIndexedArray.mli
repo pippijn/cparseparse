@@ -14,3 +14,7 @@ module Make : functor (T : Sig.IntegralType) -> sig
     type integer = T.t
     and type ('a, 'm) t = ('a, 'm, T.t) repr
 end
+
+include Sig.IntegralIndexedArrayType with
+  type integer = int
+  and type ('a, 'm) t = ('a, 'm, int) repr
