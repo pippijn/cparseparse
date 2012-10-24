@@ -134,8 +134,8 @@ let cancel reason =
   print_endline ("cancel: " ^ reason);
   raise (Cancel reason)
 
-let keep_cancel =
-  Cancel "keep() returned false"
+let keep_cancel () =
+  cancel "keep() returned false"
 
 
 (* ------------------ accounting statistics ----------------- *)
@@ -953,7 +953,7 @@ let rec rwlRecursiveProcess glr tokType start_p path =
     let sval = reductionAction glr.userAct path.prodIndex glr.toPass !leftEdge !rightEdge in
     (* did user want to keep? *)
     if not (keepNontermValue glr.userAct lhsIndex sval) then
-      raise keep_cancel;
+      keep_cancel ();
    
     (* shift the nonterminal, sval *)
     let newLink = rwlShiftNonterminal glr tokType path.leftEdgeNode lhsIndex sval !leftEdge !rightEdge in
@@ -1261,7 +1261,7 @@ let rec lrParseToken glr tokType tokSval tokSloc =
           let sval = reductionAction glr.userAct prodIndex glr.toPass !leftEdge !rightEdge in
           (* does the user want to keep it? *)
           if not (keepNontermValue glr.userAct lhsIndex sval) then
-            raise keep_cancel;
+            keep_cancel ();
 
           sval
         with Cancel reason ->
