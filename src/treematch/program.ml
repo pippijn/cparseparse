@@ -78,7 +78,7 @@ end
 (* +=====~~~-------------------------------------------------------~~~=====+ *)
 
 class typed_print = object (self : 'a)
-  inherit [Ident.uident] base_print
+  inherit [Constr.tycon] base_print
   method rewrite_clause pp (ltree, rtree) =
     f pp "@[<hov 2>%a@ =>@ %a@]" (new Tree.typed_print) # tree ltree (new Tree.typed_print) # tree rtree
 end

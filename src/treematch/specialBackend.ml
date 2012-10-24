@@ -31,15 +31,14 @@ module Emit = struct
 
         end
       >>
-    | _ -> <:str_item< >>
-    (* | Program.Map (nm, (st,dt), nodes) -> *)
-    (*   let methods = List.map (rewrite_node (st,dt)) nodes in *)
-    (*   <:str_item< *)
+    | Program.Map (nm, (st,dt), nodes) ->
+      let methods = List.map (rewrite_node (st,dt)) nodes in
+      <:str_item<
 
-    (*     class $lid:Ident.string_of_lident nm$ = object (self : 'a) *)
-    (*         $methods |> Ast.crSem_of_list$ *)
-    (*     end *)
-    (*   >> *)
+        class $lid:Ident.string_of_lident nm$ = object (self : 'a)
+            $methods |> Ast.crSem_of_list$
+        end
+      >>
 
   and ast_node (nm, nd) =
     match nd with
@@ -106,15 +105,30 @@ module Emit = struct
 
  and rewrite_clause (st,dt) (l,r) = <:match_case< $tup:paTree st l$ -> $tup:exTree dt r$>>
 
+ and paTy = function
+ | Constr.Tycon nm -> <:patt<$uid:Ident.string_of_uident nm$>>
+
  and paTree t = function
- | Tree.Tree (_,(nm, lst)) -> <:patt< $uid:Ident.string_of_uident t$ . $uid:Ident.string_of_uident nm$ $List.map (paTree t) lst |> Ast.paCom_of_list$>>
+ | Tree.Tree (Constr.Tycon ty,(nm, lst)) -> <:patt< $uid:Ident.string_of_uident t$. $uid:Ident.string_of_uident ty$ . $uid:Ident.string_of_uident nm$ $List.map (paTree t) lst |> Ast.paCom_of_list$>>
  | Tree.Var (_,nm) -> <:patt< $lid:Ident.string_of_lident nm$ >>
  | Tree.Const (Tree.String str) -> <:patt<$str:str$>>
  | Tree.Const (Tree.Int i) -> <:patt<$int:string_of_int i$>>
 
  and exTree t = function
  | Tree.Tree (_,(nm, lst)) -> constr t (nm, lst)
- | Tree.Var (_,nm) -> <:expr< $lid:Ident.string_of_lident nm$ >>
+ | Tree.Var (ty,nm) ->
+     let id str = Ident.string_of_lident (Ident.lident_of_uident str) in
+     let rec tycon = function
+     | Constr.List ty -> <:expr<List.map (fun $lid:Ident.string_of_lident nm$ -> $tycon ty$) $lid:Ident.string_of_lident nm$>>
+     | Constr.Option ty -> <:expr<(match $lid:Ident.string_of_lident nm$ with Some -> $tycon ty$ | None -> $lid:Ident.string_of_lident nm$)>>
+     | Constr.Tycon ty ->
+         match id ty with
+         | "string"|"int"|"int32"|"int64"|"bool"->
+         <:expr< $lid:Ident.string_of_lident nm$ >>
+         | _ ->
+         <:expr< self # $lid:id ty$ $lid:Ident.string_of_lident nm$ >>
+     in
+     tycon ty
  | Tree.Const (Tree.String str) -> <:expr<$str:str$>>
  | Tree.Const (Tree.Int i) -> <:expr<$int:string_of_int i$>>
 
