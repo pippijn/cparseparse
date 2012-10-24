@@ -27,7 +27,7 @@ let make_item_set env kernel_items =
   }
 
 
-let changed_items item_set =
+let changed_items prods item_set =
   (* recompute dots_at_end *)
   item_set.dots_at_end <-
     ExtList.fold_left_many (fun dots_at_end item ->
@@ -44,7 +44,12 @@ let changed_items item_set =
     try
       (* need only check kernel items since all nonkernel items
        * have their dots at the left side *)
-      Some (DottedProduction.symbol_before_dot (List.find (fun item -> item.dprod.dot <> 0) item_set.kernel_items.items).dprod)
+      let item =
+        List.find (fun item ->
+          item.dprod.dot <> 0
+        ) item_set.kernel_items.items
+      in
+      Some (DottedProduction.symbol_before_dot prods item.dprod)
     with Not_found ->
       None
 
@@ -70,7 +75,7 @@ let production_closure env finished worklist item b prod_index =
   (* construct "B -> . gamma, First(beta LA)";
    * except, don't actually build it until later; in the meantime,
    * determine which DP and lookahead it would use if created *)
-  let new_dp = DottedProduction.get env.dotted_prods prod 0 (* dot at left *) in
+  let new_dp = DottedProduction.get env.dotted_prods prod.prod_index 0 (* dot at left *) in
 
   (* get beta (what follows B in 'item') *)
   let beta = DottedProduction.next env.dotted_prods item.dprod in
@@ -83,7 +88,7 @@ let production_closure env finished worklist item b prod_index =
     if beta.can_derive_empty then (
       if Options._trace_closure () then (
         print_string "      beta: ";
-        PrintAnalysisEnv.print_dotted_production env.index.nonterms beta;
+        PrintAnalysisEnv.print_dotted_production env.index.prods env.index.nonterms beta;
         print_newline ();
         print_endline "      beta can derive empty";
       );
@@ -215,6 +220,8 @@ let single_item_closure env finished worklist item =
 (* based on [ASU] figure 4.33, p.223
  * NOTE: sometimes this is called with nonempty nonkernel items... *)
 let item_set_closure env item_set =
+  let open GrammarType in
+
   (* every 'item' on the worklist has item.dprod.back_pointer = Some item;
    * every 'dprod' not associated has dprod.back_pointer = None *)
   let worklist = Stack.create () in
@@ -262,7 +269,7 @@ let item_set_closure env item_set =
     ) finished [];
 
   (* we potentially added a bunch of things *)
-  changed_items item_set;
+  changed_items env.index.prods item_set;
 
   if Options._trace_closure () then (
     print_string "%%% done with closure of ";
@@ -470,11 +477,18 @@ let construct_lr_item_sets env =
    * on LHS, and no other productions have the start symbol
    * on LHS) *)
   begin
-    let first_prod = ProdArray.get env.env.index.prods StateId.Production.start in
-    let first_dp = DottedProduction.get env.env.dotted_prods first_prod 0 (* dot at left *) in
-    let left = NtArray.get env.env.index.nonterms first_prod.left in
-    assert (first_dp.prod == first_prod);
-    assert (left.nbase.name == GrammarTreeParser.start_name);
+    let first_dp =
+      let prod_index = StateId.Production.start in
+      let dp = DottedProduction.get env.env.dotted_prods prod_index 0 (* dot at left *) in
+
+      let prod = ProdArray.get env.env.index.prods prod_index in
+      let left = NtArray.get env.env.index.nonterms prod.left in
+
+      assert (dp.prod == prod.prod_index);
+      assert (left.nbase.name == GrammarTreeParser.start_name);
+
+      dp
+    in
 
     let first_item = {
       dprod = first_dp;

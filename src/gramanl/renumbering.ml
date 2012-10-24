@@ -29,10 +29,10 @@ let compare_by_outgoing syms foldl_untili get transition a b =
   ) 0 syms
 
 
-let compare_by_reductions nonterms terms a b =
+let compare_by_reductions prods nonterms terms a b =
   TermArray.foldl_until (fun term ->
-    let red_a = List.sort compare (ItemSet.possible_reductions nonterms a term) in
-    let red_b = List.sort compare (ItemSet.possible_reductions nonterms b term) in
+    let red_a = List.sort compare (ItemSet.possible_reductions prods nonterms a term) in
+    let red_b = List.sort compare (ItemSet.possible_reductions prods nonterms b term) in
 
     compare red_a red_b
   ) 0 terms
@@ -64,7 +64,7 @@ let renumber_states_compare env a b =
     (* next: nonterminals *)
     |<> lazy (compare_by_outgoing env.index.nonterms NtArray.foldl_untili NtArray.get (fun is -> is.nonterm_transition) a b)
     (* finally, order by possible reductions *)
-    |<> lazy (compare_by_reductions env.index.nonterms env.index.terms a b)
+    |<> lazy (compare_by_reductions env.index.prods env.index.nonterms env.index.terms a b)
   in
 
   if Options._trace_renumbering () then (

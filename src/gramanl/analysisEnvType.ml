@@ -13,7 +13,7 @@ module Derivable = Bit2d.Make(StateId.Nonterminal)
  * (exactly which part of the input depends on where this appears
  * in the algorithm's data structures) *)
 type dotted_production = {
-  prod                          : GrammarType.production; (* the base production *)
+  prod                          : StateId.Production.t; (* the base production *)
   dot                           : int; (* 0 means it's before all RHS symbols, 1 means after first, etc. *)
 
   (* performance optimization: None if dot at end, or else pointer

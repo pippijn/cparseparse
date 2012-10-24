@@ -24,7 +24,7 @@ let print_actions nonterms shift_dest reductions =
 
 (* decide what to do, and return the result in the first
  * two tuple members, keep_shift and keep_reduce *)
-let handle_shift_reduce_conflict nonterms state prod sym decision =
+let handle_shift_reduce_conflict prods nonterms state prod sym decision =
   let open GrammarType in
 
   if Options._trace_prec () then (
@@ -52,7 +52,7 @@ let handle_shift_reduce_conflict nonterms state prod sym decision =
 
     (* see if this reduction can be removed due to a 'maximal' spec;
      * in particular, is the shift going to extend 'super'? *)
-    maximal && ItemSet.has_extending_shift nonterms state super.nt_index sym
+    maximal && ItemSet.has_extending_shift prods nonterms state super.nt_index sym
   in
 
   (* scannerless *)
@@ -120,7 +120,7 @@ let handle_shift_reduce_conflict nonterms state prod sym decision =
 
 
 (* static disambiguation for S/R conflicts *)
-let disambiguate_shift_reduce_conflict nonterms state sym shift_dest reductions suppressed_warnings =
+let disambiguate_shift_reduce_conflict prods nonterms state sym shift_dest reductions suppressed_warnings =
   match shift_dest with
   | Some _ ->
       (* we have (at least) a shift/reduce conflict, which is the
@@ -129,7 +129,7 @@ let disambiguate_shift_reduce_conflict nonterms state sym shift_dest reductions 
        * even when there are R/R conflicts present too *)
       List.fold_left (fun (shift_dest, reductions) prod ->
         let { keep_shift; keep_reduce; warn; } =
-          handle_shift_reduce_conflict nonterms state prod sym { keep_shift = true; keep_reduce = true; warn = true; }
+          handle_shift_reduce_conflict prods nonterms state prod sym { keep_shift = true; keep_reduce = true; warn = true; }
         in
 
         if not warn then
@@ -214,12 +214,12 @@ let actions shift_dest reductions =
   (if BatOption.is_some shift_dest then 1 else 0) + List.length reductions
 
 
-let try_resolve_conflicts nonterms state sym shift_dest reductions allow_ambig sr rr =
+let try_resolve_conflicts prods nonterms state sym shift_dest reductions allow_ambig sr rr =
   (* count how many warning suppressions we have *)
   let suppressed_warnings = ref 0 in
 
   let shift_dest, reductions =
-    disambiguate_shift_reduce_conflict nonterms state sym shift_dest reductions suppressed_warnings
+    disambiguate_shift_reduce_conflict prods nonterms state sym shift_dest reductions suppressed_warnings
   in
 
   (* static disambiguation for R/R conflicts *)
@@ -312,7 +312,8 @@ let try_resolve_conflicts nonterms state sym shift_dest reductions allow_ambig s
 (* given some potential parse actions, apply available disambiguation
  * to remove some of them; print warnings about conflicts, in some
  * situations *)
-let resolve_conflicts nonterms (* indexed array of nonterminals *)
+let resolve_conflicts prods (* indexed array of productions *)
+		      nonterms (* indexed array of nonterminals *)
 		      state (* parse state in which the actions are possible *)
                       sym (* lookahead symbol for these actions *)
                       shift_dest (* (option) the state to which we can shift *)
@@ -333,5 +334,5 @@ let resolve_conflicts nonterms (* indexed array of nonterminals *)
     (* no conflict *)
     shift_dest, reductions
   ) else (
-    try_resolve_conflicts nonterms state sym shift_dest reductions allow_ambig sr rr
+    try_resolve_conflicts prods nonterms state sym shift_dest reductions allow_ambig sr rr
   )

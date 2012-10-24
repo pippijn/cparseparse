@@ -26,7 +26,7 @@ module M : GrammarSig.S with type t = dotted_production = struct
 
   let default = {
     dprod_id = -1;
-    prod = GrammarType.empty_production;
+    prod = StateId.Production.default;
     dot = -1;
     after_dot = None;
     first_set = TerminalSet.empty;
@@ -50,17 +50,18 @@ module Graph = Graph.Persistent.Digraph.ConcreteLabeled(M)(M)
 
 let get dotted_prods prod dot =
   let open GrammarType in
-  (ProdArray.get dotted_prods prod.prod_index).(dot)
+  (ProdArray.get dotted_prods prod).(dot)
 
 
 let next dotted_prods dprod =
   let open GrammarType in
-  (ProdArray.get dotted_prods dprod.prod.prod_index).(dprod.dot + 1)
+  (ProdArray.get dotted_prods dprod.prod).(dprod.dot + 1)
 
 
-let symbol_before_dot dprod =
+let symbol_before_dot prods dprod =
   let open GrammarType in
-  List.nth dprod.prod.right (dprod.dot - 1)
+  let prod = ProdArray.get prods dprod.prod in
+  List.nth prod.right (dprod.dot - 1)
 
 
 let symbol_after_dot dprod =

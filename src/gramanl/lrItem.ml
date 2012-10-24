@@ -68,8 +68,9 @@ let first_includes nonterms sym t =
       TerminalSet.mem t.term_index nonterm.first
 
 
-let is_extending_shift nonterms item nonterm term =
+let is_extending_shift prods nonterms item nonterm term =
   let open GrammarType in
+  let prod = ProdArray.get prods item.dprod.prod in
   not (is_dot_at_end item) && (* shift *)
-  item.dprod.prod.left == nonterm && (* extending nonterm *)
+  prod.left == nonterm && (* extending nonterm *)
   first_includes nonterms (BatOption.get (symbol_after_dot item)) term (* with t *)

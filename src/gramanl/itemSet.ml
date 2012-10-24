@@ -84,9 +84,9 @@ let set_transition from_set sym to_set =
  * :: Check whether shift on term extends over nonterm
  ************************************************************)
 
-let has_extending_shift nonterms item_set nonterm term =
+let has_extending_shift prods nonterms item_set nonterm term =
   ExtList.exists_many (fun item ->
-    LrItem.is_extending_shift nonterms item nonterm term
+    LrItem.is_extending_shift prods nonterms item nonterm term
   ) [item_set.kernel_items.items; item_set.nonkernel_items]
 
 
@@ -94,7 +94,7 @@ let has_extending_shift nonterms item_set nonterm term =
  * :: Yield possible reductions on terminal 'lookahead'
  ************************************************************)
 
-let possible_reductions nonterms item_set lookahead =
+let possible_reductions prods nonterms item_set lookahead =
   let open GrammarType in
   List.fold_left (fun reductions item ->
     if Options._use_LR0 () then (
@@ -103,7 +103,7 @@ let possible_reductions nonterms item_set lookahead =
 
     ) else if Options._use_SLR1 () then (
       (* the follow of its LHS must include 'lookahead' *)
-      let prod = item.dprod.prod in
+      let prod = ProdArray.get prods item.dprod.prod in
       let left = NtArray.get nonterms prod.left in
       if TerminalSet.mem lookahead.term_index left.follow then
         prod :: reductions
@@ -121,7 +121,7 @@ let possible_reductions nonterms item_set lookahead =
 
     ) else if Options._use_LALR1 () || Options._use_LR1 () then (
       (* the item's lookahead must include 'lookahead' *)
-      let prod = item.dprod.prod in
+      let prod = ProdArray.get prods item.dprod.prod in
       if TerminalSet.mem lookahead.term_index item.lookahead then (
         if Options._trace_reductions () then (
           Printf.printf "state %a, reducing by "

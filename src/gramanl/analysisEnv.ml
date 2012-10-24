@@ -134,9 +134,12 @@ let compute_dotted_productions indexed_prods =
     (* one dottedproduction for every dot position, which is one
      * more than the # of RHS elements *)
     Array.init (rhs_length + 1) (fun dot ->
-      let dot_at_end   = dot = rhs_length in
+      let dot_at_end = dot = rhs_length in
 
-      { prod; dot; dprod_id = next_id ();
+      {
+        prod = prod.prod_index;
+        dot;
+        dprod_id = next_id ();
         after_dot  = (if dot_at_end then None else Some (List.nth prod.right dot));
         can_derive_empty = false;
         first_set = TerminalSet.empty;

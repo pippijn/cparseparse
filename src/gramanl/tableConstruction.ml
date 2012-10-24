@@ -59,12 +59,12 @@ let topological_order derivable nonterms =
   order
 
 
-let compute_actions nonterms state terminal allow_ambig sr rr =
+let compute_actions prods nonterms state terminal allow_ambig sr rr =
   (* can shift? *)
   let shift_dest = ItemSet.transition_for_term state terminal in
 
   (* can reduce? *)
-  let reductions = ItemSet.possible_reductions nonterms state terminal in
+  let reductions = ItemSet.possible_reductions prods nonterms state terminal in
 
   let sr_old = !sr in
   let rr_old = !rr in
@@ -73,7 +73,7 @@ let compute_actions nonterms state terminal allow_ambig sr rr =
    * the conflicts, depending on various factors; if 'allow_ambig'
    * is false, this will remove all but one action *)
   let shift_dest, reductions =
-    ConflictResolution.resolve_conflicts nonterms state terminal shift_dest reductions allow_ambig sr rr
+    ConflictResolution.resolve_conflicts prods nonterms state terminal shift_dest reductions allow_ambig sr rr
   in
 
   if Options._trace_conflict () then (
@@ -212,10 +212,10 @@ let encode_goto_row tables state nonterm =
   TableEncoding.set_goto_entry tables state.state_id nonterm cell_goto
 
 
-let encode_action tables nonterms allow_ambig sr rr state terminal =
+let encode_action tables prods nonterms allow_ambig sr rr state terminal =
   let open GrammarType in
   (* compute shift/reduce actions *)
-  let shift_dest, reductions = compute_actions nonterms state terminal allow_ambig sr rr in
+  let shift_dest, reductions = compute_actions prods nonterms state terminal allow_ambig sr rr in
 
   (* what to do in this cell *)
   let cell_action = compute_cell_action tables state shift_dest reductions terminal in
@@ -224,7 +224,7 @@ let encode_action tables nonterms allow_ambig sr rr state terminal =
   TableEncoding.set_action_entry tables state.state_id terminal.term_index cell_action
 
 
-let compute_action_row env tables nonterms terms allow_ambig sr rr state =
+let compute_action_row env tables prods nonterms terms allow_ambig sr rr state =
   if Options._trace_conflict () then (
     if false then (
       PrintAnalysisEnv.print_item_set env state;
@@ -236,7 +236,7 @@ let compute_action_row env tables nonterms terms allow_ambig sr rr state =
 
   (* for each possible lookahead... *)
   TermArray.iter (fun terminal ->
-    encode_action tables nonterms allow_ambig sr rr state terminal;
+    encode_action tables prods nonterms allow_ambig sr rr state terminal;
   ) terms;
 
   (* ---- fill in this row in the goto table ---- *)
@@ -280,7 +280,7 @@ let compute_parse_tables env allow_ambig states =
 
   (* for each state... *)
   List.iter (fun state ->
-    compute_action_row env tables env.index.nonterms env.index.terms allow_ambig sr rr state
+    compute_action_row env tables env.index.prods env.index.nonterms env.index.terms allow_ambig sr rr state
   ) states;
 
   (* report on conflict counts *)

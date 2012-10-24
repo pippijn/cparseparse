@@ -98,8 +98,9 @@ let compute_dprod_first derivable dotted_prods index =
     let rhs_length = List.length prod.right in
     for posn = 0 to rhs_length do
       let dprod = dprods.(posn) in
+      assert (ProdArray.get index.prods dprod.prod == prod);
 
-      let right = ExtList.nth_tl dprod.prod.right posn in
+      let right = ExtList.nth_tl prod.right posn in
 
       (* compute its first *)
       let first_of_rhs = first_of_sequence derivable index.nonterms right in
@@ -109,7 +110,7 @@ let compute_dprod_first derivable dotted_prods index =
       dprod.can_derive_empty <- Derivability.can_sequence_derive_empty derivable right;
 
       if Options._trace_first () then (
-        PrintAnalysisEnv.print_dotted_production ~terms:index.terms index.nonterms dprod;
+        PrintAnalysisEnv.print_dotted_production ~terms:index.terms index.prods index.nonterms dprod;
 
         if dprod.can_derive_empty then
           print_endline " - can derive empty"
