@@ -31,7 +31,7 @@ let is_tail_of tail head_tail =
 
 let is_left_recursion head_tail =
   match symbols_of_production head_tail with
-  | [Nonterminal (_, nonterm); _] -> nonterm.nt_index == head_tail.left
+  | [Nonterminal (_, nonterm); _] -> nonterm == head_tail.left
   | _ -> false
 
 
@@ -56,6 +56,12 @@ let is_option_nonterminal none some =
 let is_boolean_nonterminal none some =
   none.right = []
   && symbols_of_production some = []
+
+
+let right_symbol head_tail =
+  symbols_of_production head_tail
+  |> List.rev
+  |> List.hd
 
 
 module Make(T : sig
@@ -106,18 +112,8 @@ end) = struct
     }
 
 
-  let symbol reachable = function
-    | Nonterminal (tag, nonterm) -> Nonterminal (tag, nonterminal reachable nonterm)
-    | term -> term
-
-
   let nonterms reachable nonterms =
     NtArray.map (nonterminal reachable) nonterms
-
-
-  let production reachable prod =
-    let right = List.map (symbol reachable) prod.right in
-    { prod with right; }
 
 
   let check_noname nonterms prod =
@@ -144,7 +140,7 @@ end) = struct
           <:expr<$lid:tag$>>
         in
 
-        [production reachable { prod with action = Some action }]
+        [{ prod with action = Some action }]
 
     | [tail; head_tail] when is_list_nonterminal tail head_tail && not has_merge ->
         check_noname nonterms tail;
@@ -155,8 +151,8 @@ end) = struct
             let head2_tag = GrammarUtil.tag_of_symbol head2 in
             let tail2_tag = GrammarUtil.tag_of_symbol tail2 in
             [
-              production reachable { tail with action = Some <:expr<[]>> };
-              production reachable { head_tail with action = Some <:expr<$lid:tail2_tag$ :: $lid:head2_tag$>> };
+              { tail with action = Some <:expr<[]>> };
+              { head_tail with action = Some <:expr<$lid:tail2_tag$ :: $lid:head2_tag$>> };
             ]
         (* non-empty list *)
         | [tail1], [head2; tail2] ->
@@ -164,8 +160,8 @@ end) = struct
             let head2_tag = GrammarUtil.tag_of_symbol head2 in
             let tail2_tag = GrammarUtil.tag_of_symbol tail2 in
             [
-              production reachable { tail with action = Some <:expr<[$lid:tail1_tag$]>> };
-              production reachable { head_tail with action = Some <:expr<$lid:tail2_tag$ :: $lid:head2_tag$>> };
+              { tail with action = Some <:expr<[$lid:tail1_tag$]>> };
+              { head_tail with action = Some <:expr<$lid:tail2_tag$ :: $lid:head2_tag$>> };
             ]
 
         | _ -> failwith "error in is_list_nonterminal"
@@ -176,8 +172,8 @@ end) = struct
         | [some_sym] ->
             let some_tag = GrammarUtil.tag_of_symbol some_sym in
             [
-              production reachable { none with action = Some <:expr<None>> };
-              production reachable { some with action = Some <:expr<Some $lid:some_tag$>> };
+              { none with action = Some <:expr<None>> };
+              { some with action = Some <:expr<Some $lid:some_tag$>> };
             ]
 
         | _ -> failwith "error in is_option_nonterminal"
@@ -185,8 +181,8 @@ end) = struct
 
     | [none; some] when is_boolean_nonterminal none some && not has_merge ->
         [
-          production reachable { none with action = Some <:expr<false>> };
-          production reachable { some with action = Some <:expr<true>> };
+          { none with action = Some <:expr<false>> };
+          { some with action = Some <:expr<true>> };
         ]
 
     | prods ->
@@ -227,15 +223,14 @@ end) = struct
             )
           in
 
-          production reachable { prod with action = Some action; }
+          { prod with action = Some action; }
         ) prods
 
 
   let unit_prods nonterms =
     List.map (fun prod ->
       check_noname nonterms prod;
-      let right = List.map (symbol NtSet.empty) prod.right in
-      { prod with right; action = Some <:expr<()>> }
+      { prod with action = Some <:expr<()>> }
     )
 
 

@@ -9,7 +9,7 @@ let can_derive derivable left right =
   can_derive_i derivable left.nt_index right.nt_index
 
 let can_derive_empty derivable nonterm =
-  can_derive derivable nonterm empty_nonterminal
+  can_derive_i derivable nonterm empty_nonterminal.nt_index
 
 let can_sequence_derive_empty derivable seq =
   (* look through the sequence; if any members cannot derive
@@ -98,6 +98,7 @@ let add_derivable_nonterminal env left right_nonterm after_right_sym =
            * yet know that it can), so we conclude that prod.left
            * can't derive right_sym *)
           if Options._trace_derivable () then (
+            let nonterm = NtArray.get env.index.nonterms nonterm in
             Printf.printf "nonterminal %s can derive empty?\n" nonterm.nbase.name;
           );
           can_derive_empty env.derivable nonterm
@@ -113,11 +114,12 @@ let add_derivable_nonterminal env left right_nonterm after_right_sym =
 
   if rest_derive_empty then (
     (* we have discovered that prod.left can derive right_sym *)
-    let added = add_derivable_i env left right_nonterm.nt_index in
+    let added = add_derivable_i env left right_nonterm in
     assert added; (* above, we verified we didn't already know this *)
 
     if Options._trace_derivable () then (
       let left = NtArray.get env.index.nonterms left in
+      let right_nonterm = NtArray.get env.index.nonterms right_nonterm in
       print_string "%%% derivable: ";
       Printf.printf "discovered (by production): %s ->* %s\n"
         left.nbase.name
@@ -158,7 +160,7 @@ let add_derivable_relations env changes =
 
             | Nonterminal (_, right_nonterm) ->
                 (* check if we already know that LHS derives this nonterm *)
-                if can_derive_i env.derivable prod.left right_nonterm.nt_index then
+                if can_derive_i env.derivable prod.left right_nonterm then
                   (* we already know that prod.left derives right_sym,
                    * so let's not check it again *)
                   ()

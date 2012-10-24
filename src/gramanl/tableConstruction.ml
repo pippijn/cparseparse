@@ -188,7 +188,7 @@ let encode_symbol_id = let open GrammarType in function
   | Some (Terminal    (_,    term)) ->
       +(StateId.Terminal.to_int term.term_index) + 1
   | Some (Nonterminal (_, nonterm)) ->
-      -(StateId.Nonterminal.to_int nonterm.nt_index) - 1
+      -(StateId.Nonterminal.to_int nonterm) - 1
 
 
 let calls = ref 0
@@ -202,14 +202,14 @@ let encode_goto_row tables state nonterm =
   let cell_goto =
     match goto_dest with
     | Some goto_dest ->
-        TableEncoding.encode_goto tables goto_dest.state_id nonterm.nt_index
+        TableEncoding.encode_goto tables goto_dest.state_id nonterm
     | None ->
         (* this should never be accessed at parse time.. *)
         TableEncoding.encode_goto_error tables
   in
 
   (* fill in entry *)
-  TableEncoding.set_goto_entry tables state.state_id nonterm.nt_index cell_goto
+  TableEncoding.set_goto_entry tables state.state_id nonterm cell_goto
 
 
 let encode_action tables nonterms allow_ambig sr rr state terminal =
@@ -243,7 +243,8 @@ let compute_action_row env tables nonterms terms allow_ambig sr rr state =
 
   (* for each nonterminal... *)
   NtArray.iter (fun nonterm ->
-    encode_goto_row tables state nonterm
+    let open GrammarType in
+    encode_goto_row tables state nonterm.nt_index
   ) nonterms;
 
   (* get the state symbol *)

@@ -45,6 +45,7 @@ let compute_graph nonterms =
     (* fold over rhs *)
     List.fold_left (fun g -> function
       | Nonterminal (_, right) ->
+          let right = NtArray.get nonterms right in
           Graph.add_edge g left right
       | _ ->
           g

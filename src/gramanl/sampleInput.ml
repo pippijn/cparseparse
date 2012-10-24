@@ -63,7 +63,7 @@ let compare_rewrite seen prods p1 p2 =
 
 
 (* nonterminal -> terminals *)
-let rec rewrite_nt_as_terminals prods prods_by_lhs output nonterm seen =
+let rec rewrite_nt_as_terminals nonterms prods prods_by_lhs output nonterm seen =
   let open GrammarType in
 
   (* get all of 'nonterminal's productions that are not recursive *)
@@ -73,10 +73,10 @@ let rec rewrite_nt_as_terminals prods prods_by_lhs output nonterm seen =
       (* if 'prod' has 'nonterminal' on RHS, that would certainly
        * lead to looping (though it's not the only way -- consider
        * mutual recursion), so don't even consider it *)
-      not (GrammarUtil.rhs_has_nonterm prod nonterm.nt_index)
+      not (GrammarUtil.rhs_has_nonterm prod nonterm)
       (* if this production has already been used, don't use it again *)
       && not (List.memq prod_index seen)
-    ) (NtArray.get prods_by_lhs nonterm.nt_index)
+    ) (NtArray.get prods_by_lhs nonterm)
   in
 
   if candidates = [] then (
@@ -84,6 +84,7 @@ let rec rewrite_nt_as_terminals prods prods_by_lhs output nonterm seen =
      * or all of them are recursive (which means the language doesn't
      * have any finite sentences) *)
     if Options._trace_rewrite () then (
+      let nonterm = NtArray.get nonterms nonterm in
       Printf.printf "could not find any unused, non-recursive rules for %s\n"
         nonterm.nbase.name
     );
@@ -102,7 +103,7 @@ let rec rewrite_nt_as_terminals prods prods_by_lhs output nonterm seen =
       try
         (* now, the chosen rule provides a RHS, which is a sequence of
          * terminals and nonterminals; recursively reduce that sequence *)
-        Some (rewrite_as_terminals prods prods_by_lhs output prod.right (prod_index :: seen))
+        Some (rewrite_as_terminals nonterms prods prods_by_lhs output prod.right (prod_index :: seen))
       with Not_found ->
         None
     ) None candidates
@@ -114,22 +115,22 @@ let rec rewrite_nt_as_terminals prods prods_by_lhs output nonterm seen =
 
 
 (* (nonterminals and terminals) -> terminals *)
-and rewrite_as_terminals prods prods_by_lhs output input seen =
+and rewrite_as_terminals nonterms prods prods_by_lhs output input seen =
   let open GrammarType in
 
   (* walk down the input list, creating the output list by copying
    * terminals and reducing nonterminals *)
   List.fold_left (fun output -> function
     | Terminal (_, term) -> term :: output
-    | Nonterminal (_, nonterm) -> rewrite_nt_as_terminals prods prods_by_lhs output nonterm seen
+    | Nonterminal (_, nonterm) -> rewrite_nt_as_terminals nonterms prods prods_by_lhs output nonterm seen
   ) output input
 
 
 (* given a sequence of symbols (terminals and nonterminals), use the
  * productions to rewrite it as a (hopefully minimal) sequence of
  * terminals only *)
-let rewrite_as_terminals prods prods_by_lhs input =
-  rewrite_as_terminals prods prods_by_lhs [] input []
+let rewrite_as_terminals nonterms prods prods_by_lhs input =
+  rewrite_as_terminals nonterms prods prods_by_lhs [] input []
 
 
 (* sample input (terminals only) that can lead to a state *)
@@ -138,7 +139,7 @@ let generate terms nonterms prods prods_by_lhs state =
   left_context terms nonterms [] state
 
   (* reduce the nonterminals to terminals *)
-  |> rewrite_as_terminals prods prods_by_lhs
+  |> rewrite_as_terminals nonterms prods prods_by_lhs
   |> List.rev
 
 
@@ -156,5 +157,5 @@ let sample_input terms nonterms prods prods_by_lhs state =
 
 let left_context terms nonterms state =
   left_context terms nonterms [] state
-  |> List.map GrammarUtil.name_of_symbol
+  |> List.map (GrammarUtil.name_of_symbol nonterms)
   |> String.concat " "

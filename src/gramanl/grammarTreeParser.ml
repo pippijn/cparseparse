@@ -295,7 +295,7 @@ let collect_production_rhs aliases terminals nonterminals is_synthesised rhs_lis
               with Failure _ ->
                 let nonterminal = find_nonterminal name in
                 (* keep old precedence *)
-                Nonterminal (tag, nonterminal), production.prec
+                Nonterminal (tag, nonterminal.nt_index), production.prec
             in
 
             (* add it to the production *)

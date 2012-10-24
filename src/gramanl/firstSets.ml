@@ -1,4 +1,4 @@
-let first_of_sequence derivable seq =
+let first_of_sequence derivable nonterms seq =
   (* for each sequence member such that all
    * preceding members can derive the empty string *)
   fst (List.fold_left (fun (dest, blocked) sym ->
@@ -15,13 +15,14 @@ let first_of_sequence derivable seq =
            * effectively "hides" all further symbols from First *)
           dest, true
 
-      | Nonterminal (_, nonterm) ->
+      | Nonterminal (_, nt_index) ->
           (* anything already in nonterm's First should be added to dest *)
+          let nonterm = NtArray.get nonterms nt_index in
           let dest = TerminalSet.union nonterm.first dest in
 
           (* if nonterm can't derive the empty string, then it blocks
            * further consideration of right-hand side members *)
-          dest, not (Derivability.can_derive_empty derivable nonterm)
+          dest, not (Derivability.can_derive_empty derivable nt_index)
   ) (TerminalSet.empty, false) seq)
 
 
@@ -38,7 +39,6 @@ let first_of_sequence derivable seq =
  * I also don't "compute" First for terminals, since they are trivial
  * (First(x) = {x}). *)
 let rec compute_first derivable index =
-  let open AnalysisEnvType in
   let open GrammarType in
 
   (* for each production *)
@@ -47,7 +47,7 @@ let rec compute_first derivable index =
       let lhs = NtArray.get index.nonterms prod.left in
 
       (* compute First(RHS-sequence) *)
-      let first_of_rhs = first_of_sequence derivable prod.right in
+      let first_of_rhs = first_of_sequence derivable index.nonterms prod.right in
 
       (* add everything in First(RHS-sequence) to First(LHS) *)
       let merged = TerminalSet.union lhs.first first_of_rhs in
@@ -87,8 +87,8 @@ let rec compute_first derivable index =
 
 
 let compute_dprod_first derivable dotted_prods index =
-  let open GrammarType in
   let open AnalysisEnvType in
+  let open GrammarType in
 
   (* for each production *)
   ProdArray.iteri (fun prod_index prod ->
@@ -102,7 +102,7 @@ let compute_dprod_first derivable dotted_prods index =
       let right = ExtList.nth_tl dprod.prod.right posn in
 
       (* compute its first *)
-      let first_of_rhs = first_of_sequence derivable right in
+      let first_of_rhs = first_of_sequence derivable index.nonterms right in
       dprod.first_set <- first_of_rhs;
 
       (* can it derive empty? *)

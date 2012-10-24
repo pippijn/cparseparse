@@ -10,13 +10,16 @@ let (|>) = BatPervasives.(|>)
  * GrammarTreeParser and AnalysisEnv. *)
 
 
-let proddecl_of_prod prod =
+let proddecl_of_prod index prod =
   let rhs =
     List.map (function
       | Terminal (tag, { alias }) when alias <> "" ->
           RH_string (tag, alias)
 
-      | Nonterminal (tag, { nbase = { name } })
+      | Nonterminal (tag, nt_index) ->
+          let { nbase = { name } } = NtArray.get index.nonterms nt_index in
+          RH_name (tag, name)
+
       | Terminal (tag, { tbase = { name } }) ->
           RH_name (tag, name)
 
@@ -95,7 +98,7 @@ let ast_of_env env variant =
         (* Get actual productions *)
         |> List.map (ProdArray.get variant.variant_prods)
         (* Transform to ProdDecl *)
-        |> List.map proddecl_of_prod
+        |> List.map (proddecl_of_prod env.index)
       in
 
       let specfuncs = [

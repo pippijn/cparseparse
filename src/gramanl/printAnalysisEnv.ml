@@ -46,7 +46,7 @@ let print_dotted_production ?(out=stdout) ?terms nonterms dprod =
     in
     if position = dprod.dot then
       output_string out ".[";
-    PrintGrammar.print_symbol ~out rhs;
+    PrintGrammar.print_symbol ~out nonterms rhs;
     if after_dot then
       output_string out "]";
   ) dprod.prod.right;

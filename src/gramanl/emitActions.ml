@@ -32,9 +32,10 @@ let semtype sym =
       semtype
 
 
-let final_semtype final_prod =
+let final_semtype nonterms final_prod =
   match final_prod.right with
-  | Nonterminal (_, { nbase = { semtype } }) :: _ ->
+  | Nonterminal (_, nt_index) :: _ ->
+      let { nbase = { semtype } } = NtArray.get nonterms nt_index in
       begin match semtype with
       | None ->
           failwith "final nonterminal needs defined type"
@@ -95,6 +96,7 @@ let make_ml_actions nonterms prods =
               [make_binding tag index term.tbase]
 
           | Nonterminal (tag, nonterm) ->
+              let nonterm = NtArray.get nonterms nonterm in
               [make_binding tag index nonterm.nbase]
         ) prod.right
         |> List.concat
@@ -258,7 +260,7 @@ let make_ml_dup_del_merge terms nonterms =
 
 
 let make_ml_action_code terms nonterms prods final_prod verbatims impl_verbatims =
-  let result_type = final_semtype (ProdArray.get prods final_prod) in
+  let result_type = final_semtype nonterms (ProdArray.get prods final_prod) in
 
   let closures =
     make_ml_actions nonterms prods

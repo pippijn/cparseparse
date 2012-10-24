@@ -14,6 +14,8 @@ let compute_follow derivable index =
         match right_sym with
         | Terminal _ -> ()
         | Nonterminal (_, right_nonterm) ->
+            let right_nonterm = NtArray.get index.nonterms right_nonterm in
+
             (* RHS should never contain the empty string. Also, I'm not sure
              * what it means to compute Follow(empty), so let's just not do so *)
             assert (right_nonterm != empty_nonterminal);
@@ -24,7 +26,7 @@ let compute_follow derivable index =
                * everything in First(beta) is in Follow(B) *)
 
               (* compute First(beta) *)
-              let first_of_beta = FirstSets.first_of_sequence derivable after_right_sym in
+              let first_of_beta = FirstSets.first_of_sequence derivable index.nonterms after_right_sym in
 
               (* put those into Follow(right_nonterm) *)
               let merged = TerminalSet.union right_nonterm.follow first_of_beta in

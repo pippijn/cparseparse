@@ -41,10 +41,11 @@ let output_precs out terms =
   ()
 
 
-let output_symbol out = function
+let output_symbol nonterms out = function
   | Terminal (_, term) ->
       Printf.fprintf out " %s" term.tbase.name
   | Nonterminal (_, nonterm) ->
+      let nonterm = NtArray.get nonterms nonterm in
       Printf.fprintf out " %s" nonterm.nbase.name
 
 
@@ -62,7 +63,7 @@ let output_production out index prod_index =
   if prod.right = [] then
     output_string out " /* empty */"
   else
-    List.iter (output_symbol out) prod.right;
+    List.iter (output_symbol index.nonterms out) prod.right;
   if prod.prec <> 0 && prod.prec <> last_prec prod.right then (
     let term = TermArray.find (fun term -> term.precedence = prod.prec) index.terms in
     Printf.fprintf out " %%prec %s" term.tbase.name;

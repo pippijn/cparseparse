@@ -10,7 +10,8 @@ let _loc = Loc.ghost
  * :: Concrete syntax tree
  ************************************************)
 
-let ctyp_of_nonterminal nonterm =
+let ctyp_of_nonterminal nonterms nonterm =
+  let nonterm = NtArray.get nonterms nonterm in
   (* the type is the referenced nonterminal module *)
   let typ = nonterm.nbase.name in
   assert (is_uid typ);
@@ -26,16 +27,14 @@ let ctyp_of_terminal term =
       ty
 
 
-let ctyp_of_symbol = function
-  | Nonterminal (_, nonterm) -> ctyp_of_nonterminal nonterm
+let ctyp_of_symbol nonterms = function
+  | Nonterminal (_, nonterm) -> ctyp_of_nonterminal nonterms nonterm
   | Terminal    (_,    term) -> ctyp_of_terminal term
 
 
-let ctyp_of_right_symbol head_tail =
-  PtreeMaker.symbols_of_production head_tail
-  |> List.rev
-  |> List.hd
-  |> ctyp_of_symbol
+let ctyp_of_right_symbol nonterms head_tail =
+  PtreeMaker.right_symbol head_tail
+  |> ctyp_of_symbol nonterms
 
 
 (* XXX: if this function changes its output, PtreeMaker.prods probably
@@ -52,17 +51,17 @@ let production_types nonterms has_merge prods =
   (* nonterminal with a single production that is a tagged symbol
    * (and there is no merge) *)
   | [prod] when PtreeMaker.is_singleton_nonterminal prod && not has_merge ->
-      let semtype = ctyp_of_right_symbol prod in
+      let semtype = ctyp_of_right_symbol nonterms prod in
       <:sig_item<type t = ($semtype$)>>,
       <:str_item<type t = ($semtype$)>>
 
   | [tail; head_tail] when PtreeMaker.is_list_nonterminal tail head_tail && not has_merge ->
-      let semtype = ctyp_of_right_symbol head_tail in
+      let semtype = ctyp_of_right_symbol nonterms head_tail in
       <:sig_item<type t = ($semtype$ list)>>,
       <:str_item<type t = ($semtype$ list)>>
 
   | [none; some] when PtreeMaker.is_option_nonterminal none some && not has_merge ->
-      let semtype = ctyp_of_right_symbol some in
+      let semtype = ctyp_of_right_symbol nonterms some in
       <:sig_item<type t = ($semtype$ option)>>,
       <:str_item<type t = ($semtype$ option)>>
 
@@ -89,7 +88,7 @@ let production_types nonterms has_merge prods =
                   []
 
               | sym ->
-                  [ctyp_of_symbol sym]
+                  [ctyp_of_symbol nonterms sym]
 
             ) prod.right
             |> List.concat

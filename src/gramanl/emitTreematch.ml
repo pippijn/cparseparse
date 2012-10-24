@@ -10,10 +10,11 @@ let _loc = Loc.ghost
  * :: Concrete syntax tree
  ************************************************)
 
-let ctyp_of_nonterminal nonterm =
+let ctyp_of_nonterminal nonterms nonterm =
+  let nonterm = NtArray.get nonterms nonterm in
   (* the type is the referenced nonterminal module *)
   let typ = nonterm.nbase.name in
-  assert (is_uid typ);
+  assert (CodegenHelpers.is_uid typ);
   typ
 
 
@@ -26,25 +27,19 @@ let ctyp_of_terminal term =
       term.tbase.name
 
 
-let ctyp_of_symbol = function
-  | Nonterminal (_, nonterm) -> ctyp_of_nonterminal nonterm
+let ctyp_of_symbol index = function
+  | Nonterminal (_, nonterm) -> ctyp_of_nonterminal index.nonterms nonterm
   | Terminal    (_,    term) -> ctyp_of_terminal term
 
 
-let right_symbol head_tail =
-  PtreeMaker.symbols_of_production head_tail
-  |> List.rev
-  |> List.hd
-
-
-let ctyp_of_right_symbol head_tail =
-  right_symbol head_tail
-  |> ctyp_of_symbol
+let ctyp_of_right_symbol index head_tail =
+  PtreeMaker.right_symbol head_tail
+  |> ctyp_of_symbol index
 
 
 (* XXX: if this function changes its output, PtreeMaker.prods probably
  * also needs to change *)
-let production_types term_mods left has_merge prods =
+let production_types index term_mods left has_merge prods =
   let add_term_mod = function
     | Terminal (tag, { tbase = { name; semtype = Some semtype; } }) ->
         assert (tag <> "");
@@ -55,21 +50,21 @@ let production_types term_mods left has_merge prods =
 
   match prods with
   | [prod] when PtreeMaker.is_singleton_nonterminal prod && not has_merge ->
-      let right = right_symbol prod in
+      let right = PtreeMaker.right_symbol prod in
       add_term_mod right;
-      let semtype = ctyp_of_symbol right in
+      let semtype = ctyp_of_symbol index right in
       left ^ ": =" ^ semtype
 
   | [tail; head_tail] when PtreeMaker.is_list_nonterminal tail head_tail && not has_merge ->
-      let right = right_symbol head_tail in
+      let right = PtreeMaker.right_symbol head_tail in
       add_term_mod right;
-      let semtype = ctyp_of_symbol right in
+      let semtype = ctyp_of_symbol index right in
       left ^ ": =[" ^ semtype ^ "]"
 
   | [none; some] when PtreeMaker.is_option_nonterminal none some && not has_merge ->
-      let right = right_symbol some in
+      let right = PtreeMaker.right_symbol some in
       add_term_mod right;
-      let semtype = ctyp_of_symbol right in
+      let semtype = ctyp_of_symbol index right in
       left ^ ": =?" ^ semtype
 
   | [none; some] when PtreeMaker.is_boolean_nonterminal none some && not has_merge ->
@@ -88,7 +83,7 @@ let production_types term_mods left has_merge prods =
 
               | _ ->
                   add_term_mod sym;
-                  [ctyp_of_symbol sym]
+                  [ctyp_of_symbol index sym]
 
             ) prod.right
             |> List.concat
@@ -118,18 +113,18 @@ let production_types term_mods left has_merge prods =
 
 
 
-let make_ml_treematch reachable nonterms prods prods_by_lhs =
+let make_ml_treematch reachable index prods_by_lhs =
   let term_mods = Hashtbl.create 13 in
 
   let bindings =
     List.rev (NtArray.fold_left (fun bindings indices ->
-      match List.map (ProdArray.get prods) indices with
+      match List.map (ProdArray.get index.prods) indices with
       | [] ->
           (* the empty nonterminal has no productions *)
           bindings
 
       | first :: _ as prods ->
-          let nonterm = NtArray.get nonterms first.left in
+          let nonterm = NtArray.get index.nonterms first.left in
           let name = nonterm.nbase.name in
 
           if name.[0] = '_' then
@@ -142,7 +137,7 @@ let make_ml_treematch reachable nonterms prods prods_by_lhs =
               bindings
             else
               let has_merge = nonterm.merge != None in
-              let types = production_types term_mods name has_merge prods in
+              let types = production_types index term_mods name has_merge prods in
               types :: bindings
           )
 

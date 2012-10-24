@@ -21,7 +21,7 @@ let rec compute_reachable_dfs nreach treach prods prods_by_lhs nt_index =
       List.iter (function
         | Nonterminal (_, nonterm) ->
             (* recursively analyze nonterminal elements *)
-            compute_reachable_dfs nreach treach prods prods_by_lhs nonterm.nt_index
+            compute_reachable_dfs nreach treach prods prods_by_lhs nonterm
         | Terminal (_, term) ->
             (* just mark terminals *)
             TermSet.add treach term.term_index
@@ -67,7 +67,7 @@ let rec compute_reachable_tagged_dfs reachable prods prods_by_lhs nt_index =
       List.iter (function
         | Nonterminal (tag, nonterm) when tag <> "" ->
             (* recursively analyze nonterminal elements *)
-            compute_reachable_tagged_dfs reachable prods prods_by_lhs nonterm.nt_index
+            compute_reachable_tagged_dfs reachable prods prods_by_lhs nonterm
 
         | _ -> () (* ignore untagged and terminals *)
       ) prod.right

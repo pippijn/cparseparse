@@ -51,7 +51,7 @@ let handle_shift_reduce_conflict nonterms state prod sym decision =
 
     (* see if this reduction can be removed due to a 'maximal' spec;
      * in particular, is the shift going to extend 'super'? *)
-    maximal && ItemSet.has_extending_shift state super.nt_index sym
+    maximal && ItemSet.has_extending_shift nonterms state super.nt_index sym
   in
 
   (* scannerless *)

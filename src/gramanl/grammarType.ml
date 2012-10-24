@@ -86,7 +86,7 @@ type symbol =
    * in actions, and for self-commenting value as role indicators; an
    * empty tag ("") is allowed and means there is no tag *)
   | Terminal    of (* tag: *)string * terminal
-  | Nonterminal of (* tag: *)string * nonterminal
+  | Nonterminal of (* tag: *)string * StateId.Nonterminal.t
   with sexp
 
 (* a rewrite rule *)

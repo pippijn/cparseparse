@@ -1,8 +1,8 @@
 open AnalysisEnvType
 
 
-let name_of_symbol_opt = function
-  | Some sym -> GrammarUtil.name_of_symbol sym
+let name_of_symbol_opt nonterms = function
+  | Some sym -> GrammarUtil.name_of_symbol nonterms sym
   | None -> "None"
 
 
@@ -71,10 +71,10 @@ let renumber_states_compare env a b =
     if arbitrary_order then (
       Printf.printf "%a[%s] %s %a[%s]\n"
         StateId.State.print a.state_id
-        (name_of_symbol_opt a.state_symbol)
+        (name_of_symbol_opt env.index.nonterms a.state_symbol)
         (ordering_operator order)
         StateId.State.print b.state_id
-        (name_of_symbol_opt b.state_symbol);
+        (name_of_symbol_opt env.index.nonterms b.state_symbol);
       PrintAnalysisEnv.print_item_set env a;
       PrintAnalysisEnv.print_item_set env b;
     );

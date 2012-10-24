@@ -8,12 +8,13 @@ let name_of_terminal { tbase = { name }; alias } =
     name
 
 
-let name_of_nonterminal { nbase = { name } } =
+let name_of_nonterminal nonterms nt_index =
+  let { nbase = { name } } = NtArray.get nonterms nt_index in
   name
 
 
-let name_of_symbol = function
-  | Nonterminal (_, nonterm) -> name_of_nonterminal nonterm
+let name_of_symbol nonterms = function
+  | Nonterminal (_, nonterm) -> name_of_nonterminal nonterms nonterm
   | Terminal (_, term) -> name_of_terminal term
 
 
@@ -49,7 +50,7 @@ let compare_symbol a b =
   | Some (Terminal (_, term_a)), Some (Terminal (_, term_b)) ->
       StateId.Terminal.compare term_a.term_index term_b.term_index
   | Some (Nonterminal (_, nonterm_a)), Some (Nonterminal (_, nonterm_b)) ->
-      StateId.Nonterminal.compare nonterm_a.nt_index nonterm_b.nt_index
+      StateId.Nonterminal.compare nonterm_a nonterm_b
 
 
 let rhs_has_nonterm prod nonterm =
@@ -58,7 +59,7 @@ let rhs_has_nonterm prod nonterm =
   try
     ignore (List.find (function
       | Terminal _ -> false
-      | Nonterminal (_, nt) -> nt.nt_index == nonterm
+      | Nonterminal (_, nt) -> nt == nonterm
     ) prod.right);
     true
   with Not_found ->

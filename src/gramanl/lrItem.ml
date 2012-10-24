@@ -54,7 +54,7 @@ let symbol_after_dot item =
   DottedProduction.symbol_after_dot item.dprod
 
 
-let first_includes sym t =
+let first_includes nonterms sym t =
   let open GrammarType in
   match sym with
   | Terminal (_, term) -> term == t
@@ -64,11 +64,12 @@ let first_includes sym t =
        * others that could not be eliminated at all (they were not
        * statically decidable), so this generalisation might not be
        * useful after all *)
+      let nonterm = NtArray.get nonterms nonterm in
       TerminalSet.mem t.term_index nonterm.first
 
 
-let is_extending_shift item nonterm term =
+let is_extending_shift nonterms item nonterm term =
   let open GrammarType in
   not (is_dot_at_end item) && (* shift *)
   item.dprod.prod.left == nonterm && (* extending nonterm *)
-  first_includes (BatOption.get (symbol_after_dot item)) term (* with t *)
+  first_includes nonterms (BatOption.get (symbol_after_dot item)) term (* with t *)

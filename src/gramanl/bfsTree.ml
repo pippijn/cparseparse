@@ -27,7 +27,7 @@ let compute_bfs_tree env states =
     let open GrammarType in
     IntegralIndexedArray.append
       (TermArray.map (fun term -> Terminal ("", term)) env.index.terms)
-      (NtArray.map (fun nonterm -> Nonterminal ("", nonterm)) env.index.nonterms)
+      (NtArray.map (fun nonterm -> Nonterminal ("", nonterm.nt_index)) env.index.nonterms)
   in
 
   (* loop until the queue is exhausted *)

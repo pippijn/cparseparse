@@ -208,8 +208,8 @@ let single_item_closure env finished worklist item =
   | Some (Nonterminal (_, b)) ->
       (* for each production "B -> gamma" *)
       List.iter
-        (production_closure env finished worklist item b.nt_index)
-        (NtArray.get env.prods_by_lhs b.nt_index)
+        (production_closure env finished worklist item b)
+        (NtArray.get env.prods_by_lhs b)
 
 
 (* based on [ASU] figure 4.33, p.223
@@ -322,6 +322,7 @@ let merge_lookaheads_into dest items =
 
 
 let merge_state env item_set sym in_done_list already dot_moved_items =
+  let open GrammarType in
   assert (List.length dot_moved_items.items = List.length already.kernel_items.items);
 
   (* we already have a state with at least equal kernel items, not
@@ -331,7 +332,7 @@ let merge_state env item_set sym in_done_list already dot_moved_items =
     if Options._trace_lrsets () then (
       Printf.printf "from state %a, found that the transition on %s yielded a state similar to %a, but with different lookahead\n"
         StateId.State.print item_set.state_id
-        (GrammarUtil.name_of_symbol sym)
+        (GrammarUtil.name_of_symbol env.env.index.nonterms sym)
         StateId.State.print already.state_id
     );
 
