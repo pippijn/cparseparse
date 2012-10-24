@@ -1,3 +1,12 @@
+type readonly
+type writable
+
+let readonly_of_sexp = ()
+let sexp_of_readonly = ()
+let writable_of_sexp = ()
+let sexp_of_writable = ()
+
+
 module type ConvertibleType = sig
   open Sexplib
 
@@ -28,35 +37,37 @@ end
 
 module type IntegralIndexedArrayType = sig
   type integer
-  type 'a t
+  type ('a, 'mutability) t
 
-  val t_of_sexp : (Sexplib.Sexp.t -> 'a) -> Sexplib.Sexp.t -> 'a t
-  val sexp_of_t : ('a -> Sexplib.Sexp.t) -> 'a t -> Sexplib.Sexp.t
+  val t_of_sexp : (Sexplib.Sexp.t -> 'a) -> unit -> Sexplib.Sexp.t -> ('a, 'm) t
+  val sexp_of_t : ('a -> Sexplib.Sexp.t) -> unit -> ('a, 'm) t -> Sexplib.Sexp.t
 
-  val to_array : 'a t -> 'a array
-  val to_list : 'a t -> 'a list
+  val readonly : ('a, writable) t -> ('a, readonly) t
 
-  val get : 'a t -> integer -> 'a
-  val set : 'a t -> integer -> 'a -> unit
+  val to_array : ('a, 'm) t -> 'a array
+  val to_list : ('a, 'm) t -> 'a list
 
-  val length : 'a t -> int
-  val range : 'a t -> integer BatEnum.t
+  val get : ('a, 'm) t -> integer -> 'a
+  val set : ('a, writable) t -> integer -> 'a -> unit
 
-  val empty : 'a t
-  val make : int -> 'a -> 'a t
-  val init : int -> (integer -> 'a) -> 'a t
+  val length : ('a, 'm) t -> int
+  val range : ('a, 'm) t -> integer BatEnum.t
 
-  val fold_left : ('a -> 'b -> 'a) -> 'a -> 'b t -> 'a
-  val fold_right : ('b -> 'a -> 'a) -> 'b t -> 'a -> 'a
-  val foldl_until : ('a -> int) -> int -> 'a t -> int
-  val foldl_untili : (integer -> 'a -> int) -> int -> 'a t -> int
-  val iter : ('a -> unit) -> 'a t -> unit
-  val iteri : (integer -> 'a -> unit) -> 'a t -> unit
-  val map : ('a -> 'b) -> 'a t -> 'b t
-  val mapi : (integer -> 'a -> 'b) -> 'a t -> 'b t
-  val find : ('a -> bool) -> 'a t -> 'a
-  val exists : ('a -> bool) -> 'a t -> bool
+  val empty : ('a, 'm) t
+  val make : int -> 'a -> ('a, 'm) t
+  val init : int -> (integer -> 'a) -> ('a, readonly) t
 
-  val sum : ('a -> int) -> 'a t -> int
-  val count : ('a -> bool) -> 'a t -> int
+  val fold_left : ('a -> 'b -> 'a) -> 'a -> ('b, 'm) t -> 'a
+  val fold_right : ('b -> 'a -> 'a) -> ('b, 'm) t -> 'a -> 'a
+  val foldl_until : ('a -> int) -> int -> ('a, 'm) t -> int
+  val foldl_untili : (integer -> 'a -> int) -> int -> ('a, 'm) t -> int
+  val iter : ('a -> unit) -> ('a, 'm) t -> unit
+  val iteri : (integer -> 'a -> unit) -> ('a, 'm) t -> unit
+  val map : ('a -> 'b) -> ('a, 'm) t -> ('b, readonly) t
+  val mapi : (integer -> 'a -> 'b) -> ('a, 'm) t -> ('b, readonly) t
+  val find : ('a -> bool) -> ('a, 'm) t -> 'a
+  val exists : ('a -> bool) -> ('a, 'm) t -> bool
+
+  val sum : ('a -> int) -> ('a, 'm) t -> int
+  val count : ('a -> bool) -> ('a, 'm) t -> int
 end

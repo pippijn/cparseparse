@@ -85,8 +85,8 @@ type item_set = {
   mutable nonkernel_items       : lr_item list;
   (* transition function (where we go on shifts); None means no transition
    *   Map : (Terminal id or Nonterminal id) -> item_set *)
-  term_transition               : item_set option TermArray.t;
-  nonterm_transition            : item_set option NtArray.t;
+  term_transition               : (item_set option, Sig.writable) TermArray.t;
+  nonterm_transition            : (item_set option, Sig.writable) NtArray.t;
 
   (* profiler reports I'm spending significant time rifling through
    * the items looking for those that have the dot at the end; so this
@@ -118,8 +118,8 @@ type item_set = {
 
 type variant = {
   prefix			: string;
-  variant_nonterms              : GrammarType.nonterminal NtArray.t;  (* nt_index   -> nonterminal *)
-  variant_prods                 : GrammarType.production ProdArray.t; (* prod_index -> production  *)
+  variant_nonterms              : (GrammarType.nonterminal, Sig.readonly) NtArray.t;
+  variant_prods                 : (GrammarType.production, Sig.readonly) ProdArray.t;
   verbatims                     : CamlAst.sig_item list;
   impl_verbatims                : CamlAst.str_item list;
 } with sexp
@@ -132,23 +132,23 @@ type env = {
   start_nt			: StateId.Nonterminal.t;
 
   (* nonterminals reachable via tags *)
-  reachable			: NtSet.t;
+  reachable			: Sig.readonly NtSet.t;
 
   (* during item set closure, profiling reports we spend a lot of time
    * walking the list of productions looking for those that have a given
    * symbol on the LHS; so let's index produtions by LHS symbol index;
    * this array maps each nonterminal to the list of productions with
    * that nonterminal on the LHS *)
-  prods_by_lhs                  : StateId.Production.t list NtArray.t;
+  prods_by_lhs                  : (StateId.Production.t list, Sig.readonly) NtArray.t;
 
   (* map of production x dot_position -> dotted_production;
    * each element of the 'dotted_prods' array is a pointer to an
    * array of dotted_production objects *)
-  dotted_prods                  : dotted_production array ProdArray.t;
+  dotted_prods                  : (dotted_production array, Sig.readonly) ProdArray.t;
 
   (* if entry i,j is true, then nonterminal i can derive nonterminal j
    * (this is a graph, represented (for now) as an adjacency matrix) *)
-  derivable                     : Derivable.t;
+  derivable                     : Sig.writable Derivable.t;
 
   (* true if any nonterminal can derive itself (with no extra symbols
    * surrounding it) in 1 or more steps *)

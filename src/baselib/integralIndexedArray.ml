@@ -1,20 +1,22 @@
 open Sexplib.Conv
 
-type ('a, 'b) repr = 'a array with sexp
+type ('a, 'mutability, 'integer) repr = 'a array with sexp
 
 let append = Array.append
 
 module Make(T : Sig.IntegralType) = struct
   type integer = T.t
-  type 'a t = ('a, T.t) repr
+  type ('a, 'm) t = ('a, 'm, T.t) repr
 
 
   (* private functions *)
   let mapi_fun f i e = f (T.of_int i) e
 
   (* public functions *)
-  let t_of_sexp sx = repr_of_sexp sx ()
-  let sexp_of_t ar = sexp_of_repr ar ()
+  let t_of_sexp sx () = repr_of_sexp sx () ()
+  let sexp_of_t ar () = sexp_of_repr ar () ()
+
+  let readonly = BatPervasives.identity
 
   let to_array = BatPervasives.identity
   let to_list = Array.to_list

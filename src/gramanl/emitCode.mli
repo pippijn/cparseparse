@@ -4,7 +4,7 @@ open Camlp4.PreCast
 val emit_ml :
   string ->
   GrammarType.index ->
-  StateId.Production.t list NtArray.t ->
+  (StateId.Production.t list, Sig.readonly) NtArray.t ->
   AnalysisEnvType.variant list ->
-  NtSet.t ->
+  Sig.readonly NtSet.t ->
   ParseTablesType.t -> unit

@@ -1,8 +1,8 @@
 module Make(T : Sig.IntegralType) = struct
-  type t = {
+  type 'm t = {
     width  : int;
     height : int;
-    bitset : BitSet.Set.t;
+    bitset : 'm BitSet.Set.t;
   }
 
 
@@ -57,10 +57,10 @@ module Make(T : Sig.IntegralType) = struct
     done
 
 
-  let t_of_sexp s =
+  let t_of_sexp () s =
     create 0 0
 
-  let sexp_of_t v =
+  let sexp_of_t () v =
     Sexplib.Sexp.List []
 
 end

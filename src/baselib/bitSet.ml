@@ -1,30 +1,32 @@
-open Sexplib
-
 module Set = struct
-  type t
+  open Sig
+
+  type 'mutability t
 
   (* the approach using BatBitSet turned out to be too much of a
    * bottleneck, so now the bitsets are implemented in C++.
    * they are comparable, hashable and serialisable and clean
    * up their memory on garbage collection *)
-  external create        : int -> t         = "ml_BitSet_create"
-  external copy          : t -> t           = "ml_BitSet_copy"
-  external cardinal      : t -> int         = "ml_BitSet_count"
-  external add           : t -> int -> unit = "ml_BitSet_set"
-  external mem           : t -> int -> bool = "ml_BitSet_is_set"
-  external unite         : t -> t -> unit   = "ml_BitSet_unite"
-  external differentiate : t -> t -> unit   = "ml_BitSet_differentiate"
-  external merge         : t -> t -> bool   = "ml_BitSet_merge"
-  external clear         : t -> unit        = "ml_BitSet_clear"
-  external assign        : t -> t -> unit   = "ml_BitSet_assign"
+  external create        : int -> 'm t      		= "ml_BitSet_create"
+  external copy          : 'm t -> 'n t   		= "ml_BitSet_copy"
+  external cardinal      : 'm t -> int         		= "ml_BitSet_count"
+  external add           : writable t -> int -> unit 	= "ml_BitSet_set"
+  external mem           : 'm t -> int -> bool 		= "ml_BitSet_is_set"
+  external unite         : writable t -> 'm t -> unit   = "ml_BitSet_unite"
+  external differentiate : writable t -> 'm t -> unit   = "ml_BitSet_differentiate"
+  external merge         : writable t -> 'm t -> bool   = "ml_BitSet_merge"
+  external clear         : writable t -> unit        	= "ml_BitSet_clear"
+  external assign        : writable t -> 'm t -> unit   = "ml_BitSet_assign"
 
-  let empty = create 0
+  external readonly	 : writable t -> readonly t	= "%identity"
 
-  let t_of_sexp sexp =
+  let empty : readonly t = create 0
+
+  let t_of_sexp () sexp =
     empty
 
-  let sexp_of_t bset =
-    Sexp.List []
+  let sexp_of_t () bset =
+    Sexplib.Sexp.List []
 end
 
 

@@ -56,7 +56,7 @@ let compute_indexed_nonterms nonterms =
   (* number of nonterminals + 1 for empty_nonterminal *)
   assert (NtArray.length indexed = StringMap.cardinal nonterms + 1);
 
-  indexed
+  NtArray.readonly indexed
 
 
 let compute_indexed_terms terms =
@@ -73,7 +73,7 @@ let compute_indexed_terms terms =
 
   assert (TermArray.length indexed = StringMap.cardinal terms);
 
-  indexed
+  TermArray.readonly indexed
 
 
 let compute_indexed_prods productions nonterm_count =
@@ -111,7 +111,8 @@ let compute_indexed_prods productions nonterm_count =
   (* verify we filled the prod_index map *)
   ProdArray.iter (fun prod -> assert (prod != empty_production)) indexed;
 
-  indexed, prods_by_lhs
+  ProdArray.readonly indexed,
+  NtArray.readonly prods_by_lhs
 
 
 let compute_dotted_productions indexed_prods =
@@ -147,6 +148,7 @@ let compute_dotted_productions indexed_prods =
 
   (* the mapping is dense by construction, no need to verify it *)
 
+  (* it is already readonly, too *)
   dotted_prods
 
 

@@ -116,9 +116,9 @@ type config = {
 } with sexp
 
 type index = {
-  terms               	: terminal TermArray.t;   (* term_index -> terminal    *)
-  nonterms              : nonterminal NtArray.t;  (* nt_index   -> nonterminal *)
-  prods                 : production ProdArray.t; (* prod_index -> production  *)
+  terms               	: (terminal, Sig.readonly) TermArray.t;   (* term_index -> terminal    *)
+  nonterms              : (nonterminal, Sig.readonly) NtArray.t;  (* nt_index   -> nonterminal *)
+  prods                 : (production, Sig.readonly) ProdArray.t; (* prod_index -> production  *)
 } with sexp
 
 type grammar = {

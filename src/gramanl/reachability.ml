@@ -46,7 +46,8 @@ let compute_reachable terms prods prods_by_lhs start =
   (* the EOF token is reachable *)
   TermSet.add treach StateId.Terminal.eof;
 
-  nreach, treach
+  NtSet.readonly nreach,
+  TermSet.readonly treach
 
 
 
@@ -83,4 +84,4 @@ let compute_reachable_tagged prods prods_by_lhs =
    * they're encountered *)
   compute_reachable_tagged_dfs reachable prods prods_by_lhs StateId.Nonterminal.start;
 
-  reachable
+  NtSet.readonly reachable

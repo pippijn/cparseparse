@@ -268,6 +268,6 @@ end) = struct
     let prods = ProdArray.make prod_count empty_production in
     NtArray.iter (List.iter (fun prod -> ProdArray.set prods prod.prod_index prod)) prods_by_lhs;
 
-    prods
+    ProdArray.readonly prods
 
 end
