@@ -41,6 +41,7 @@ let handle_shift_reduce_conflict nonterms state prod sym decision =
     let rec loop super maximal =
       match super.superset with
       | Some superset when not maximal ->
+          let superset = NtArray.get nonterms superset in
           loop superset superset.maximal
       | _ ->
           super, maximal
@@ -184,9 +185,10 @@ let subset_directive_resolution nonterms state sym reductions =
 
       let remove =
         List.exists (fun sub ->
-          let remove = NonterminalSet.mem sub.nt_index map in
-          if Options._trace_prec () then (
-            if remove then (
+          let remove = NonterminalSet.mem sub map in
+          if remove then (
+            if Options._trace_prec () then (
+              let sub = NtArray.get nonterms sub in
               Printf.printf "in state %a, R/R conflict on token %s, removed production yielding %s, because another yields subset %s\n"
                 StateId.State.print state.state_id
                 sym.tbase.name
