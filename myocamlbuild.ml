@@ -604,11 +604,21 @@ let dispatch_mine = function
           "src/treematch/treematch.native";
         ]
         begin fun env build ->
-          Cmd(S[
-            A"src/treematch/treematch.native"; A"-special"; A(env "%.tm");
-            Sh"| sed -e 's/type t = \\([^;|]*\\);;/type t = \\1 with sexp;;/g;s/ | SEXP;;/ with sexp;;/g'";
-            Sh">"; A(env "%.ml");
-          ])
+          let sed o n = [Sh"|"; A"sed"; A"-e"; A ("s$" ^ o ^ "$" ^ n ^ "$g")] in
+
+          Cmd(S([A"src/treematch/treematch.native"; A"-special"; A(env "%.tm")]
+            @ sed "type t = \\([^;|]*\\);;"
+            	  "type t = \\1 with sexp;;"
+            @ sed " | SEXP;;"
+            	  " with sexp;;"
+            @ sed "type t = | Loc with sexp"
+            	  "type t = Glr.SourceLocation.t with sexp"
+            @ sed "(Ptree.SourceLocation.Loc ) -> (Ptree.SourceLocation.Loc)"
+            	  "a -> a"
+            @ sed "\\.true" ".True"
+            @ sed "\\.false" ".False"
+            @ [Sh">"; A(env "%.ml")]
+          ))
         end;
 
 
