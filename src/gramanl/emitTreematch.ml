@@ -154,7 +154,9 @@ let make_ml_treematch reachable prods prods_by_lhs =
   in
 
   "ast Ptree {\n"
-  ^ String.concat "\n" bindings
-  ^ "\n\n"
-  ^ String.concat "\n" term_bindings
-  ^ "\n}\n"
+  ^ String.concat "\n" bindings ^ "\n"
+  ^ "\n"
+  ^ String.concat "\n" term_bindings ^ "\n"
+  ^ "SourceLocation: Loc\n"
+  ^ "}\n"
+  ^ "map identity_default_map : Ptree => Ptree { }\n"
