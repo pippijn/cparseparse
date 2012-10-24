@@ -32,8 +32,8 @@ let rec compute_reachable_dfs nreach treach prods prods_by_lhs nt_index =
 
 let compute_reachable terms prods prods_by_lhs start =
   (* start by creating the reachability bitsets *)
-  let nreach = NtSet.create (NtArray.length prods_by_lhs) in
-  let treach = TermSet.create (TermArray.length terms) in
+  let nreach = NtSet.create (NtArray.last_index prods_by_lhs) in
+  let treach = TermSet.create (TermArray.last_index terms) in
 
   (* do a DFS on the grammar, marking things reachable as
    * they're encountered *)
@@ -78,7 +78,7 @@ let rec compute_reachable_tagged_dfs reachable prods prods_by_lhs nt_index =
 
 let compute_reachable_tagged prods prods_by_lhs =
   (* start by creating the reachability bitset *)
-  let reachable = NtSet.create (NtArray.length prods_by_lhs) in
+  let reachable = NtSet.create (NtArray.last_index prods_by_lhs) in
 
   (* do a DFS on the grammar, marking things reachable as
    * they're encountered *)

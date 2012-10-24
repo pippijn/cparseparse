@@ -159,19 +159,19 @@ let eq_option a b =
 
 (* the inverse of transition: map a target state to the symbol that
  * would transition to that state (from the given source state) *)
-let inverse_transition terms nonterms source target =
+let inverse_transition last_term last_nonterm source target =
   let open GrammarType in
   try
     Terminal ("",
-      BatEnum.find (fun term ->
-        eq_option target (transition_for_term source term)
-      ) (TermArray.range terms)
+      StateId.Terminal.find (fun term_index ->
+        eq_option target (transition_for_term source term_index)
+      ) last_term
     )
   with Not_found ->
     Nonterminal ("",
-      BatEnum.find (fun nonterm ->
-        eq_option target (transition_for_nonterm source nonterm)
-      ) (NtArray.range nonterms)
+      StateId.Nonterminal.find (fun nt_index ->
+        eq_option target (transition_for_nonterm source nt_index)
+      ) last_nonterm
     )
 
 

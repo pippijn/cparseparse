@@ -13,7 +13,31 @@ module IntegralModule = struct
   let to_int : t -> int = BatPervasives.identity
   let of_int : int -> t = BatPervasives.identity
 
-  let range s e = s -- e
+  let domain e = 0 -- e
+
+
+  let rec find f i e =
+    if i <= e then
+      if f i then
+        i
+      else
+        find f (i + 1) e
+    else
+      raise Not_found
+
+  let find f e =
+    find f 0 e
+
+
+  let rec fold_left f x i e =
+    if i <= e then
+      fold_left f (f x i) (i + 1) e
+    else
+      x
+
+  let fold_left f x e =
+    fold_left f x 0 e
+
 
   let to_string (id : t) = string_of_int id
   let print out (id : t) = output_string out (to_string id)

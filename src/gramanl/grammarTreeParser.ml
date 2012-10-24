@@ -132,8 +132,8 @@ let spec_func funcs name formal_count =
 
 
 let collect_terminals decls types precs =
-  let max_code, terminals =
-    List.fold_left (fun (max_code, terminals) (TermDecl (code, name, alias)) ->
+  let max_index, terminals =
+    List.fold_left (fun (max_index, terminals) (TermDecl (code, name, alias)) ->
       if StringMap.mem name terminals then
         failwith "token already declared";
 
@@ -155,6 +155,8 @@ let collect_terminals decls types precs =
           Assoc.AK_NONASSOC, 0
       in
 
+      let term_index = StateId.Terminal.of_int code in
+
       let terminal = {
         tbase = {
           name;
@@ -165,19 +167,19 @@ let collect_terminals decls types precs =
         alias;
         precedence;
         associativity;
+        term_index;
         classify = spec_func funcs "classify" 1;
-        term_index = StateId.Terminal.of_int code;
       } in
 
-      let max_code = max max_code code in
+      let max_index = max max_index term_index in
 
-      max_code, StringMap.add name terminal terminals
-    ) (0, StringMap.empty) decls
+      max_index, StringMap.add name terminal terminals
+    ) (StateId.Terminal.default, StringMap.empty) decls
   in
 
   (* track what terminals have codes *)
   let module TerminalSet = BitSet.Make(StateId.Terminal) in
-  let has_code = TerminalSet.create (max_code + 1) in
+  let has_code = TerminalSet.create max_index in
   List.iter (fun (TermDecl (code, _, _)) ->
     let code = StateId.Terminal.of_int code in
     TerminalSet.add has_code code;
@@ -186,7 +188,7 @@ let collect_terminals decls types precs =
   let terminals =
     (* fill in any gaps in the code space; this is required because
      * later analyses assume the terminal code space is dense *)
-    BatEnum.fold (fun terminals i ->
+    StateId.Terminal.fold_left (fun terminals i ->
       if TerminalSet.mem has_code i then
         terminals
       else
@@ -198,7 +200,7 @@ let collect_terminals decls types precs =
           term_index = i;
         } in
         StringMap.add dummy_name dummy terminals
-    ) terminals (StateId.Terminal.range 1 max_code)
+    ) terminals max_index
   in
 
   terminals

@@ -19,6 +19,10 @@ let rec left_context terms nonterms syms state =
       left_context terms nonterms (sym :: syms) parent
 
 
+let left_context terms nonterms =
+  left_context (TermArray.last_index terms) (NtArray.last_index nonterms)
+
+
 (* compare two-element quantities where one dominates and the other is
  * only for tie-breaking; return <0/=0/>0 if a's quantities are
  * fewer/equal/greater (TODO: this fn is a candidate for adding to a
@@ -134,20 +138,15 @@ let rewrite_as_terminals nonterms prods prods_by_lhs input =
 
 
 (* sample input (terminals only) that can lead to a state *)
-let generate terms nonterms prods prods_by_lhs state =
-  (* get left-context as terminals and nonterminals *)
-  left_context terms nonterms [] state
-
-  (* reduce the nonterminals to terminals *)
-  |> rewrite_as_terminals nonterms prods prods_by_lhs
-  |> List.rev
-
-
 let sample_input terms nonterms prods prods_by_lhs state =
   try
-    generate terms nonterms prods prods_by_lhs state
+    (* get left-context as terminals and nonterminals *)
+    left_context terms nonterms [] state
+    (* reduce the nonterminals to terminals *)
+    |> rewrite_as_terminals nonterms prods prods_by_lhs
     |> List.rev_map (TermArray.get terms)
     |> List.rev_map GrammarUtil.name_of_terminal
+    |> List.rev
     |> String.concat " "
 
   with Failure msg ->

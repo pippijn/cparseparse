@@ -25,7 +25,7 @@ let rec topological_sort nonterms (* number of nonterminals in the grammar *)
 
     (* look at all nonterminals this one can derive *)
     let next_ordinal =
-      BatEnum.fold (fun next_ordinal nt ->
+      StateId.Nonterminal.fold_left (fun next_ordinal nt ->
         if Derivability.can_derive_i derivable nt current then
           (* 'nt' can derive 'current'; expand 'nt' first, thus making
            * it later in the order, so we'll reduce to 'current' before
@@ -33,7 +33,7 @@ let rec topological_sort nonterms (* number of nonterminals in the grammar *)
           topological_sort nonterms derivable seen order next_ordinal nt
         else
           next_ordinal
-      ) next_ordinal (NtArray.range nonterms)
+      ) next_ordinal (NtArray.last_index nonterms)
     in
 
     (* finally, put 'current' into the order *)
@@ -48,7 +48,7 @@ let topological_order derivable nonterms =
   let open GrammarType in
 
   let nonterm_count = NtArray.length nonterms in
-  let seen = NonterminalSet.create nonterm_count in
+  let seen = NonterminalSet.create (NtArray.last_index nonterms) in
 
   let order = NtArray.make nonterm_count 0 in
   ignore (NtArray.fold_left (fun next_ordinal nonterm ->

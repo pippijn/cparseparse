@@ -33,6 +33,7 @@ end
 module Make(T : Sig.IntegralType) = struct
   include Set
 
+  let create n = create (T.to_int n + 1)
   let add s v = add s (T.to_int v)
   let mem s v = mem s (T.to_int v)
 end

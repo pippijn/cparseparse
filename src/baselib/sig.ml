@@ -31,7 +31,7 @@ module type IntegralType = sig
   val to_int : t -> int
   val of_int : int -> t
 
-  val range : int -> int -> t BatEnum.t
+  val domain : t -> t BatEnum.t
 end
 
 
@@ -51,6 +51,7 @@ module type IntegralIndexedArrayType = sig
   val set : ('a, writable) t -> integer -> 'a -> unit
 
   val length : ('a, 'm) t -> int
+  val last_index : ('a, 'm) t -> integer
   val range : ('a, 'm) t -> integer BatEnum.t
 
   val empty : ('a, 'm) t

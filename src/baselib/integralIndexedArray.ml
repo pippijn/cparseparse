@@ -28,9 +28,10 @@ module Make(T : Sig.IntegralType) = struct
     array.(T.to_int index) <- value
 
   let length = Array.length
+  let last_index array = T.of_int (length array - 1)
 
   let range array =
-    T.range 0 (length array - 1)
+    T.domain (last_index array)
 
   let empty = [||]
   let make = Array.make

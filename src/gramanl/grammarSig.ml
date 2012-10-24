@@ -22,5 +22,8 @@ module type IntegralModuleType = sig
   val print : out_channel -> t -> unit
   val sprint : unit -> t -> string
 
+  val find : (t -> bool) -> t -> t
+  val fold_left : ('a -> t -> 'a) -> 'a -> t -> 'a
+
   val default : t
 end
