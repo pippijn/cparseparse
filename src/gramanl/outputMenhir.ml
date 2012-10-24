@@ -41,17 +41,25 @@ let output_precs out terms =
   ()
 
 
-let output_symbol nonterms out = function
-  | Terminal (_, term) ->
-      Printf.fprintf out " %s" term.tbase.name
-  | Nonterminal (_, nonterm) ->
+let output_tag out = function
+  | "" -> ()
+  | tag -> output_string out (tag ^ "=")
+
+
+let output_symbol terms nonterms out = function
+  | Terminal (tag, term) ->
+      let term = TermArray.get terms term in
+      Printf.fprintf out " %a%s" output_tag tag term.tbase.name
+  | Nonterminal (tag, nonterm) ->
       let nonterm = NtArray.get nonterms nonterm in
-      Printf.fprintf out " %s" nonterm.nbase.name
+      Printf.fprintf out " %a%s" output_tag tag nonterm.nbase.name
 
 
-let last_prec =
+let last_prec terms =
   List.fold_left (fun prec -> function
-    | Terminal (_, term) -> term.precedence
+    | Terminal (_, term) ->
+        let term = TermArray.get terms term in
+        term.precedence
     | _ -> prec
   ) 0
 
@@ -63,12 +71,17 @@ let output_production out index prod_index =
   if prod.right = [] then
     output_string out " /* empty */"
   else
-    List.iter (output_symbol index.nonterms out) prod.right;
-  if prod.prec <> 0 && prod.prec <> last_prec prod.right then (
+    List.iter (output_symbol index.terms index.nonterms out) prod.right;
+  if prod.prec <> 0 && prod.prec <> last_prec index.terms prod.right then (
     let term = TermArray.find (fun term -> term.precedence = prod.prec) index.terms in
     Printf.fprintf out " %%prec %s" term.tbase.name;
   );
-  Printf.fprintf out "\t{ %a }\n" StateId.Production.print prod.prod_index
+  match prod.action with
+  | None ->
+      let tag = GrammarUtil.tag_of_symbol (PtreeMaker.right_symbol prod) in
+      Printf.fprintf out "\t{ %s }\n" tag
+  | Some action ->
+      Printf.fprintf out "\t{ %s }\n" (CamlAst.string_of_expr action)
 
 
 let output_nonterm out index = function
