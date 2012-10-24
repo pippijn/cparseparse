@@ -31,7 +31,7 @@ let is_tail_of tail head_tail =
 
 let is_left_recursion head_tail =
   match symbols_of_production head_tail with
-  | [Nonterminal (_, nonterm); _] -> nonterm == head_tail.left
+  | [Nonterminal (_, nonterm); _] -> nonterm.nt_index == head_tail.left
   | _ -> false
 
 
@@ -82,7 +82,7 @@ end) = struct
 
 
   let nonterminal reachable nonterm =
-    let is_reachable = StringSet.mem nonterm.nbase.name reachable in
+    let is_reachable = NtSet.mem reachable nonterm.nt_index in
 
     let semtype =
       if not is_reachable then
@@ -116,24 +116,24 @@ end) = struct
 
 
   let production reachable prod =
-    let left = nonterminal reachable prod.left in
     let right = List.map (symbol reachable) prod.right in
-    { prod with left; right; }
+    { prod with right; }
 
 
-  let check_noname prod =
+  let check_noname nonterms prod =
     match prod.prod_name with
     | None -> ()
     | Some name ->
+        let left = NtArray.get nonterms prod.left in
         failwith (
           "uselessly defined production name \"" ^ name ^ "\"" ^
-          " in nonterminal \"" ^ prod.left.nbase.name ^ "\"")
+          " in nonterminal \"" ^ left.nbase.name ^ "\"")
 
 
-  let map_prods reachable has_merge prods =
+  let map_prods nonterms reachable has_merge prods =
     match prods with
     | [prod] when is_singleton_nonterminal prod && not has_merge ->
-        check_noname prod;
+        check_noname nonterms prod;
 
         let tag =
           symbols_of_production prod
@@ -147,8 +147,8 @@ end) = struct
         [production reachable { prod with action = Some action }]
 
     | [tail; head_tail] when is_list_nonterminal tail head_tail && not has_merge ->
-        check_noname tail;
-        check_noname head_tail;
+        check_noname nonterms tail;
+        check_noname nonterms head_tail;
         begin match symbols_of_production tail, symbols_of_production head_tail with
         (* possibly empty list *)
         | [], [head2; tail2] ->
@@ -203,7 +203,8 @@ end) = struct
               in
 
               let prod_variant =
-                <:expr<$expr_prefix$.$uid:prod.left.nbase.name$.$uid:prod_name$>>
+                let left = NtArray.get nonterms prod.left in
+                <:expr<$expr_prefix$.$uid:left.nbase.name$.$uid:prod_name$>>
               in
 
               let args =
@@ -230,38 +231,40 @@ end) = struct
         ) prods
 
 
-  let unit_prods =
+  let unit_prods nonterms =
     List.map (fun prod ->
-      check_noname prod;
-      let left = nonterminal StringSet.empty prod.left in
-      let right = List.map (symbol StringSet.empty) prod.right in
-      { prod with left; right; action = Some <:expr<()>> }
+      check_noname nonterms prod;
+      let right = List.map (symbol NtSet.empty) prod.right in
+      { prod with right; action = Some <:expr<()>> }
     )
 
 
   (* XXX: if this function changes its output, EmitPtree.production_types probably
    * also needs to change *)
-  let prods reachable prods_by_lhs prods =
+  let prods reachable nonterms prods_by_lhs prods =
     let prods_by_lhs =
       NtArray.map (fun indices ->
         let prods = List.map (ProdArray.get prods) indices in
 
         let is_reachable =
           match prods with
-          | { left = { nbase = { name } } } :: _ -> StringSet.mem name reachable
+          | { left } :: _ -> NtSet.mem reachable left
           | _ -> false
         in
 
         let has_merge =
           match prods with
-          | { left = { merge = Some _ } } :: _ -> true
-          | _ -> false
+          | { left } :: _ ->
+              let left = NtArray.get nonterms left in
+              left.merge != None
+          | _ ->
+              false
         in
 
         if is_reachable then
-          map_prods reachable has_merge prods
+          map_prods nonterms reachable has_merge prods
         else
-          unit_prods prods
+          unit_prods nonterms prods
       ) prods_by_lhs
     in
 

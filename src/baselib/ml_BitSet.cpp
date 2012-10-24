@@ -87,7 +87,8 @@ ml_BitSet_is_set (value self, value bit_val)
 {
   bitset &set = *get_bitset (self);
   int bit = Int_val (bit_val);
-  assert (set.size () > bit / word_size);
+  if (set.size () <= bit / word_size)
+    return Val_bool (false);
   return Val_bool (set[bit / word_size] & 1 << (bit % word_size));
 }
 

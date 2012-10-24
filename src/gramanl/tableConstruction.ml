@@ -59,12 +59,12 @@ let topological_order derivable nonterms =
   order
 
 
-let compute_actions state terminal allow_ambig sr rr =
+let compute_actions nonterms state terminal allow_ambig sr rr =
   (* can shift? *)
   let shift_dest = ItemSet.transition_for_term state terminal in
 
   (* can reduce? *)
-  let reductions = ItemSet.possible_reductions state terminal in
+  let reductions = ItemSet.possible_reductions nonterms state terminal in
 
   let sr_old = !sr in
   let rr_old = !rr in
@@ -73,7 +73,7 @@ let compute_actions state terminal allow_ambig sr rr =
    * the conflicts, depending on various factors; if 'allow_ambig'
    * is false, this will remove all but one action *)
   let shift_dest, reductions =
-    ConflictResolution.resolve_conflicts state terminal shift_dest reductions allow_ambig sr rr
+    ConflictResolution.resolve_conflicts nonterms state terminal shift_dest reductions allow_ambig sr rr
   in
 
   if Options._trace_conflict () then (
@@ -215,7 +215,7 @@ let encode_goto_row tables state nonterm =
 let encode_action tables nonterms allow_ambig sr rr state terminal =
   let open GrammarType in
   (* compute shift/reduce actions *)
-  let shift_dest, reductions = compute_actions state terminal allow_ambig sr rr in
+  let shift_dest, reductions = compute_actions nonterms state terminal allow_ambig sr rr in
 
   (* what to do in this cell *)
   let cell_action = compute_cell_action tables state shift_dest reductions terminal in
@@ -258,7 +258,7 @@ let compute_parse_tables env allow_ambig states =
 
   if false then (
     ProdArray.iter (fun prod ->
-      PrintGrammar.print_production prod;
+      PrintGrammar.print_production env.index.nonterms prod;
       print_newline ();
     ) env.index.prods;
   );
@@ -295,7 +295,7 @@ let compute_parse_tables env allow_ambig states =
 
   (* fill in 'prod_info' *)
   ProdArray.iter (fun prod ->
-    TableEncoding.set_prod_info tables prod.prod_index (List.length prod.right) prod.left.nt_index
+    TableEncoding.set_prod_info tables prod.prod_index (List.length prod.right) prod.left
   ) env.index.prods;
 
   TableEncoding.finish_tables tables

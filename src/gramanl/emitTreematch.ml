@@ -118,7 +118,7 @@ let production_types term_mods left has_merge prods =
 
 
 
-let make_ml_treematch reachable prods prods_by_lhs =
+let make_ml_treematch reachable nonterms prods prods_by_lhs =
   let term_mods = Hashtbl.create 13 in
 
   let bindings =
@@ -128,21 +128,23 @@ let make_ml_treematch reachable prods prods_by_lhs =
           (* the empty nonterminal has no productions *)
           bindings
 
-      | { left = { nbase = { name } } } :: _ when name.[0] = '_' ->
-          (* we do not emit code for the synthesised start rule *)
-          bindings
-
       | first :: _ as prods ->
-          let nonterm = first.left in
+          let nonterm = NtArray.get nonterms first.left in
           let name = nonterm.nbase.name in
-          assert (is_uid name);
 
-          if not (StringSet.mem name reachable) then
+          if name.[0] = '_' then
+            (* we do not emit code for the synthesised start rule *)
             bindings
-          else
-            let has_merge = nonterm.merge != None in
-            let types = production_types term_mods name has_merge prods in
-            types :: bindings
+          else (
+            assert (is_uid name);
+
+            if not (NtSet.mem reachable first.left) then
+              bindings
+            else
+              let has_merge = nonterm.merge != None in
+              let types = production_types term_mods name has_merge prods in
+              types :: bindings
+          )
 
     ) [] prods_by_lhs)
   in

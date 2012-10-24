@@ -51,24 +51,25 @@ let tree_parse topforms =
 
   let grammar = GrammarTreeParser.of_ast topforms in
   if false then
-    List.iter PrintGrammar.print_production grammar.productions;
-  if false then
     print_grammar grammar;
-  grammar
-
-
-let grammar_graph dirname grammar =
-  let file = dirname ^ "/grammar.dot" in
-  Timing.progress "writing grammar graph" (GrammarGraph.visualise ~file) grammar;
   grammar
 
 
 let analyse grammar =
   let env, (states, tables) = GrammarAnalysis.run_analyses grammar in
-  env, states, tables
+  grammar, env, states, tables
 
 
-let print_transformed dirname (env, _, _ as tuple) =
+let grammar_graph dirname (grammar, env, _, _ as tuple) =
+  let open AnalysisEnvType in
+  let open GrammarType in
+
+  let file = dirname ^ "/grammar.dot" in
+  Timing.progress "writing grammar graph" (GrammarGraph.visualise ~file env.index.nonterms) grammar;
+  tuple
+
+
+let print_transformed dirname (_, env, _, _ as tuple) =
   let open AnalysisEnvType in
 
   List.iter (fun variant ->
@@ -80,19 +81,19 @@ let print_transformed dirname (env, _, _ as tuple) =
   tuple
 
 
-let output_menhir dirname (env, _, _ as tuple) =
+let output_menhir dirname (_, env, _, _ as tuple) =
   let file = dirname ^ "/grammar.mly" in
   OutputMenhir.output_grammar ~file env;
   tuple
 
 
-let state_graph dirname (_, states, _ as tuple) =
+let state_graph dirname (_, _, states, _ as tuple) =
   let file = dirname ^ "/automaton.dot" in
   Timing.progress "writing automaton graph" (StateGraph.visualise ~file) states;
   tuple
 
 
-let dump_automaton dirname (env, states, _ as tuple) =
+let dump_automaton dirname (_, env, states, _ as tuple) =
   let out = Pervasives.open_out (dirname ^ "/automaton.out") in
   Timing.progress "dumping states to automaton.out"
     (List.iter (PrintAnalysisEnv.print_item_set ~out env)) states;
@@ -100,14 +101,13 @@ let dump_automaton dirname (env, states, _ as tuple) =
   tuple
 
 
-let emit_code dirname (env, states, tables) =
+let emit_code dirname (_, env, states, tables) =
   let open AnalysisEnvType in
 
   let index = env.index in
   let prods_by_lhs = env.prods_by_lhs in
   let variants = env.variants in
-
-  let reachable = Reachability.compute_reachable_tagged index.prods prods_by_lhs in
+  let reachable = env.reachable in
 
   Timing.progress "emitting ML code"
     (EmitCode.emit_ml dirname index prods_by_lhs variants reachable) tables
@@ -128,8 +128,8 @@ let main inputs =
     |> parse
     |> merge
     |> tree_parse
-    |> optional Options._graph_grammar (grammar_graph dirname)
     |> analyse
+    |> optional Options._graph_grammar (grammar_graph dirname)
     |> optional Options._print_transformed (print_transformed dirname)
     |> optional Options._output_menhir (output_menhir dirname)
     |> optional Options._graph_automaton (state_graph dirname)

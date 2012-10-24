@@ -73,7 +73,7 @@ let rec rewrite_nt_as_terminals prods prods_by_lhs output nonterm seen =
       (* if 'prod' has 'nonterminal' on RHS, that would certainly
        * lead to looping (though it's not the only way -- consider
        * mutual recursion), so don't even consider it *)
-      not (GrammarUtil.rhs_has_nonterm prod nonterm)
+      not (GrammarUtil.rhs_has_nonterm prod nonterm.nt_index)
       (* if this production has already been used, don't use it again *)
       && not (List.memq prod_index seen)
     ) (NtArray.get prods_by_lhs nonterm.nt_index)

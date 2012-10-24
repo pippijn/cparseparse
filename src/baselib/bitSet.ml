@@ -18,10 +18,10 @@ module Set = struct
   external clear         : t -> unit        = "ml_BitSet_clear"
   external assign        : t -> t -> unit   = "ml_BitSet_assign"
 
-  let empty_set = create 0
+  let empty = create 0
 
   let t_of_sexp sexp =
-    empty_set
+    empty
 
   let sexp_of_t bset =
     Sexp.List []

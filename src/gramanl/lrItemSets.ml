@@ -56,7 +56,7 @@ let production_closure env finished worklist item b prod_index =
 
   if Options._trace_closure () then (
     print_string "    considering production ";
-    PrintGrammar.print_production prod;
+    PrintGrammar.print_production env.index.nonterms prod;
     print_newline ();
   );
 
@@ -83,7 +83,7 @@ let production_closure env finished worklist item b prod_index =
     if beta.can_derive_empty then (
       if Options._trace_closure () then (
         print_string "      beta: ";
-        PrintAnalysisEnv.print_dotted_production beta;
+        PrintAnalysisEnv.print_dotted_production env.index.nonterms beta;
         print_newline ();
         print_endline "      beta can derive empty";
       );
@@ -208,7 +208,7 @@ let single_item_closure env finished worklist item =
   | Some (Nonterminal (_, b)) ->
       (* for each production "B -> gamma" *)
       List.iter
-        (production_closure env finished worklist item b)
+        (production_closure env finished worklist item b.nt_index)
         (NtArray.get env.prods_by_lhs b.nt_index)
 
 
@@ -471,8 +471,9 @@ let construct_lr_item_sets env =
   begin
     let first_prod = ProdArray.get env.env.index.prods StateId.Production.start in
     let first_dp = DottedProduction.get env.env.dotted_prods first_prod 0 (* dot at left *) in
+    let left = NtArray.get env.env.index.nonterms first_prod.left in
     assert (first_dp.prod == first_prod);
-    assert (first_prod.left.nbase.name == GrammarTreeParser.start_name);
+    assert (left.nbase.name == GrammarTreeParser.start_name);
 
     let first_item = {
       dprod = first_dp;

@@ -8,7 +8,7 @@ type decision = {
 }
 
 
-let print_actions shift_dest reductions =
+let print_actions nonterms shift_dest reductions =
   begin match shift_dest with
   | Some shift_dest ->
       Printf.printf "      | shift, and move to state %a\n" StateId.State.print shift_dest.state_id
@@ -17,21 +17,21 @@ let print_actions shift_dest reductions =
 
   List.iter (fun prod ->
     print_string "      | reduce by rule ";
-    PrintGrammar.print_production prod;
+    PrintGrammar.print_production nonterms prod;
     print_newline ();
   ) reductions
 
 
 (* decide what to do, and return the result in the first
  * two tuple members, keep_shift and keep_reduce *)
-let handle_shift_reduce_conflict state prod sym decision =
+let handle_shift_reduce_conflict nonterms state prod sym decision =
   let open GrammarType in
 
   if Options._trace_prec () then (
     Printf.printf "    in state %a, S/R conflict on token %s with production "
       StateId.State.print state.state_id
       sym.tbase.name;
-    PrintGrammar.print_production prod;
+    PrintGrammar.print_production nonterms prod;
     print_newline ();
   );
 
@@ -46,11 +46,12 @@ let handle_shift_reduce_conflict state prod sym decision =
           super, maximal
     in
 
-    let super, maximal = loop prod.left prod.left.maximal in
+    let left = NtArray.get nonterms prod.left in
+    let super, maximal = loop left left.maximal in
 
     (* see if this reduction can be removed due to a 'maximal' spec;
      * in particular, is the shift going to extend 'super'? *)
-    maximal && ItemSet.has_extending_shift state super sym
+    maximal && ItemSet.has_extending_shift state super.nt_index sym
   in
 
   (* scannerless *)
@@ -118,7 +119,7 @@ let handle_shift_reduce_conflict state prod sym decision =
 
 
 (* static disambiguation for S/R conflicts *)
-let disambiguate_shift_reduce_conflict state sym shift_dest reductions suppressed_warnings =
+let disambiguate_shift_reduce_conflict nonterms state sym shift_dest reductions suppressed_warnings =
   match shift_dest with
   | Some _ ->
       (* we have (at least) a shift/reduce conflict, which is the
@@ -127,7 +128,7 @@ let disambiguate_shift_reduce_conflict state sym shift_dest reductions suppresse
        * even when there are R/R conflicts present too *)
       List.fold_left (fun (shift_dest, reductions) prod ->
         let { keep_shift; keep_reduce; warn; } =
-          handle_shift_reduce_conflict state prod sym { keep_shift = true; keep_reduce = true; warn = true; }
+          handle_shift_reduce_conflict nonterms state prod sym { keep_shift = true; keep_reduce = true; warn = true; }
         in
 
         if not warn then
@@ -156,7 +157,7 @@ let disambiguate_shift_reduce_conflict state sym shift_dest reductions suppresse
 (* the idea is we might be trying to do scannerless parsing, and
  * someone might say that Identifier has as subsets all the keywords,
  * so competing reductions should favor the subsets (the keywords) *)
-let subset_directive_resolution state sym reductions =
+let subset_directive_resolution nonterms state sym reductions =
   let open GrammarType in
 
   let module NonterminalSet = CompressedBitSet.Make(StateId.Nonterminal) in
@@ -165,8 +166,9 @@ let subset_directive_resolution state sym reductions =
    * of the reductions, and has a superset *)
   let map =
     List.fold_left (fun map prod ->
-      if BatOption.is_some prod.left.superset then
-        NonterminalSet.add prod.left.nt_index map
+      let left = NtArray.get nonterms prod.left in
+      if BatOption.is_some left.superset then
+        NonterminalSet.add left.nt_index map
       else
         map
     ) NonterminalSet.empty reductions
@@ -178,6 +180,8 @@ let subset_directive_resolution state sym reductions =
     (* walk over the reductions, removing those that have reductions
      * to subsets also in the list *)
     List.fold_left (fun reductions prod ->
+      let left = NtArray.get nonterms prod.left in
+
       let remove =
         List.exists (fun sub ->
           let remove = NonterminalSet.mem sub.nt_index map in
@@ -186,13 +190,13 @@ let subset_directive_resolution state sym reductions =
               Printf.printf "in state %a, R/R conflict on token %s, removed production yielding %s, because another yields subset %s\n"
                 StateId.State.print state.state_id
                 sym.tbase.name
-                prod.left.nbase.name
+                left.nbase.name
                 sub.nbase.name;
             );
           );
 
           remove
-        ) prod.left.subsets
+        ) left.subsets
       in
       
       if remove then (
@@ -208,12 +212,12 @@ let actions shift_dest reductions =
   (if BatOption.is_some shift_dest then 1 else 0) + List.length reductions
 
 
-let try_resolve_conflicts state sym shift_dest reductions allow_ambig sr rr =
+let try_resolve_conflicts nonterms state sym shift_dest reductions allow_ambig sr rr =
   (* count how many warning suppressions we have *)
   let suppressed_warnings = ref 0 in
 
   let shift_dest, reductions =
-    disambiguate_shift_reduce_conflict state sym shift_dest reductions suppressed_warnings
+    disambiguate_shift_reduce_conflict nonterms state sym shift_dest reductions suppressed_warnings
   in
 
   (* static disambiguation for R/R conflicts *)
@@ -236,7 +240,7 @@ let try_resolve_conflicts state sym shift_dest reductions allow_ambig sr rr =
             Printf.printf "in state %a, R/R conflict on token %s, removed production "
               StateId.State.print state.state_id
               sym.tbase.name;
-            PrintGrammar.print_production prod;
+            PrintGrammar.print_production nonterms prod;
             Printf.printf " because %d < %d\n"
               prod.prec
               highest_prec;
@@ -254,7 +258,7 @@ let try_resolve_conflicts state sym shift_dest reductions allow_ambig sr rr =
     if List.length reductions = 1 then (
       reductions
     ) else (
-      subset_directive_resolution state sym reductions
+      subset_directive_resolution nonterms state sym reductions
     )
   in
 
@@ -277,7 +281,7 @@ let try_resolve_conflicts state sym shift_dest reductions allow_ambig sr rr =
     if Options._trace_conflict () then (
       let open GrammarType in
       Printf.printf "    conflict for symbol %s\n" sym.tbase.name;
-      print_actions shift_dest reductions;
+      print_actions nonterms shift_dest reductions;
     );
   );
 
@@ -306,7 +310,8 @@ let try_resolve_conflicts state sym shift_dest reductions allow_ambig sr rr =
 (* given some potential parse actions, apply available disambiguation
  * to remove some of them; print warnings about conflicts, in some
  * situations *)
-let resolve_conflicts state (* parse state in which the actions are possible *)
+let resolve_conflicts nonterms (* indexed array of nonterminals *)
+		      state (* parse state in which the actions are possible *)
                       sym (* lookahead symbol for these actions *)
                       shift_dest (* (option) the state to which we can shift *)
                       reductions (* list of possible reductions *)
@@ -318,7 +323,7 @@ let resolve_conflicts state (* parse state in which the actions are possible *)
       let open GrammarType in
       print_string "%%% before conflict resolution";
       Printf.printf " (on token %s):\n" sym.tbase.name;
-      print_actions shift_dest reductions;
+      print_actions nonterms shift_dest reductions;
     );
   );
 
@@ -326,5 +331,5 @@ let resolve_conflicts state (* parse state in which the actions are possible *)
     (* no conflict *)
     shift_dest, reductions
   ) else (
-    try_resolve_conflicts state sym shift_dest reductions allow_ambig sr rr
+    try_resolve_conflicts nonterms state sym shift_dest reductions allow_ambig sr rr
   )

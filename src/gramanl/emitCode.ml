@@ -20,10 +20,10 @@ let emit_tokens name terms =
   OCamlPrinter.print_implem ~output_file:out impl
 
 
-let emit_parse_tree name prods prods_by_lhs reachable =
+let emit_parse_tree name reachable nonterms prods prods_by_lhs =
   (* Parse Tree *)
   let out = name ^ "Ptree.ml" in
-  let impl = EmitPtree.make_ml_parse_tree prods prods_by_lhs reachable in
+  let impl = EmitPtree.make_ml_parse_tree reachable nonterms prods prods_by_lhs in
 
   OCamlPrinter.print_implem ~output_file:out impl;
   (* TODO: with sexp *)
@@ -31,10 +31,10 @@ let emit_parse_tree name prods prods_by_lhs reachable =
     ("sed -i -e 's/type t = \\([^;|]*\\);;/type t = \\1 with sexp;;/g;s/ | SEXP;;/ with sexp;;/g' " ^ out))
 
 
-let emit_treematch name prods prods_by_lhs reachable =
+let emit_treematch name reachable nonterms prods prods_by_lhs =
   (* Parse Tree *)
   let out = name ^ "Treematch.tm" in
-  let impl = EmitTreematch.make_ml_treematch reachable prods prods_by_lhs in
+  let impl = EmitTreematch.make_ml_treematch reachable nonterms prods prods_by_lhs in
 
   BatStd.with_dispose ~dispose:close_out
     (fun out -> output_string out impl) (open_out out)
@@ -106,8 +106,8 @@ let emit_ml dirname index prods_by_lhs variants reachable tables =
   let name = dirname ^ "/" ^ String.lowercase (Options._module_prefix ()) in
 
   emit_tokens name index.terms;
-  emit_parse_tree name index.prods prods_by_lhs reachable;
-  emit_treematch name index.prods prods_by_lhs reachable;
+  emit_parse_tree name reachable index.nonterms index.prods prods_by_lhs;
+  emit_treematch name reachable index.nonterms index.prods prods_by_lhs;
   emit_symbol_names name index.terms index.nonterms;
 
   List.iter (fun { prefix; verbatims; impl_verbatims; variant_nonterms; variant_prods } ->

@@ -92,7 +92,7 @@ type symbol =
 (* a rewrite rule *)
 type production = {
   (* --- representation --- *)
-  left                  : nonterminal; (* left hand side *)
+  left                  : StateId.Nonterminal.t; (* left hand side *)
   right                 : symbol list; (* right hand side; terminals & nonterminals *)
   prec                  : int; (* precedence level for disambiguation (0 for none specified) *)
   forbid                : TerminalSet.t; (* forbidden next tokens *)
@@ -115,13 +115,19 @@ type config = {
   expectedUNRTerms      : int; (* # unreachable terminals *)
 } with sexp
 
+type index = {
+  terms               	: terminal TermArray.t;   (* term_index -> terminal    *)
+  nonterms              : nonterminal NtArray.t;  (* nt_index   -> nonterminal *)
+  prods                 : production ProdArray.t; (* prod_index -> production  *)
+} with sexp
+
 type grammar = {
   (* --- representation --- *)
   nonterminals          : nonterminal StringMap.t;
   terminals             : terminal StringMap.t;
   aliases               : string StringMap.t;
   productions           : production list;
-  start_symbol          : nonterminal;
+  start_symbol          : string;
 
   (* sections of verbatim code emitted into the interface file, before 
    * the parser context class body *)
@@ -179,7 +185,7 @@ let empty_nonterminal = {
 
 
 let empty_production = {
-  left       = empty_nonterminal;
+  left       = StateId.Nonterminal.default;
   right      = [];
   prec       = 0;
   forbid     = TerminalSet.empty;
@@ -197,18 +203,4 @@ let empty_config = {
   expectedRR          = 0;
   expectedUNRNonterms = 0;
   expectedUNRTerms    = 0;
-}
-
-
-let empty_grammar = {
-  nonterminals        = StringMap.empty;
-  terminals           = StringMap.empty;
-  aliases             = StringMap.empty;
-  productions         = [];
-  start_symbol        = empty_nonterminal;
-                     
-  verbatim            = [];
-  impl_verbatim       = [];
-
-  config              = empty_config;
 }

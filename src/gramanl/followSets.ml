@@ -1,4 +1,5 @@
-let compute_follow derivable indexed_prods =
+let compute_follow derivable index =
+  let open AnalysisEnvType in
   let open GrammarType in
   let changed = ref true in
 
@@ -39,7 +40,8 @@ let compute_follow derivable indexed_prods =
                * production A -> alpha B beta where beta ->* empty ... *)
               if Derivability.can_sequence_derive_empty derivable after_right_sym then
                 (* ... then everything in Follow(A) is in Follow(B) *)
-                let merged = TerminalSet.union right_nonterm.follow prod.left.follow in
+                let left = NtArray.get index.nonterms prod.left in
+                let merged = TerminalSet.union right_nonterm.follow left.follow in
                 if not (TerminalSet.equal right_nonterm.follow merged) then (
                   right_nonterm.follow <- merged;
                   changed := true;
@@ -48,6 +50,6 @@ let compute_follow derivable indexed_prods =
 
       ) prod.right;
 
-    ) indexed_prods
+    ) index.prods
 
   done

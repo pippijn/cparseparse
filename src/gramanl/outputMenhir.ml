@@ -55,8 +55,8 @@ let last_prec =
   ) 0
 
 
-let output_production out terms prods prod_index =
-  let prod = ProdArray.get prods prod_index in
+let output_production out index prod_index =
+  let prod = ProdArray.get index.prods prod_index in
 
   output_string out "\t|";
   if prod.right = [] then
@@ -64,19 +64,20 @@ let output_production out terms prods prod_index =
   else
     List.iter (output_symbol out) prod.right;
   if prod.prec <> 0 && prod.prec <> last_prec prod.right then (
-    let term = TermArray.find (fun term -> term.precedence = prod.prec) terms in
+    let term = TermArray.find (fun term -> term.precedence = prod.prec) index.terms in
     Printf.fprintf out " %%prec %s" term.tbase.name;
   );
   Printf.fprintf out "\t{ %a }\n" StateId.Production.print prod.prod_index
 
 
-let output_nonterm out terms prods = function
+let output_nonterm out index = function
   | [] -> ()
   | first_index :: _ as indices ->
-      let first = ProdArray.get prods first_index in
+      let first = ProdArray.get index.prods first_index in
       if (*first.left.nbase.reachable*) true then (
-        Printf.fprintf out "%s:\n" first.left.nbase.name;
-        List.iter (output_production out terms prods) indices;
+        let left = NtArray.get index.nonterms first.left in
+        Printf.fprintf out "%s:\n" left.nbase.name;
+        List.iter (output_production out index) indices;
         output_string out "\n";
       )
 
@@ -92,6 +93,6 @@ let output_grammar ~file env =
   let first = NtArray.get env.index.nonterms StateId.Nonterminal.start in
   Printf.fprintf out "\n%%start<int> %s\n\n" first.nbase.name;
   output_string out "%%\n\n";
-  NtArray.iter (output_nonterm out env.index.terms env.index.prods) env.prods_by_lhs;
+  NtArray.iter (output_nonterm out env.index) env.prods_by_lhs;
 
   close_out out

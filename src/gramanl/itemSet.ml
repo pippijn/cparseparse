@@ -94,7 +94,7 @@ let has_extending_shift item_set nonterm term =
  * :: Yield possible reductions on terminal 'lookahead'
  ************************************************************)
 
-let possible_reductions item_set lookahead =
+let possible_reductions nonterms item_set lookahead =
   let open GrammarType in
   List.fold_left (fun reductions item ->
     if Options._use_LR0 () then (
@@ -104,16 +104,17 @@ let possible_reductions item_set lookahead =
     ) else if Options._use_SLR1 () then (
       (* the follow of its LHS must include 'lookahead' *)
       let prod = item.dprod.prod in
-      if TerminalSet.mem lookahead.term_index prod.left.follow then
+      let left = NtArray.get nonterms prod.left in
+      if TerminalSet.mem lookahead.term_index left.follow then
         prod :: reductions
       else (
         if Options._trace_reductions () then (
           Printf.printf "state %a, not reducing by "
             StateId.State.print item_set.state_id;
-          PrintGrammar.print_production prod;
+          PrintGrammar.print_production nonterms prod;
           Printf.printf " because %s is not in follow of %s\n"
             lookahead.tbase.name
-            prod.left.nbase.name;
+            left.nbase.name;
         );
         reductions
       )
@@ -125,7 +126,7 @@ let possible_reductions item_set lookahead =
         if Options._trace_reductions () then (
           Printf.printf "state %a, reducing by "
             StateId.State.print item_set.state_id;
-          PrintGrammar.print_production prod;
+          PrintGrammar.print_production nonterms prod;
           Printf.printf " because %s is in lookahead\n"
             lookahead.tbase.name;
         );
@@ -134,7 +135,7 @@ let possible_reductions item_set lookahead =
         if Options._trace_reductions () then (
           Printf.printf "state %a, not reducing by "
             StateId.State.print item_set.state_id;
-          PrintGrammar.print_production prod;
+          PrintGrammar.print_production nonterms prod;
           Printf.printf " because %s is not in lookahead\n"
             lookahead.tbase.name;
         );

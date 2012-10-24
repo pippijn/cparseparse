@@ -332,7 +332,7 @@ let collect_productions aliases terminals nonterminals nonterms =
     StringMap.fold (fun _ (nterm, _) (productions, next_prod_index) ->
       match nterm with
       | TF_nonterm (name, _, _, prods, _) ->
-          let left = StringMap.find name nonterminals in
+          let left = (StringMap.find name nonterminals).nt_index in
           (* is this the special start symbol I inserted? *)
           let is_synthesised = name = start_name in
 
@@ -383,7 +383,7 @@ let of_ast topforms =
 
   (* process nonterminal bodies *)
   let productions             = collect_productions aliases terminals nonterminals topforms.nonterms in
-  let start_symbol            = StringMap.find topforms.first_nonterm nonterminals in
+  let start_symbol            = topforms.first_nonterm in
 
   let config                  = collect_options topforms.options empty_config in
 

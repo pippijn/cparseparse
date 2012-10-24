@@ -3,8 +3,8 @@ open Camlp4.PreCast
 
 val emit_ml :
   string ->
-  AnalysisEnvType.index ->
+  GrammarType.index ->
   StateId.Production.t list NtArray.t ->
   AnalysisEnvType.variant list ->
-  StringSet.t ->
+  NtSet.t ->
   ParseTablesType.t -> unit

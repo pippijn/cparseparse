@@ -85,7 +85,7 @@ let compute_indexed_prods productions nonterm_count =
   (* fill in both maps *)
   BatList.iteri (fun i production ->
     let prod_index = StateId.Production.of_int i in
-    let nt_index = production.left.nt_index in
+    let nt_index = production.left in
 
     begin
       let prods = NtArray.get prods_by_lhs nt_index in
@@ -101,7 +101,7 @@ let compute_indexed_prods productions nonterm_count =
   NtArray.iteri (fun nt_index ->
     List.iter (fun prod_index ->
       let prod = ProdArray.get indexed prod_index in
-      assert (prod.left.nt_index == nt_index);
+      assert (prod.left == nt_index);
     )
   ) prods_by_lhs;
   ProdArray.iteri (fun prod_index prod ->
@@ -204,6 +204,10 @@ let verify_empty indexed_nonterms indexed_prods dotted_prods =
 
 
 let init_env grammar =
+  let start_nt =
+    (StringMap.find grammar.start_symbol grammar.nonterminals).nt_index
+  in
+
   (* build indexed terminal map *)
   let indexed_terms = compute_indexed_terms grammar.terminals in
 
@@ -226,7 +230,7 @@ let init_env grammar =
     {
       prefix;
       variant_nonterms = Transform.nonterms reachable indexed_nonterms;
-      variant_prods    = Transform.prods    reachable prods_by_lhs indexed_prods;
+      variant_prods    = Transform.prods    reachable indexed_nonterms prods_by_lhs indexed_prods;
       (* drop verbatim sections *)
       verbatims = [];
       impl_verbatims = [];
@@ -256,6 +260,8 @@ let init_env grammar =
       terms = indexed_terms;
       prods = indexed_prods;
     };
+    start_nt;
+    reachable;
     prods_by_lhs;
     dotted_prods;
     derivable = Derivability.initial_derivable_relation nonterm_count;

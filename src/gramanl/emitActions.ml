@@ -53,14 +53,14 @@ let final_semtype final_prod =
  ************************************************)
 
 (* ------------------- actions ------------------ *)
-let make_ml_actions prods =
+let make_ml_actions nonterms prods =
   (* iterate over productions, emitting action function closures *)
   let closures =
     ProdArray.map (fun prod ->
       (* put the production in comments above the defn *)
       if false then (
         print_string "(*";
-        PrintGrammar.print_production prod;
+        PrintGrammar.print_production nonterms prod;
         print_endline " *)";
       );
 
@@ -127,10 +127,11 @@ let make_ml_actions prods =
       (* give a name to the yielded value so we can ensure it conforms to
        * the declared type *)
       let result =
+        let left = NtArray.get nonterms prod.left in
         <:expr<
           (* now insert the user's code, to execute in this environment of
            * properly-typed semantic values *)
-          let __result : $semtype prod.left.nbase$ = $action_code$ in
+          let __result : $semtype left.nbase$ = $action_code$ in
           (* cast to SemanticValue.t *)
           SemanticValue.repr __result
         >>
@@ -260,7 +261,7 @@ let make_ml_action_code terms nonterms prods final_prod verbatims impl_verbatims
   let result_type = final_semtype (ProdArray.get prods final_prod) in
 
   let closures =
-    make_ml_actions prods
+    make_ml_actions nonterms prods
     :: make_ml_dup_del_merge terms nonterms
     |> Ast.rbSem_of_list
   in

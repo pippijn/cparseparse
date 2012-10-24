@@ -21,8 +21,8 @@ let dot formatter g =
   Dot.fprint_graph formatter g
 
 
-let visualise ~file grammar =
-  let g = Nonterminal.compute_graph grammar.productions in
+let visualise ~file nonterms grammar =
+  let g = Nonterminal.compute_graph nonterms grammar.productions in
   let out = open_out file in
   let formatter = Format.formatter_of_out_channel out in
   dot formatter g;

@@ -58,7 +58,7 @@ let rhs_has_nonterm prod nonterm =
   try
     ignore (List.find (function
       | Terminal _ -> false
-      | Nonterminal (_, nt) -> nt == nonterm
+      | Nonterminal (_, nt) -> nt.nt_index == nonterm
     ) prod.right);
     true
   with Not_found ->

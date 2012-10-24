@@ -105,6 +105,7 @@ let add_derivable_nonterminal env left right_nonterm after_right_sym =
   in
 
   if Options._trace_derivable () then (
+    let left = NtArray.get env.index.nonterms left in
     Printf.printf "%s's rest can %sderive empty\n"
       left.nbase.name
       (if rest_derive_empty then "" else "NOT ");
@@ -112,10 +113,11 @@ let add_derivable_nonterminal env left right_nonterm after_right_sym =
 
   if rest_derive_empty then (
     (* we have discovered that prod.left can derive right_sym *)
-    let added = add_derivable env left right_nonterm in
+    let added = add_derivable_i env left right_nonterm.nt_index in
     assert added; (* above, we verified we didn't already know this *)
 
     if Options._trace_derivable () then (
+      let left = NtArray.get env.index.nonterms left in
       print_string "%%% derivable: ";
       Printf.printf "discovered (by production): %s ->* %s\n"
         left.nbase.name
@@ -131,7 +133,7 @@ let add_derivable_nonterminal env left right_nonterm after_right_sym =
 let add_derivable_relations env changes =
   ProdArray.iter (fun prod ->
     if Options._trace_derivable () then (
-      PrintGrammar.print_production prod;
+      PrintGrammar.print_production env.index.nonterms prod;
       print_newline ();
     );
 
@@ -140,7 +142,7 @@ let add_derivable_relations env changes =
         (* since I don't include 'empty' explicitly in my rules, I won't
          * conclude that anything can derive empty, which is a problem;
          * so I special-case it here *)
-        ignore (add_derivable env prod.left empty_nonterminal)
+        ignore (add_derivable_i env prod.left empty_nonterminal.nt_index)
 
     | right ->
         (* iterate over RHS symbols, seeing if the LHS can derive that
@@ -156,7 +158,7 @@ let add_derivable_relations env changes =
 
             | Nonterminal (_, right_nonterm) ->
                 (* check if we already know that LHS derives this nonterm *)
-                if can_derive env.derivable prod.left right_nonterm then
+                if can_derive_i env.derivable prod.left right_nonterm.nt_index then
                   (* we already know that prod.left derives right_sym,
                    * so let's not check it again *)
                   ()

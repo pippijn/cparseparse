@@ -40,7 +40,7 @@ let ctyp_of_right_symbol head_tail =
 
 (* XXX: if this function changes its output, PtreeMaker.prods probably
  * also needs to change *)
-let production_types has_merge prods =
+let production_types nonterms has_merge prods =
   let merge_types =
     if has_merge then
       [ <:ctyp<Merge of t * t>> ]
@@ -75,7 +75,7 @@ let production_types has_merge prods =
         List.map (fun prod ->
           if false then (
             print_string "    (*";
-            PrintGrammar.print_production prod;
+            PrintGrammar.print_production nonterms prod;
             print_endline " *)";
           );
 
@@ -117,7 +117,7 @@ let production_types has_merge prods =
       <:str_item<type t = $types$ | SEXP>>
 
 
-let make_ml_parse_tree prods prods_by_lhs reachable =
+let make_ml_parse_tree reachable nonterms prods prods_by_lhs =
   let types =
     NtArray.fold_right (fun indices types ->
       match List.map (ProdArray.get prods) indices with
@@ -125,25 +125,26 @@ let make_ml_parse_tree prods prods_by_lhs reachable =
           (* the empty nonterminal has no productions *)
           types
 
-      | { left = { nbase = { name } } } :: _ when name.[0] = '_' ->
-          (* we do not emit code for the synthesised start rule *)
-          types
-
       | first :: _ as prods ->
-          let nonterm = first.left in
+          let nonterm = NtArray.get nonterms first.left in
           let name = nonterm.nbase.name in
-          assert (is_uid name);
-
-          if not (StringSet.mem name reachable) then (
-            if Options._trace_unreachable_ptree () then
-              print_endline ("unreachable: " ^ name);
+          if name.[0] = '_' then
+            (* we do not emit code for the synthesised start rule *)
             types
-          ) else (
-            let has_merge = nonterm.merge != None in
+          else (
+            assert (is_uid name);
 
-            let intf_types, impl_types = production_types has_merge prods in
+            if not (NtSet.mem reachable first.left) then (
+              if Options._trace_unreachable_ptree () then
+                print_endline ("unreachable: " ^ name);
+              types
+            ) else (
+              let has_merge = nonterm.merge != None in
 
-            (name, intf_types, impl_types) :: types
+              let intf_types, impl_types = production_types nonterms has_merge prods in
+
+              (name, intf_types, impl_types) :: types
+            )
           )
 
     ) prods_by_lhs []
