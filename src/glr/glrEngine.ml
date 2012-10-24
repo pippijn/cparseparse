@@ -124,7 +124,6 @@ let noisyFailedParse = true
  * the ones in Pervasives will not interfere with parser internals. *)
 exception End_of_file
 exception Cancel of string
-let keep_cancel = Cancel "keep() returned false"
 
 (* These exceptions are part of the public interface. *)
 exception ParseError of ParseTablesType.state_id * (*token*)int
@@ -132,7 +131,11 @@ exception Located of SourceLocation.t * exn * string
 
 
 let cancel reason =
+  print_endline ("cancel: " ^ reason);
   raise (Cancel reason)
+
+let keep_cancel =
+  Cancel "keep() returned false"
 
 
 (* ------------------ accounting statistics ----------------- *)
@@ -653,13 +656,14 @@ let insertPathCopy glr src leftEdge =
         prev.next <- Some p;
       )
 
+      
+let nextPath path =
+  path.next
 
-let queueIsNotEmpty glr =
-  glr.top != None
 
-let dequeue glr =
-  let ret = getSome glr.top in
-  glr.top <- ret.next;
+let detachQueue glr =
+  let ret = glr.top in
+  glr.top <- None;
   ret
 
 
@@ -908,72 +912,81 @@ let rwlShiftNonterminal glr tokType leftSibling lhsIndex sval start_p end_p =
       rwlShiftNew glr tokType leftSibling rightSiblingState sval start_p end_p
 
 
-let rwlProcessWorklist glr tokType (start_p, end_p) =
-  while (queueIsNotEmpty glr) do
-    (* process the enabled reductions in priority order *)
-    let path = dequeue glr in
+let rec rwlRecursiveProcess glr tokType start_p path =
+  (* info about the production *)
+  let rhsLen   = ParseTables.getProdInfo_rhsLen   glr.tables path.prodIndex in
+  let lhsIndex = ParseTables.getProdInfo_lhsIndex glr.tables path.prodIndex in
 
-    (* info about the production *)
-    let rhsLen   = ParseTables.getProdInfo_rhsLen   glr.tables path.prodIndex in
-    let lhsIndex = ParseTables.getProdInfo_lhsIndex glr.tables path.prodIndex in
+  if GlrOptions._trace_parse () then
+    Printf.printf "state %d, reducing by production %d (rhsLen=%d), back to state %d\n"
+                   path.startStateId
+                   path.prodIndex
+                   rhsLen
+                   path.leftEdgeNode.state;
 
-    if GlrOptions._trace_parse () then
-      Printf.printf "state %d, reducing by production %d (rhsLen=%d), back to state %d\n"
-                     path.startStateId
-                     path.prodIndex
-                     rhsLen
-                     path.leftEdgeNode.state;
+  if GlrOptions._accounting () then
+    glr.stats.nondetReduce <- glr.stats.nondetReduce + 1;
 
-    if GlrOptions._accounting () then
-      glr.stats.nondetReduce <- glr.stats.nondetReduce + 1;
+  (* record location of left edge; initially is location of
+   * the lookahead token *)
+  let leftEdge = ref start_p in
+  let rightEdge = ref Lexing.dummy_pos in
 
-    (* record location of left edge; initially is location of
-     * the lookahead token *)
-    let leftEdge = ref start_p in
-    let rightEdge = ref Lexing.dummy_pos in
+  (* before calling the user, duplicate any needed values *)
+  for i = rhsLen - 1 downto 0 do
+    let sib = path.sibLinks.(i) in
 
-    (* before calling the user, duplicate any needed values *)
-    for i = rhsLen - 1 downto 0 do
-      let sib = path.sibLinks.(i) in
+    (* put the sval in the array that will be passed to the user *)
+    glr.toPass.(i) <- sib.sval;
 
-      (* put the sval in the array that will be passed to the user *)
-      glr.toPass.(i) <- sib.sval;
+    if sib.start_p != Lexing.dummy_pos then
+      leftEdge := sib.start_p;
+    if !rightEdge == Lexing.dummy_pos && sib.end_p != Lexing.dummy_pos then
+      rightEdge := sib.end_p;
 
-      if sib.start_p != Lexing.dummy_pos then
-        leftEdge := sib.start_p;
-      if !rightEdge == Lexing.dummy_pos && sib.end_p != Lexing.dummy_pos then
-        rightEdge := sib.end_p;
+    (* ask user to duplicate, store that back in 'sib' *)
+    sib.sval <- duplicateSemanticValue glr.userAct path.symbols.(i) sib.sval;
+  done;
 
-      (* ask user to duplicate, store that back in 'sib' *)
-      sib.sval <- duplicateSemanticValue glr.userAct path.symbols.(i) sib.sval;
-    done;
+  (* invoke user's reduction action (TREEBUILD) *)
+  begin try
+    let sval = reductionAction glr.userAct path.prodIndex glr.toPass !leftEdge !rightEdge in
+    (* did user want to keep? *)
+    if not (keepNontermValue glr.userAct lhsIndex sval) then
+      raise keep_cancel;
+   
+    (* shift the nonterminal, sval *)
+    let newLink = rwlShiftNonterminal glr tokType path.leftEdgeNode lhsIndex sval !leftEdge !rightEdge in
 
-    (* invoke user's reduction action (TREEBUILD) *)
-    begin try
-      let sval = reductionAction glr.userAct path.prodIndex glr.toPass !leftEdge !rightEdge in
-      (* did user want to keep? *)
-      if GlrOptions._use_keep () && not (keepNontermValue glr.userAct lhsIndex sval) then
-        raise keep_cancel;
-     
-      (* shift the nonterminal, sval *)
-      let newLink = rwlShiftNonterminal glr tokType path.leftEdgeNode lhsIndex sval !leftEdge !rightEdge in
+    if newLink != None then
+      (* for each 'finished' parser, enqueue actions enabled by the new link *)
+      Arraystack.iter (fun parsr ->
+        let action = ParseTables.getActionEntry glr.tables parsr.state tokType in
+        ignore (rwlEnqueueReductions glr parsr action newLink)
+      ) glr.active_parsers
 
-      if newLink != None then
-        (* for each 'finished' parser, enqueue actions enabled by the new link *)
-        Arraystack.iter (fun parsr ->
-          let action = ParseTables.getActionEntry glr.tables parsr.state tokType in
-          ignore (rwlEnqueueReductions glr parsr action newLink)
-        ) glr.active_parsers
+  with Cancel reason ->
+    (* cancelled; drop on floor *)
+    ()
+  end;
 
-    with Cancel reason ->
-      (* cancelled; drop on floor *)
-      ()
-    end;
+  (* we dequeued it above, and are now done with it, so recycle
+   * it for future use *)
+  deletePath glr path;
 
-    (* we dequeued it above, and are now done with it, so recycle
-     * it for future use *)
-    deletePath glr path
-  done
+  match nextPath path with
+  | None -> ()
+  | Some next -> rwlRecursiveProcess glr tokType start_p next
+
+
+let rec rwlProcessWorklist glr tokType start_p =
+  match detachQueue glr with
+  | None -> ()  (* nothing to do *)
+
+  | Some top ->
+      (* process the enabled reductions in priority order *)
+      rwlRecursiveProcess glr tokType start_p top;
+      rwlProcessWorklist glr tokType start_p
 
 
 let rwlFindShift tables tokType action state =
@@ -1137,7 +1150,7 @@ let nondeterministicParseToken glr tokType tokSval tokSloc =
   ) glr.active_parsers;
 
   (* drop into worklist processing loop *)
-  rwlProcessWorklist glr tokType tokSloc;
+  rwlProcessWorklist glr tokType (fst tokSloc);
 
   (* do all shifts last *)
   rwlShiftTerminals glr tokType tokSval tokSloc;
@@ -1247,7 +1260,7 @@ let rec lrParseToken glr tokType tokSval tokSloc =
         try
           let sval = reductionAction glr.userAct prodIndex glr.toPass !leftEdge !rightEdge in
           (* does the user want to keep it? *)
-          if GlrOptions._use_keep () && not (keepNontermValue glr.userAct lhsIndex sval) then
+          if not (keepNontermValue glr.userAct lhsIndex sval) then
             raise keep_cancel;
 
           sval
