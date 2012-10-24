@@ -80,7 +80,7 @@ let production_types has_merge prods =
           );
 
           let prod_type =
-            [ <:ctyp<SourceLocation.t>> ]
+            [ <:ctyp<Glr.SourceLocation.t>> ]
             :: List.map (fun sym ->
               match sym with
               | Nonterminal ("", _)
