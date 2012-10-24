@@ -204,15 +204,47 @@ let verify_empty indexed_nonterms indexed_prods dotted_prods =
 
 
 let init_env grammar =
+  (* build indexed terminal map *)
+  let indexed_terms = compute_indexed_terms grammar.terminals in
+
   (* build indexed nonterminal map *)
   let indexed_nonterms = compute_indexed_nonterms grammar.nonterminals in
   let nonterm_count = NtArray.length indexed_nonterms in
 
-  (* build indexed terminal map *)
-  let indexed_terms = compute_indexed_terms grammar.terminals in
-
   (* build indexed production map *)
   let indexed_prods, prods_by_lhs = compute_indexed_prods grammar.productions nonterm_count in
+
+  let reachable = Reachability.compute_reachable_tagged indexed_prods prods_by_lhs in
+
+  let transform prefix =
+    let module Transform =
+      PtreeMaker.Make(struct
+        let prefix = prefix
+      end)
+    in
+
+    {
+      prefix;
+      variant_nonterms = Transform.nonterms reachable indexed_nonterms;
+      variant_prods    = Transform.prods    reachable prods_by_lhs indexed_prods;
+      (* drop verbatim sections *)
+      verbatims = [];
+      impl_verbatims = [];
+    }
+  in
+  (* construct parse tree variants *)
+  let variants = [
+    (* user actions *)
+    {
+      prefix = "";
+      variant_nonterms = indexed_nonterms;
+      variant_prods = indexed_prods;
+      verbatims = grammar.verbatim;
+      impl_verbatims = grammar.impl_verbatim;
+    };
+    transform "Ptree";
+    transform "Treematch";
+  ] in
 
   (* build dotted productions for each production *)
   let dotted_prods = compute_dotted_productions indexed_prods in
@@ -231,8 +263,7 @@ let init_env grammar =
     start_state = None;
 
     options = grammar.config;
-    verbatims = grammar.verbatim;
-    impl_verbatims = grammar.impl_verbatim;
+    variants;
   } in
 
   (* reset first/follow sets to 0 *)

@@ -105,7 +105,8 @@ make_bitset (int size)
   std::vector<bitset> &pool = pools[words];
   if (!pool.empty ())
     {
-      new (Data_custom_val (v)) bitset (move (pool.back ()));
+      bitset &set = *new (Data_custom_val (v)) bitset (move (pool.back ()));
+      std::memset (set.data (), 0, set.size ());
       pool.pop_back ();
     }
   else

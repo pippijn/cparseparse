@@ -17,13 +17,7 @@ let print_grammar grammar =
   print_newline ()
 
 
-let dirname s =
-  let point = String.rindex s '/' in
-  String.sub s 0 point
-
-
 let parse files =
-  dirname (List.hd files),
   List.map (fun file ->
     let ulexbuf = Ulexing.from_utf8_channel (open_in file) in
     let parse = MenhirLib.Convert.traditional2revised
@@ -45,14 +39,14 @@ let parse files =
   ) files
 
 
-let merge (dirname, grammars) =
+let merge grammars =
   let topforms = Merge.merge grammars in
   if Options._print_merged () then
     PrintAst.print (Merge.to_ast topforms);
-  dirname, topforms
+  topforms
 
 
-let tree_parse (dirname, topforms) =
+let tree_parse topforms =
   let open GrammarType in
 
   let grammar = GrammarTreeParser.of_ast topforms in
@@ -60,41 +54,45 @@ let tree_parse (dirname, topforms) =
     List.iter PrintGrammar.print_production grammar.productions;
   if false then
     print_grammar grammar;
-  dirname, grammar
+  grammar
 
 
-let grammar_graph (dirname, grammar) =
+let grammar_graph dirname grammar =
   let file = dirname ^ "/grammar.dot" in
   Timing.progress "writing grammar graph" (GrammarGraph.visualise ~file) grammar;
-  dirname, grammar
+  grammar
 
 
-let analyse (dirname, grammar) =
-  let env, states, tables = GrammarAnalysis.run_analyses grammar in
-  dirname, env, states, tables
+let analyse grammar =
+  let env, (states, tables) = GrammarAnalysis.run_analyses grammar in
+  env, states, tables
 
 
-let print_transformed (dirname, env, _, _ as tuple) =
-  let file = dirname ^ "/grammar.gr" in
-  let ast = BackTransform.ast_of_env env in
-  BatStd.with_dispose ~dispose:close_out
-    (fun out -> PrintAst.print ~out ast) (open_out file);
+let print_transformed dirname (env, _, _ as tuple) =
+  let open AnalysisEnvType in
+
+  List.iter (fun variant ->
+    let file = dirname ^ "/grammar.gr" in
+    let ast = BackTransform.ast_of_env env variant in
+    BatStd.with_dispose ~dispose:close_out
+      (fun out -> PrintAst.print ~out ast) (open_out file);
+  ) env.variants;
   tuple
 
 
-let output_menhir (dirname, env, _, _ as tuple) =
+let output_menhir dirname (env, _, _ as tuple) =
   let file = dirname ^ "/grammar.mly" in
   OutputMenhir.output_grammar ~file env;
   tuple
 
 
-let state_graph (dirname, _, states, _ as tuple) =
+let state_graph dirname (_, states, _ as tuple) =
   let file = dirname ^ "/automaton.dot" in
   Timing.progress "writing automaton graph" (StateGraph.visualise ~file) states;
   tuple
 
 
-let dump_automaton (dirname, env, states, _ as tuple) =
+let dump_automaton dirname (env, states, _ as tuple) =
   let out = Pervasives.open_out (dirname ^ "/automaton.out") in
   Timing.progress "dumping states to automaton.out"
     (List.iter (PrintAnalysisEnv.print_item_set ~out env)) states;
@@ -102,69 +100,41 @@ let dump_automaton (dirname, env, states, _ as tuple) =
   tuple
 
 
-let make_ptree_actions reachable env =
-  let open AnalysisEnvType in
-
-  let transform prefix =
-    let module Transform =
-      PtreeMaker.Make(struct
-        let prefix = prefix
-      end)
-    in
-
-    (* drop verbatim sections *)
-    prefix, [], [],
-    Transform.nonterms reachable env.index.nonterms,
-    Transform.prods reachable env.prods_by_lhs env.index.prods
-  in
-
-  [
-    (* original user actions *)
-    "", env.verbatims, env.impl_verbatims, env.index.nonterms, env.index.prods;
-    (* transform to use "%Ptree" module *)
-    transform "Ptree";
-    (* transform to use "%Treematch" module *)
-    transform "Treematch";
-  ]
-
-
-let make_ptree (dirname, env, states, tables) =
-  let open AnalysisEnvType in
-
-  let reachable = Reachability.compute_reachable_tagged env.index.prods env.prods_by_lhs in
-
-  let actions = Timing.progress "adding parse tree actions" (make_ptree_actions reachable) env in
-
-  dirname, env, reachable, actions, states, tables
-
-
-
-let emit_code (dirname, env, reachable, actions, states, tables) =
+let emit_code dirname (env, states, tables) =
   let open AnalysisEnvType in
 
   let index = env.index in
   let prods_by_lhs = env.prods_by_lhs in
+  let variants = env.variants in
+
+  let reachable = Reachability.compute_reachable_tagged index.prods prods_by_lhs in
 
   Timing.progress "emitting ML code"
-    (EmitCode.emit_ml dirname index prods_by_lhs actions reachable) tables
+    (EmitCode.emit_ml dirname index prods_by_lhs variants reachable) tables
 
 
 let optional enabled f x = if enabled () then f x else x
 
+let dirname s =
+  let point = String.rindex s '/' in
+  String.sub s 0 point
+
+
 let main inputs =
+  let dirname = dirname (List.hd inputs) in
+
   try
     inputs
     |> parse
     |> merge
     |> tree_parse
-    |> optional Options._graph_grammar grammar_graph
+    |> optional Options._graph_grammar (grammar_graph dirname)
     |> analyse
-    |> optional Options._print_transformed print_transformed
-    |> optional Options._output_menhir output_menhir
-    |> optional Options._graph_automaton state_graph
-    |> optional Options._dump_automaton dump_automaton
-    |> make_ptree
-    |> emit_code
+    |> optional Options._print_transformed (print_transformed dirname)
+    |> optional Options._output_menhir (output_menhir dirname)
+    |> optional Options._graph_automaton (state_graph dirname)
+    |> optional Options._dump_automaton (dump_automaton dirname)
+    |> emit_code dirname
   with Diagnostics.Diagnostic (severity, msg) ->
     Printf.printf "%s: %s\n" (Diagnostics.string_of_severity severity) msg;
     exit 1

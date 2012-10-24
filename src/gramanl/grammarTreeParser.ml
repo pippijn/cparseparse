@@ -161,7 +161,6 @@ let collect_terminals decls types precs =
           semtype;
           dup = spec_func funcs "dup" 1;
           del = spec_func funcs "del" 1;
-          reachable = false;
         };
         alias;
         precedence;
@@ -195,7 +194,6 @@ let collect_terminals decls types precs =
         let dummy = { empty_terminal with
           tbase = { empty_symbol_base with
             name = dummy_name;
-            reachable = true;
           };
           term_index = i;
         } in
@@ -230,7 +228,6 @@ let collect_nonterminals nonterms term_count =
               semtype = BatOption.map (CamlAst.ctyp_of_string _loc) semtype;
               dup = spec_func funcs "dup" 1;
               del = spec_func funcs "del" 1;
-              reachable = false;
             };
             merge = spec_func funcs "merge" 2;
             keep  = spec_func funcs "keep"  1;

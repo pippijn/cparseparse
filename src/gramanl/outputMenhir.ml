@@ -3,7 +3,7 @@ open GrammarType
 
 
 let output_token out term =
-  if term.tbase.reachable then
+  if (*term.tbase.reachable*) true then
     Printf.fprintf out "%%token %-30s\n" term.tbase.name
 
 
@@ -74,7 +74,7 @@ let output_nonterm out terms prods = function
   | [] -> ()
   | first_index :: _ as indices ->
       let first = ProdArray.get prods first_index in
-      if first.left.nbase.reachable then (
+      if (*first.left.nbase.reachable*) true then (
         Printf.fprintf out "%s:\n" first.left.nbase.name;
         List.iter (output_production out terms prods) indices;
         output_string out "\n";

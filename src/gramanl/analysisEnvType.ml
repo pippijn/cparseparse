@@ -117,9 +117,17 @@ type item_set = {
  ************************************************************)
 
 type index = {
-  nonterms                      : GrammarType.nonterminal NtArray.t;  (* nt_index   -> nonterminal *)
   terms                         : GrammarType.terminal TermArray.t;   (* term_index -> terminal    *)
+  nonterms                      : GrammarType.nonterminal NtArray.t;  (* nt_index   -> nonterminal *)
   prods                         : GrammarType.production ProdArray.t; (* prod_index -> production  *)
+} with sexp
+
+type variant = {
+  prefix			: string;
+  variant_nonterms              : GrammarType.nonterminal NtArray.t;  (* nt_index   -> nonterminal *)
+  variant_prods                 : GrammarType.production ProdArray.t; (* prod_index -> production  *)
+  verbatims                     : CamlAst.sig_item list;
+  impl_verbatims                : CamlAst.str_item list;
 } with sexp
 
 type env = {
@@ -154,6 +162,5 @@ type env = {
 
   (* options from grammar *)
   options                       : GrammarType.config;
-  verbatims                     : CamlAst.sig_item list;
-  impl_verbatims                : CamlAst.str_item list;
+  variants			: variant list;
 } with sexp

@@ -36,16 +36,16 @@ let specfunc_of_spec_func funcs = function
       SpecFunc (name, params, CamlAst.string_of_expr code) :: funcs
 
 
-let ast_of_env env =
+let ast_of_env env variant =
   (* first, we reconstruct the verbatim sections *)
   let verbatims =
     List.map (fun code ->
       TF_verbatim (false, CamlAst.string_of_sig_item code)
-    ) env.verbatims
+    ) variant.verbatims
     @
     List.map (fun code ->
       TF_verbatim (true, CamlAst.string_of_str_item code)
-    ) env.impl_verbatims
+    ) variant.impl_verbatims
   in
 
   (* then, the options *)
@@ -93,7 +93,7 @@ let ast_of_env env =
         (* Get production indices *)
         NtArray.get env.prods_by_lhs nonterm.nt_index
         (* Get actual productions *)
-        |> List.map (ProdArray.get env.index.prods)
+        |> List.map (ProdArray.get variant.variant_prods)
         (* Transform to ProdDecl *)
         |> List.map proddecl_of_prod
       in
@@ -116,7 +116,7 @@ let ast_of_env env =
       in
 
       StringMap.add nonterm.nbase.name nt nonterms
-    ) StringMap.empty env.index.nonterms
+    ) StringMap.empty variant.variant_nonterms
   in
 
   let topforms = Merge.({

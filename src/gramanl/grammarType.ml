@@ -27,9 +27,6 @@ type symbol_base = {
 
   dup                   : spec_func option; (* code to duplicate a semantic value *)
   del                   : spec_func option; (* code to clean up a semantic value *)
-
-  (* --- annotation --- *)
-  mutable reachable     : bool; (* true when symbol reachable from start symbol *)
 } with sexp
 
 (* something that only appears on the right-hand side of
@@ -141,8 +138,6 @@ let empty_symbol_base = {
   semtype   = None;
   dup       = None;
   del       = None;
-
-  reachable = false;
 }
 
 

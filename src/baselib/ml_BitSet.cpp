@@ -11,6 +11,7 @@ extern "C" {
 #define assert(cond) do { if (!(cond)) failwith ("Assertion failed in " __FILE__ ":" STR(__LINE__) ": " #cond); } while (0)
 
 #include <cstdio>
+#include <cstring>
 #include <vector>
 
 #ifdef HAS_OLD_CXX
@@ -61,7 +62,7 @@ ml_BitSet_count (value self)
 {
   int count = 0;
 #ifdef HAS_OLD_CXX
-  BOOST_FOREACH(word w, *get_bitset (self))
+  BOOST_FOREACH (word w, *get_bitset (self))
 #else
   for (word w : *get_bitset (self))
 #endif
@@ -135,12 +136,8 @@ ml_BitSet_merge (value dest, value source)
 CAMLprim value
 ml_BitSet_clear (value self)
 {
-#ifdef HAS_OLD_CXX
-  BOOST_FOREACH(word &w, *get_bitset (self))
-#else
-  for (word &w : *get_bitset (self))
-#endif
-    w = 0;
+  bitset &set = *get_bitset (self);
+  std::memset (set.data (), 0, set.size ());
   return Val_unit;
 }
 

@@ -112,7 +112,9 @@ Library gramanl
                                 LrItemSets,
                                 Merge,
                                 Nonterminal,
+                                NonterminalSet,
                                 NtArray,
+                                NtSet,
                                 Options,
                                 OutputMenhir,
                                 PrintAnalysisEnv,
@@ -130,6 +132,7 @@ Library gramanl
                                 TableEncoding,
                                 TablePrinting,
                                 TermArray,
+                                TermSet,
                                 Terminal,
                                 TerminalSet,
                                 Warnings
