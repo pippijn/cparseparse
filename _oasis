@@ -126,6 +126,7 @@ Library gramanl
                                 Reachability,
                                 Renumbering,
                                 SampleInput,
+                                Semantic,
                                 StateGraph,
                                 SuperSets,
                                 TableConstruction,
