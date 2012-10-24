@@ -105,7 +105,7 @@ let possible_reductions index item_set lookahead =
       (* the follow of its LHS must include 'lookahead' *)
       let prod = ProdArray.get index.prods item.dprod.prod in
       let left = NtArray.get index.nonterms prod.left in
-      if TerminalSet.mem lookahead.term_index left.follow then
+      if TerminalSet.mem lookahead.tbase.index_id left.follow then
         prod :: reductions
       else (
         if Options._trace_reductions () then (
@@ -122,7 +122,7 @@ let possible_reductions index item_set lookahead =
     ) else if Options._use_LALR1 () || Options._use_LR1 () then (
       (* the item's lookahead must include 'lookahead' *)
       let prod = ProdArray.get index.prods item.dprod.prod in
-      if TerminalSet.mem lookahead.term_index item.lookahead then (
+      if TerminalSet.mem lookahead.tbase.index_id item.lookahead then (
         if Options._trace_reductions () then (
           Printf.printf "state %a, reducing by "
             Ids.State.print item_set.state_id;

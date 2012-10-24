@@ -6,10 +6,10 @@ let can_derive_i derivable left right =
   Derivable.is_set derivable left right
 
 let can_derive derivable left right =
-  can_derive_i derivable left.nt_index right.nt_index
+  can_derive_i derivable left.nbase.index_id right.nbase.index_id
 
 let can_derive_empty derivable nonterm =
-  can_derive_i derivable nonterm empty_nonterminal.nt_index
+  can_derive_i derivable nonterm empty_nonterminal.nbase.index_id
 
 let can_sequence_derive_empty derivable seq =
   (* look through the sequence; if any members cannot derive
@@ -60,7 +60,7 @@ let add_derivable_i env left right =
 
 (* convenience for the function above *)
 let add_derivable env left right =
-  add_derivable_i env left.nt_index right.nt_index
+  add_derivable_i env left.nbase.index_id right.nbase.index_id
 
 
 let initial_derivable_relation nonterm_count =
@@ -144,7 +144,7 @@ let add_derivable_relations env changes =
         (* since I don't include 'empty' explicitly in my rules, I won't
          * conclude that anything can derive empty, which is a problem;
          * so I special-case it here *)
-        ignore (add_derivable_i env prod.left empty_nonterminal.nt_index)
+        ignore (add_derivable_i env prod.left empty_nonterminal.nbase.index_id)
 
     | right ->
         (* iterate over RHS symbols, seeing if the LHS can derive that

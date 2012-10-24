@@ -52,7 +52,7 @@ let handle_shift_reduce_conflict index state prod sym decision =
 
     (* see if this reduction can be removed due to a 'maximal' spec;
      * in particular, is the shift going to extend 'super'? *)
-    maximal && ItemSet.has_extending_shift index.prods index.nonterms state super.nt_index sym.term_index
+    maximal && ItemSet.has_extending_shift index.prods index.nonterms state super.nbase.index_id sym.tbase.index_id
   in
 
   (* scannerless *)
@@ -169,7 +169,7 @@ let subset_directive_resolution nonterms state sym reductions =
     List.fold_left (fun map prod ->
       let left = NtArray.get nonterms prod.left in
       if BatOption.is_some left.superset then
-        NonterminalSet.add left.nt_index map
+        NonterminalSet.add left.nbase.index_id map
       else
         map
     ) NonterminalSet.empty reductions
@@ -300,7 +300,7 @@ let try_resolve_conflicts index state sym shift_dest reductions allow_ambig sr r
           List.fold_left (fun reduction prod ->
             let open GrammarType in
             (* production indices happen to be assigned in file order *)
-            if prod.prod_index > reduction.prod_index then
+            if prod.pbase.index_id > reduction.pbase.index_id then
               prod
             else
               reduction

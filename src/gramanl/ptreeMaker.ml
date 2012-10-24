@@ -82,12 +82,12 @@ let merge name = function
 
 
 let nonterminal reachable nonterm =
-  let is_reachable = NtSet.mem reachable nonterm.nt_index in
+  let is_reachable = NtSet.mem reachable nonterm.nbase.index_id in
 
   let semtype =
     if not is_reachable then
       <:ctyp<unit>>
-    else if Ids.Nonterminal.is_start nonterm.nt_index then
+    else if Ids.Nonterminal.is_start nonterm.nbase.index_id then
       (* synthesised start symbol *)
       nonterm_type None
     else
@@ -190,12 +190,12 @@ let map_prods nonterms reachable has_merge prods =
       List.map (fun prod ->
         let action =
           (* production 0 is the synthesised start symbol *)
-          if Ids.Production.is_start prod.prod_index then (
+          if Ids.Production.is_start prod.pbase.index_id then (
             <:expr<top>>
           ) else (
             let prod_name =
               match prod.pbase.name with
-              | ""   -> "P" ^ Ids.Production.to_string prod.prod_index
+              | ""   -> "P" ^ Ids.Production.to_string prod.pbase.index_id
               | name -> assert (name <> ""); name
             in
 
@@ -267,7 +267,7 @@ let prods reachable nonterms prods_by_lhs prods =
   (* make a new indexed prods *)
   let prod_count = NtArray.sum (List.length) prods_by_lhs in
   let prods = ProdArray.make prod_count empty_production in
-  NtArray.iter (List.iter (fun prod -> ProdArray.set prods prod.prod_index prod)) prods_by_lhs;
+  NtArray.iter (List.iter (fun prod -> ProdArray.set prods prod.pbase.index_id prod)) prods_by_lhs;
 
   ProdArray.readonly prods
 

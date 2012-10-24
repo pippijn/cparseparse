@@ -54,7 +54,7 @@ let topological_order derivable nonterms =
   ignore (NtArray.fold_left (fun next_ordinal nonterm ->
     (* expand from 'nt' in case it's disconnected; this will be
      * a no-op if we've already 'seen' it *)
-    topological_sort nonterms derivable seen order next_ordinal nonterm.nt_index
+    topological_sort nonterms derivable seen order next_ordinal nonterm.nbase.index_id
   ) (nonterm_count - 1) nonterms);
 
   order
@@ -64,7 +64,7 @@ let compute_actions index state terminal allow_ambig sr rr =
   let open GrammarType in
 
   (* can shift? *)
-  let shift_dest = ItemSet.transition_for_term state terminal.term_index in
+  let shift_dest = ItemSet.transition_for_term state terminal.tbase.index_id in
 
   (* can reduce? *)
   let reductions = ItemSet.possible_reductions index state terminal in
@@ -96,10 +96,10 @@ let encode_ambig tables state terminal shift_dest reductions =
     | Some shift_dest ->
         if Options._trace_table () then (
           Printf.printf " [shift token %a, to state %a"
-            Ids.Terminal.print terminal.term_index
+            Ids.Terminal.print terminal.tbase.index_id
             Ids.State.print shift_dest.state_id;
         );
-        [TableEncoding.encode_shift tables shift_dest.state_id terminal.term_index]
+        [TableEncoding.encode_shift tables shift_dest.state_id terminal.tbase.index_id]
     | None ->
         []
   in
@@ -108,9 +108,9 @@ let encode_ambig tables state terminal shift_dest reductions =
     List.map (fun prod ->
       if Options._trace_table () then (
         Printf.printf "; reduce by %a"
-          Ids.Production.print prod.prod_index;
+          Ids.Production.print prod.pbase.index_id;
       );
-      TableEncoding.encode_reduce tables prod.prod_index state.state_id
+      TableEncoding.encode_reduce tables prod.pbase.index_id state.state_id
     ) reductions
   in
 
@@ -129,10 +129,10 @@ let encode_shift tables terminal shift_dest =
 
   if Options._trace_table () then (
     Printf.printf "(unambig) shift token %a, to state %a"
-      Ids.Terminal.print terminal.term_index
+      Ids.Terminal.print terminal.tbase.index_id
       Ids.State.print shift_dest.state_id;
   );
-  TableEncoding.encode_shift tables shift_dest.state_id terminal.term_index
+  TableEncoding.encode_shift tables shift_dest.state_id terminal.tbase.index_id
 
 
 let encode_reduce tables state terminal prod =
@@ -140,9 +140,9 @@ let encode_reduce tables state terminal prod =
 
   if Options._trace_table () then (
     Printf.printf "(unambig) reduce by %a"
-      Ids.Production.print prod.prod_index;
+      Ids.Production.print prod.pbase.index_id;
   );
-  TableEncoding.encode_reduce tables prod.prod_index state.state_id
+  TableEncoding.encode_reduce tables prod.pbase.index_id state.state_id
 
 
 let encode_error tables =
@@ -158,7 +158,7 @@ let compute_cell_action tables state shift_dest reductions terminal =
   if Options._trace_table () then (
     Printf.printf "state %a, on terminal %a (\"%s\") "
       Ids.State.print state.state_id
-      Ids.Terminal.print terminal.term_index
+      Ids.Terminal.print terminal.tbase.index_id
       terminal.tbase.name;
   );
 
@@ -225,7 +225,7 @@ let encode_action tables index allow_ambig sr rr state terminal =
   let cell_action = compute_cell_action tables state shift_dest reductions terminal in
 
   (* add this entry to the table *)
-  TableEncoding.set_action_entry tables state.state_id terminal.term_index cell_action
+  TableEncoding.set_action_entry tables state.state_id terminal.tbase.index_id cell_action
 
 
 let compute_action_row env tables allow_ambig sr rr state =
@@ -250,7 +250,7 @@ let compute_action_row env tables allow_ambig sr rr state =
   (* for each nonterminal... *)
   NtArray.iter (fun nonterm ->
     let open GrammarType in
-    encode_goto_row tables state nonterm.nt_index
+    encode_goto_row tables state nonterm.nbase.index_id
   ) env.index.nonterms;
 
   (* get the state symbol *)
@@ -302,7 +302,7 @@ let compute_parse_tables env allow_ambig states =
 
   (* fill in 'prod_info' *)
   ProdArray.iter (fun prod ->
-    TableEncoding.set_prod_info tables prod.prod_index (List.length prod.right) prod.left
+    TableEncoding.set_prod_info tables prod.pbase.index_id (List.length prod.right) prod.left
   ) env.index.prods;
 
   TableEncoding.finish_tables tables

@@ -7,7 +7,7 @@ let compute_supersets indexed_nonterms nonterms =
     super.subsets <-
       List.map (fun sub ->
         (* we validated the existence of all subsets, already *)
-        (StringMap.find sub nonterms).nt_index
+        (StringMap.find sub nonterms).nbase.index_id
       ) super.subset_names
   ) indexed_nonterms;
 
@@ -19,6 +19,6 @@ let compute_supersets indexed_nonterms nonterms =
           (* for now, only handle 'super' as a partial function *)
           failwith "nonterminal has more than one superset";
       | None ->
-          sub.superset <- Some super.nt_index
+          sub.superset <- Some super.nbase.index_id
     ) super.subsets
   ) indexed_nonterms

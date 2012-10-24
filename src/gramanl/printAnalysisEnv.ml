@@ -13,7 +13,7 @@ let print_terminal_set ?(out=stdout) ?(abbreviate=true) ?(name=".") terms set =
   ) else (
     let first = ref true in
     TermArray.iter (fun term ->
-      if TerminalSet.mem term.term_index set then (
+      if TerminalSet.mem term.tbase.index_id set then (
         if not !first then
           output_string out ",";
         output_string out " ";

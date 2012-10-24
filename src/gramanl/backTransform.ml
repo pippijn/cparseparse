@@ -63,7 +63,7 @@ let ast_of_env env variant =
   (* after that, the terminals *)
   let decls =
     TermArray.fold_left (fun decls term ->
-      TermDecl (Ids.Terminal.to_int term.term_index, term.tbase.name, term.alias) :: decls
+      TermDecl (Ids.Terminal.to_int term.tbase.index_id, term.tbase.name, term.alias) :: decls
     ) [] env.index.terms
   in
   let types =
@@ -95,7 +95,7 @@ let ast_of_env env variant =
     NtArray.fold_left (fun nonterms nonterm ->
       let prods =
         (* Get production indices *)
-        NtArray.get env.prods_by_lhs nonterm.nt_index
+        NtArray.get env.prods_by_lhs nonterm.nbase.index_id
         (* Get actual productions *)
         |> List.map (ProdArray.get variant.variant_prods)
         (* Transform to ProdDecl *)
@@ -118,7 +118,7 @@ let ast_of_env env variant =
           List.fold_left specfunc_of_spec_func [] specfuncs,
           prods,
           (*TODO: subsets*)[]
-        ), nonterm.nt_index
+        ), nonterm.nbase.index_id
       in
 
       StringMap.add nonterm.nbase.name nt nonterms

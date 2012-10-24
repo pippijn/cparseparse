@@ -55,9 +55,10 @@ type prod_semantic = [
   | `SEM_ACTION of CamlAst.expr
 ] with sexp
 
-type 'semantic symbol_base = {
+type ('index, 'semantic) symbol_base = {
   (* --- representation --- *)
   name                  : string; (* symbol's name in grammar *)
+  index_id		: 'index; (* unique symbol id *)
   semantic		: 'semantic list; (* semantic actions and type *)
 } with sexp
 
@@ -67,7 +68,8 @@ type 'semantic symbol_base = {
  * for several different tokens to be classified into the same
  * terminal class (e.g. "foo" and "bar" are both identifiers) *)
 type terminal = {
-  tbase                 : term_semantic symbol_base;
+  (* terminal class index - this terminal's id; -1 means unassigned *)
+  tbase                 : (Ids.Terminal.t, term_semantic) symbol_base;
 
   (* --- representation --- *)
   (* whereas 'name' is the canonical name for the terminal class,
@@ -84,14 +86,13 @@ type terminal = {
   (* if, in the above scenario, the precedence values are the same,
    * then the associativity kind will be used to decide which to use *)
   associativity         : Assoc.kind;
-  (* terminal class index - this terminal's id; -1 means unassigned *)
-  term_index            : Ids.Terminal.t;
 } with sexp
 
 (* something that can appear on the left-hand side of a production
  * (or, empty_nonterminal, since we classify that as a nonterminal also) *)
 type nonterminal = {
-  nbase                 : nonterm_semantic symbol_base;
+  (* nonterminal index in indexed_nonterminals for grammar analysis *)
+  nbase                 : (Ids.Nonterminal.t, nonterm_semantic) symbol_base;
 
   (* --- representation --- *)
   maximal               : bool; (* if true, use maximal munch disambiguation *)
@@ -101,7 +102,6 @@ type nonterminal = {
   (* --- annotation --- *)
   mutable first         : TerminalSet.t; (* set of terminals that can be start of a string derived from 'this' *)
   mutable follow        : TerminalSet.t; (* set of terminals that can follow a string derived from 'this' *)
-  nt_index              : Ids.Nonterminal.t; (* nonterminal index in indexed_nonterminals for grammar analysis *)
   mutable cyclic        : bool; (* true if this can derive itself in 1 or more steps *)
   mutable subsets       : Ids.Nonterminal.t list; (* resolved subsets *)
   mutable superset      : Ids.Nonterminal.t option; (* inverse of 'subsets' *)
@@ -119,7 +119,7 @@ type symbol =
 (* a rewrite rule *)
 type production = {
   (* --- representation --- *)
-  pbase			: prod_semantic symbol_base;
+  pbase			: (Ids.Production.t, prod_semantic) symbol_base;
 
   left                  : Ids.Nonterminal.t; (* left hand side *)
   right                 : symbol list; (* right hand side; terminals & nonterminals *)
@@ -128,7 +128,6 @@ type production = {
 
   (* --- annotation --- *)
   mutable first_rhs     : TerminalSet.t; (* First(RHS) *)
-  mutable prod_index    : Ids.Production.t; (* unique production id *)
 } with sexp
 
 type config = {
@@ -166,12 +165,15 @@ type grammar = {
 
 
 let empty_terminal = {
-  tbase         = { name = ""; semantic = []; };
+  tbase         = {
+    name     = "";
+    index_id = Ids.Terminal.default;
+    semantic = [];
+  };
 
   alias         = "";
   precedence    = 0;
   associativity = Assoc.AK_NONASSOC;
-  term_index    = Ids.Terminal.default;
 }
 
 
@@ -182,7 +184,12 @@ let empty_terminal = {
  * motivated by things like the derivability relation, where it's
  * nice to treat empty like any other symbol *)
 let empty_nonterminal = {
-  nbase    	= { name = "empty"; semantic = []; };
+  nbase         = {
+    name     = "empty";
+    (* empty has an index of 0; all other nonterminals must have indices >= 1 *)
+    index_id = Ids.Nonterminal.default;
+    semantic = [];
+  };
 
   maximal  	= false;
 
@@ -190,8 +197,6 @@ let empty_nonterminal = {
 
   first    	= TerminalSet.empty;
   follow   	= TerminalSet.empty;
-  (* empty has an index of 0; all other nonterminals must have indices >= 1 *)
-  nt_index 	= Ids.Nonterminal.default;
   cyclic   	= false;
   subsets  	= [];
   superset 	= None;
@@ -199,7 +204,11 @@ let empty_nonterminal = {
 
 
 let empty_production = {
-  pbase      = { name = ""; semantic = []; };
+  pbase         = {
+    name     = "";
+    index_id = Ids.Production.default;
+    semantic = [];
+  };
 
   left       = Ids.Nonterminal.default;
   right      = [];
@@ -207,7 +216,6 @@ let empty_production = {
   forbid     = TerminalSet.empty;
 
   first_rhs  = TerminalSet.empty;
-  prod_index = Ids.Production.default;
 }
 
 

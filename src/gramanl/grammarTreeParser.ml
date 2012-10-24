@@ -180,20 +180,20 @@ let collect_terminals decls types precs =
         | Some func -> `SEM_CLASSIFY func :: semantic
       in
 
-      let term_index = Ids.Terminal.of_int code in
+      let index_id = Ids.Terminal.of_int code in
 
       let terminal = {
         tbase = {
           name;
+          index_id;
           semantic;
         };
         alias;
         precedence;
         associativity;
-        term_index;
       } in
 
-      let max_index = max max_index term_index in
+      let max_index = max max_index index_id in
 
       max_index, StringMap.add name terminal terminals
     ) (Ids.Terminal.default, StringMap.empty) decls
@@ -218,9 +218,9 @@ let collect_terminals decls types precs =
         let dummy = { empty_terminal with
           tbase = {
             name = dummy_name;
+            index_id = i;
             semantic = [];
           };
-          term_index = i;
         } in
         StringMap.add dummy_name dummy terminals
     ) terminals max_index
@@ -234,7 +234,7 @@ let collect_nonterminals nonterms term_count =
   (*print_newline ();*)
 
   let nonterminals =
-    StringMap.fold (fun _ (nterm, nt_index) nonterminals ->
+    StringMap.fold (fun _ (nterm, index_id) nonterminals ->
       match nterm with
       | TF_nonterm (name, semtype, funcs, prods, subsets) ->
           (* record subsets *)
@@ -281,14 +281,13 @@ let collect_nonterminals nonterms term_count =
           let nonterminal = { empty_nonterminal with
             nbase = {
               name;
+              index_id;
               semantic;
             };
             maximal = (BatOption.is_some (spec_func funcs "maximal" 0));
             (* we simply store the (validated) string references here, because
              * it is very hard to have cyclic immutable data structures *)
             subset_names = subsets;
-
-            nt_index;
           } in
 
           StringMap.add name nonterminal nonterminals
@@ -324,7 +323,7 @@ let collect_production_rhs aliases terminals nonterminals is_synthesised rhs_lis
         StringMap.find name terminals
     in
 
-    if Ids.Terminal.is_eof terminal.term_index && not is_synthesised then
+    if Ids.Terminal.is_eof terminal.tbase.index_id && not is_synthesised then
       failwith "you cannot use the EOF token in your rules";
     terminal
   in
@@ -343,11 +342,11 @@ let collect_production_rhs aliases terminals nonterminals is_synthesised rhs_lis
                 (* whenever we see a terminal, copy its precedence spec to
                  * the production; thus, the last symbol appearing in the
                  * production will be the one that gives the precedence *)
-                Terminal (tag, terminal.term_index), terminal.precedence
+                Terminal (tag, terminal.tbase.index_id), terminal.precedence
               with Failure _ ->
                 let nonterminal = find_nonterminal name in
                 (* keep old precedence *)
-                Nonterminal (tag, nonterminal.nt_index), production.prec
+                Nonterminal (tag, nonterminal.nbase.index_id), production.prec
             in
 
             (* add it to the production *)
@@ -355,7 +354,7 @@ let collect_production_rhs aliases terminals nonterminals is_synthesised rhs_lis
 
       | RH_string (tag, str) ->
           let term = find_terminal str in
-          { production with right = Terminal (tag, term.term_index) :: production.right; prec = term.precedence }
+          { production with right = Terminal (tag, term.tbase.index_id) :: production.right; prec = term.precedence }
 
       | RH_prec (tokName) ->
           let { precedence } = find_terminal tokName in
@@ -367,7 +366,7 @@ let collect_production_rhs aliases terminals nonterminals is_synthesised rhs_lis
           let tok = find_terminal tokName in
 
           let forbid =
-            TerminalSet.add tok.term_index production.forbid
+            TerminalSet.add tok.tbase.index_id production.forbid
           in
 
           { production with forbid }
@@ -380,11 +379,22 @@ let collect_production_rhs aliases terminals nonterminals is_synthesised rhs_lis
 
 
 let collect_productions aliases terminals nonterminals nonterms =
-  let productions, last_prod_index =
+  let last_prod_index =
+    StringMap.fold (fun _ (nterm, _) next_prod_index ->
+      match nterm with
+      | TF_nonterm (name, _, _, prods, _) ->
+          List.fold_left (fun next_prod_index _ ->
+            next_prod_index + 1
+          ) next_prod_index prods
+      | _ -> failwith "merge failed"
+    ) nonterms 0
+  in
+
+  let productions, first_prod_index =
     StringMap.fold (fun _ (nterm, _) (productions, next_prod_index) ->
       match nterm with
       | TF_nonterm (name, _, _, prods, _) ->
-          let left = (StringMap.find name nonterminals).nt_index in
+          let left = (StringMap.find name nonterminals).nbase.index_id in
           (* is this the special start symbol I inserted? *)
           let is_synthesised = name = start_name in
 
@@ -396,28 +406,31 @@ let collect_productions aliases terminals nonterminals nonterms =
                   [`SEM_ACTION (CamlAst.expr_of_string _loc action)]
             in
 
+            let prod_index = Ids.Production.of_int (next_prod_index - 1) in
+
             (* build a production *)
             let production =
               { empty_production with
                 pbase = {
                   name;
+                  index_id = prod_index;
                   semantic;
                 };
                 left;
-                prod_index = Ids.Production.of_int next_prod_index;
               }
               (* deal with RHS elements *)
               |> collect_production_rhs aliases terminals nonterminals is_synthesised rhs
             in
 
             (* add production to grammar *)
-            production :: productions, next_prod_index + 1
+            production :: productions, next_prod_index - 1
           ) (productions, next_prod_index) prods
 
       | _ -> failwith "merge failed"
-    ) nonterms ([], 0)
+    ) nonterms ([], last_prod_index)
   in
 
+  assert (first_prod_index = 0);
   assert (last_prod_index = List.length productions);
   productions
 

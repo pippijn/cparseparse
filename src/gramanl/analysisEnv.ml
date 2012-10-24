@@ -18,11 +18,11 @@ let compute_indexed_nonterms nonterms =
   let indexed = NtArray.make (StringMap.cardinal nonterms + 1) empty_nonterminal in
 
   (* indexed.(0) is empty_nonterminal *)
-  assert (Ids.Nonterminal.is_empty empty_nonterminal.nt_index);
+  assert (Ids.Nonterminal.is_empty empty_nonterminal.nbase.index_id);
 
   StringMap.iter (fun _ nonterm ->
     (* the ids have already been assigned *)
-    let i = nonterm.nt_index in (* map: symbol to index *)
+    let i = nonterm.nbase.index_id in (* map: symbol to index *)
     (* verify there are no duplicate indices *)
     let existing = NtArray.get indexed i in
     if existing != empty_nonterminal then (
@@ -38,14 +38,14 @@ let compute_indexed_nonterms nonterms =
   (* verify invariants *)
   NtArray.iteri (fun nt_index nonterm ->
     (* the mapping must be correct *)
-    assert (nonterm.nt_index == nt_index);
+    assert (nonterm.nbase.index_id == nt_index);
 
     (* "empty" must be the first nonterminal *)
-    if Ids.Nonterminal.is_empty nonterm.nt_index then
+    if Ids.Nonterminal.is_empty nonterm.nbase.index_id then
       assert (nonterm == empty_nonterminal)
 
     (* the synthesised start symbol must follow *)
-    else if Ids.Nonterminal.is_start nonterm.nt_index then
+    else if Ids.Nonterminal.is_start nonterm.nbase.index_id then
       assert (nonterm.nbase.name == GrammarTreeParser.start_name)
 
     (* any other nonterminals must not be empty *)
@@ -64,7 +64,7 @@ let compute_indexed_terms terms =
 
   StringMap.iter (fun _ term ->
     (* the ids have already been assigned *)
-    let i = term.term_index in (* map: symbol to index *)
+    let i = term.tbase.index_id in (* map: symbol to index *)
     TermArray.set indexed i term (* map: index to symbol *)
   ) terms;
 
@@ -83,9 +83,11 @@ let compute_indexed_prods productions nonterm_count =
   let prods_by_lhs = NtArray.make nonterm_count [] in
 
   (* fill in both maps *)
-  BatList.iteri (fun i production ->
+  BatList.iteri (fun i prod ->
     let prod_index = Ids.Production.of_int i in
-    let nt_index = production.left in
+    let nt_index = prod.left in
+
+    assert (prod.pbase.index_id == prod_index);
 
     begin
       let prods = NtArray.get prods_by_lhs nt_index in
@@ -93,8 +95,7 @@ let compute_indexed_prods productions nonterm_count =
     end;
 
     assert (ProdArray.get indexed prod_index == empty_production);
-    production.prod_index <- prod_index;
-    ProdArray.set indexed prod_index production;
+    ProdArray.set indexed prod_index prod;
   ) productions;
 
   (* verify invariants *)
@@ -105,7 +106,7 @@ let compute_indexed_prods productions nonterm_count =
     )
   ) prods_by_lhs;
   ProdArray.iteri (fun prod_index prod ->
-    assert (prod.prod_index == prod_index);
+    assert (prod.pbase.index_id == prod_index);
   ) indexed;
 
   (* verify we filled the prod_index map *)
@@ -137,7 +138,7 @@ let compute_dotted_productions indexed_prods =
       let dot_at_end = dot = rhs_length in
 
       {
-        prod = prod.prod_index;
+        prod = prod.pbase.index_id;
         dot;
         dprod_id = next_id ();
         after_dot  = (if dot_at_end then None else Some (List.nth prod.right dot));
@@ -210,7 +211,7 @@ let verify_empty indexed_nonterms indexed_prods dotted_prods =
 
 let init_env grammar =
   let start_nt =
-    (StringMap.find grammar.start_symbol grammar.nonterminals).nt_index
+    (StringMap.find grammar.start_symbol grammar.nonterminals).nbase.index_id
   in
 
   (* build indexed terminal map *)

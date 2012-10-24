@@ -75,7 +75,7 @@ let production_closure env finished worklist item b prod_index =
   (* construct "B -> . gamma, First(beta LA)";
    * except, don't actually build it until later; in the meantime,
    * determine which DP and lookahead it would use if created *)
-  let new_dp = DottedProduction.get env.dotted_prods prod.prod_index 0 (* dot at left *) in
+  let new_dp = DottedProduction.get env.dotted_prods prod.pbase.index_id 0 (* dot at left *) in
 
   (* get beta (what follows B in 'item') *)
   let beta = DottedProduction.next env.dotted_prods item.dprod in
@@ -484,7 +484,7 @@ let construct_lr_item_sets env =
       let prod = ProdArray.get env.env.index.prods prod_index in
       let left = NtArray.get env.env.index.nonterms prod.left in
 
-      assert (dp.prod == prod.prod_index);
+      assert (dp.prod == prod.pbase.index_id);
       assert (left.nbase.name == GrammarTreeParser.start_name);
 
       dp

@@ -9,13 +9,13 @@ module M : GrammarSig.S with type t = nonterminal = struct
   type t = nonterminal
 
   let hash a =
-    Ids.Nonterminal.hash a.nt_index
+    Ids.Nonterminal.hash a.nbase.index_id
 
   let compare a b =
-    Ids.Nonterminal.compare a.nt_index b.nt_index
+    Ids.Nonterminal.compare a.nbase.index_id b.nbase.index_id
 
   let equal a b =
-    Ids.Nonterminal.equal a.nt_index b.nt_index
+    Ids.Nonterminal.equal a.nbase.index_id b.nbase.index_id
 
   let stats _ = failwith "Not supported"
   let reset _ = failwith "Not supported"

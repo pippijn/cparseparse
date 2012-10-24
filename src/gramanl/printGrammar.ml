@@ -16,7 +16,10 @@ let print_symbol ?(out=stdout) terms nonterms sym =
 
 let print_production ?(out=stdout) terms nonterms prod =
   let left = NtArray.get nonterms prod.left in
-  Printf.fprintf out "  [%a] %s ->" Ids.Production.print prod.prod_index left.nbase.name;
+  Printf.fprintf out "  [%a (%a)] %s ->"
+    Ids.Production.print prod.pbase.index_id
+    Ids.Production.print prod.pbase.index_id
+    left.nbase.name;
   if prod.right = [] then
     output_string out " empty"
   else
