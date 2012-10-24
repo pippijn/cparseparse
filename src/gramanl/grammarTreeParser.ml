@@ -141,7 +141,7 @@ let collect_terminals decls types precs =
       let semtype, funcs =
         try
           let (TermType (_, termtype, funcs)) = StringMap.find name types in
-          Some (CamlAst.ctyp_of_string _loc termtype), funcs
+          Some termtype, funcs
         with Not_found ->
           None, []
       in
@@ -155,20 +155,42 @@ let collect_terminals decls types precs =
           Assoc.AK_NONASSOC, 0
       in
 
+      let semantic =
+        match semtype with
+        | None -> []
+        | Some semtype ->
+            [`SEM_TYPE (CamlAst.ctyp_of_string _loc semtype)]
+      in
+
+      let semantic =
+        match spec_func funcs "dup" 1 with
+        | None -> semantic
+        | Some func -> `SEM_DUP func :: semantic
+      in
+
+      let semantic =
+        match spec_func funcs "del" 1 with
+        | None -> semantic
+        | Some func -> `SEM_DEL func :: semantic
+      in
+
+      let semantic =
+        match spec_func funcs "classify" 1 with
+        | None -> semantic
+        | Some func -> `SEM_CLASSIFY func :: semantic
+      in
+
       let term_index = Ids.Terminal.of_int code in
 
       let terminal = {
         tbase = {
           name;
-          semtype;
-          dup = spec_func funcs "dup" 1;
-          del = spec_func funcs "del" 1;
+          semantic;
         };
         alias;
         precedence;
         associativity;
         term_index;
-        classify = spec_func funcs "classify" 1;
       } in
 
       let max_index = max max_index term_index in
@@ -194,8 +216,9 @@ let collect_terminals decls types precs =
       else
         let dummy_name = "Dummy_filler_token" ^ Ids.Terminal.to_string i in
         let dummy = { empty_terminal with
-          tbase = { empty_symbol_base with
+          tbase = {
             name = dummy_name;
+            semantic = [];
           };
           term_index = i;
         } in
@@ -223,17 +246,44 @@ let collect_nonterminals nonterms term_count =
              * the given nonterminals really are in the subset relation *)
           ) subsets;
 
+          let semantic =
+            match semtype with
+            | None -> []
+            | Some semtype ->
+                [`SEM_TYPE (CamlAst.ctyp_of_string _loc semtype)]
+          in
+
+          let semantic =
+            match spec_func funcs "dup" 1 with
+            | None -> semantic
+            | Some func -> `SEM_DUP func :: semantic
+          in
+
+          let semantic =
+            match spec_func funcs "del" 1 with
+            | None -> semantic
+            | Some func -> `SEM_DEL func :: semantic
+          in
+
+          let semantic =
+            match spec_func funcs "merge" 2 with
+            | None -> semantic
+            | Some func -> `SEM_MERGE func :: semantic
+          in
+
+          let semantic =
+            match spec_func funcs "keep" 1 with
+            | None -> semantic
+            | Some func -> `SEM_KEEP func :: semantic
+          in
+
           (* make the Grammar object to represent the new nonterminal *)
           let nonterminal = { empty_nonterminal with
             nbase = {
               name;
-              semtype = BatOption.map (CamlAst.ctyp_of_string _loc) semtype;
-              dup = spec_func funcs "dup" 1;
-              del = spec_func funcs "del" 1;
+              semantic;
             };
-            merge = spec_func funcs "merge" 2;
-            keep  = spec_func funcs "keep"  1;
-            maximal = (match spec_func funcs "maximal" 0 with None -> false | Some _ -> true);
+            maximal = (BatOption.is_some (spec_func funcs "maximal" 0));
             (* we simply store the (validated) string references here, because
              * it is very hard to have cyclic immutable data structures *)
             subset_names = subsets;

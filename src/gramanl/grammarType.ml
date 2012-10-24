@@ -20,13 +20,39 @@ type spec_func = {
   code                  : CamlAst.expr;
 } with sexp
 
-type symbol_base = {
+
+(* all semantic actions and type *)
+type semantic = [
+  | `SEM_TYPE of CamlAst.ctyp (* OCaml type of semantic value *)
+
+  | `SEM_DUP of spec_func (* code to duplicate a semantic value *)
+  | `SEM_DEL of spec_func (* code to clean up a semantic value *)
+  | `SEM_CLASSIFY of spec_func (* code to reclassify a token type *)
+  | `SEM_MERGE of spec_func (* code to resolve ambiguities *)
+  | `SEM_KEEP of spec_func (* code to decide whether to keep a reduction *)
+]
+
+type term_semantic = [
+  | `SEM_TYPE of CamlAst.ctyp
+
+  | `SEM_DUP of spec_func
+  | `SEM_DEL of spec_func
+  | `SEM_CLASSIFY of spec_func
+] with sexp
+
+type nonterm_semantic = [
+  | `SEM_TYPE of CamlAst.ctyp
+
+  | `SEM_DUP of spec_func
+  | `SEM_DEL of spec_func
+  | `SEM_MERGE of spec_func
+  | `SEM_KEEP of spec_func
+] with sexp
+
+type 'semantic symbol_base = {
   (* --- representation --- *)
   name                  : string; (* symbol's name in grammar *)
-  semtype               : CamlAst.ctyp option; (* OCaml type of semantic value *)
-
-  dup                   : spec_func option; (* code to duplicate a semantic value *)
-  del                   : spec_func option; (* code to clean up a semantic value *)
+  semantic		: 'semantic list; (* semantic actions and type *)
 } with sexp
 
 (* something that only appears on the right-hand side of
@@ -35,7 +61,7 @@ type symbol_base = {
  * for several different tokens to be classified into the same
  * terminal class (e.g. "foo" and "bar" are both identifiers) *)
 type terminal = {
-  tbase                 : symbol_base;
+  tbase                 : term_semantic symbol_base;
 
   (* --- representation --- *)
   (* whereas 'name' is the canonical name for the terminal class,
@@ -52,8 +78,6 @@ type terminal = {
   (* if, in the above scenario, the precedence values are the same,
    * then the associativity kind will be used to decide which to use *)
   associativity         : Assoc.kind;
-  (* code to reclassify a token type *)
-  classify              : spec_func option;
   (* terminal class index - this terminal's id; -1 means unassigned *)
   term_index            : Ids.Terminal.t;
 } with sexp
@@ -61,12 +85,9 @@ type terminal = {
 (* something that can appear on the left-hand side of a production
  * (or, empty_nonterminal, since we classify that as a nonterminal also) *)
 type nonterminal = {
-  nbase                 : symbol_base;
+  nbase                 : nonterm_semantic symbol_base;
 
   (* --- representation --- *)
-  merge                 : spec_func option; (* code to resolve ambiguities *)
-  keep                  : spec_func option; (* code to decide whether to keep a reduction *)
-
   maximal               : bool; (* if true, use maximal munch disambiguation *)
 
   subset_names          : string list; (* preferred subsets (for scannerless) *)
@@ -139,21 +160,12 @@ type grammar = {
 } with sexp
 
 
-let empty_symbol_base = {
-  name      = "";
-  semtype   = None;
-  dup       = None;
-  del       = None;
-}
-
-
 let empty_terminal = {
-  tbase         = empty_symbol_base;
+  tbase         = { name = ""; semantic = []; };
 
   alias         = "";
   precedence    = 0;
   associativity = Assoc.AK_NONASSOC;
-  classify      = None;
   term_index    = Ids.Terminal.default;
 }
 
@@ -165,22 +177,19 @@ let empty_terminal = {
  * motivated by things like the derivability relation, where it's
  * nice to treat empty like any other symbol *)
 let empty_nonterminal = {
-  nbase    = { empty_symbol_base with name = "empty" };
+  nbase    	= { name = "empty"; semantic = []; };
 
-  merge    = None;
-  keep     = None;
+  maximal  	= false;
 
-  maximal  = false;
+  subset_names 	= [];
 
-  subset_names = [];
-
-  first    = TerminalSet.empty;
-  follow   = TerminalSet.empty;
+  first    	= TerminalSet.empty;
+  follow   	= TerminalSet.empty;
   (* empty has an index of 0; all other nonterminals must have indices >= 1 *)
-  nt_index = Ids.Nonterminal.default;
-  cyclic   = false;
-  subsets  = [];
-  superset = None;
+  nt_index 	= Ids.Nonterminal.default;
+  cyclic   	= false;
+  subsets  	= [];
+  superset 	= None;
 }
 
 

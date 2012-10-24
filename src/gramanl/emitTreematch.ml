@@ -21,7 +21,7 @@ let ctyp_of_nonterminal nonterms nonterm =
 let ctyp_of_terminal terms term =
   let term = TermArray.get terms term in
   (* use the terminal type *)
-  match term.tbase.semtype with
+  match Semantic.semtype_of_term term with
   | None ->
       failwith "tagged terminals must have a declared type"
   | Some ty ->
@@ -43,11 +43,12 @@ let ctyp_of_right_symbol index head_tail =
 let production_types index term_mods left has_merge prods =
   let add_term_mod = function
     | Terminal (tag, term_index) ->
-        begin match TermArray.get index.terms term_index with
-        | { tbase = { name; semtype = Some semtype; } } ->
+        let term = TermArray.get index.terms term_index in
+        begin match Semantic.semtype_of_term term with
+        | Some semtype ->
             assert (tag <> "");
-            if not (Hashtbl.mem term_mods name) then
-              Hashtbl.add term_mods name (CamlAst.string_of_ctyp semtype)
+            if not (Hashtbl.mem term_mods term.tbase.name) then
+              Hashtbl.add term_mods term.tbase.name (CamlAst.string_of_ctyp semtype)
         | _ -> ()
         end
     | _ -> ()
@@ -141,7 +142,7 @@ let make_ml_treematch reachable index prods_by_lhs =
             if not (NtSet.mem reachable first.left) then
               bindings
             else
-              let has_merge = nonterm.merge != None in
+              let has_merge = Semantic.merge_of_nonterm nonterm != None in
               let types = production_types index term_mods name has_merge prods in
               types :: bindings
           )

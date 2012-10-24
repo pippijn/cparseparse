@@ -18,7 +18,7 @@ let make_ml_token_type terms =
       <:ctyp<$uid:term.tbase.name$>>
     in
 
-    match term.tbase.semtype with
+    match Semantic.semtype_of_term term with
     | None    -> semtype
     | Some ty -> <:ctyp<$semtype$ of $ty$>>
   ) terms
@@ -35,7 +35,7 @@ let make_ml_token_fn ?default value terms =
         assert (is_uid name);
 
         let patt =
-          match term.tbase.semtype with
+          match Semantic.semtype_of_term term with
           | None   -> <:patt<$uid:name$>>
           | Some _ -> <:patt<$uid:name$ sval>>
         in
@@ -92,7 +92,7 @@ let make_ml_tokens terms =
 
   let sval_fn =
     make_ml_token_fn (fun term ->
-      match term.tbase.semtype with
+      match Semantic.semtype_of_term term with
       | None   -> raise Exit
       | Some _ -> <:expr<SemanticValue.repr sval>>
     ) terms ~default:<:match_case<tok -> SemanticValue.null>>

@@ -25,7 +25,7 @@ let polytype sym =
 
 
 let semtype sym =
-  match sym.semtype with
+  match Semantic.semtype_of_symbol sym with
   | None ->
       polytype sym
   | Some semtype ->
@@ -35,8 +35,8 @@ let semtype sym =
 let final_semtype nonterms final_prod =
   match final_prod.right with
   | Nonterminal (_, nt_index) :: _ ->
-      let { nbase = { semtype } } = NtArray.get nonterms nt_index in
-      begin match semtype with
+      let nonterm = NtArray.get nonterms nt_index in
+      begin match Semantic.semtype_of_nonterm nonterm with
       | None ->
           failwith "final nonterminal needs defined type"
       | Some <:ctyp<'$_$>> ->
@@ -248,15 +248,15 @@ let make_ml_dup_del_merge terms nonterms =
 
   [
     (* ------------------- dup/del/merge/keep nonterminals ------------------ *)
-    make_nonterm "dup"   "duplicateNontermValue"  (fun nonterm -> nonterm.nbase.dup) (None);
-    make_nonterm "del"   "deallocateNontermValue" (fun nonterm -> nonterm.nbase.del) (Some <:ctyp<unit>>);
-    make_nonterm "merge" "mergeAlternativeParses" (fun nonterm -> nonterm.merge)     (None);
-    make_nonterm "keep"  "keepNontermValue"       (fun nonterm -> nonterm.keep)      (Some <:ctyp<bool>>);
+    make_nonterm "dup"   "duplicateNontermValue"   Semantic.dup_of_nonterm   (None);
+    make_nonterm "del"   "deallocateNontermValue"  Semantic.del_of_nonterm   (Some <:ctyp<unit>>);
+    make_nonterm "merge" "mergeAlternativeParses"  Semantic.merge_of_nonterm (None);
+    make_nonterm "keep"  "keepNontermValue"        Semantic.keep_of_nonterm  (Some <:ctyp<bool>>);
 
     (* ------------------- dup/del/classify terminals ------------------ *)
-    make_term "dup"      "duplicateTerminalValue"  (fun term -> term.tbase.dup) (None);
-    make_term "del"      "deallocateTerminalValue" (fun term -> term.tbase.del) (Some <:ctyp<unit>>);
-    make_term "classify" "reclassifyToken"         (fun term -> term.classify)  (Some <:ctyp<int>>);
+    make_term "dup"      "duplicateTerminalValue"  Semantic.dup_of_term 	(None);
+    make_term "del"      "deallocateTerminalValue" Semantic.del_of_term      (Some <:ctyp<unit>>);
+    make_term "classify" "reclassifyToken"         Semantic.classify_of_term (Some <:ctyp<int>>);
   ]
 
 

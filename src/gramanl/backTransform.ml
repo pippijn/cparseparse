@@ -69,12 +69,12 @@ let ast_of_env env variant =
   let types =
     TermArray.fold_left (fun types term ->
       let specfuncs = [
-        "dup", term.tbase.dup;
-        "del", term.tbase.del;
-        "classify", term.classify;
+        "dup", Semantic.dup_of_symbol term.tbase;
+        "del", Semantic.del_of_symbol term.tbase;
+        "classify", Semantic.classify_of_term term;
       ] in
 
-      match term.tbase.semtype with
+      match Semantic.semtype_of_term term with
       | None ->
           types
       | Some semtype -> 
@@ -103,16 +103,18 @@ let ast_of_env env variant =
       in
 
       let specfuncs = [
-        "dup", nonterm.nbase.dup;
-        "del", nonterm.nbase.del;
-        "merge", nonterm.merge;
-        "keep", nonterm.keep;
+        "dup", Semantic.dup_of_symbol nonterm.nbase;
+        "del", Semantic.del_of_symbol nonterm.nbase;
+        "merge", Semantic.merge_of_nonterm nonterm;
+        "keep", Semantic.keep_of_nonterm nonterm;
       ] in
+
+      let semtype = Semantic.semtype_of_nonterm nonterm in
 
       let nt =
         TF_nonterm (
           nonterm.nbase.name,
-          BatOption.map CamlAst.string_of_ctyp nonterm.nbase.semtype,
+          BatOption.map CamlAst.string_of_ctyp semtype,
           List.fold_left specfunc_of_spec_func [] specfuncs,
           prods,
           (*TODO: subsets*)[]
