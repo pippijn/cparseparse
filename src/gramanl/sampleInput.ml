@@ -144,11 +144,10 @@ let generate terms nonterms prods prods_by_lhs state =
 
 
 let sample_input terms nonterms prods prods_by_lhs state =
-  let open GrammarType in
-
   try
     generate terms nonterms prods prods_by_lhs state
-    |> List.map GrammarUtil.name_of_terminal
+    |> List.rev_map (TermArray.get terms)
+    |> List.rev_map GrammarUtil.name_of_terminal
     |> String.concat " "
 
   with Failure msg ->
@@ -157,5 +156,5 @@ let sample_input terms nonterms prods prods_by_lhs state =
 
 let left_context terms nonterms state =
   left_context terms nonterms [] state
-  |> List.map (GrammarUtil.name_of_symbol nonterms)
+  |> List.map (GrammarUtil.name_of_symbol terms nonterms)
   |> String.concat " "

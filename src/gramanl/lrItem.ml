@@ -65,7 +65,7 @@ let first_includes nonterms sym t =
        * statically decidable), so this generalisation might not be
        * useful after all *)
       let nonterm = NtArray.get nonterms nonterm in
-      TerminalSet.mem t.term_index nonterm.first
+      TerminalSet.mem t nonterm.first
 
 
 let is_extending_shift prods nonterms item nonterm term =

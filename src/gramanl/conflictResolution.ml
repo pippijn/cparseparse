@@ -8,7 +8,7 @@ type decision = {
 }
 
 
-let print_actions nonterms shift_dest reductions =
+let print_actions terms nonterms shift_dest reductions =
   begin match shift_dest with
   | Some shift_dest ->
       Printf.printf "      | shift, and move to state %a\n" StateId.State.print shift_dest.state_id
@@ -17,21 +17,21 @@ let print_actions nonterms shift_dest reductions =
 
   List.iter (fun prod ->
     print_string "      | reduce by rule ";
-    PrintGrammar.print_production nonterms prod;
+    PrintGrammar.print_production terms nonterms prod;
     print_newline ();
   ) reductions
 
 
 (* decide what to do, and return the result in the first
  * two tuple members, keep_shift and keep_reduce *)
-let handle_shift_reduce_conflict prods nonterms state prod sym decision =
+let handle_shift_reduce_conflict index state prod sym decision =
   let open GrammarType in
 
   if Options._trace_prec () then (
     Printf.printf "    in state %a, S/R conflict on token %s with production "
       StateId.State.print state.state_id
       sym.tbase.name;
-    PrintGrammar.print_production nonterms prod;
+    PrintGrammar.print_production index.terms index.nonterms prod;
     print_newline ();
   );
 
@@ -41,18 +41,18 @@ let handle_shift_reduce_conflict prods nonterms state prod sym decision =
     let rec loop super maximal =
       match super.superset with
       | Some superset when not maximal ->
-          let superset = NtArray.get nonterms superset in
+          let superset = NtArray.get index.nonterms superset in
           loop superset superset.maximal
       | _ ->
           super, maximal
     in
 
-    let left = NtArray.get nonterms prod.left in
+    let left = NtArray.get index.nonterms prod.left in
     let super, maximal = loop left left.maximal in
 
     (* see if this reduction can be removed due to a 'maximal' spec;
      * in particular, is the shift going to extend 'super'? *)
-    maximal && ItemSet.has_extending_shift prods nonterms state super.nt_index sym
+    maximal && ItemSet.has_extending_shift index.prods index.nonterms state super.nt_index sym.term_index
   in
 
   (* scannerless *)
@@ -120,7 +120,7 @@ let handle_shift_reduce_conflict prods nonterms state prod sym decision =
 
 
 (* static disambiguation for S/R conflicts *)
-let disambiguate_shift_reduce_conflict prods nonterms state sym shift_dest reductions suppressed_warnings =
+let disambiguate_shift_reduce_conflict index state sym shift_dest reductions suppressed_warnings =
   match shift_dest with
   | Some _ ->
       (* we have (at least) a shift/reduce conflict, which is the
@@ -129,7 +129,7 @@ let disambiguate_shift_reduce_conflict prods nonterms state sym shift_dest reduc
        * even when there are R/R conflicts present too *)
       List.fold_left (fun (shift_dest, reductions) prod ->
         let { keep_shift; keep_reduce; warn; } =
-          handle_shift_reduce_conflict prods nonterms state prod sym { keep_shift = true; keep_reduce = true; warn = true; }
+          handle_shift_reduce_conflict index state prod sym { keep_shift = true; keep_reduce = true; warn = true; }
         in
 
         if not warn then
@@ -214,12 +214,14 @@ let actions shift_dest reductions =
   (if BatOption.is_some shift_dest then 1 else 0) + List.length reductions
 
 
-let try_resolve_conflicts prods nonterms state sym shift_dest reductions allow_ambig sr rr =
+let try_resolve_conflicts index state sym shift_dest reductions allow_ambig sr rr =
+  let open GrammarType in
+
   (* count how many warning suppressions we have *)
   let suppressed_warnings = ref 0 in
 
   let shift_dest, reductions =
-    disambiguate_shift_reduce_conflict prods nonterms state sym shift_dest reductions suppressed_warnings
+    disambiguate_shift_reduce_conflict index state sym shift_dest reductions suppressed_warnings
   in
 
   (* static disambiguation for R/R conflicts *)
@@ -242,7 +244,7 @@ let try_resolve_conflicts prods nonterms state sym shift_dest reductions allow_a
             Printf.printf "in state %a, R/R conflict on token %s, removed production "
               StateId.State.print state.state_id
               sym.tbase.name;
-            PrintGrammar.print_production nonterms prod;
+            PrintGrammar.print_production index.terms index.nonterms prod;
             Printf.printf " because %d < %d\n"
               prod.prec
               highest_prec;
@@ -260,7 +262,7 @@ let try_resolve_conflicts prods nonterms state sym shift_dest reductions allow_a
     if List.length reductions = 1 then (
       reductions
     ) else (
-      subset_directive_resolution nonterms state sym reductions
+      subset_directive_resolution index.nonterms state sym reductions
     )
   in
 
@@ -283,7 +285,7 @@ let try_resolve_conflicts prods nonterms state sym shift_dest reductions allow_a
     if Options._trace_conflict () then (
       let open GrammarType in
       Printf.printf "    conflict for symbol %s\n" sym.tbase.name;
-      print_actions nonterms shift_dest reductions;
+      print_actions index.terms index.nonterms shift_dest reductions;
     );
   );
 
@@ -312,8 +314,7 @@ let try_resolve_conflicts prods nonterms state sym shift_dest reductions allow_a
 (* given some potential parse actions, apply available disambiguation
  * to remove some of them; print warnings about conflicts, in some
  * situations *)
-let resolve_conflicts prods (* indexed array of productions *)
-		      nonterms (* indexed array of nonterminals *)
+let resolve_conflicts index (* indexed grammar structure arrays *)
 		      state (* parse state in which the actions are possible *)
                       sym (* lookahead symbol for these actions *)
                       shift_dest (* (option) the state to which we can shift *)
@@ -326,7 +327,7 @@ let resolve_conflicts prods (* indexed array of productions *)
       let open GrammarType in
       print_string "%%% before conflict resolution";
       Printf.printf " (on token %s):\n" sym.tbase.name;
-      print_actions nonterms shift_dest reductions;
+      print_actions index.terms index.nonterms shift_dest reductions;
     );
   );
 
@@ -334,5 +335,5 @@ let resolve_conflicts prods (* indexed array of productions *)
     (* no conflict *)
     shift_dest, reductions
   ) else (
-    try_resolve_conflicts prods nonterms state sym shift_dest reductions allow_ambig sr rr
+    try_resolve_conflicts index state sym shift_dest reductions allow_ambig sr rr
   )

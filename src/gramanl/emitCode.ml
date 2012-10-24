@@ -20,10 +20,10 @@ let emit_tokens name terms =
   OCamlPrinter.print_implem ~output_file:out impl
 
 
-let emit_parse_tree name reachable nonterms prods prods_by_lhs =
+let emit_parse_tree name reachable index prods_by_lhs =
   (* Parse Tree *)
   let out = name ^ "Ptree.ml" in
-  let impl = EmitPtree.make_ml_parse_tree reachable nonterms prods prods_by_lhs in
+  let impl = EmitPtree.make_ml_parse_tree reachable index prods_by_lhs in
 
   OCamlPrinter.print_implem ~output_file:out impl;
   (* TODO: with sexp *)
@@ -54,16 +54,13 @@ let emit_symbol_names name terms nonterms =
   OCamlPrinter.print_implem ~output_file:out impl
 
 
-let emit_user_actions name prefix terms nonterms prods final_prod verbatims impl_verbatims =
+let emit_user_actions name prefix index final_prod verbatims impl_verbatims =
   (* Actions *)
   let dcl = name ^ prefix ^ "Actions.mli" in
   let out = name ^ prefix ^ "Actions.ml" in
   let intf, impl =
     EmitActions.make_ml_action_code
-      terms
-      nonterms
-      prods
-      final_prod verbatims impl_verbatims
+      index final_prod verbatims impl_verbatims
   in
 
   OCamlPrinter.print_interf ~output_file:dcl intf;
@@ -106,12 +103,16 @@ let emit_ml dirname index prods_by_lhs variants reachable tables =
   let name = dirname ^ "/" ^ String.lowercase (Options._module_prefix ()) in
 
   emit_tokens name index.terms;
-  emit_parse_tree name reachable index.nonterms index.prods prods_by_lhs;
+  emit_parse_tree name reachable index prods_by_lhs;
   emit_treematch name reachable index prods_by_lhs;
   emit_symbol_names name index.terms index.nonterms;
 
   List.iter (fun { prefix; verbatims; impl_verbatims; variant_nonterms; variant_prods } ->
-    emit_user_actions name prefix index.terms variant_nonterms variant_prods final_prod verbatims impl_verbatims
+    let variant_index = { index with
+      nonterms = variant_nonterms;
+      prods = variant_prods;
+    } in
+    emit_user_actions name prefix variant_index final_prod verbatims impl_verbatims
   ) variants;
 
   emit_tables name tables

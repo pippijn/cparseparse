@@ -1,8 +1,8 @@
 open AnalysisEnvType
 
 
-let name_of_symbol_opt nonterms = function
-  | Some sym -> GrammarUtil.name_of_symbol nonterms sym
+let name_of_symbol_opt terms nonterms = function
+  | Some sym -> GrammarUtil.name_of_symbol terms nonterms sym
   | None -> "None"
 
 
@@ -29,13 +29,15 @@ let compare_by_outgoing syms foldl_untili get transition a b =
   ) 0 syms
 
 
-let compare_by_reductions prods nonterms terms a b =
+let compare_by_reductions index a b =
+  let open GrammarType in
+
   TermArray.foldl_until (fun term ->
-    let red_a = List.sort compare (ItemSet.possible_reductions prods nonterms a term) in
-    let red_b = List.sort compare (ItemSet.possible_reductions prods nonterms b term) in
+    let red_a = List.sort compare (ItemSet.possible_reductions index a term) in
+    let red_b = List.sort compare (ItemSet.possible_reductions index b term) in
 
     compare red_a red_b
-  ) 0 terms
+  ) 0 index.terms
 
 
 let renumber_states_compare env a b =
@@ -64,17 +66,17 @@ let renumber_states_compare env a b =
     (* next: nonterminals *)
     |<> lazy (compare_by_outgoing env.index.nonterms NtArray.foldl_untili NtArray.get (fun is -> is.nonterm_transition) a b)
     (* finally, order by possible reductions *)
-    |<> lazy (compare_by_reductions env.index.prods env.index.nonterms env.index.terms a b)
+    |<> lazy (compare_by_reductions env.index a b)
   in
 
   if Options._trace_renumbering () then (
     if arbitrary_order then (
       Printf.printf "%a[%s] %s %a[%s]\n"
         StateId.State.print a.state_id
-        (name_of_symbol_opt env.index.nonterms a.state_symbol)
+        (name_of_symbol_opt env.index.terms env.index.nonterms a.state_symbol)
         (ordering_operator order)
         StateId.State.print b.state_id
-        (name_of_symbol_opt env.index.nonterms b.state_symbol);
+        (name_of_symbol_opt env.index.terms env.index.nonterms b.state_symbol);
       PrintAnalysisEnv.print_item_set env a;
       PrintAnalysisEnv.print_item_set env b;
     );

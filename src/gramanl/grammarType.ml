@@ -85,7 +85,7 @@ type symbol =
   (* tags are applied to the symbols for purposes of unambiguous naming
    * in actions, and for self-commenting value as role indicators; an
    * empty tag ("") is allowed and means there is no tag *)
-  | Terminal    of (* tag: *)string * terminal
+  | Terminal    of (* tag: *)string * StateId.Terminal.t
   | Nonterminal of (* tag: *)string * StateId.Nonterminal.t
   with sexp
 

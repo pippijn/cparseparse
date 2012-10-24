@@ -26,7 +26,7 @@ let compute_bfs_tree env states =
   let all_symbols =
     let open GrammarType in
     IntegralIndexedArray.append
-      (TermArray.map (fun term -> Terminal ("", term)) env.index.terms)
+      (TermArray.map (fun term -> Terminal ("", term.term_index)) env.index.terms)
       (NtArray.map (fun nonterm -> Nonterminal ("", nonterm.nt_index)) env.index.nonterms)
   in
 

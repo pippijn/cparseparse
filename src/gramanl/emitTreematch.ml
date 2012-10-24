@@ -18,7 +18,8 @@ let ctyp_of_nonterminal nonterms nonterm =
   typ
 
 
-let ctyp_of_terminal term =
+let ctyp_of_terminal terms term =
+  let term = TermArray.get terms term in
   (* use the terminal type *)
   match term.tbase.semtype with
   | None ->
@@ -29,7 +30,7 @@ let ctyp_of_terminal term =
 
 let ctyp_of_symbol index = function
   | Nonterminal (_, nonterm) -> ctyp_of_nonterminal index.nonterms nonterm
-  | Terminal    (_,    term) -> ctyp_of_terminal term
+  | Terminal    (_,    term) -> ctyp_of_terminal index.terms term
 
 
 let ctyp_of_right_symbol index head_tail =
@@ -41,10 +42,14 @@ let ctyp_of_right_symbol index head_tail =
  * also needs to change *)
 let production_types index term_mods left has_merge prods =
   let add_term_mod = function
-    | Terminal (tag, { tbase = { name; semtype = Some semtype; } }) ->
-        assert (tag <> "");
-        if not (Hashtbl.mem term_mods name) then
-          Hashtbl.add term_mods name (CamlAst.string_of_ctyp semtype)
+    | Terminal (tag, term_index) ->
+        begin match TermArray.get index.terms term_index with
+        | { tbase = { name; semtype = Some semtype; } } ->
+            assert (tag <> "");
+            if not (Hashtbl.mem term_mods name) then
+              Hashtbl.add term_mods name (CamlAst.string_of_ctyp semtype)
+        | _ -> ()
+        end
     | _ -> ()
   in
 

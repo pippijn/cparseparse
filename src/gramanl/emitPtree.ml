@@ -18,7 +18,8 @@ let ctyp_of_nonterminal nonterms nonterm =
   <:ctyp<$uid:typ$.t>>
 
 
-let ctyp_of_terminal term =
+let ctyp_of_terminal terms term =
+  let term = TermArray.get terms term in
   (* use the terminal type *)
   match term.tbase.semtype with
   | None ->
@@ -27,19 +28,19 @@ let ctyp_of_terminal term =
       ty
 
 
-let ctyp_of_symbol nonterms = function
+let ctyp_of_symbol terms nonterms = function
   | Nonterminal (_, nonterm) -> ctyp_of_nonterminal nonterms nonterm
-  | Terminal    (_,    term) -> ctyp_of_terminal term
+  | Terminal    (_,    term) -> ctyp_of_terminal terms term
 
 
-let ctyp_of_right_symbol nonterms head_tail =
+let ctyp_of_right_symbol terms nonterms head_tail =
   PtreeMaker.right_symbol head_tail
-  |> ctyp_of_symbol nonterms
+  |> ctyp_of_symbol terms nonterms
 
 
 (* XXX: if this function changes its output, PtreeMaker.prods probably
  * also needs to change *)
-let production_types nonterms has_merge prods =
+let production_types terms nonterms has_merge prods =
   let merge_types =
     if has_merge then
       [ <:ctyp<Merge of t * t>> ]
@@ -51,17 +52,17 @@ let production_types nonterms has_merge prods =
   (* nonterminal with a single production that is a tagged symbol
    * (and there is no merge) *)
   | [prod] when PtreeMaker.is_singleton_nonterminal prod && not has_merge ->
-      let semtype = ctyp_of_right_symbol nonterms prod in
+      let semtype = ctyp_of_right_symbol terms nonterms prod in
       <:sig_item<type t = ($semtype$)>>,
       <:str_item<type t = ($semtype$)>>
 
   | [tail; head_tail] when PtreeMaker.is_list_nonterminal tail head_tail && not has_merge ->
-      let semtype = ctyp_of_right_symbol nonterms head_tail in
+      let semtype = ctyp_of_right_symbol terms nonterms head_tail in
       <:sig_item<type t = ($semtype$ list)>>,
       <:str_item<type t = ($semtype$ list)>>
 
   | [none; some] when PtreeMaker.is_option_nonterminal none some && not has_merge ->
-      let semtype = ctyp_of_right_symbol nonterms some in
+      let semtype = ctyp_of_right_symbol terms nonterms some in
       <:sig_item<type t = ($semtype$ option)>>,
       <:str_item<type t = ($semtype$ option)>>
 
@@ -74,7 +75,7 @@ let production_types nonterms has_merge prods =
         List.map (fun prod ->
           if false then (
             print_string "    (*";
-            PrintGrammar.print_production nonterms prod;
+            PrintGrammar.print_production terms nonterms prod;
             print_endline " *)";
           );
 
@@ -88,7 +89,7 @@ let production_types nonterms has_merge prods =
                   []
 
               | sym ->
-                  [ctyp_of_symbol nonterms sym]
+                  [ctyp_of_symbol terms nonterms sym]
 
             ) prod.right
             |> List.concat
@@ -116,16 +117,16 @@ let production_types nonterms has_merge prods =
       <:str_item<type t = $types$ | SEXP>>
 
 
-let make_ml_parse_tree reachable nonterms prods prods_by_lhs =
+let make_ml_parse_tree reachable index prods_by_lhs =
   let types =
     NtArray.fold_right (fun indices types ->
-      match List.map (ProdArray.get prods) indices with
+      match List.map (ProdArray.get index.prods) indices with
       | [] ->
           (* the empty nonterminal has no productions *)
           types
 
       | first :: _ as prods ->
-          let nonterm = NtArray.get nonterms first.left in
+          let nonterm = NtArray.get index.nonterms first.left in
           let name = nonterm.nbase.name in
           if name.[0] = '_' then
             (* we do not emit code for the synthesised start rule *)
@@ -140,7 +141,9 @@ let make_ml_parse_tree reachable nonterms prods prods_by_lhs =
             ) else (
               let has_merge = nonterm.merge != None in
 
-              let intf_types, impl_types = production_types nonterms has_merge prods in
+              let intf_types, impl_types =
+                production_types index.terms index.nonterms has_merge prods
+              in
 
               (name, intf_types, impl_types) :: types
             )

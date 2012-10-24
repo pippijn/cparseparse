@@ -8,14 +8,17 @@ let name_of_terminal { tbase = { name }; alias } =
     name
 
 
-let name_of_nonterminal nonterms nt_index =
-  let { nbase = { name } } = NtArray.get nonterms nt_index in
+let name_of_nonterminal { nbase = { name } } =
   name
 
 
-let name_of_symbol nonterms = function
-  | Nonterminal (_, nonterm) -> name_of_nonterminal nonterms nonterm
-  | Terminal (_, term) -> name_of_terminal term
+let name_of_symbol terms nonterms = function
+  | Nonterminal (_, nt_index) ->
+      let nonterm = NtArray.get nonterms nt_index in
+      name_of_nonterminal nonterm
+  | Terminal (_, term_index) ->
+      let term = TermArray.get terms term_index in
+      name_of_terminal term
 
 
 let tag_of_symbol = function
@@ -48,7 +51,7 @@ let compare_symbol a b =
 
   (* order by id within terms/nonterms *)
   | Some (Terminal (_, term_a)), Some (Terminal (_, term_b)) ->
-      StateId.Terminal.compare term_a.term_index term_b.term_index
+      StateId.Terminal.compare term_a term_b
   | Some (Nonterminal (_, nonterm_a)), Some (Nonterminal (_, nonterm_b)) ->
       StateId.Nonterminal.compare nonterm_a nonterm_b
 

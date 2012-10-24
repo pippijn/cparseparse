@@ -13,14 +13,15 @@ let (|>) = BatPervasives.(|>)
 let proddecl_of_prod index prod =
   let rhs =
     List.map (function
-      | Terminal (tag, { alias }) when alias <> "" ->
-          RH_string (tag, alias)
+      | Terminal (tag, term_index) ->
+          let { alias; tbase = { name } } = TermArray.get index.terms term_index in
+          if alias <> "" then
+            RH_string (tag, alias)
+          else
+            RH_name (tag, name)
 
       | Nonterminal (tag, nt_index) ->
           let { nbase = { name } } = NtArray.get index.nonterms nt_index in
-          RH_name (tag, name)
-
-      | Terminal (tag, { tbase = { name } }) ->
           RH_name (tag, name)
 
       (* TODO: RH_prec, RH_forbid *)

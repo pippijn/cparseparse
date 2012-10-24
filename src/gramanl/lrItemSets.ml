@@ -61,7 +61,7 @@ let production_closure env finished worklist item b prod_index =
 
   if Options._trace_closure () then (
     print_string "    considering production ";
-    PrintGrammar.print_production env.index.nonterms prod;
+    PrintGrammar.print_production env.index.terms env.index.nonterms prod;
     print_newline ();
   );
 
@@ -88,7 +88,7 @@ let production_closure env finished worklist item b prod_index =
     if beta.can_derive_empty then (
       if Options._trace_closure () then (
         print_string "      beta: ";
-        PrintAnalysisEnv.print_dotted_production env.index.prods env.index.nonterms beta;
+        PrintAnalysisEnv.print_dotted_production env.index beta;
         print_newline ();
         print_endline "      beta can derive empty";
       );
@@ -339,7 +339,7 @@ let merge_state env item_set sym in_done_list already dot_moved_items =
     if Options._trace_lrsets () then (
       Printf.printf "from state %a, found that the transition on %s yielded a state similar to %a, but with different lookahead\n"
         StateId.State.print item_set.state_id
-        (GrammarUtil.name_of_symbol env.env.index.nonterms sym)
+        (GrammarUtil.name_of_symbol env.env.index.terms env.env.index.nonterms sym)
         StateId.State.print already.state_id
     );
 

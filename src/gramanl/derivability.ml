@@ -135,7 +135,7 @@ let add_derivable_nonterminal env left right_nonterm after_right_sym =
 let add_derivable_relations env changes =
   ProdArray.iter (fun prod ->
     if Options._trace_derivable () then (
-      PrintGrammar.print_production env.index.nonterms prod;
+      PrintGrammar.print_production env.index.terms env.index.nonterms prod;
       print_newline ();
     );
 

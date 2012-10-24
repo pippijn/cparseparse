@@ -9,7 +9,7 @@ let first_of_sequence derivable nonterms seq =
       match sym with
       (* LHS -> x alpha   means x is in First(LHS) *)
       | Terminal (_, term) ->
-          let dest = TerminalSet.add term.term_index dest in
+          let dest = TerminalSet.add term dest in
 
           (* stop considering RHS members since a terminal
            * effectively "hides" all further symbols from First *)
@@ -62,7 +62,7 @@ let rec compute_first derivable index =
           print_string " to ";
           print_string lhs.nbase.name;
           print_string " because of ";
-          PrintGrammar.print_production index.nonterms prod;
+          PrintGrammar.print_production index.terms index.nonterms prod;
           print_newline ();
         );
 
@@ -110,7 +110,7 @@ let compute_dprod_first derivable dotted_prods index =
       dprod.can_derive_empty <- Derivability.can_sequence_derive_empty derivable right;
 
       if Options._trace_first () then (
-        PrintAnalysisEnv.print_dotted_production ~terms:index.terms index.prods index.nonterms dprod;
+        PrintAnalysisEnv.print_dotted_production index dprod;
 
         if dprod.can_derive_empty then
           print_endline " - can derive empty"

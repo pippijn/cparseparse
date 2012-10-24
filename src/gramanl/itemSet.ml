@@ -52,7 +52,7 @@ module Graph = Graph.Persistent.Digraph.ConcreteLabeled(M)(M)
 
 let transition_for_term item_set term =
   let open GrammarType in
-  TermArray.get item_set.term_transition term.term_index
+  TermArray.get item_set.term_transition term
 
 let transition_for_nonterm item_set nonterm =
   let open GrammarType in
@@ -67,7 +67,7 @@ let transition item_set sym =
 
 let set_transition_for_term from_set term to_set =
   let open GrammarType in
-  TermArray.set from_set.term_transition term.term_index (Some to_set)
+  TermArray.set from_set.term_transition term (Some to_set)
 
 let set_transition_for_nonterm from_set nonterm to_set =
   let open GrammarType in
@@ -94,7 +94,7 @@ let has_extending_shift prods nonterms item_set nonterm term =
  * :: Yield possible reductions on terminal 'lookahead'
  ************************************************************)
 
-let possible_reductions prods nonterms item_set lookahead =
+let possible_reductions index item_set lookahead =
   let open GrammarType in
   List.fold_left (fun reductions item ->
     if Options._use_LR0 () then (
@@ -103,15 +103,15 @@ let possible_reductions prods nonterms item_set lookahead =
 
     ) else if Options._use_SLR1 () then (
       (* the follow of its LHS must include 'lookahead' *)
-      let prod = ProdArray.get prods item.dprod.prod in
-      let left = NtArray.get nonterms prod.left in
+      let prod = ProdArray.get index.prods item.dprod.prod in
+      let left = NtArray.get index.nonterms prod.left in
       if TerminalSet.mem lookahead.term_index left.follow then
         prod :: reductions
       else (
         if Options._trace_reductions () then (
           Printf.printf "state %a, not reducing by "
             StateId.State.print item_set.state_id;
-          PrintGrammar.print_production nonterms prod;
+          PrintGrammar.print_production index.terms index.nonterms prod;
           Printf.printf " because %s is not in follow of %s\n"
             lookahead.tbase.name
             left.nbase.name;
@@ -121,12 +121,12 @@ let possible_reductions prods nonterms item_set lookahead =
 
     ) else if Options._use_LALR1 () || Options._use_LR1 () then (
       (* the item's lookahead must include 'lookahead' *)
-      let prod = ProdArray.get prods item.dprod.prod in
+      let prod = ProdArray.get index.prods item.dprod.prod in
       if TerminalSet.mem lookahead.term_index item.lookahead then (
         if Options._trace_reductions () then (
           Printf.printf "state %a, reducing by "
             StateId.State.print item_set.state_id;
-          PrintGrammar.print_production nonterms prod;
+          PrintGrammar.print_production index.terms index.nonterms prod;
           Printf.printf " because %s is in lookahead\n"
             lookahead.tbase.name;
         );
@@ -135,7 +135,7 @@ let possible_reductions prods nonterms item_set lookahead =
         if Options._trace_reductions () then (
           Printf.printf "state %a, not reducing by "
             StateId.State.print item_set.state_id;
-          PrintGrammar.print_production nonterms prod;
+          PrintGrammar.print_production index.terms index.nonterms prod;
           Printf.printf " because %s is not in lookahead\n"
             lookahead.tbase.name;
         );
@@ -163,15 +163,15 @@ let inverse_transition terms nonterms source target =
   let open GrammarType in
   try
     Terminal ("",
-      TermArray.find (fun term ->
+      BatEnum.find (fun term ->
         eq_option target (transition_for_term source term)
-      ) terms
+      ) (TermArray.range terms)
     )
   with Not_found ->
     Nonterminal ("",
-      (NtArray.find (fun nonterm ->
-        eq_option target (transition_for_nonterm source nonterm.nt_index)
-      ) nonterms).nt_index
+      BatEnum.find (fun nonterm ->
+        eq_option target (transition_for_nonterm source nonterm)
+      ) (NtArray.range nonterms)
     )
 
 

@@ -24,7 +24,7 @@ let rec compute_reachable_dfs nreach treach prods prods_by_lhs nt_index =
             compute_reachable_dfs nreach treach prods prods_by_lhs nonterm
         | Terminal (_, term) ->
             (* just mark terminals *)
-            TermSet.add treach term.term_index
+            TermSet.add treach term
       ) prod.right
     ) (NtArray.get prods_by_lhs nt_index)
   )

@@ -54,38 +54,38 @@ let final_semtype nonterms final_prod =
  ************************************************)
 
 (* ------------------- actions ------------------ *)
-let make_ml_actions nonterms prods =
+let make_ml_actions index =
   (* iterate over productions, emitting action function closures *)
   let closures =
     ProdArray.map (fun prod ->
       (* put the production in comments above the defn *)
       if false then (
         print_string "(*";
-        PrintGrammar.print_production nonterms prod;
+        PrintGrammar.print_production index.terms index.nonterms prod;
         print_endline " *)";
       );
 
-      let make_binding tag index sym =
+      let make_binding tag rhs_index sym =
         assert (is_lid tag);
         let semtype = semtype sym in
         let polytype = polytype sym in
         if semtype = polytype then
           <:binding<
             $lid:tag$ : $semtype$ =
-              (SemanticValue.obj svals.($int:string_of_int index$))
+              (SemanticValue.obj svals.($int:string_of_int rhs_index$))
           >>
         else
           <:binding<
             (* explicitly state polymorphic type variable so the typing
              * stays sound even when users specify types *)
             $lid:tag$ : $semtype$ =
-              (SemanticValue.obj svals.($int:string_of_int index$) : $polytype$)
+              (SemanticValue.obj svals.($int:string_of_int rhs_index$) : $polytype$)
           >>
       in
 
       (* iterate over RHS elements, emitting bindings for each with a tag *)
       let bindings =
-        BatList.mapi (fun index sym ->
+        BatList.mapi (fun rhs_index sym ->
           match sym with
           | Terminal ("", _)
           | Nonterminal ("", _) ->
@@ -93,11 +93,12 @@ let make_ml_actions nonterms prods =
               []
 
           | Terminal (tag, term) ->
-              [make_binding tag index term.tbase]
+              let term = TermArray.get index.terms term in
+              [make_binding tag rhs_index term.tbase]
 
           | Nonterminal (tag, nonterm) ->
-              let nonterm = NtArray.get nonterms nonterm in
-              [make_binding tag index nonterm.nbase]
+              let nonterm = NtArray.get index.nonterms nonterm in
+              [make_binding tag rhs_index nonterm.nbase]
         ) prod.right
         |> List.concat
       in
@@ -129,7 +130,7 @@ let make_ml_actions nonterms prods =
       (* give a name to the yielded value so we can ensure it conforms to
        * the declared type *)
       let result =
-        let left = NtArray.get nonterms prod.left in
+        let left = NtArray.get index.nonterms prod.left in
         <:expr<
           (* now insert the user's code, to execute in this environment of
            * properly-typed semantic values *)
@@ -142,7 +143,7 @@ let make_ml_actions nonterms prods =
       let fun_body = fold_bindings result bindings in
       
       <:expr<fun svals start_p end_p -> $fun_body$>>
-    ) prods
+    ) index.prods
 
     |> ProdArray.to_list
     |> Ast.exSem_of_list
@@ -259,12 +260,12 @@ let make_ml_dup_del_merge terms nonterms =
   ]
 
 
-let make_ml_action_code terms nonterms prods final_prod verbatims impl_verbatims =
-  let result_type = final_semtype nonterms (ProdArray.get prods final_prod) in
+let make_ml_action_code index final_prod verbatims impl_verbatims =
+  let result_type = final_semtype index.nonterms (ProdArray.get index.prods final_prod) in
 
   let closures =
-    make_ml_actions nonterms prods
-    :: make_ml_dup_del_merge terms nonterms
+    make_ml_actions index
+    :: make_ml_dup_del_merge index.terms index.nonterms
     |> Ast.rbSem_of_list
   in
 

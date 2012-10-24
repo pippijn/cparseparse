@@ -33,9 +33,10 @@ let print_terminal_set ?(out=stdout) ?(abbreviate=true) ?(name=".") terms set =
   output_string out " }"
 
 
-let print_dotted_production ?(out=stdout) ?terms prods nonterms dprod =
-  let prod = ProdArray.get prods dprod.prod in
-  let left = NtArray.get nonterms prod.left in
+let print_dotted_production ?(out=stdout) index dprod =
+  let prod = ProdArray.get index.prods dprod.prod in
+  let left = NtArray.get index.nonterms prod.left in
+
   output_string out left.nbase.name;
   output_string out " ->";
   BatList.iteri (fun position rhs ->
@@ -47,7 +48,7 @@ let print_dotted_production ?(out=stdout) ?terms prods nonterms dprod =
     in
     if position = dprod.dot then
       output_string out ".[";
-    PrintGrammar.print_symbol ~out nonterms rhs;
+    PrintGrammar.print_symbol ~out index.terms index.nonterms rhs;
     if after_dot then
       output_string out "]";
   ) prod.right;
@@ -56,15 +57,12 @@ let print_dotted_production ?(out=stdout) ?terms prods nonterms dprod =
     (* dot is at end *)
     output_string out " .";
   
-  match terms with
-  | Some terms ->
-      output_string out "  ";
-      print_terminal_set ~out terms dprod.first_set
-  | None -> ()
+  output_string out "  ";
+  print_terminal_set ~out index.terms dprod.first_set
 
 
 let print_lr_item ?(out=stdout) env item =
-  print_dotted_production ~out env.index.prods env.index.nonterms item.dprod;
+  print_dotted_production ~out env.index item.dprod;
   output_string out "  ";
   print_terminal_set ~out env.index.terms item.lookahead
 
@@ -128,7 +126,7 @@ let print_item_set ?(out=stdout) ?(print_nonkernels=false) env item_set =
   List.iter (fun item ->
     output_string out "  can reduce by ";
     let prod = ProdArray.get env.index.prods item.dprod.prod in
-    PrintGrammar.print_production ~out env.index.nonterms prod;
+    PrintGrammar.print_production ~out env.index.terms env.index.nonterms prod;
     output_string out "\n";
   ) item_set.dots_at_end;
 

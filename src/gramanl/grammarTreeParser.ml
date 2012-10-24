@@ -291,7 +291,7 @@ let collect_production_rhs aliases terminals nonterminals is_synthesised rhs_lis
                 (* whenever we see a terminal, copy its precedence spec to
                  * the production; thus, the last symbol appearing in the
                  * production will be the one that gives the precedence *)
-                Terminal (tag, terminal), terminal.precedence
+                Terminal (tag, terminal.term_index), terminal.precedence
               with Failure _ ->
                 let nonterminal = find_nonterminal name in
                 (* keep old precedence *)
@@ -303,7 +303,7 @@ let collect_production_rhs aliases terminals nonterminals is_synthesised rhs_lis
 
       | RH_string (tag, str) ->
           let term = find_terminal str in
-          { production with right = Terminal (tag, term) :: production.right; prec = term.precedence }
+          { production with right = Terminal (tag, term.term_index) :: production.right; prec = term.precedence }
 
       | RH_prec (tokName) ->
           let { precedence } = find_terminal tokName in
