@@ -64,210 +64,213 @@ let right_symbol head_tail =
   |> List.hd
 
 
-module Make(T : sig
-  val prefix : string
-end) = struct
+let nonterm_type = function
+  | None ->
+      <:ctyp<t>>
+  | Some name ->
+      <:ctyp<$uid:name$.t>>
 
-  let expr_prefix =
-    <:expr<$uid:Options._module_prefix () ^ T.prefix$.Ptree>>
-
-  let nonterm_type = function
-    | None ->
-        <:ctyp<$uid:Options._module_prefix () ^ T.prefix$.Ptree.t>>
-    | Some name ->
-        <:ctyp<$uid:Options._module_prefix () ^ T.prefix$.Ptree.$uid:name$.t>>
-
-  let merge name = function
-    | None -> None
-    | Some { params = [l; r] as params } ->
-        Some {
-          params;
-          code = <:expr<$expr_prefix$.$uid:name$.Merge ($lid:l$, $lid:r$)>>
-        }
-    | _ -> failwith "invalid merge function"
+let merge name = function
+  | None -> []
+  | Some { params = [l; r] as params } ->
+      [`SEM_MERGE {
+        params;
+        code = <:expr<$uid:name$.Merge ($lid:l$, $lid:r$)>>
+      }]
+  | _ ->
+      failwith "invalid merge function"
 
 
-  let nonterminal reachable nonterm =
-    let is_reachable = NtSet.mem reachable nonterm.nt_index in
+let nonterminal reachable nonterm =
+  let is_reachable = NtSet.mem reachable nonterm.nt_index in
 
-    let semtype =
-      if not is_reachable then
-        <:ctyp<unit>>
-      else if Ids.Nonterminal.is_start nonterm.nt_index then
-        (* synthesised start symbol *)
-        nonterm_type None
-      else
-        nonterm_type (Some nonterm.nbase.name)
-    in
-    { nonterm with
-      nbase = { nonterm.nbase with
-        semtype = Some semtype;
-        (* most function become trivial *)
-        dup = None;
-        del = None;
-      };
-      keep = None;
-      (* merge creates a merge node *)
-      merge = (if not is_reachable then None else merge nonterm.nbase.name nonterm.merge);
-    }
+  let semtype =
+    if not is_reachable then
+      <:ctyp<unit>>
+    else if Ids.Nonterminal.is_start nonterm.nt_index then
+      (* synthesised start symbol *)
+      nonterm_type None
+    else
+      nonterm_type (Some nonterm.nbase.name)
+  in
 
+  let merge =
+    (* merge creates a merge node *)
+    if not is_reachable then
+      []
+    else
+      merge nonterm.nbase.name (Semantic.merge_of_nonterm nonterm)
+  in
 
-  let nonterms reachable nonterms =
-    NtArray.map (nonterminal reachable) nonterms
-
-
-  let check_noname nonterms prod =
-    match prod.prod_name with
-    | None -> ()
-    | Some name ->
-        let left = NtArray.get nonterms prod.left in
-        failwith (
-          "uselessly defined production name \"" ^ name ^ "\"" ^
-          " in nonterminal \"" ^ left.nbase.name ^ "\"")
+  { nonterm with
+    nbase = { nonterm.nbase with
+      semantic = `SEM_TYPE semtype :: merge;
+    };
+  }
 
 
-  let map_prods nonterms reachable has_merge prods =
-    match prods with
-    | [prod] when is_singleton_nonterminal prod && not has_merge ->
-        check_noname nonterms prod;
-
-        let tag =
-          symbols_of_production prod
-          |> List.hd
-          |> GrammarUtil.tag_of_symbol
-        in
-        let action =
-          <:expr<$lid:tag$>>
-        in
-
-        [{ prod with action = Some action }]
-
-    | [tail; head_tail] when is_list_nonterminal tail head_tail && not has_merge ->
-        check_noname nonterms tail;
-        check_noname nonterms head_tail;
-        begin match symbols_of_production tail, symbols_of_production head_tail with
-        (* possibly empty list *)
-        | [], [head2; tail2] ->
-            let head2_tag = GrammarUtil.tag_of_symbol head2 in
-            let tail2_tag = GrammarUtil.tag_of_symbol tail2 in
-            [
-              { tail with action = Some <:expr<[]>> };
-              { head_tail with action = Some <:expr<$lid:tail2_tag$ :: $lid:head2_tag$>> };
-            ]
-        (* non-empty list *)
-        | [tail1], [head2; tail2] ->
-            let tail1_tag = GrammarUtil.tag_of_symbol tail1 in
-            let head2_tag = GrammarUtil.tag_of_symbol head2 in
-            let tail2_tag = GrammarUtil.tag_of_symbol tail2 in
-            [
-              { tail with action = Some <:expr<[$lid:tail1_tag$]>> };
-              { head_tail with action = Some <:expr<$lid:tail2_tag$ :: $lid:head2_tag$>> };
-            ]
-
-        | _ -> failwith "error in is_list_nonterminal"
-        end
-
-    | [none; some] when is_option_nonterminal none some && not has_merge ->
-        begin match symbols_of_production some with
-        | [some_sym] ->
-            let some_tag = GrammarUtil.tag_of_symbol some_sym in
-            [
-              { none with action = Some <:expr<None>> };
-              { some with action = Some <:expr<Some $lid:some_tag$>> };
-            ]
-
-        | _ -> failwith "error in is_option_nonterminal"
-        end
-
-    | [none; some] when is_boolean_nonterminal none some && not has_merge ->
-        [
-          { none with action = Some <:expr<false>> };
-          { some with action = Some <:expr<true>> };
-        ]
-
-    | prods ->
-        List.map (fun prod ->
-          let action =
-            (* production 0 is the synthesised start symbol *)
-            if Ids.Production.is_start prod.prod_index then (
-              <:expr<top>>
-            ) else (
-              let prod_name =
-                match prod.prod_name with
-                | None      -> "P" ^ Ids.Production.to_string prod.prod_index
-                | Some name -> assert (name <> ""); name
-              in
-
-              let prod_variant =
-                let left = NtArray.get nonterms prod.left in
-                <:expr<$expr_prefix$.$uid:left.nbase.name$.$uid:prod_name$>>
-              in
-
-              let args =
-                List.fold_left (fun args -> function
-                  | Nonterminal ("", _)
-                  | Terminal ("", _) ->
-                      (* nothing to do for untagged symbols *)
-                      args
-
-                  | Nonterminal (tag, _)
-                  | Terminal (tag, _) ->
-                      <:expr<$lid:tag$>> :: args
-                ) [ <:expr<(start_p, end_p)>> ] prod.right
-                |> List.rev
-              in
-
-              List.fold_left (fun ctor arg ->
-                <:expr<$ctor$ $arg$>>
-              ) prod_variant args
-            )
-          in
-
-          { prod with action = Some action; }
-        ) prods
+let nonterms reachable nonterms =
+  NtArray.map (nonterminal reachable) nonterms
 
 
-  let unit_prods nonterms =
-    List.map (fun prod ->
+let check_noname nonterms prod =
+  match prod.prod_name with
+  | None -> ()
+  | Some name ->
+      let left = NtArray.get nonterms prod.left in
+      failwith (
+        "uselessly defined production name \"" ^ name ^ "\"" ^
+        " in nonterminal \"" ^ left.nbase.name ^ "\"")
+
+
+let map_prods nonterms reachable has_merge prods =
+  match prods with
+  | [prod] when is_singleton_nonterminal prod && not has_merge ->
       check_noname nonterms prod;
-      { prod with action = Some <:expr<()>> }
-    )
 
+      let tag =
+        symbols_of_production prod
+        |> List.hd
+        |> GrammarUtil.tag_of_symbol
+      in
+      let action =
+        <:expr<$lid:tag$>>
+      in
 
-  (* XXX: if this function changes its output, EmitPtree.production_types probably
-   * also needs to change *)
-  let prods reachable nonterms prods_by_lhs prods =
-    let prods_by_lhs =
-      NtArray.map (fun indices ->
-        let prods = List.map (ProdArray.get prods) indices in
+      [{ prod with action = Some action }]
 
-        let is_reachable =
-          match prods with
-          | { left } :: _ -> NtSet.mem reachable left
-          | _ -> false
+  | [tail; head_tail] when is_list_nonterminal tail head_tail && not has_merge ->
+      check_noname nonterms tail;
+      check_noname nonterms head_tail;
+      begin match symbols_of_production tail, symbols_of_production head_tail with
+      (* possibly empty list *)
+      | [], [head2; tail2] ->
+          let head2_tag = GrammarUtil.tag_of_symbol head2 in
+          let tail2_tag = GrammarUtil.tag_of_symbol tail2 in
+          [
+            { tail with action = Some <:expr<[]>> };
+            { head_tail with action = Some <:expr<$lid:tail2_tag$ :: $lid:head2_tag$>> };
+          ]
+      (* non-empty list *)
+      | [tail1], [head2; tail2] ->
+          let tail1_tag = GrammarUtil.tag_of_symbol tail1 in
+          let head2_tag = GrammarUtil.tag_of_symbol head2 in
+          let tail2_tag = GrammarUtil.tag_of_symbol tail2 in
+          [
+            { tail with action = Some <:expr<[$lid:tail1_tag$]>> };
+            { head_tail with action = Some <:expr<$lid:tail2_tag$ :: $lid:head2_tag$>> };
+          ]
+
+      | _ -> failwith "error in is_list_nonterminal"
+      end
+
+  | [none; some] when is_option_nonterminal none some && not has_merge ->
+      begin match symbols_of_production some with
+      | [some_sym] ->
+          let some_tag = GrammarUtil.tag_of_symbol some_sym in
+          [
+            { none with action = Some <:expr<None>> };
+            { some with action = Some <:expr<Some $lid:some_tag$>> };
+          ]
+
+      | _ -> failwith "error in is_option_nonterminal"
+      end
+
+  | [none; some] when is_boolean_nonterminal none some && not has_merge ->
+      [
+        { none with action = Some <:expr<false>> };
+        { some with action = Some <:expr<true>> };
+      ]
+
+  | prods ->
+      List.map (fun prod ->
+        let action =
+          (* production 0 is the synthesised start symbol *)
+          if Ids.Production.is_start prod.prod_index then (
+            <:expr<top>>
+          ) else (
+            let prod_name =
+              match prod.prod_name with
+              | None      -> "P" ^ Ids.Production.to_string prod.prod_index
+              | Some name -> assert (name <> ""); name
+            in
+
+            let prod_variant =
+              let left = NtArray.get nonterms prod.left in
+              <:expr<$uid:left.nbase.name$.$uid:prod_name$>>
+            in
+
+            let args =
+              List.fold_left (fun args -> function
+                | Nonterminal ("", _)
+                | Terminal ("", _) ->
+                    (* nothing to do for untagged symbols *)
+                    args
+
+                | Nonterminal (tag, _)
+                | Terminal (tag, _) ->
+                    <:expr<$lid:tag$>> :: args
+              ) [ <:expr<(start_p, end_p)>> ] prod.right
+              |> List.rev
+            in
+
+            List.fold_left (fun ctor arg ->
+              <:expr<$ctor$ $arg$>>
+            ) prod_variant args
+          )
         in
 
-        let has_merge =
-          match prods with
-          | { left } :: _ ->
-              let left = NtArray.get nonterms left in
-              left.merge != None
-          | _ ->
-              false
-        in
+        { prod with action = Some action; }
+      ) prods
 
-        if is_reachable then
-          map_prods nonterms reachable has_merge prods
-        else
-          unit_prods nonterms prods
-      ) prods_by_lhs
-    in
 
-    (* make a new indexed prods *)
-    let prod_count = NtArray.sum (List.length) prods_by_lhs in
-    let prods = ProdArray.make prod_count empty_production in
-    NtArray.iter (List.iter (fun prod -> ProdArray.set prods prod.prod_index prod)) prods_by_lhs;
+let unit_prods nonterms =
+  List.map (fun prod ->
+    check_noname nonterms prod;
+    { prod with action = Some <:expr<()>> }
+  )
 
-    ProdArray.readonly prods
 
-end
+(* XXX: if this function changes its output, EmitPtree.production_types probably
+ * also needs to change *)
+let prods reachable nonterms prods_by_lhs prods =
+  let prods_by_lhs =
+    NtArray.map (fun indices ->
+      let prods = List.map (ProdArray.get prods) indices in
+
+      let is_reachable =
+        match prods with
+        | { left } :: _ -> NtSet.mem reachable left
+        | _ -> false
+      in
+
+      let has_merge =
+        match prods with
+        | { left } :: _ ->
+            let left = NtArray.get nonterms left in
+            Semantic.merge_of_nonterm left != None
+        | _ ->
+            false
+      in
+
+      if is_reachable then
+        map_prods nonterms reachable has_merge prods
+      else
+        unit_prods nonterms prods
+    ) prods_by_lhs
+  in
+
+  (* make a new indexed prods *)
+  let prod_count = NtArray.sum (List.length) prods_by_lhs in
+  let prods = ProdArray.make prod_count empty_production in
+  NtArray.iter (List.iter (fun prod -> ProdArray.set prods prod.prod_index prod)) prods_by_lhs;
+
+  ProdArray.readonly prods
+
+
+let verbatims prefix =
+  [ <:sig_item< open $uid:Options._module_prefix () ^ prefix$.Ptree >> ]
+
+
+let impl_verbatims prefix =
+  [ <:str_item< open $uid:Options._module_prefix () ^ prefix$.Ptree >> ]

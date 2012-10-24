@@ -226,19 +226,13 @@ let init_env grammar =
   let reachable = Reachability.compute_reachable_tagged indexed_prods prods_by_lhs in
 
   let transform prefix =
-    let module Transform =
-      PtreeMaker.Make(struct
-        let prefix = prefix
-      end)
-    in
-
     {
       prefix;
-      variant_nonterms = Transform.nonterms reachable indexed_nonterms;
-      variant_prods    = Transform.prods    reachable indexed_nonterms prods_by_lhs indexed_prods;
+      variant_nonterms = PtreeMaker.nonterms reachable indexed_nonterms;
+      variant_prods    = PtreeMaker.prods    reachable indexed_nonterms prods_by_lhs indexed_prods;
       (* drop verbatim sections *)
-      verbatims = [];
-      impl_verbatims = [];
+      verbatims = PtreeMaker.verbatims prefix;
+      impl_verbatims = PtreeMaker.impl_verbatims prefix;
     }
   in
   (* construct parse tree variants *)
