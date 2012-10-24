@@ -98,7 +98,7 @@ let emit_tables name tables =
 let emit_ml dirname index prods_by_lhs variants reachable tables =
   let open AnalysisEnvType in
 
-  let final_prod = StateId.Production.of_int tables.ParseTablesType.finalProductionIndex in
+  let final_prod = Ids.Production.of_int tables.ParseTablesType.finalProductionIndex in
 
   let name = dirname ^ "/" ^ String.lowercase (Options._module_prefix ()) in
 

@@ -9,13 +9,13 @@ module M : GrammarSig.S with type t = terminal = struct
   type t = terminal
 
   let hash a =
-    StateId.Terminal.hash a.term_index
+    Ids.Terminal.hash a.term_index
 
   let compare a b =
-    StateId.Terminal.compare a.term_index b.term_index
+    Ids.Terminal.compare a.term_index b.term_index
 
   let equal a b =
-    StateId.Terminal.equal a.term_index b.term_index
+    Ids.Terminal.equal a.term_index b.term_index
 
   let stats _ = failwith "Not supported"
   let reset _ = failwith "Not supported"

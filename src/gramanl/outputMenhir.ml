@@ -104,7 +104,7 @@ let output_grammar ~file env =
   TermArray.iter (output_token out) env.index.terms;
   output_string out "\n";
   output_precs out env.index.terms;
-  let first = NtArray.get env.index.nonterms StateId.Nonterminal.start in
+  let first = NtArray.get env.index.nonterms Ids.Nonterminal.start in
   Printf.fprintf out "\n%%start<int> %s\n\n" first.nbase.name;
   output_string out "%%\n\n";
   NtArray.iter (output_nonterm out env.index) env.prods_by_lhs;

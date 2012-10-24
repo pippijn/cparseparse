@@ -26,7 +26,7 @@ module M : GrammarSig.S with type t = dotted_production = struct
 
   let default = {
     dprod_id = -1;
-    prod = StateId.Production.default;
+    prod = Ids.Production.default;
     dot = -1;
     after_dot = None;
     first_set = TerminalSet.empty;

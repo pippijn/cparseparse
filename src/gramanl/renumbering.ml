@@ -24,7 +24,7 @@ let compare_by_outgoing syms foldl_untili get transition a b =
     | None, Some _ -> 1
     | Some _, None -> -1
     | Some dest_a, Some dest_b ->
-        StateId.State.compare dest_a.state_id dest_b.state_id
+        Ids.State.compare dest_a.state_id dest_b.state_id
     | _ -> 0
   ) 0 syms
 
@@ -72,10 +72,10 @@ let renumber_states_compare env a b =
   if Options._trace_renumbering () then (
     if arbitrary_order then (
       Printf.printf "%a[%s] %s %a[%s]\n"
-        StateId.State.print a.state_id
+        Ids.State.print a.state_id
         (name_of_symbol_opt env.index.terms env.index.nonterms a.state_symbol)
         (ordering_operator order)
-        StateId.State.print b.state_id
+        Ids.State.print b.state_id
         (name_of_symbol_opt env.index.terms env.index.nonterms b.state_symbol);
       PrintAnalysisEnv.print_item_set env a;
       PrintAnalysisEnv.print_item_set env b;
@@ -85,9 +85,9 @@ let renumber_states_compare env a b =
   (* validate invariants *)
   if a != b then (
     assert (order <> 0);
-    if StateId.State.is_start a.state_id then
+    if Ids.State.is_start a.state_id then
       assert (order < 0);
-    if StateId.State.is_start b.state_id then
+    if Ids.State.is_start b.state_id then
       assert (order > 0);
   ) else (
     assert (order = 0);
@@ -109,11 +109,11 @@ let renumber_states env states =
   BatList.iteri (fun i state ->
     if i = 0 then (
       (* the first element should always be the start state *)
-      assert (StateId.State.is_start state.state_id);
+      assert (Ids.State.is_start state.state_id);
       assert (BatOption.get env.start_state == state);
     );
 
-    state.state_id <- StateId.State.of_int i;
+    state.state_id <- Ids.State.of_int i;
   ) states;
 
   if false then (

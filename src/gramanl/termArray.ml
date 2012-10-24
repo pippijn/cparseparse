@@ -1,1 +1,1 @@
-include IntegralIndexedArray.Make(StateId.Terminal)
+include IntegralIndexedArray.Make(Ids.Terminal)

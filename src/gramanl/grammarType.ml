@@ -55,7 +55,7 @@ type terminal = {
   (* code to reclassify a token type *)
   classify              : spec_func option;
   (* terminal class index - this terminal's id; -1 means unassigned *)
-  term_index            : StateId.Terminal.t;
+  term_index            : Ids.Terminal.t;
 } with sexp
 
 (* something that can appear on the left-hand side of a production
@@ -74,10 +74,10 @@ type nonterminal = {
   (* --- annotation --- *)
   mutable first         : TerminalSet.t; (* set of terminals that can be start of a string derived from 'this' *)
   mutable follow        : TerminalSet.t; (* set of terminals that can follow a string derived from 'this' *)
-  nt_index              : StateId.Nonterminal.t; (* nonterminal index in indexed_nonterminals for grammar analysis *)
+  nt_index              : Ids.Nonterminal.t; (* nonterminal index in indexed_nonterminals for grammar analysis *)
   mutable cyclic        : bool; (* true if this can derive itself in 1 or more steps *)
-  mutable subsets       : StateId.Nonterminal.t list; (* resolved subsets *)
-  mutable superset      : StateId.Nonterminal.t option; (* inverse of 'subsets' *)
+  mutable subsets       : Ids.Nonterminal.t list; (* resolved subsets *)
+  mutable superset      : Ids.Nonterminal.t option; (* inverse of 'subsets' *)
 } with sexp
 
 (* either a nonterminal or terminal symbol *)
@@ -85,14 +85,14 @@ type symbol =
   (* tags are applied to the symbols for purposes of unambiguous naming
    * in actions, and for self-commenting value as role indicators; an
    * empty tag ("") is allowed and means there is no tag *)
-  | Terminal    of (* tag: *)string * StateId.Terminal.t
-  | Nonterminal of (* tag: *)string * StateId.Nonterminal.t
+  | Terminal    of (* tag: *)string * Ids.Terminal.t
+  | Nonterminal of (* tag: *)string * Ids.Nonterminal.t
   with sexp
 
 (* a rewrite rule *)
 type production = {
   (* --- representation --- *)
-  left                  : StateId.Nonterminal.t; (* left hand side *)
+  left                  : Ids.Nonterminal.t; (* left hand side *)
   right                 : symbol list; (* right hand side; terminals & nonterminals *)
   prec                  : int; (* precedence level for disambiguation (0 for none specified) *)
   forbid                : TerminalSet.t; (* forbidden next tokens *)
@@ -102,7 +102,7 @@ type production = {
 
   (* --- annotation --- *)
   mutable first_rhs     : TerminalSet.t; (* First(RHS) *)
-  mutable prod_index    : StateId.Production.t; (* unique production id *)
+  mutable prod_index    : Ids.Production.t; (* unique production id *)
 } with sexp
 
 type config = {
@@ -154,7 +154,7 @@ let empty_terminal = {
   precedence    = 0;
   associativity = Assoc.AK_NONASSOC;
   classify      = None;
-  term_index    = StateId.Terminal.default;
+  term_index    = Ids.Terminal.default;
 }
 
 
@@ -177,7 +177,7 @@ let empty_nonterminal = {
   first    = TerminalSet.empty;
   follow   = TerminalSet.empty;
   (* empty has an index of 0; all other nonterminals must have indices >= 1 *)
-  nt_index = StateId.Nonterminal.default;
+  nt_index = Ids.Nonterminal.default;
   cyclic   = false;
   subsets  = [];
   superset = None;
@@ -185,7 +185,7 @@ let empty_nonterminal = {
 
 
 let empty_production = {
-  left       = StateId.Nonterminal.default;
+  left       = Ids.Nonterminal.default;
   right      = [];
   prec       = 0;
   forbid     = TerminalSet.empty;
@@ -194,7 +194,7 @@ let empty_production = {
   action     = None;
 
   first_rhs  = TerminalSet.empty;
-  prod_index = StateId.Production.default;
+  prod_index = Ids.Production.default;
 }
 
 

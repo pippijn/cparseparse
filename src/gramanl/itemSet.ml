@@ -33,7 +33,7 @@ module M : GrammarSig.S with type t = item_set = struct
     nonterm_transition = NtArray.empty;
     dots_at_end = [];
     state_symbol = None;
-    state_id = StateId.State.default;
+    state_id = Ids.State.default;
     bfs_parent = None;
   }
 
@@ -110,7 +110,7 @@ let possible_reductions index item_set lookahead =
       else (
         if Options._trace_reductions () then (
           Printf.printf "state %a, not reducing by "
-            StateId.State.print item_set.state_id;
+            Ids.State.print item_set.state_id;
           PrintGrammar.print_production index.terms index.nonterms prod;
           Printf.printf " because %s is not in follow of %s\n"
             lookahead.tbase.name
@@ -125,7 +125,7 @@ let possible_reductions index item_set lookahead =
       if TerminalSet.mem lookahead.term_index item.lookahead then (
         if Options._trace_reductions () then (
           Printf.printf "state %a, reducing by "
-            StateId.State.print item_set.state_id;
+            Ids.State.print item_set.state_id;
           PrintGrammar.print_production index.terms index.nonterms prod;
           Printf.printf " because %s is in lookahead\n"
             lookahead.tbase.name;
@@ -134,7 +134,7 @@ let possible_reductions index item_set lookahead =
       ) else (
         if Options._trace_reductions () then (
           Printf.printf "state %a, not reducing by "
-            StateId.State.print item_set.state_id;
+            Ids.State.print item_set.state_id;
           PrintGrammar.print_production index.terms index.nonterms prod;
           Printf.printf " because %s is not in lookahead\n"
             lookahead.tbase.name;
@@ -163,13 +163,13 @@ let inverse_transition last_term last_nonterm source target =
   let open GrammarType in
   try
     Terminal ("",
-      StateId.Terminal.find (fun term_index ->
+      Ids.Terminal.find (fun term_index ->
         eq_option target (transition_for_term source term_index)
       ) last_term
     )
   with Not_found ->
     Nonterminal ("",
-      StateId.Nonterminal.find (fun nt_index ->
+      Ids.Nonterminal.find (fun nt_index ->
         eq_option target (transition_for_nonterm source nt_index)
       ) last_nonterm
     )

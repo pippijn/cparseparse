@@ -51,9 +51,9 @@ let compare_symbol a b =
 
   (* order by id within terms/nonterms *)
   | Some (Terminal (_, term_a)), Some (Terminal (_, term_b)) ->
-      StateId.Terminal.compare term_a term_b
+      Ids.Terminal.compare term_a term_b
   | Some (Nonterminal (_, nonterm_a)), Some (Nonterminal (_, nonterm_b)) ->
-      StateId.Nonterminal.compare nonterm_a nonterm_b
+      Ids.Nonterminal.compare nonterm_a nonterm_b
 
 
 let rhs_has_nonterm prod nonterm =

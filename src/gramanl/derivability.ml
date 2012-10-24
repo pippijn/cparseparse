@@ -70,7 +70,7 @@ let initial_derivable_relation nonterm_count =
   for i = 0 to nonterm_count - 1 do
     (* every nonterminal can derive itself in 0 or more steps
      * (specifically, in 0 steps, at least) *)
-    let i = StateId.Nonterminal.of_int i in
+    let i = Ids.Nonterminal.of_int i in
     Derivable.set derivable i i
   done;
 
@@ -193,14 +193,14 @@ let compute_derivability_closure env changes =
   let nonterm_count = NtArray.length env.index.nonterms in
   (* for each node u (except empty) *)
   for u = 1 to nonterm_count - 1 do
-    let u = StateId.Nonterminal.of_int u in
+    let u = Ids.Nonterminal.of_int u in
     (* for each edge (u,v) where u != v *)
     for v = 0 to nonterm_count - 1 do
-      let v = StateId.Nonterminal.of_int v in
+      let v = Ids.Nonterminal.of_int v in
       if u <> v && can_derive_i env.derivable u v then
         (* for each edge (v,w) where v != w *)
         for w = 0 to nonterm_count - 1 do
-          let w = StateId.Nonterminal.of_int w in
+          let w = Ids.Nonterminal.of_int w in
           if v <> w && can_derive_i env.derivable v w then
             (* add an edge (u,w), if there isn't one already *)
             if add_derivable_i env u w then (

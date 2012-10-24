@@ -18,7 +18,7 @@ let compute_indexed_nonterms nonterms =
   let indexed = NtArray.make (StringMap.cardinal nonterms + 1) empty_nonterminal in
 
   (* indexed.(0) is empty_nonterminal *)
-  assert (StateId.Nonterminal.is_empty empty_nonterminal.nt_index);
+  assert (Ids.Nonterminal.is_empty empty_nonterminal.nt_index);
 
   StringMap.iter (fun _ nonterm ->
     (* the ids have already been assigned *)
@@ -28,7 +28,7 @@ let compute_indexed_nonterms nonterms =
     if existing != empty_nonterminal then (
       Printf.printf "%s has the same index (%a) as %s\n"
         existing.nbase.name
-        StateId.Nonterminal.print i
+        Ids.Nonterminal.print i
         nonterm.nbase.name
     );
     assert (existing == empty_nonterminal);
@@ -41,11 +41,11 @@ let compute_indexed_nonterms nonterms =
     assert (nonterm.nt_index == nt_index);
 
     (* "empty" must be the first nonterminal *)
-    if StateId.Nonterminal.is_empty nonterm.nt_index then
+    if Ids.Nonterminal.is_empty nonterm.nt_index then
       assert (nonterm == empty_nonterminal)
 
     (* the synthesised start symbol must follow *)
-    else if StateId.Nonterminal.is_start nonterm.nt_index then
+    else if Ids.Nonterminal.is_start nonterm.nt_index then
       assert (nonterm.nbase.name == GrammarTreeParser.start_name)
 
     (* any other nonterminals must not be empty *)
@@ -84,7 +84,7 @@ let compute_indexed_prods productions nonterm_count =
 
   (* fill in both maps *)
   BatList.iteri (fun i production ->
-    let prod_index = StateId.Production.of_int i in
+    let prod_index = Ids.Production.of_int i in
     let nt_index = production.left in
 
     begin

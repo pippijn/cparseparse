@@ -1,6 +1,6 @@
 open Sexplib.Conv
 
-module Derivable = Bit2d.Make(StateId.Nonterminal)
+module Derivable = Bit2d.Make(Ids.Nonterminal)
 
 
 (************************************************************
@@ -13,7 +13,7 @@ module Derivable = Bit2d.Make(StateId.Nonterminal)
  * (exactly which part of the input depends on where this appears
  * in the algorithm's data structures) *)
 type dotted_production = {
-  prod                          : StateId.Production.t; (* the base production *)
+  prod                          : Ids.Production.t; (* the base production *)
   dot                           : int; (* 0 means it's before all RHS symbols, 1 means after first, etc. *)
 
   (* performance optimization: None if dot at end, or else pointer
@@ -104,7 +104,7 @@ type item_set = {
 
   (* numerical state id, should be unique among item sets
    * in a particular grammar's sets *)
-  mutable state_id              : StateId.State.t;
+  mutable state_id              : Ids.State.t;
 
   (* it's useful to have a BFS tree superimposed on the transition
    * graph; for example, it makes it easy to generate sample inputs
@@ -134,7 +134,7 @@ type env = {
   index                         : GrammarType.index;
 
   (* start nonterminal symbol *)
-  start_nt			: StateId.Nonterminal.t;
+  start_nt			: Ids.Nonterminal.t;
 
   (* nonterminals reachable via tags *)
   reachable			: Sig.readonly NtSet.t;
@@ -144,7 +144,7 @@ type env = {
    * symbol on the LHS; so let's index produtions by LHS symbol index;
    * this array maps each nonterminal to the list of productions with
    * that nonterminal on the LHS *)
-  prods_by_lhs                  : (StateId.Production.t list, Sig.readonly) NtArray.t;
+  prods_by_lhs                  : (Ids.Production.t list, Sig.readonly) NtArray.t;
 
   (* map of production x dot_position -> dotted_production;
    * each element of the 'dotted_prods' array is a pointer to an

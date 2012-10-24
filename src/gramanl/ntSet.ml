@@ -1,1 +1,1 @@
-include BitSet.Make(StateId.Nonterminal)
+include BitSet.Make(Ids.Nonterminal)

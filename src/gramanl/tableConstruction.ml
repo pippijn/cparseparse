@@ -1,6 +1,6 @@
 open AnalysisEnvType
 
-module NonterminalSet = BitSet.Make(StateId.Nonterminal)
+module NonterminalSet = BitSet.Make(Ids.Nonterminal)
 
 let (--) = BatPervasives.(--)
 
@@ -25,7 +25,7 @@ let rec topological_sort nonterms (* number of nonterminals in the grammar *)
 
     (* look at all nonterminals this one can derive *)
     let next_ordinal =
-      StateId.Nonterminal.fold_left (fun next_ordinal nt ->
+      Ids.Nonterminal.fold_left (fun next_ordinal nt ->
         if Derivability.can_derive_i derivable nt current then
           (* 'nt' can derive 'current'; expand 'nt' first, thus making
            * it later in the order, so we'll reduce to 'current' before
@@ -96,8 +96,8 @@ let encode_ambig tables state terminal shift_dest reductions =
     | Some shift_dest ->
         if Options._trace_table () then (
           Printf.printf " [shift token %a, to state %a"
-            StateId.Terminal.print terminal.term_index
-            StateId.State.print shift_dest.state_id;
+            Ids.Terminal.print terminal.term_index
+            Ids.State.print shift_dest.state_id;
         );
         [TableEncoding.encode_shift tables shift_dest.state_id terminal.term_index]
     | None ->
@@ -108,7 +108,7 @@ let encode_ambig tables state terminal shift_dest reductions =
     List.map (fun prod ->
       if Options._trace_table () then (
         Printf.printf "; reduce by %a"
-          StateId.Production.print prod.prod_index;
+          Ids.Production.print prod.prod_index;
       );
       TableEncoding.encode_reduce tables prod.prod_index state.state_id
     ) reductions
@@ -129,8 +129,8 @@ let encode_shift tables terminal shift_dest =
 
   if Options._trace_table () then (
     Printf.printf "(unambig) shift token %a, to state %a"
-      StateId.Terminal.print terminal.term_index
-      StateId.State.print shift_dest.state_id;
+      Ids.Terminal.print terminal.term_index
+      Ids.State.print shift_dest.state_id;
   );
   TableEncoding.encode_shift tables shift_dest.state_id terminal.term_index
 
@@ -140,7 +140,7 @@ let encode_reduce tables state terminal prod =
 
   if Options._trace_table () then (
     Printf.printf "(unambig) reduce by %a"
-      StateId.Production.print prod.prod_index;
+      Ids.Production.print prod.prod_index;
   );
   TableEncoding.encode_reduce tables prod.prod_index state.state_id
 
@@ -157,8 +157,8 @@ let compute_cell_action tables state shift_dest reductions terminal =
 
   if Options._trace_table () then (
     Printf.printf "state %a, on terminal %a (\"%s\") "
-      StateId.State.print state.state_id
-      StateId.Terminal.print terminal.term_index
+      Ids.State.print state.state_id
+      Ids.Terminal.print terminal.term_index
       terminal.tbase.name;
   );
 
@@ -189,9 +189,9 @@ let encode_symbol_id = let open GrammarType in function
   | None ->
       0
   | Some (Terminal    (_,    term)) ->
-      +(StateId.Terminal.to_int term) + 1
+      +(Ids.Terminal.to_int term) + 1
   | Some (Nonterminal (_, nonterm)) ->
-      -(StateId.Nonterminal.to_int nonterm) - 1
+      -(Ids.Nonterminal.to_int nonterm) - 1
 
 
 let calls = ref 0
@@ -235,7 +235,7 @@ let compute_action_row env tables allow_ambig sr rr state =
     if false then (
       PrintAnalysisEnv.print_item_set env state;
     );
-    Printf.printf "------ state %a ------\n" StateId.State.print state.state_id;
+    Printf.printf "------ state %a ------\n" Ids.State.print state.state_id;
   );
 
   (* ---- fill in this row in the action table ---- *)
@@ -254,7 +254,7 @@ let compute_action_row env tables allow_ambig sr rr state =
   ) env.index.nonterms;
 
   (* get the state symbol *)
-  assert (StateId.State.to_int state.state_id < TableEncoding.num_states tables);
+  assert (Ids.State.to_int state.state_id < TableEncoding.num_states tables);
   TableEncoding.set_state_symbol tables state.state_id (encode_symbol_id state.state_symbol)
 
 

@@ -1,1 +1,1 @@
-include IntegralIndexedArray.Make(StateId.Production)
+include IntegralIndexedArray.Make(Ids.Production)

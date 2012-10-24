@@ -1,7 +1,7 @@
 (* used for the lookahead sets of LR items, and for the First()
  * sets of production RHSs *)
 
-include CompressedBitSet.Make(StateId.Terminal)
+include CompressedBitSet.Make(Ids.Terminal)
 
 let t_of_sexp sexp =
   empty

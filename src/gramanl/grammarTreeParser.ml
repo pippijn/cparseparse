@@ -29,7 +29,7 @@ let synthesise_start_rule topforms =
   in
 
   { topforms with
-    nonterms = StringMap.add start_name (start, StateId.Nonterminal.start) topforms.nonterms
+    nonterms = StringMap.add start_name (start, Ids.Nonterminal.start) topforms.nonterms
   }
 
 
@@ -155,7 +155,7 @@ let collect_terminals decls types precs =
           Assoc.AK_NONASSOC, 0
       in
 
-      let term_index = StateId.Terminal.of_int code in
+      let term_index = Ids.Terminal.of_int code in
 
       let terminal = {
         tbase = {
@@ -174,25 +174,25 @@ let collect_terminals decls types precs =
       let max_index = max max_index term_index in
 
       max_index, StringMap.add name terminal terminals
-    ) (StateId.Terminal.default, StringMap.empty) decls
+    ) (Ids.Terminal.default, StringMap.empty) decls
   in
 
   (* track what terminals have codes *)
-  let module TerminalSet = BitSet.Make(StateId.Terminal) in
+  let module TerminalSet = BitSet.Make(Ids.Terminal) in
   let has_code = TerminalSet.create max_index in
   List.iter (fun (TermDecl (code, _, _)) ->
-    let code = StateId.Terminal.of_int code in
+    let code = Ids.Terminal.of_int code in
     TerminalSet.add has_code code;
   ) decls;
 
   let terminals =
     (* fill in any gaps in the code space; this is required because
      * later analyses assume the terminal code space is dense *)
-    StateId.Terminal.fold_left (fun terminals i ->
+    Ids.Terminal.fold_left (fun terminals i ->
       if TerminalSet.mem has_code i then
         terminals
       else
-        let dummy_name = "Dummy_filler_token" ^ StateId.Terminal.to_string i in
+        let dummy_name = "Dummy_filler_token" ^ Ids.Terminal.to_string i in
         let dummy = { empty_terminal with
           tbase = { empty_symbol_base with
             name = dummy_name;
@@ -274,7 +274,7 @@ let collect_production_rhs aliases terminals nonterminals is_synthesised rhs_lis
         StringMap.find name terminals
     in
 
-    if StateId.Terminal.is_eof terminal.term_index && not is_synthesised then
+    if Ids.Terminal.is_eof terminal.term_index && not is_synthesised then
       failwith "you cannot use the EOF token in your rules";
     terminal
   in
@@ -349,7 +349,7 @@ let collect_productions aliases terminals nonterminals nonterms =
                 left;
                 action;
                 prod_name;
-                prod_index = StateId.Production.of_int next_prod_index;
+                prod_index = Ids.Production.of_int next_prod_index;
               }
               (* deal with RHS elements *)
               |> collect_production_rhs aliases terminals nonterminals is_synthesised rhs

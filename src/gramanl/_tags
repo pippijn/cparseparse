@@ -3,8 +3,8 @@
 "assoc.ml":		syntax_camlp4o, pkg_sexplib.syntax
 "grammarAst.ml":	syntax_camlp4o, pkg_sexplib.syntax
 "grammarType.ml":	syntax_camlp4o, pkg_sexplib.syntax
+"ids.ml":		syntax_camlp4o, pkg_sexplib.syntax
 "merge.ml":		syntax_camlp4o, pkg_sexplib.syntax
-"stateId.ml":		syntax_camlp4o, pkg_sexplib.syntax
 
 # ulex
 "grammarLexer.ml":	syntax_camlp4o

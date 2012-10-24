@@ -93,7 +93,7 @@ end) = struct
     let semtype =
       if not is_reachable then
         <:ctyp<unit>>
-      else if StateId.Nonterminal.is_start nonterm.nt_index then
+      else if Ids.Nonterminal.is_start nonterm.nt_index then
         (* synthesised start symbol *)
         nonterm_type None
       else
@@ -189,12 +189,12 @@ end) = struct
         List.map (fun prod ->
           let action =
             (* production 0 is the synthesised start symbol *)
-            if StateId.Production.is_start prod.prod_index then (
+            if Ids.Production.is_start prod.prod_index then (
               <:expr<top>>
             ) else (
               let prod_name =
                 match prod.prod_name with
-                | None      -> "P" ^ StateId.Production.to_string prod.prod_index
+                | None      -> "P" ^ Ids.Production.to_string prod.prod_index
                 | Some name -> assert (name <> ""); name
               in
 

@@ -1,1 +1,1 @@
-include IntegralIndexedArray.Make(StateId.Nonterminal)
+include IntegralIndexedArray.Make(Ids.Nonterminal)

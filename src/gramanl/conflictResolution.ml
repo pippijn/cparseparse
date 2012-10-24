@@ -11,7 +11,7 @@ type decision = {
 let print_actions terms nonterms shift_dest reductions =
   begin match shift_dest with
   | Some shift_dest ->
-      Printf.printf "      | shift, and move to state %a\n" StateId.State.print shift_dest.state_id
+      Printf.printf "      | shift, and move to state %a\n" Ids.State.print shift_dest.state_id
   | None -> ()
   end;
 
@@ -29,7 +29,7 @@ let handle_shift_reduce_conflict index state prod sym decision =
 
   if Options._trace_prec () then (
     Printf.printf "    in state %a, S/R conflict on token %s with production "
-      StateId.State.print state.state_id
+      Ids.State.print state.state_id
       sym.tbase.name;
     PrintGrammar.print_production index.terms index.nonterms prod;
     print_newline ();
@@ -109,7 +109,7 @@ let handle_shift_reduce_conflict index state prod sym decision =
         failwith (Printf.sprintf "token %s was declared 'prec', but it is involved in an associativity conflict with \"%s\" in state %a\n"
           sym.tbase.name
           (* TODO *)"prod"
-          StateId.State.sprint state.state_id)
+          Ids.State.sprint state.state_id)
     | AK_SPLIT ->
         if Options._trace_prec () then (
           print_endline "      => will SPLIT because user asked to";
@@ -161,7 +161,7 @@ let disambiguate_shift_reduce_conflict index state sym shift_dest reductions sup
 let subset_directive_resolution nonterms state sym reductions =
   let open GrammarType in
 
-  let module NonterminalSet = CompressedBitSet.Make(StateId.Nonterminal) in
+  let module NonterminalSet = CompressedBitSet.Make(Ids.Nonterminal) in
 
   (* make a map of which nonterminals appear on the LHS of one
    * of the reductions, and has a superset *)
@@ -190,7 +190,7 @@ let subset_directive_resolution nonterms state sym reductions =
             if Options._trace_prec () then (
               let sub = NtArray.get nonterms sub in
               Printf.printf "in state %a, R/R conflict on token %s, removed production yielding %s, because another yields subset %s\n"
-                StateId.State.print state.state_id
+                Ids.State.print state.state_id
                 sym.tbase.name
                 left.nbase.name
                 sub.nbase.name;
@@ -242,7 +242,7 @@ let try_resolve_conflicts index state sym shift_dest reductions allow_ambig sr r
         if prod.prec <> 0 && prod.prec < highest_prec then (
           if Options._trace_prec () then (
             Printf.printf "in state %a, R/R conflict on token %s, removed production "
-              StateId.State.print state.state_id
+              Ids.State.print state.state_id
               sym.tbase.name;
             PrintGrammar.print_production index.terms index.nonterms prod;
             Printf.printf " because %d < %d\n"

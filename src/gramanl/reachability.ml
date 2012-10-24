@@ -40,11 +40,11 @@ let compute_reachable terms prods prods_by_lhs start =
   compute_reachable_dfs nreach treach prods prods_by_lhs start;
 
   (* the empty and start symbol are reachable *)
-  NtSet.add nreach StateId.Nonterminal.empty;
-  NtSet.add nreach StateId.Nonterminal.start;
+  NtSet.add nreach Ids.Nonterminal.empty;
+  NtSet.add nreach Ids.Nonterminal.start;
 
   (* the EOF token is reachable *)
-  TermSet.add treach StateId.Terminal.eof;
+  TermSet.add treach Ids.Terminal.eof;
 
   NtSet.readonly nreach,
   TermSet.readonly treach
@@ -82,6 +82,6 @@ let compute_reachable_tagged prods prods_by_lhs =
 
   (* do a DFS on the grammar, marking things reachable as
    * they're encountered *)
-  compute_reachable_tagged_dfs reachable prods prods_by_lhs StateId.Nonterminal.start;
+  compute_reachable_tagged_dfs reachable prods prods_by_lhs Ids.Nonterminal.start;
 
   NtSet.readonly reachable

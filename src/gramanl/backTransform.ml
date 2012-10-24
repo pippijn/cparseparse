@@ -63,7 +63,7 @@ let ast_of_env env variant =
   (* after that, the terminals *)
   let decls =
     TermArray.fold_left (fun decls term ->
-      TermDecl (StateId.Terminal.to_int term.term_index, term.tbase.name, term.alias) :: decls
+      TermDecl (Ids.Terminal.to_int term.term_index, term.tbase.name, term.alias) :: decls
     ) [] env.index.terms
   in
   let types =
