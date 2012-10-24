@@ -30,9 +30,6 @@ module Make(T : Sig.IntegralType) = struct
   let length = Array.length
   let last_index array = T.of_int (length array - 1)
 
-  let range array =
-    T.domain (last_index array)
-
   let empty = [||]
   let make = Array.make
   let init l f = Array.init l (fun i -> f (T.of_int i))

@@ -52,7 +52,6 @@ module type IntegralIndexedArrayType = sig
 
   val length : ('a, 'm) t -> int
   val last_index : ('a, 'm) t -> integer
-  val range : ('a, 'm) t -> integer BatEnum.t
 
   val empty : ('a, 'm) t
   val make : int -> 'a -> ('a, 'm) t
