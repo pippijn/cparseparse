@@ -21,7 +21,7 @@ let synthesise_start_rule topforms =
   (* build a start production *)
   let start =
     TF_nonterm ((* name = *)start_name, (* type = *)None, (* funcs = *)[], (* prods = *)[
-      ProdDecl (PDK_NEW, None, [
+      ProdDecl (PDK_NEW, "", [
         RH_name ("top", topforms.first_nonterm);
         RH_name ("", eof);
       ], (* code: *)None)
@@ -388,17 +388,22 @@ let collect_productions aliases terminals nonterminals nonterms =
           (* is this the special start symbol I inserted? *)
           let is_synthesised = name = start_name in
 
-          List.fold_left (fun (productions, next_prod_index) (ProdDecl (kind, prod_name, rhs, action)) ->
-            let action =
-              BatOption.map (CamlAst.expr_of_string _loc) action
+          List.fold_left (fun (productions, next_prod_index) (ProdDecl (kind, name, rhs, action)) ->
+            let semantic =
+              match action with
+              | None -> []
+              | Some action ->
+                  [`SEM_ACTION (CamlAst.expr_of_string _loc action)]
             in
 
             (* build a production *)
             let production =
               { empty_production with
+                pbase = {
+                  name;
+                  semantic;
+                };
                 left;
-                action;
-                prod_name;
                 prod_index = Ids.Production.of_int next_prod_index;
               }
               (* deal with RHS elements *)

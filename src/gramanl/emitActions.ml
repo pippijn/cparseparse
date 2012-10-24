@@ -104,7 +104,7 @@ let make_ml_actions index =
       in
 
       let action_code =
-        match prod.action with
+        match Semantic.action_of_prod prod with
         | None ->
             begin match bindings with
             | [ <:binding<$lid:first_tagged$ = $_$>> ] ->

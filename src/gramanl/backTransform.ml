@@ -29,9 +29,9 @@ let proddecl_of_prod index prod =
     ) prod.right
   in
 
-  let action = BatOption.map CamlAst.string_of_expr prod.action in
+  let action = BatOption.map CamlAst.string_of_expr (Semantic.action_of_prod prod) in
 
-  ProdDecl (PDK_NEW, prod.prod_name, rhs, action)
+  ProdDecl (PDK_NEW, prod.pbase.name, rhs, action)
 
 
 let specfunc_of_spec_func funcs = function

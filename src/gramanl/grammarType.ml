@@ -30,6 +30,8 @@ type semantic = [
   | `SEM_CLASSIFY of spec_func (* code to reclassify a token type *)
   | `SEM_MERGE of spec_func (* code to resolve ambiguities *)
   | `SEM_KEEP of spec_func (* code to decide whether to keep a reduction *)
+
+  | `SEM_ACTION of CamlAst.expr (* user-supplied reduction action code *)
 ]
 
 type term_semantic = [
@@ -47,6 +49,10 @@ type nonterm_semantic = [
   | `SEM_DEL of spec_func
   | `SEM_MERGE of spec_func
   | `SEM_KEEP of spec_func
+] with sexp
+
+type prod_semantic = [
+  | `SEM_ACTION of CamlAst.expr
 ] with sexp
 
 type 'semantic symbol_base = {
@@ -113,13 +119,12 @@ type symbol =
 (* a rewrite rule *)
 type production = {
   (* --- representation --- *)
+  pbase			: prod_semantic symbol_base;
+
   left                  : Ids.Nonterminal.t; (* left hand side *)
   right                 : symbol list; (* right hand side; terminals & nonterminals *)
   prec                  : int; (* precedence level for disambiguation (0 for none specified) *)
   forbid                : TerminalSet.t; (* forbidden next tokens *)
-
-  prod_name		: string option; (* parse tree name for this production *)
-  action                : CamlAst.expr option; (* user-supplied reduction action code *)
 
   (* --- annotation --- *)
   mutable first_rhs     : TerminalSet.t; (* First(RHS) *)
@@ -194,13 +199,12 @@ let empty_nonterminal = {
 
 
 let empty_production = {
+  pbase      = { name = ""; semantic = []; };
+
   left       = Ids.Nonterminal.default;
   right      = [];
   prec       = 0;
   forbid     = TerminalSet.empty;
-            
-  prod_name  = None;
-  action     = None;
 
   first_rhs  = TerminalSet.empty;
   prod_index = Ids.Production.default;

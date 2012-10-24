@@ -76,7 +76,7 @@ let output_production out index prod_index =
     let term = TermArray.find (fun term -> term.precedence = prod.prec) index.terms in
     Printf.fprintf out " %%prec %s" term.tbase.name;
   );
-  match prod.action with
+  match Semantic.action_of_prod prod with
   | None ->
       let tag = GrammarUtil.tag_of_symbol (PtreeMaker.right_symbol prod) in
       Printf.fprintf out "\t{ %s }\n" tag

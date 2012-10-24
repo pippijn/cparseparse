@@ -59,8 +59,8 @@ let print_rhs out = function
       f out " forbid_next (%s)" tokName
 
 let print_prod_name out = function
-  | None -> ()
-  | Some name -> f out " [%s]" name
+  | "" -> ()
+  | name -> f out " [%s]" name
 
 let print_rhs out = function
   | [] ->
@@ -74,11 +74,11 @@ let print_proddecl out = function
       print_rhs out rhs;
       print_prod_name out prod_name;
       print_action_code out actionCode
-  | ProdDecl (PDK_REPLACE, None, rhs, actionCode) ->
+  | ProdDecl (PDK_REPLACE, "", rhs, actionCode) ->
       f out "  replace";
       print_rhs out rhs;
       print_action_code out actionCode
-  | ProdDecl (PDK_DELETE, None, rhs, actionCode) ->
+  | ProdDecl (PDK_DELETE, "", rhs, actionCode) ->
       f out "  delete";
       print_rhs out rhs;
       print_action_code out actionCode

@@ -97,9 +97,9 @@ let production_types terms nonterms has_merge prods =
           in
 
           let prod_name =
-            match prod.prod_name with
-            | None      -> "P" ^ Ids.Production.to_string prod.prod_index
-            | Some name -> assert (is_uid name); name
+            match prod.pbase.name with
+            | ""   -> "P" ^ Ids.Production.to_string prod.prod_index
+            | name -> assert (is_uid name); name
           in
 
           let prod_variant =

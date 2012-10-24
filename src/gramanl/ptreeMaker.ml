@@ -114,13 +114,17 @@ let nonterms reachable nonterms =
 
 
 let check_noname nonterms prod =
-  match prod.prod_name with
-  | None -> ()
-  | Some name ->
+  match prod.pbase.name with
+  | "" -> ()
+  | name ->
       let left = NtArray.get nonterms prod.left in
       failwith (
         "uselessly defined production name \"" ^ name ^ "\"" ^
         " in nonterminal \"" ^ left.nbase.name ^ "\"")
+
+
+let set_action prod action =
+  { prod with pbase = { prod.pbase with semantic = [`SEM_ACTION action] } }
 
 
 let map_prods nonterms reachable has_merge prods =
@@ -137,7 +141,7 @@ let map_prods nonterms reachable has_merge prods =
         <:expr<$lid:tag$>>
       in
 
-      [{ prod with action = Some action }]
+      [set_action prod action]
 
   | [tail; head_tail] when is_list_nonterminal tail head_tail && not has_merge ->
       check_noname nonterms tail;
@@ -148,8 +152,8 @@ let map_prods nonterms reachable has_merge prods =
           let head2_tag = GrammarUtil.tag_of_symbol head2 in
           let tail2_tag = GrammarUtil.tag_of_symbol tail2 in
           [
-            { tail with action = Some <:expr<[]>> };
-            { head_tail with action = Some <:expr<$lid:tail2_tag$ :: $lid:head2_tag$>> };
+            set_action tail <:expr<[]>>;
+            set_action head_tail <:expr<$lid:tail2_tag$ :: $lid:head2_tag$>>;
           ]
       (* non-empty list *)
       | [tail1], [head2; tail2] ->
@@ -157,8 +161,8 @@ let map_prods nonterms reachable has_merge prods =
           let head2_tag = GrammarUtil.tag_of_symbol head2 in
           let tail2_tag = GrammarUtil.tag_of_symbol tail2 in
           [
-            { tail with action = Some <:expr<[$lid:tail1_tag$]>> };
-            { head_tail with action = Some <:expr<$lid:tail2_tag$ :: $lid:head2_tag$>> };
+            set_action tail <:expr<[$lid:tail1_tag$]>>;
+            set_action head_tail <:expr<$lid:tail2_tag$ :: $lid:head2_tag$>>;
           ]
 
       | _ -> failwith "error in is_list_nonterminal"
@@ -169,8 +173,8 @@ let map_prods nonterms reachable has_merge prods =
       | [some_sym] ->
           let some_tag = GrammarUtil.tag_of_symbol some_sym in
           [
-            { none with action = Some <:expr<None>> };
-            { some with action = Some <:expr<Some $lid:some_tag$>> };
+            set_action none <:expr<None>>;
+            set_action some <:expr<Some $lid:some_tag$>>;
           ]
 
       | _ -> failwith "error in is_option_nonterminal"
@@ -178,8 +182,8 @@ let map_prods nonterms reachable has_merge prods =
 
   | [none; some] when is_boolean_nonterminal none some && not has_merge ->
       [
-        { none with action = Some <:expr<false>> };
-        { some with action = Some <:expr<true>> };
+        set_action none <:expr<false>>;
+        set_action some <:expr<true>>;
       ]
 
   | prods ->
@@ -190,9 +194,9 @@ let map_prods nonterms reachable has_merge prods =
             <:expr<top>>
           ) else (
             let prod_name =
-              match prod.prod_name with
-              | None      -> "P" ^ Ids.Production.to_string prod.prod_index
-              | Some name -> assert (name <> ""); name
+              match prod.pbase.name with
+              | ""   -> "P" ^ Ids.Production.to_string prod.prod_index
+              | name -> assert (name <> ""); name
             in
 
             let prod_variant =
@@ -220,14 +224,14 @@ let map_prods nonterms reachable has_merge prods =
           )
         in
 
-        { prod with action = Some action; }
+        set_action prod action
       ) prods
 
 
 let unit_prods nonterms =
   List.map (fun prod ->
     check_noname nonterms prod;
-    { prod with action = Some <:expr<()>> }
+    set_action prod <:expr<()>>
   )
 
 

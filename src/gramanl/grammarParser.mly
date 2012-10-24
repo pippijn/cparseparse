@@ -193,18 +193,18 @@ productions
 
 production
 	: TOK_ARROW rhs action
-		{ ProdDecl (PDK_NEW, None, List.rev $2, $3) }
+		{ ProdDecl (PDK_NEW, "", List.rev $2, $3) }
 	| TOK_ARROW rhs production_name action
 		{ ProdDecl (PDK_NEW, $3, List.rev $2, $4) }
 	| TOK_REPLACE TOK_ARROW rhs action
-		{ ProdDecl (PDK_REPLACE, None, List.rev $3, $4) }
+		{ ProdDecl (PDK_REPLACE, "", List.rev $3, $4) }
 	| TOK_DELETE TOK_ARROW rhs TOK_SEMICOLON
-		{ ProdDecl (PDK_DELETE, None, List.rev $3, None) }
+		{ ProdDecl (PDK_DELETE, "", List.rev $3, None) }
 
 
 production_name
 	: TOK_LBRACK TOK_UNAME TOK_RBRACK
-		{ Some $2 }
+		{ $2 }
 
 
 action
