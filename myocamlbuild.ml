@@ -611,10 +611,6 @@ let dispatch_mine = function
             	  "type t = \\1 with sexp;;"
             @ sed " | SEXP;;"
             	  " with sexp;;"
-            @ sed "type t = | Loc with sexp"
-            	  "type t = Glr.SourceLocation.t with sexp"
-            @ sed "(Ptree.SourceLocation.Loc ) -> (Ptree.SourceLocation.Loc)"
-            	  "a -> a"
             @ sed "\\.true" ".True"
             @ sed "\\.false" ".False"
             @ [Sh">"; A(env "%.ml")]
