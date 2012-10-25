@@ -3,7 +3,6 @@ open AnalysisEnvType
 
 
 let print_terminal_set ?(out=stdout) ?(abbreviate=true) ?(name=".") terms set =
-  let open GrammarType in
   (*Printf.fprintf out "[1;30mFirst(%s) = " name;*)
   Printf.fprintf out "First(%s) = " name;
   Printf.fprintf out "%d {" (TerminalSet.cardinal set);

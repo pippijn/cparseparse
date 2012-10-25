@@ -10,7 +10,7 @@ let (|>) = BatPervasives.(|>)
  * GrammarTreeParser and AnalysisEnv. *)
 
 
-let proddecl_of_prod index prod =
+let proddecl_of_prod variant index prod =
   let rhs =
     List.map (function
       | Terminal (tag, term_index) ->
@@ -29,7 +29,7 @@ let proddecl_of_prod index prod =
     ) prod.right
   in
 
-  let action = BatOption.map CamlAst.string_of_expr (Semantic.action_of_prod prod) in
+  let action = BatOption.map CamlAst.string_of_expr (Semantic.action_of_prod variant prod) in
 
   ProdDecl (PDK_NEW, prod.pbase.name, rhs, action)
 
@@ -45,11 +45,11 @@ let ast_of_env env variant =
   let verbatims =
     List.map (fun code ->
       TF_verbatim (false, CamlAst.string_of_sig_item code)
-    ) variant.verbatims
+    ) (Semantic.verbatims variant env.verbatims)
     @
     List.map (fun code ->
       TF_verbatim (true, CamlAst.string_of_str_item code)
-    ) variant.impl_verbatims
+    ) (Semantic.impl_verbatims variant env.verbatims)
   in
 
   (* then, the options *)
@@ -69,12 +69,12 @@ let ast_of_env env variant =
   let types =
     TermArray.fold_left (fun types term ->
       let specfuncs = [
-        "dup", Semantic.dup_of_symbol term.tbase;
-        "del", Semantic.del_of_symbol term.tbase;
-        "classify", Semantic.classify_of_term term;
+        "dup", Semantic.dup_of_symbol variant term.tbase;
+        "del", Semantic.del_of_symbol variant term.tbase;
+        "classify", Semantic.classify_of_term variant term;
       ] in
 
-      match Semantic.semtype_of_term term with
+      match Semantic.semtype_of_term variant term with
       | None ->
           types
       | Some semtype -> 
@@ -97,19 +97,19 @@ let ast_of_env env variant =
         (* Get production indices *)
         NtArray.get env.prods_by_lhs nonterm.nbase.index_id
         (* Get actual productions *)
-        |> List.map (ProdArray.get variant.variant_prods)
+        |> List.map (ProdArray.get env.index.prods)
         (* Transform to ProdDecl *)
-        |> List.map (proddecl_of_prod env.index)
+        |> List.map (proddecl_of_prod variant env.index)
       in
 
       let specfuncs = [
-        "dup", Semantic.dup_of_symbol nonterm.nbase;
-        "del", Semantic.del_of_symbol nonterm.nbase;
-        "merge", Semantic.merge_of_nonterm nonterm;
-        "keep", Semantic.keep_of_nonterm nonterm;
+        "dup", Semantic.dup_of_symbol variant nonterm.nbase;
+        "del", Semantic.del_of_symbol variant nonterm.nbase;
+        "merge", Semantic.merge_of_nonterm variant nonterm;
+        "keep", Semantic.keep_of_nonterm variant nonterm;
       ] in
 
-      let semtype = Semantic.semtype_of_nonterm nonterm in
+      let semtype = Semantic.semtype_of_nonterm variant nonterm in
 
       let nt =
         TF_nonterm (
@@ -122,7 +122,7 @@ let ast_of_env env variant =
       in
 
       StringMap.add nonterm.nbase.name nt nonterms
-    ) StringMap.empty variant.variant_nonterms
+    ) StringMap.empty env.index.nonterms
   in
 
   let topforms = Merge.({

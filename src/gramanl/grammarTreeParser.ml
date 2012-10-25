@@ -50,20 +50,27 @@ let collect_options options config =
 
 
 let collect_verbatims verbatims =
-  List.fold_left (fun (verbatim, impl_verbatim) -> function
-    | TF_verbatim (true, code) ->
-        let code =
-          CamlAst.str_items_of_string _loc code
-        in
-        (verbatim, code :: impl_verbatim)
-    | TF_verbatim (false, code) ->
-        let code =
-          CamlAst.sig_items_of_string _loc code
-        in
-        (code :: verbatim, impl_verbatim)
+  let verbatim, impl_verbatim =
+    List.fold_left (fun (verbatim, impl_verbatim) -> function
+      | TF_verbatim (true, code) ->
+          let code =
+            CamlAst.str_items_of_string _loc code
+          in
+          (verbatim, code :: impl_verbatim)
+      | TF_verbatim (false, code) ->
+          let code =
+            CamlAst.sig_items_of_string _loc code
+          in
+          (code :: verbatim, impl_verbatim)
 
-    | _ -> failwith "merge failed"
-  ) ([], []) verbatims
+      | _ -> failwith "merge failed"
+    ) ([], []) verbatims
+  in
+
+  SemanticVariant.(of_list User [
+    Some (`SEM_VERBATIM verbatim);
+    Some (`SEM_IMPL_VERBATIM impl_verbatim);
+  ])
 
 
 let collect_terminal_aliases decls =
@@ -156,28 +163,12 @@ let collect_terminals decls types precs =
       in
 
       let semantic =
-        match semtype with
-        | None -> []
-        | Some semtype ->
-            [`SEM_TYPE (CamlAst.ctyp_of_string _loc semtype)]
-      in
-
-      let semantic =
-        match spec_func funcs "dup" 1 with
-        | None -> semantic
-        | Some func -> `SEM_DUP func :: semantic
-      in
-
-      let semantic =
-        match spec_func funcs "del" 1 with
-        | None -> semantic
-        | Some func -> `SEM_DEL func :: semantic
-      in
-
-      let semantic =
-        match spec_func funcs "classify" 1 with
-        | None -> semantic
-        | Some func -> `SEM_CLASSIFY func :: semantic
+        SemanticVariant.(of_list User [
+          BatOption.map (fun semtype -> `SEM_TYPE (CamlAst.ctyp_of_string _loc semtype)) semtype;
+          BatOption.map (fun func -> `SEM_DUP func) (spec_func funcs "dup" 1);
+          BatOption.map (fun func -> `SEM_DEL func) (spec_func funcs "del" 1);
+          BatOption.map (fun func -> `SEM_CLASSIFY func) (spec_func funcs "classify" 1);
+        ])
       in
 
       let index_id = Ids.Terminal.of_int code in
@@ -219,7 +210,7 @@ let collect_terminals decls types precs =
           tbase = {
             name = dummy_name;
             index_id = i;
-            semantic = [];
+            semantic = SemanticVariant.empty ();
           };
         } in
         StringMap.add dummy_name dummy terminals
@@ -247,34 +238,13 @@ let collect_nonterminals nonterms term_count =
           ) subsets;
 
           let semantic =
-            match semtype with
-            | None -> []
-            | Some semtype ->
-                [`SEM_TYPE (CamlAst.ctyp_of_string _loc semtype)]
-          in
-
-          let semantic =
-            match spec_func funcs "dup" 1 with
-            | None -> semantic
-            | Some func -> `SEM_DUP func :: semantic
-          in
-
-          let semantic =
-            match spec_func funcs "del" 1 with
-            | None -> semantic
-            | Some func -> `SEM_DEL func :: semantic
-          in
-
-          let semantic =
-            match spec_func funcs "merge" 2 with
-            | None -> semantic
-            | Some func -> `SEM_MERGE func :: semantic
-          in
-
-          let semantic =
-            match spec_func funcs "keep" 1 with
-            | None -> semantic
-            | Some func -> `SEM_KEEP func :: semantic
+            SemanticVariant.(of_list User [
+              BatOption.map (fun semtype -> `SEM_TYPE (CamlAst.ctyp_of_string _loc semtype)) semtype;
+              BatOption.map (fun func -> `SEM_DUP func) (spec_func funcs "dup" 1);
+              BatOption.map (fun func -> `SEM_DEL func) (spec_func funcs "del" 1);
+              BatOption.map (fun func -> `SEM_MERGE func) (spec_func funcs "merge" 2);
+              BatOption.map (fun func -> `SEM_KEEP func) (spec_func funcs "keep" 1);
+            ])
           in
 
           (* make the Grammar object to represent the new nonterminal *)
@@ -400,10 +370,9 @@ let collect_productions aliases terminals nonterminals nonterms =
 
           List.fold_left (fun (productions, next_prod_index) (ProdDecl (kind, name, rhs, action)) ->
             let semantic =
-              match action with
-              | None -> []
-              | Some action ->
-                  [`SEM_ACTION (CamlAst.expr_of_string _loc action)]
+              SemanticVariant.(of_list User [
+                BatOption.map (fun action -> `SEM_ACTION (CamlAst.expr_of_string _loc action)) action;
+              ])
             in
 
             let prod_index = Ids.Production.of_int (next_prod_index - 1) in
@@ -447,15 +416,15 @@ let of_ast topforms =
 
   (* process all (non)terminal declarations first, so while we're 
    * looking at productions we can tell if one isn't declared *)
-  let terminals               = collect_terminals topforms.decls types precs in
-  let verbatim, impl_verbatim = collect_verbatims topforms.verbatims in
-  let nonterminals            = collect_nonterminals topforms.nonterms (StringMap.cardinal terminals) in
+  let terminals    = collect_terminals topforms.decls types precs in
+  let verbatim     = collect_verbatims topforms.verbatims in
+  let nonterminals = collect_nonterminals topforms.nonterms (StringMap.cardinal terminals) in
 
   (* process nonterminal bodies *)
-  let productions             = collect_productions aliases terminals nonterminals topforms.nonterms in
-  let start_symbol            = topforms.first_nonterm in
+  let productions  = collect_productions aliases terminals nonterminals topforms.nonterms in
+  let start_symbol = topforms.first_nonterm in
 
-  let config                  = collect_options topforms.options empty_config in
+  let config       = collect_options topforms.options empty_config in
 
   let grammar = {
     nonterminals;
@@ -465,7 +434,6 @@ let of_ast topforms =
     start_symbol;
 
     verbatim;
-    impl_verbatim;
 
     config;
   } in

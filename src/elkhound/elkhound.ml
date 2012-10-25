@@ -65,7 +65,8 @@ let grammar_graph dirname (grammar, env, _, _ as tuple) =
   let open GrammarType in
 
   let file = dirname ^ "/grammar.dot" in
-  Timing.progress "writing grammar graph to grammar.dot" (GrammarGraph.visualise ~file env.index.nonterms) grammar;
+  Timing.progress "writing grammar graph to grammar.dot"
+    (GrammarGraph.visualise ~file env.index.nonterms) grammar;
   tuple
 
 
@@ -73,19 +74,21 @@ let print_transformed dirname (_, env, _, _ as tuple) =
   let open AnalysisEnvType in
 
   Timing.progress "writing transformed grammars to grammar.gr"
-    (List.iter (fun variant ->
+    SemanticVariant.iter (fun variant ->
       let file = dirname ^ "/grammar.gr" in
       let ast = BackTransform.ast_of_env env variant in
       BatStd.with_dispose ~dispose:close_out
         (fun out -> PrintAst.print ~out ast) (open_out file);
-    )) env.variants;
+    );
   tuple
 
 
 let output_menhir dirname (_, env, _, _ as tuple) =
-  let file = dirname ^ "/grammar.mly" in
   Timing.progress "writing menhir grammar to grammar.mly"
-    (OutputMenhir.output_grammar ~file) env;
+    SemanticVariant.iter (fun variant ->
+      let file = dirname ^ "/grammar.mly" in
+      OutputMenhir.output_grammar ~file variant env
+    );
   tuple
 
 
@@ -109,11 +112,11 @@ let emit_code dirname (_, env, states, tables) =
 
   let index = env.index in
   let prods_by_lhs = env.prods_by_lhs in
-  let variants = env.variants in
+  let verbatims = env.verbatims in
   let reachable = env.reachable in
 
   Timing.progress "emitting ML code"
-    (EmitCode.emit_ml dirname index prods_by_lhs variants reachable) tables
+    (EmitCode.emit_ml dirname index prods_by_lhs verbatims reachable) tables
 
 
 let optional enabled f x = if enabled () then f x else x

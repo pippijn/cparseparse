@@ -54,13 +54,15 @@ let emit_symbol_names name terms nonterms =
   OCamlPrinter.print_implem ~output_file:out impl
 
 
-let emit_user_actions name prefix index final_prod verbatims impl_verbatims =
+let emit_user_actions name variant index final_prod verbatims =
+  let prefix = SemanticVariant.prefix_for_variant_kind variant in
+
   (* Actions *)
   let dcl = name ^ prefix ^ "Actions.mli" in
   let out = name ^ prefix ^ "Actions.ml" in
   let intf, impl =
     EmitActions.make_ml_action_code
-      index final_prod verbatims impl_verbatims
+      variant index final_prod verbatims
   in
 
   OCamlPrinter.print_interf ~output_file:dcl intf;
@@ -95,7 +97,7 @@ let emit_tables name tables =
  * :: Main entry point
  ************************************************)
 
-let emit_ml dirname index prods_by_lhs variants reachable tables =
+let emit_ml dirname index prods_by_lhs verbatims reachable tables =
   let open AnalysisEnvType in
 
   let final_prod = Ids.Production.of_int tables.ParseTablesType.finalProductionIndex in
@@ -107,12 +109,8 @@ let emit_ml dirname index prods_by_lhs variants reachable tables =
   emit_treematch name reachable index prods_by_lhs;
   emit_symbol_names name index.terms index.nonterms;
 
-  List.iter (fun { prefix; verbatims; impl_verbatims; variant_nonterms; variant_prods } ->
-    let variant_index = { index with
-      nonterms = variant_nonterms;
-      prods = variant_prods;
-    } in
-    emit_user_actions name prefix variant_index final_prod verbatims impl_verbatims
-  ) variants;
+  SemanticVariant.iter (fun variant ->
+    emit_user_actions name variant index final_prod verbatims
+  );
 
   emit_tables name tables

@@ -24,19 +24,19 @@ let polytype sym =
   <:ctyp<'$lid:"t" ^ sym.name$>>
 
 
-let semtype sym =
-  match Semantic.semtype_of_symbol sym with
+let semtype variant sym =
+  match Semantic.semtype_of_symbol variant sym with
   | None ->
       polytype sym
   | Some semtype ->
       semtype
 
 
-let final_semtype nonterms final_prod =
+let final_semtype variant nonterms final_prod =
   match final_prod.right with
   | Nonterminal (_, nt_index) :: _ ->
       let nonterm = NtArray.get nonterms nt_index in
-      begin match Semantic.semtype_of_nonterm nonterm with
+      begin match Semantic.semtype_of_nonterm variant nonterm with
       | None ->
           failwith "final nonterminal needs defined type"
       | Some <:ctyp<'$_$>> ->
@@ -54,7 +54,7 @@ let final_semtype nonterms final_prod =
  ************************************************)
 
 (* ------------------- actions ------------------ *)
-let make_ml_actions index =
+let make_ml_actions variant index =
   (* iterate over productions, emitting action function closures *)
   let closures =
     ProdArray.map (fun prod ->
@@ -67,7 +67,7 @@ let make_ml_actions index =
 
       let make_binding tag rhs_index sym =
         assert (is_lid tag);
-        let semtype = semtype sym in
+        let semtype = semtype variant sym in
         let polytype = polytype sym in
         if semtype = polytype then
           <:binding<
@@ -104,7 +104,7 @@ let make_ml_actions index =
       in
 
       let action_code =
-        match Semantic.action_of_prod prod with
+        match Semantic.action_of_prod variant prod with
         | None ->
             begin match bindings with
             | [ <:binding<$lid:first_tagged$ = $_$>> ] ->
@@ -134,7 +134,7 @@ let make_ml_actions index =
         <:expr<
           (* now insert the user's code, to execute in this environment of
            * properly-typed semantic values *)
-          let __result : $semtype left.nbase$ = $action_code$ in
+          let __result : $semtype variant left.nbase$ = $action_code$ in
           (* cast to SemanticValue.t *)
           SemanticValue.repr __result
         >>
@@ -202,25 +202,25 @@ let array_expr_of_array array =
   <:expr<[| $exsem$ |]>>
 
 
-let make_spec_func_closures name rettype kind base func syms =
+let make_spec_func_closures variant name rettype kind base func syms =
   let namesModule = <:expr<$uid:Options._module_prefix () ^ "Names"$>> in
   let default = <:expr<$lid:"default_" ^ name$ $namesModule$.$lid:kind ^ "NamesArray"$>> in
 
-  if BatArray.exists (fun sym -> func sym != None) syms then
+  if BatArray.exists (fun sym -> func variant sym != None) syms then
     Array.mapi (fun i sym ->
-      let paramtype = semtype (base sym) in
+      let paramtype = semtype variant (base sym) in
       let rettype = BatOption.default paramtype rettype in
-      make_ml_spec_func default paramtype rettype kind (func sym) i
+      make_ml_spec_func default paramtype rettype kind (func variant sym) i
     ) syms
     |> array_expr_of_array
   else
     <:expr<Array.init $int:string_of_int (Array.length syms)$ (fun i -> $default$ i)>>
 
 
-let make_ml_dup_del_merge terms nonterms =
+let make_ml_dup_del_merge variant terms nonterms =
 
   let make sf_name a_name rettype kind base func syms =
-    let closures = make_spec_func_closures sf_name rettype kind base func syms in
+    let closures = make_spec_func_closures variant sf_name rettype kind base func syms in
 
     assert (is_lid a_name);
     <:rec_binding<$lid:a_name ^ "Array"$ = $closures$>>
@@ -260,14 +260,17 @@ let make_ml_dup_del_merge terms nonterms =
   ]
 
 
-let make_ml_action_code index final_prod verbatims impl_verbatims =
-  let result_type = final_semtype index.nonterms (ProdArray.get index.prods final_prod) in
+let make_ml_action_code variant index final_prod verbatim =
+  let result_type = final_semtype variant index.nonterms (ProdArray.get index.prods final_prod) in
 
   let closures =
-    make_ml_actions index
-    :: make_ml_dup_del_merge index.terms index.nonterms
+    make_ml_actions variant index
+    :: make_ml_dup_del_merge variant index.terms index.nonterms
     |> Ast.rbSem_of_list
   in
+
+  let verbatims = Semantic.verbatims variant verbatim in
+  let impl_verbatims = Semantic.impl_verbatims variant verbatim in
 
   let namesModule = <:expr<$uid:Options._module_prefix () ^ "Names"$>> in
 

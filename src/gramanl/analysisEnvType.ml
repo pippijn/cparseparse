@@ -121,14 +121,6 @@ type item_set = {
  * :: AnalysisEnv types
  ************************************************************)
 
-type variant = {
-  prefix			: string;
-  variant_nonterms              : (GrammarType.nonterminal, Sig.readonly) NtArray.t;
-  variant_prods                 : (GrammarType.production, Sig.readonly) ProdArray.t;
-  verbatims                     : CamlAst.sig_item list;
-  impl_verbatims                : CamlAst.str_item list;
-} with sexp
-
 type env = {
   (* index the symbols on their integer ids *)
   index                         : GrammarType.index;
@@ -167,5 +159,5 @@ type env = {
 
   (* options from grammar *)
   options                       : GrammarType.config;
-  variants			: variant list;
+  verbatims			: GrammarType.global_semantic SemanticVariant.variants;
 } with sexp

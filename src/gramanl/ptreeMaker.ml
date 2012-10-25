@@ -71,17 +71,16 @@ let nonterm_type = function
       <:ctyp<$uid:name$.t>>
 
 let merge name = function
-  | None -> []
-  | Some { params = [l; r] as params } ->
-      [`SEM_MERGE {
+  | { params = [l; r] as params } ->
+      `SEM_MERGE {
         params;
         code = <:expr<$uid:name$.Merge ($lid:l$, $lid:r$)>>
-      }]
+      }
   | _ ->
       failwith "invalid merge function"
 
 
-let nonterminal reachable nonterm =
+let nonterminal variant reachable nonterm =
   let is_reachable = NtSet.mem reachable nonterm.nbase.index_id in
 
   let semtype =
@@ -94,23 +93,26 @@ let nonterminal reachable nonterm =
       nonterm_type (Some nonterm.nbase.name)
   in
 
-  let merge =
-    (* merge creates a merge node *)
-    if not is_reachable then
-      []
-    else
-      merge nonterm.nbase.name (Semantic.merge_of_nonterm nonterm)
+  let semantic =
+    SemanticVariant.of_list variant [
+      Some (`SEM_TYPE semtype);
+      if not is_reachable then
+        None
+      else
+        BatOption.map (merge nonterm.nbase.name)
+          (Semantic.merge_of_nonterm SemanticVariant.User nonterm);
+    ]
   in
 
-  { nonterm with
-    nbase = { nonterm.nbase with
-      semantic = `SEM_TYPE semtype :: merge;
-    };
-  }
+  let semantic =
+    SemanticVariant.combine nonterm.nbase.semantic semantic
+  in
+
+  { nonterm with nbase = { nonterm.nbase with semantic } }
 
 
-let nonterms reachable nonterms =
-  NtArray.map (nonterminal reachable) nonterms
+let nonterms variant reachable nonterms =
+  NtArray.map (nonterminal variant reachable) nonterms
 
 
 let check_noname nonterms prod =
@@ -123,11 +125,14 @@ let check_noname nonterms prod =
         " in nonterminal \"" ^ left.nbase.name ^ "\"")
 
 
-let set_action prod action =
-  { prod with pbase = { prod.pbase with semantic = [`SEM_ACTION action] } }
+let set_action variant prod action =
+  let semantic =
+    SemanticVariant.set_list variant [`SEM_ACTION action] prod.pbase.semantic
+  in
+  { prod with pbase = { prod.pbase with semantic } }
 
 
-let map_prods nonterms reachable has_merge prods =
+let map_prods variant nonterms reachable has_merge prods =
   match prods with
   | [prod] when is_singleton_nonterminal prod && not has_merge ->
       check_noname nonterms prod;
@@ -141,7 +146,7 @@ let map_prods nonterms reachable has_merge prods =
         <:expr<$lid:tag$>>
       in
 
-      [set_action prod action]
+      [set_action variant prod action]
 
   | [tail; head_tail] when is_list_nonterminal tail head_tail && not has_merge ->
       check_noname nonterms tail;
@@ -152,8 +157,8 @@ let map_prods nonterms reachable has_merge prods =
           let head2_tag = GrammarUtil.tag_of_symbol head2 in
           let tail2_tag = GrammarUtil.tag_of_symbol tail2 in
           [
-            set_action tail <:expr<[]>>;
-            set_action head_tail <:expr<$lid:tail2_tag$ :: $lid:head2_tag$>>;
+            set_action variant tail <:expr<[]>>;
+            set_action variant head_tail <:expr<$lid:tail2_tag$ :: $lid:head2_tag$>>;
           ]
       (* non-empty list *)
       | [tail1], [head2; tail2] ->
@@ -161,8 +166,8 @@ let map_prods nonterms reachable has_merge prods =
           let head2_tag = GrammarUtil.tag_of_symbol head2 in
           let tail2_tag = GrammarUtil.tag_of_symbol tail2 in
           [
-            set_action tail <:expr<[$lid:tail1_tag$]>>;
-            set_action head_tail <:expr<$lid:tail2_tag$ :: $lid:head2_tag$>>;
+            set_action variant tail <:expr<[$lid:tail1_tag$]>>;
+            set_action variant head_tail <:expr<$lid:tail2_tag$ :: $lid:head2_tag$>>;
           ]
 
       | _ -> failwith "error in is_list_nonterminal"
@@ -173,8 +178,8 @@ let map_prods nonterms reachable has_merge prods =
       | [some_sym] ->
           let some_tag = GrammarUtil.tag_of_symbol some_sym in
           [
-            set_action none <:expr<None>>;
-            set_action some <:expr<Some $lid:some_tag$>>;
+            set_action variant none <:expr<None>>;
+            set_action variant some <:expr<Some $lid:some_tag$>>;
           ]
 
       | _ -> failwith "error in is_option_nonterminal"
@@ -182,8 +187,8 @@ let map_prods nonterms reachable has_merge prods =
 
   | [none; some] when is_boolean_nonterminal none some && not has_merge ->
       [
-        set_action none <:expr<false>>;
-        set_action some <:expr<true>>;
+        set_action variant none <:expr<false>>;
+        set_action variant some <:expr<true>>;
       ]
 
   | prods ->
@@ -224,20 +229,20 @@ let map_prods nonterms reachable has_merge prods =
           )
         in
 
-        set_action prod action
+        set_action variant prod action
       ) prods
 
 
-let unit_prods nonterms =
+let unit_prods variant nonterms =
   List.map (fun prod ->
     check_noname nonterms prod;
-    set_action prod <:expr<()>>
+    set_action variant prod <:expr<()>>
   )
 
 
 (* XXX: if this function changes its output, EmitPtree.production_types probably
  * also needs to change *)
-let prods reachable nonterms prods_by_lhs prods =
+let prods variant reachable nonterms prods_by_lhs prods =
   let prods_by_lhs =
     NtArray.map (fun indices ->
       let prods = List.map (ProdArray.get prods) indices in
@@ -252,15 +257,15 @@ let prods reachable nonterms prods_by_lhs prods =
         match prods with
         | { left } :: _ ->
             let left = NtArray.get nonterms left in
-            Semantic.merge_of_nonterm left != None
+            Semantic.merge_of_nonterm SemanticVariant.User left != None
         | _ ->
             false
       in
 
       if is_reachable then
-        map_prods nonterms reachable has_merge prods
+        map_prods variant nonterms reachable has_merge prods
       else
-        unit_prods nonterms prods
+        unit_prods variant nonterms prods
     ) prods_by_lhs
   in
 
@@ -272,9 +277,9 @@ let prods reachable nonterms prods_by_lhs prods =
   ProdArray.readonly prods
 
 
-let verbatims prefix =
-  [ <:sig_item< open $uid:Options._module_prefix () ^ prefix$.Ptree >> ]
-
-
-let impl_verbatims prefix =
-  [ <:str_item< open $uid:Options._module_prefix () ^ prefix$.Ptree >> ]
+let verbatims variant =
+  let prefix = SemanticVariant.prefix_for_variant_kind variant in
+  SemanticVariant.of_list variant [
+    Some (`SEM_VERBATIM      [ <:sig_item< open $uid:Options._module_prefix () ^ prefix$.Ptree >> ]);
+    Some (`SEM_IMPL_VERBATIM [ <:str_item< open $uid:Options._module_prefix () ^ prefix$.Ptree >> ]);
+  ]

@@ -32,6 +32,12 @@ type semantic = [
   | `SEM_KEEP of spec_func (* code to decide whether to keep a reduction *)
 
   | `SEM_ACTION of CamlAst.expr (* user-supplied reduction action code *)
+
+  (* sections of verbatim code emitted into the interface file, before 
+   * the parser context class body *)
+  | `SEM_VERBATIM of CamlAst.sig_item list
+  (* code emitted into the implementation file at the end *)
+  | `SEM_IMPL_VERBATIM of CamlAst.str_item list
 ]
 
 type term_semantic = [
@@ -55,11 +61,17 @@ type prod_semantic = [
   | `SEM_ACTION of CamlAst.expr
 ] with sexp
 
+type global_semantic = [
+  | `SEM_VERBATIM of CamlAst.sig_item list
+  | `SEM_IMPL_VERBATIM of CamlAst.str_item list
+] with sexp
+
+
 type ('index, 'semantic) symbol_base = {
   (* --- representation --- *)
   name                  : string; (* symbol's name in grammar *)
   index_id		: 'index; (* unique symbol id *)
-  semantic		: 'semantic list; (* semantic actions and type *)
+  semantic		: 'semantic SemanticVariant.variants; (* semantic actions and type *)
 } with sexp
 
 (* something that only appears on the right-hand side of
@@ -141,9 +153,9 @@ type config = {
 } with sexp
 
 type index = {
-  terms               	: (terminal, Sig.readonly) TermArray.t;   (* term_index -> terminal    *)
-  nonterms              : (nonterminal, Sig.readonly) NtArray.t;  (* nt_index   -> nonterminal *)
-  prods                 : (production, Sig.readonly) ProdArray.t; (* prod_index -> production  *)
+  terms               	: (terminal,    Sig.readonly) TermArray.t; (* term_index -> terminal    *)
+  nonterms              : (nonterminal, Sig.readonly) NtArray.t;   (* nt_index   -> nonterminal *)
+  prods                 : (production,  Sig.readonly) ProdArray.t; (* prod_index -> production  *)
 } with sexp
 
 type grammar = {
@@ -154,11 +166,7 @@ type grammar = {
   productions           : production list;
   start_symbol          : string;
 
-  (* sections of verbatim code emitted into the interface file, before 
-   * the parser context class body *)
-  verbatim              : CamlAst.sig_item list;
-  (* code emitted into the implementation file at the end *)
-  impl_verbatim         : CamlAst.str_item list;
+  verbatim		: global_semantic SemanticVariant.variants; (* verbatims *)
 
   config                : config;
 } with sexp
@@ -168,7 +176,7 @@ let empty_terminal = {
   tbase         = {
     name     = "";
     index_id = Ids.Terminal.default;
-    semantic = [];
+    semantic = SemanticVariant.empty ();
   };
 
   alias         = "";
@@ -188,7 +196,7 @@ let empty_nonterminal = {
     name     = "empty";
     (* empty has an index of 0; all other nonterminals must have indices >= 1 *)
     index_id = Ids.Nonterminal.default;
-    semantic = [];
+    semantic = SemanticVariant.empty ();
   };
 
   maximal  	= false;
@@ -207,7 +215,7 @@ let empty_production = {
   pbase         = {
     name     = "";
     index_id = Ids.Production.default;
-    semantic = [];
+    semantic = SemanticVariant.empty ();
   };
 
   left       = Ids.Nonterminal.default;

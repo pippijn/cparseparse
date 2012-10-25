@@ -21,7 +21,7 @@ let ctyp_of_nonterminal nonterms nonterm =
 let ctyp_of_terminal terms term =
   let term = TermArray.get terms term in
   (* use the terminal type *)
-  match Semantic.semtype_of_term term with
+  match Semantic.semtype_of_term SemanticVariant.User term with
   | None ->
       failwith "tagged terminals must have a declared type"
   | Some ty ->
@@ -139,7 +139,7 @@ let make_ml_parse_tree reachable index prods_by_lhs =
                 print_endline ("unreachable: " ^ name);
               types
             ) else (
-              let has_merge = Semantic.merge_of_nonterm nonterm != None in
+              let has_merge = Semantic.merge_of_nonterm SemanticVariant.User nonterm != None in
 
               let intf_types, impl_types =
                 production_types index.terms index.nonterms has_merge prods

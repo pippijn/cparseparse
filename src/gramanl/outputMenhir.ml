@@ -64,7 +64,7 @@ let last_prec terms =
   ) 0
 
 
-let output_production out index prod_index =
+let output_production out variant index prod_index =
   let prod = ProdArray.get index.prods prod_index in
 
   output_string out "\t|";
@@ -76,27 +76,28 @@ let output_production out index prod_index =
     let term = TermArray.find (fun term -> term.precedence = prod.prec) index.terms in
     Printf.fprintf out " %%prec %s" term.tbase.name;
   );
-  match Semantic.action_of_prod prod with
+  match Semantic.action_of_prod variant prod with
   | None ->
-      let tag = GrammarUtil.tag_of_symbol (PtreeMaker.right_symbol prod) in
+      let sym = PtreeMaker.right_symbol prod in
+      let tag = GrammarUtil.tag_of_symbol sym in
       Printf.fprintf out "\t{ %s }\n" tag
   | Some action ->
       Printf.fprintf out "\t{ %s }\n" (CamlAst.string_of_expr action)
 
 
-let output_nonterm out index = function
+let output_nonterm out variant index = function
   | [] -> ()
   | first_index :: _ as indices ->
       let first = ProdArray.get index.prods first_index in
       if (*first.left.nbase.reachable*) true then (
         let left = NtArray.get index.nonterms first.left in
         Printf.fprintf out "%s:\n" left.nbase.name;
-        List.iter (output_production out index) indices;
+        List.iter (output_production out variant index) indices;
         output_string out "\n";
       )
 
 
-let output_grammar ~file env =
+let output_grammar ~file variant env =
   let out = open_out file in
 
   output_string out "%{\n";
@@ -107,6 +108,6 @@ let output_grammar ~file env =
   let first = NtArray.get env.index.nonterms Ids.Nonterminal.start in
   Printf.fprintf out "\n%%start<int> %s\n\n" first.nbase.name;
   output_string out "%%\n\n";
-  NtArray.iter (output_nonterm out env.index) env.prods_by_lhs;
+  NtArray.iter (output_nonterm out variant env.index) env.prods_by_lhs;
 
   close_out out

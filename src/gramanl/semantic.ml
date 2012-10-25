@@ -1,94 +1,100 @@
 open GrammarType
 
 
-let rec action_of_prod : prod_semantic list -> CamlAst.expr option = function
-  | [] ->
-      None
-  | [`SEM_ACTION expr] ->
-      Some expr
+let is_verbatim : global_semantic -> CamlAst.sig_item list option = function
+  | `SEM_VERBATIM code ->
+      Some code
   | _ ->
-      failwith "more than one semantic action specified"
-
-let action_of_prod prod =
-  action_of_prod prod.pbase.semantic
-
-
-let rec merge_of_nonterm : nonterm_semantic list -> spec_func option = function
-  | [] ->
       None
-  | `SEM_MERGE func :: _ ->
+
+let verbatims variant semantic =
+  BatOption.default []
+    (SemanticVariant.find variant is_verbatim semantic)
+
+
+let is_impl_verbatim : global_semantic -> CamlAst.str_item list option = function
+  | `SEM_IMPL_VERBATIM code ->
+      Some code
+  | _ ->
+      None
+
+let impl_verbatims variant semantic =
+  BatOption.default []
+    (SemanticVariant.find variant is_impl_verbatim semantic)
+
+
+let is_action : prod_semantic -> CamlAst.expr option = function
+  | `SEM_ACTION expr ->
+      Some expr
+
+let action_of_prod variant prod =
+  SemanticVariant.find variant is_action prod.pbase.semantic
+
+
+let is_merge : nonterm_semantic -> spec_func option = function
+  | `SEM_MERGE func ->
       Some func
-  | _ :: tl ->
-      merge_of_nonterm tl
-
-let merge_of_nonterm nonterm =
-  merge_of_nonterm nonterm.nbase.semantic
-
-
-let rec keep_of_nonterm : nonterm_semantic list -> spec_func option = function
-  | [] ->
+  | _ ->
       None
-  | `SEM_KEEP func :: _ ->
+
+let merge_of_nonterm variant nonterm =
+  SemanticVariant.find variant is_merge nonterm.nbase.semantic
+
+
+let is_keep : nonterm_semantic -> spec_func option = function
+  | `SEM_KEEP func ->
       Some func
-  | _ :: tl ->
-      keep_of_nonterm tl
-
-let keep_of_nonterm nonterm =
-  keep_of_nonterm nonterm.nbase.semantic
-
-
-let rec classify_of_term : term_semantic list -> spec_func option = function
-  | [] ->
+  | _ ->
       None
-  | `SEM_CLASSIFY func :: _ ->
+
+let keep_of_nonterm variant nonterm =
+  SemanticVariant.find variant is_keep nonterm.nbase.semantic
+
+
+let is_classify : term_semantic -> spec_func option = function
+  | `SEM_CLASSIFY func ->
       Some func
-  | _ :: tl ->
-      classify_of_term tl
-
-let classify_of_term term =
-  classify_of_term term.tbase.semantic
-
-
-let rec dup_of_symbol : semantic list -> spec_func option = function
-  | [] ->
+  | _ ->
       None
-  | `SEM_DUP func :: _ ->
+
+let classify_of_term variant term =
+  SemanticVariant.find variant is_classify term.tbase.semantic
+
+
+let is_dup : 'semantic -> spec_func option = function
+  | `SEM_DUP func ->
       Some func
-  | _ :: tl ->
-      dup_of_symbol tl
-
-let dup_of_symbol sym =
-  dup_of_symbol (sym.semantic :> semantic list)
-
-let dup_of_nonterm nonterm = dup_of_symbol nonterm.nbase
-let dup_of_term term = dup_of_symbol term.tbase
-
-
-let rec del_of_symbol : semantic list -> spec_func option = function
-  | [] ->
+  | _ ->
       None
-  | `SEM_DEL func :: _ ->
+
+let dup_of_symbol variant sym =
+  SemanticVariant.find variant is_dup sym.semantic
+
+let dup_of_nonterm variant nonterm = dup_of_symbol variant nonterm.nbase
+let dup_of_term variant term = dup_of_symbol variant term.tbase
+
+
+let is_del : 'semantic -> spec_func option = function
+  | `SEM_DEL func ->
       Some func
-  | _ :: tl ->
-      del_of_symbol tl
-
-let del_of_symbol sym =
-  del_of_symbol (sym.semantic :> semantic list)
-
-let del_of_nonterm nonterm = del_of_symbol nonterm.nbase
-let del_of_term term = del_of_symbol term.tbase
-
-
-let rec semtype_of_symbol : semantic list -> CamlAst.ctyp option = function
-  | [] ->
+  | _ ->
       None
-  | `SEM_TYPE ctyp :: _ ->
+
+let del_of_symbol variant sym =
+  SemanticVariant.find variant is_del sym.semantic
+
+let del_of_nonterm variant nonterm = del_of_symbol variant nonterm.nbase
+let del_of_term variant term = del_of_symbol variant term.tbase
+
+
+let is_semtype : 'semantic -> CamlAst.ctyp option = function
+  | `SEM_TYPE ctyp ->
       Some ctyp
-  | _ :: tl ->
-      semtype_of_symbol tl
+  | _ ->
+      None
 
-let semtype_of_symbol sym =
-  semtype_of_symbol (sym.semantic :> semantic list)
+let semtype_of_symbol variant sym =
+  SemanticVariant.find variant is_semtype sym.semantic
 
-let semtype_of_nonterm nonterm = semtype_of_symbol nonterm.nbase
-let semtype_of_term term = semtype_of_symbol term.tbase
+let semtype_of_nonterm variant nonterm = semtype_of_symbol variant nonterm.nbase
+let semtype_of_term variant term = semtype_of_symbol variant term.tbase

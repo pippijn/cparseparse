@@ -51,11 +51,9 @@ module Graph = Graph.Persistent.Digraph.ConcreteLabeled(M)(M)
  ************************************************************)
 
 let transition_for_term item_set term =
-  let open GrammarType in
   TermArray.get item_set.term_transition term
 
 let transition_for_nonterm item_set nonterm =
-  let open GrammarType in
   NtArray.get item_set.nonterm_transition nonterm
 
 let transition item_set sym =
@@ -66,11 +64,9 @@ let transition item_set sym =
 
 
 let set_transition_for_term from_set term to_set =
-  let open GrammarType in
   TermArray.set from_set.term_transition term (Some to_set)
 
 let set_transition_for_nonterm from_set nonterm to_set =
-  let open GrammarType in
   NtArray.set from_set.nonterm_transition nonterm (Some to_set)
 
 let set_transition from_set sym to_set =
