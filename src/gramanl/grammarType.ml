@@ -33,10 +33,9 @@ type semantic = [
 
   | `SEM_ACTION of CamlAst.expr (* user-supplied reduction action code *)
 
-  (* sections of verbatim code emitted into the interface file, before 
-   * the parser context class body *)
+  (* sections of verbatim code emitted into the interface file *)
   | `SEM_VERBATIM of CamlAst.sig_item list
-  (* code emitted into the implementation file at the end *)
+  (* code emitted into the implementation file *)
   | `SEM_IMPL_VERBATIM of CamlAst.str_item list
 ]
 
@@ -166,7 +165,8 @@ type grammar = {
   productions           : production list;
   start_symbol          : string;
 
-  verbatim		: global_semantic SemanticVariant.variants; (* verbatims *)
+  (* code emitted at the beginning of interface/implementation files *)
+  verbatim		: global_semantic SemanticVariant.variants;
 
   config                : config;
 } with sexp
