@@ -59,7 +59,7 @@
 option shift_reduce_conflicts 49;
 option reduce_reduce_conflicts 73;
 option unreachable_nonterminals 1;
-option unreachable_terminals 2;
+option unreachable_terminals 8;
 
 
 terminals {
