@@ -20,7 +20,7 @@ let exSem_of_int_list table =
   |> Ast.exSem_of_list
 
 
-let print_tables tables =
+let make_tables tables =
   let open ParseTablesType in
 
   let _loc = ghost 26 in
@@ -91,10 +91,8 @@ let make_ml_tables tables dat =
       >>
     )
   ) else (
-    if true then
+    if Options._gen_table_text () then
       None
     else
-      Some (print_tables tables)
+      Some (make_tables tables)
   )
-
-

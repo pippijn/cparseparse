@@ -17,7 +17,7 @@ let print_table ?(cols=14) out table =
 let print_tables tables out =
   let open ParseTablesType in
 
-  Printf.fprintf out "let parseTables = ParseTablesType.({\n";
+  Printf.fprintf out "let parseTables = Glr.ParseTablesType.({\n";
   Printf.fprintf out "  numTerms = %d;\n" tables.numTerms;
   Printf.fprintf out "  numNonterms = %d;\n" tables.numNonterms;
   Printf.fprintf out "  numProds = %d;\n" tables.numProds;

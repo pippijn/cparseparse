@@ -15,6 +15,7 @@ let _print_merged = ref false
 let _print_transformed = ref true
 let _output_menhir = ref true
 
+let _gen_table_text = ref false
 let _use_table_dump = ref true
 let _inline_table_dump = ref true
 let _compress_table_dump = ref true
@@ -53,6 +54,7 @@ let () =
     "-print-transformed",	Set _print_transformed,		" regenerate and print grammar after all transformations";
     "-output-menhir",		Set _output_menhir,		" output combined grammar in Menhir format";
 
+    "-gen-table-text",		Set _gen_table_text,		" generate tables using more efficient algorithm";
     "-use-table-dump",		Set _use_table_dump,		" load serialised tables instead of emitting arrays in code";
     "-inline-table-dump",	Set _inline_table_dump,		" inline serialised tables into the Tables module as string";
     "-compress-table-dump",	Set _compress_table_dump,	" compress serialised tables with zlib";
@@ -100,6 +102,7 @@ let _print_merged () = !_print_merged
 let _print_transformed () = !_print_transformed
 let _output_menhir () = !_output_menhir
 
+let _gen_table_text () = !_gen_table_text
 let _use_table_dump () = !_use_table_dump
 let _inline_table_dump () = !_inline_table_dump
 let _compress_table_dump () = !_compress_table_dump
