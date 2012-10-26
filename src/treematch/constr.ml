@@ -26,3 +26,9 @@ class print = object (self : 'a)
 end
 
 let name = fst
+let tycon = snd
+
+let rec iter_tycon f = function
+| Tycon ident -> f ident
+| List tycon
+| Option tycon -> iter_tycon f tycon
