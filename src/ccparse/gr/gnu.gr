@@ -1,5 +1,5 @@
-(* extension to cc.gr for GNU C/C++ language extensions *)
 (* see license.txt for copyright and terms of use *)
+(* extension to cc.gr for GNU C/C++ language extensions *)
 
 (* NOTE: Though the name of this module is "gnu.gr", in fact we also
  * put our C99 support here.  For the moment, it isn't worth it to
@@ -45,7 +45,7 @@ terminals {
 
     (* the experimentation I did in in/gnu/g0019.cc suggests that
      * these operators have the same prec/assoc as "<" and ">" *)
-    (*left   80 "<?" ">?"; *)
+    left   80 "<?" ">?";
   }
 }
 

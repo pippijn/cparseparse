@@ -81,26 +81,26 @@ let can_be_type_param = function
   | _ -> false
 
 
-let tp_has_default_arg = function
-  | TP_nontype (T_type (_, DC_decl (_, Some _)))
-  | TP_template (_, _, Some _)
-  | TP_type (_, Some _) -> true
+let rec any_have_default_args = function
+  | None -> false
+  | Some tp ->
+      match tp with
+      | TP_nontype (T_type (_, DC_decl (_, Some _)), _)
+      | TP_template (_, _, Some _, _)
+      | TP_type (_, Some _, _) ->
+          true
 
-  | TP_nontype (T_type (_, DC_decl (_, None)))
-  | TP_template (_, _, None)
-  | TP_type (_, None) -> false
+      | TP_nontype (T_type (_, DC_decl (_, None)), next)
+      | TP_template (_, _, None, next)
+      | TP_type (_, None, next) ->
+          any_have_default_args next
 
-  | TP_nontype (T_type (_, DC_ambig _)) -> failwith "ambiguous declaration in non-type template parameter"
-  | TP_ambig _ -> failwith "ambiguous template parameter"
-  | TP_nontype (T_ambig _) -> failwith "ambiguous non-type template parameter"
-
-
-let any_have_default_args tps =
-  try
-    ignore (List.find tp_has_default_arg tps);
-    true
-  with Not_found ->
-    false
+      | TP_nontype (T_type (_, DC_ambig _), _) ->
+          failwith "ambiguous declaration in non-type template parameter"
+      | TP_ambig _ ->
+          failwith "ambiguous template parameter"
+      | TP_nontype (T_ambig _, _) ->
+          failwith "ambiguous non-type template parameter"
 
 
 let rec ideclr_is_func = function

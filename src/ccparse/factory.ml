@@ -113,7 +113,7 @@ let keep_declaration d =
       ) else (
         (* or none say "keep" *)
         assert (not (List.exists BatPervasives.identity keeps));
-        (* TODO: trace ("cancel due to TYPENAME ::NAME") *)
+        cancel "due to TYPENAME ::NAME"
       );
 
       keep
@@ -138,7 +138,14 @@ let keep_function_definition f =
 
   let n = Query.id_of_declarator declr in
   if ends_with_identifier f.retspec && is_global_scope_qualified (BatOption.get n) then
-    (* rejecting TYPENAME ::NAME *)
-    false
+    cancel "rejecting TYPENAME ::NAME"
   else
     true
+
+
+let merge_template_argument_list l r =
+  Some (TA_ambig (BatOption.get l, BatOption.get r))
+
+
+let merge_template_parameter_list l r =
+  Some (TP_ambig (BatOption.get l, BatOption.get r))

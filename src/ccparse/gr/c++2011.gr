@@ -81,18 +81,21 @@ nonterm NoexceptSpecification {
 }
 
 (* variadic templates *)
-nonterm TypeParameter {
+nonterm TemplateParameterList {
   (* non-template type parameter *)
-  -> ClassOrTypename "..." i:IdentifierOpt t:DefaultTypeOpt
+  -> next:TemplateParameterListContinuation
+     ClassOrTypename "..." i:IdentifierOpt t:DefaultTypeOpt
 	[Variadic] { unimplemented 1025 }
 
   (* template type parameter *)
-  -> "template" "<" pl:TemplateParameterList ">" "class" "..." i:IdentifierOpt
+  -> next:TemplateParameterListContinuation
+     "template" "<" pl:TemplateParameterList ">" "class" "..." i:IdentifierOpt
 	[VariadicTemplate] { unimplemented 1026 }
 }
 
-nonterm TemplateArgument {
-  -> typeid:TypeId "..."
+nonterm TemplateArgumentList {
+  -> next:TemplateArgumentListContinuation
+     typeid:TypeId "..."
 	[UnpackVarArg] { unimplemented 511 }
 }
 

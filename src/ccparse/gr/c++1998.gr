@@ -1,5 +1,5 @@
+(* see license.txt for copyright and terms of use *)
 (* grammar for C++
- * see license.txt for copyright and terms of use
  *
  * A word of warning: there are three sources of names running
  * around here:
@@ -59,7 +59,7 @@
 option shift_reduce_conflicts 49;
 option reduce_reduce_conflicts 73;
 option unreachable_nonterminals 1;
-option unreachable_terminals 8;
+option unreachable_terminals 2;
 
 
 terminals {
@@ -91,8 +91,10 @@ terminals {
      * reference, and because these precedence numbers are used by
      * bpprint
      *)
-    (*left	140 "()" "[]" "->" "." "++"(postfix) "--"(postfix); *)
-    (*right	130 "!" "~" "++"(prefix) "--"(prefix) "-" "+" "*" "&" "(cast)" "sizeof";*)
+    (*
+    left	140 "()" "[]" "->" "." "++"(postfix) "--"(postfix);
+    right	130 "!" "~" "++"(prefix) "--"(prefix) "-" "+" "*" "&" "(cast)" "sizeof";
+    *)
 
     left	120 ".*" "->*";		(* 7/07/03: changed from "right".. why was it that way? *)
     left	110 "*" "/" "%";
@@ -102,7 +104,9 @@ terminals {
     (* part of the solution to the angle bracket problem requires
      * dropping these precedence specs and implementing them in the
      * grammar instead *)
-    (*left	 80 "<" ">" "<=" ">="; *)
+    (*
+    left	 80 "<" ">" "<=" ">=";
+    *)
 
     left	 70 "==" "!=";
     left	 60 "&";
@@ -112,10 +116,14 @@ terminals {
     left	 20 "||";
 
     (* also provided only for reference and for bpprint *)
-    (*right	 10 "?:"; *)
-    (*right	  9 "=" ... "+"; *)
+    (*
+    right	 10 "?:";
+    right	  9 "=" ... "+";
+    *)
     (* level 8 is the "," of a function argument list *)
-    (*left	  7 ","; *)
+    (*
+    left	  7 ",";
+    *)
 
     prec	  1 TOK_PREFER_SHIFT;
     (* low precedence *)
@@ -126,21 +134,30 @@ terminals {
 impl_verbatim {
   open Ccabs
   open Ast
+
   let cancel = GlrEngine.cancel
   let unimplemented s = failwith ("unimplemented " ^ string_of_int s)
 
+  let output to_sexp x =
+    Sexplib.Sexp.output_hum stdout (to_sexp x);
+    print_newline ()
+
   let ambiguous s to_sexp l r =
     print_endline ";-- unhandled ambiguity between --";
-    Sexplib.Sexp.output_hum stdout (to_sexp l);
-    print_endline "\n;-- and --";
-    Sexplib.Sexp.output_hum stdout (to_sexp r);
-    print_endline "\n;-- aborting parse --";
+    output to_sexp l;
+    print_endline ";-- and --";
+    output to_sexp r;
+    print_endline ";-- aborting parse --";
     unimplemented s
+
+
+  let templateUsed list =
+    Some (TA_templateUsed list)
 }
 
 
 nonterm(Ccabs.Ast.translation_unit) File {
-  -> t:TranslationUnit { t }
+  -> t:TranslationUnit;
 }
 
 
@@ -223,7 +240,7 @@ nonterm IdExpression {
    * sequence; I'm enforcing it a little bit differently than the std
    * does *)
   -> "::" id:PQualifiedId
-	[GlobalId] { PQ_qualifier ((*~qualifier*)None, (*~targs*)[], id) }
+	[GlobalId] { PQ_qualifier ((*~qualifier*)None, (*~targs*)None, id) }
 }
 
 (* names that are not qualified *)
@@ -251,7 +268,7 @@ nonterm PQualifiedId {
 	[Unqual];
 
   -> n:Identifier "::" id:PQualifiedId
-	[Qual] { PQ_qualifier (Some n, (*~targs*)[], id)  }
+	[Qual] { PQ_qualifier (Some n, (*~targs*)None, id)  }
 
   (* passing a dependent template as template template argument *)
   -> n:Identifier "::" "template" tn:Identifier
@@ -522,7 +539,7 @@ nonterm MemberName {
 
   (* cannot say ":: ~" *)
   -> "::" n:IdentifierMemberName
-	[GlobalName] { PQ_qualifier (None, [], n) }
+	[GlobalName] { PQ_qualifier (None, (*~targs*)None, n) }
 }
 
 (* can begin with "~" or "template" or Identifier or "operator" *)
@@ -534,7 +551,7 @@ nonterm SpecialMemberName {
 
   (* final names *)
   -> "template" n:Identifier "<" list:TemplateArgumentListOpt ">"
-	[Template] { PQ_template (n, TA_templateUsed :: list) }
+	[Template] { PQ_template (n, templateUsed list) }
   -> "~" n:Identifier
 	[Dtor] { PQ_name ("~" ^ n) }
   -> "~" n:Identifier "<" list:TemplateArgumentListOpt ">"
@@ -544,7 +561,7 @@ nonterm SpecialMemberName {
 
   (* qualifier name *)
   -> "template" n:Identifier "<" list:TemplateArgumentListOpt ">" "::" rest:SpecialMemberName
-	[TemplateQual] { PQ_qualifier (Some n, TA_templateUsed :: list, rest) }
+	[TemplateQual] { PQ_qualifier (Some n, templateUsed list, rest) }
 }
 
 (* can begin with Identifier, "template" or "operator"; this is
@@ -571,7 +588,7 @@ nonterm IdentifierMemberName {
   -> n:Identifier "<" list:TemplateArgumentListOpt ">" "::" rest:SpecialMemberName
 	[TemplateQualifier] { PQ_qualifier (Some n, list, rest) }
   -> n:Identifier "::" rest:SpecialMemberName
-	[Qualifier] { PQ_qualifier (Some n, [], rest) }
+	[Qualifier] { PQ_qualifier (Some n, (*~targs*)None, rest) }
 }
 (* -------------- END: syntax after "." or "->" ------------------- *)
 
@@ -1230,7 +1247,7 @@ nonterm PQTypeName {
   -> n:PQTypeName_ncc
 	[Local] { n }
   -> "::" n:PQTypeName_ncc
-	[Global] { PQ_qualifier (None, [], n) }
+	[Global] { PQ_qualifier (None, (*~targs*)None, n) }
 }
 
 (* no-colon-colon *)
@@ -1243,7 +1260,7 @@ nonterm PQTypeName_ncc {
 	[TemplateId] { id }
 
   -> q:Identifier "::" n:PQTypeName_notfirst
-	[Qualified] { PQ_qualifier (Some q, [], n) }
+	[Qualified] { PQ_qualifier (Some q, (*~targs*)None, n) }
   -> q:Identifier "<" targs:TemplateArgumentListOpt ">" "::" n:PQTypeName_notfirst
 	[QualifiedTemplateId] { PQ_qualifier (Some q, targs, n) }
 }
@@ -1262,7 +1279,7 @@ nonterm PQTypeName_notfirst {
 	[TemplateDecl] {
 	  match id with
 	  | PQ_template (n, list) ->
-	      PQ_template (n, TA_templateUsed :: list)
+	      PQ_template (n, templateUsed list)
 	  | _ ->
 	      failwith "invalid TemplateId"
 	}
@@ -1335,13 +1352,18 @@ nonterm LinkageSpecification {
 (* -- declarator -- *)
 (* a declarator is the "x" in a declaration like "int x" *)
 
+impl_verbatim {
+  let empty_init_declarator_list =
+    [DC_decl (D_name (Some (PQ_name "!!ERROR!!")), None)]
+}
 nonterm InitDeclaratorList {
-  fun merge(l,r) { unimplemented 1003 }
+  (* NOTE: see BaseSpecifierList for explanation *)
+  fun merge(l,r) { empty_init_declarator_list }
 
   -> d:InitDeclarator
-	[InitDecl] { [d] }
+	[Head] { [d] }
   -> list:InitDeclaratorList "," d:InitDeclarator
-	[InitDecls] { d :: list }
+	[Tail] { d :: list }
 }
 
 (* obsolete now that I've substituted it into SimpleDeclaration *)
@@ -1504,7 +1526,7 @@ nonterm PQDtorName {
    * ambiguity that relates to namespaces (e.g. "::F::~F()") *)
   (*-> q:Qualifier rhs:PQDtorName	{ unimplemented 320 } *)
   -> q:Identifier "::" rhs:PQDtorName
-	[QualName] { PQ_qualifier (Some q, [], rhs) }
+	[QualName] { PQ_qualifier (Some q, (*~targs*)None, rhs) }
 
   -> q:Identifier "<" targs:TemplateArgumentListOpt ">" "::" rhs:PQDtorName
 	[QualTemplate] { PQ_qualifier (Some q, targs, rhs) }
@@ -1513,7 +1535,7 @@ nonterm PQDtorName {
   (*-> "template" q:Identifier "::" rhs:PQDtorName *)
   (*	{ unimplemented 323 } *)
   -> "template" q:Identifier "<" targs:TemplateArgumentListOpt ">" "::" rhs:PQDtorName
-	[TemplateQual] { PQ_qualifier (Some q, TA_templateUsed :: targs, rhs) }
+	[TemplateQual] { PQ_qualifier (Some q, templateUsed targs, rhs) }
 
   (* this rule from cppstd is partially subsumed by the "template" hack *)
   (*-> ColonColonOpt NestedNameSpecifier "template" TemplateId "::" "~" TypeName; *)
@@ -1787,8 +1809,7 @@ nonterm FunctionDefinition {
 nonterm FDDeclarator {
   fun keep(d) {
     if not (Query.bottom_is_dfunc d) then
-      (* rejecting FDDeclarator w/o D_func at bottom *)
-      false
+      cancel "rejecting FDDeclarator w/o D_func at bottom"
     else
       true
   }
@@ -1828,7 +1849,7 @@ nonterm ClassHeadName {
 	[TemplateId] { t }
 
   -> n:Identifier "::" rest:ClassHeadName
-	[Qualified] { PQ_qualifier (Some n, [], rest) }
+	[Qualified] { PQ_qualifier (Some n, (*~targs*)None, rest) }
   -> n:Identifier "<" targs:TemplateArgumentListOpt ">" "::" rest:ClassHeadName
 	[QualifiedTemplate] { PQ_qualifier (Some n, targs, rest) }
 
@@ -1836,7 +1857,7 @@ nonterm ClassHeadName {
   (*-> "template" n:Identifier "::" rest:ClassHeadName *)
   (*	{ unimplemented 379 } *)
   -> "template" n:Identifier "<" targs:TemplateArgumentListOpt ">" "::" rest:ClassHeadName
-	[TemplateQualified] { PQ_qualifier (Some n, TA_templateUsed :: targs, rest) }
+	[TemplateQualified] { PQ_qualifier (Some n, templateUsed targs, rest) }
 }
 
 nonterm ClassKey {
@@ -2044,11 +2065,18 @@ nonterm BaseClauseOpt {
   -> ":" b:BaseSpecifierList	{ b }
 }
 
+
+impl_verbatim {
+  let empty_base_specifier_list =
+    [{ is_virtual = false; access = AK_UNSPECIFIED; cname = PQ_name "!!ERROR!!"; }]
+}
 nonterm BaseSpecifierList {
-  (* NOTE: Making this nonterminal right-recursive prevents this merge.
-   * However, the resulting value from this merge is dropped soon after,
-   * so we return an empty list and drop both alternatives. *)
-  fun merge(l,r) { [] }
+  (* NOTE: Making this nonterminal right-recursive prevents this merge,
+   * because it is in fact not ambiguous after consuming enough input.
+   * Therefore, the resulting value from this merge is dropped after the
+   * full list has been parsed, so we return an empty list and drop both
+   * alternatives. *)
+  fun merge(l,r) { empty_base_specifier_list }
 
   -> b:BaseSpecifier
 	[Head] { [b] }
@@ -2284,39 +2312,30 @@ nonterm TemplatePreamble {
 
   (* template declaration *)
   -> "template" "<" plist:TemplateParameterList ">"
-	[Temlate] { plist }
+	[Template] { plist }
   -> "export" "template" "<" plist:TemplateParameterList ">"
 	[ExportTemplate] { plist }
 
   (* explicit specialisation *)
   -> "template" "<" ">"
-	[ExplSpecTemplate] { [] }
+	[ExplSpecTemplate] { None }
   -> "export" "template" "<" ">"
-	[ExplSpecExportTemplate] { [] }
+	[ExplSpecExportTemplate] { None }
 }
 
 nonterm TemplateParameterList {
   (* unfortunately, while we can record an ambiguous template parameter
    * list, we do not currently disambiguate it properly; see in/t0465.cc *)
-  fun merge(l,r) { unimplemented 490 }
-
-  -> p:TypeParameter
-	[Head] { [p] }
+  fun merge(l,r) { Factory.merge_template_parameter_list l r }
 
   (* non-template type parameter *)
-  -> l:TemplateParameterList "," p:TypeParameter
-	[Tail] { p :: l }
-}
-
-nonterm TypeParameter {
-  fun merge(l,r) { TP_ambig (l, r) }
-
-  (* non-template type parameter *)
-  -> ClassOrTypename i:IdentifierOpt t:DefaultTypeOpt
-	[TyParam] { TP_type (i, t)  }
+  -> next:TemplateParameterListContinuation
+     ClassOrTypename i:IdentifierOpt t:DefaultTypeOpt
+	[TyParam] { Some (TP_type (i, t, next))  }
 
   (* non-type parameter *)
-  -> p:ParameterDeclaration
+  -> next:TemplateParameterListContinuation
+     p:ParameterDeclaration
 	[NonTyParam] {
 	  (* if the specifier is a TS_elaborated, then it could be a type
 	   * parameter; cppstd 14.1 para 3 seems to say that in that case it
@@ -2324,12 +2343,26 @@ nonterm TypeParameter {
 	  if Query.can_be_type_param (Query.spec_of_type_id p) then
 	    cancel "template parameter can be type param"
 	  else
-	    TP_nontype (p)
+	    Some (TP_nontype (p, next))
 	}
 
   (* template type parameter *)
-  -> "template" "<" pl:TemplateParameterList ">" "class" i:IdentifierOpt t:DefaultTemplateOpt
+  -> next:TemplateParameterListContinuation
+     "template" "<" pl:TemplateParameterList ">" "class" i:IdentifierOpt t:DefaultTemplateOpt
 	[TemplTyParam] { unimplemented 1231 }
+}
+
+(* what comes after a template paramter: nothing, or else
+ * a comma and then more parameters *)
+nonterm TemplateParameterListContinuation {
+  fun merge(l,r) { unimplemented 490 }
+
+  -> empty
+	[None] { None }
+
+  (* non-template type parameter *)
+  -> l:TemplateParameterList ","
+	[Some] { l }
 }
 
 nonterm ClassOrTypename {
@@ -2349,8 +2382,8 @@ nonterm DefaultTemplateOpt {
 
 
 nonterm TemplateArgumentListOpt {
-  -> empty			{ [] }
-  -> list:TemplateArgumentList	{ List.rev list }
+  -> empty			{ None }
+  -> list:TemplateArgumentList	{ list }
 }
 
 nonterm TemplateId {
@@ -2368,58 +2401,60 @@ nonterm TemplateId {
    * (they all map to the same string).  So, I'll leave it commented-out.
    * One solution would be to make a PQ_operatorTemplate with an
    * OperatorName first argument... *)
-  (*-> on:ConversionFunctionId "<" list:TemplateArgumentListOpt ">" *)
-  (*	{ unimplemented 505 } *)
+  (*-> on:ConversionFunctionId "<" list:TemplateArgumentListOpt ">"*)
+	(*{ unimplemented 505 }*)
 
 
   (* version with the word "template" in front
    *
    * arg.. this causes some extra ambiguities, see t0255.cc.  since I
    * don't have a testcase that requires this yet, I'll just remove it *)
-  (*-> "template" n:Identifier "<" list:TemplateArgumentListOpt ">" *)
-  (*	{ unimplemented 506 } *)
+  (*-> "template" n:Identifier "<" list:TemplateArgumentListOpt ">"*)
+	(*{ unimplemented 506 }*)
 }
 
 nonterm TemplateArgumentList {
-  fun merge(l,r) { ambiguous 1006 (Sexplib.Conv.sexp_of_list sexp_of_template_argument) (List.rev l) (List.rev r) }
-
-  -> x:TemplateArgument
-	[Head] { [x] }
-
-  -> xs:TemplateArgumentList "," x:TemplateArgument
-	[Tail] { x :: xs }
-}
-
-nonterm TemplateArgument {
   (* ambiguous due to type/variable name ambiguity, and also
    * due to angle brackets vs. less-than *)
-  fun merge(l,r) { TA_ambig (l, r) }
+  fun merge(l,r) { Factory.merge_template_argument_list l r }
 
-  -> typeid:TypeId
-	[Type] { TA_type (typeid) }
+  -> next:TemplateArgumentListContinuation
+     typeid:TypeId
+	[Type] { Some (TA_type (typeid, next)) }
 
-  -> e:AssignmentExpression
-	[Expr] {
+  -> next:TemplateArgumentListContinuation
+     e:AssignmentExpression
+	[NonType] {
 	  match Disambiguation.disambig_nontype_targ e with
 	  | None ->
-	    (* this is the wrong interpretation because template argument
-	     * expressions aren't allowed to have unparenthesised
-	     * greater-than operators [cppstd 14.1 para 15]
-	     *
-	     * this helps eliminate a nasty ambiguity in function
-	     * declarators, as otherwise
-	     *	 template <class T>
-	     *	 Foo<T> & Foo<T>::get() {}
-	     * could be interpreted as a constructor (we don't realise
-	     * that 'get' != 'Foo') of a template class with template
-	     * argument "T > &Foo < T" *)
-	    cancel "template argument has unparenthesised greater-than operator"
+	      (* this is the wrong interpretation because template argument
+	       * expressions aren't allowed to have unparenthesised
+	       * greater-than operators [cppstd 14.1 para 15]
+	       *
+	       * this helps eliminate a nasty ambiguity in function
+	       * declarators, as otherwise
+	       *	 template <class T>
+	       *	 Foo<T> & Foo<T>::get() {}
+	       * could be interpreted as a constructor (we don't realise
+	       * that 'get' != 'Foo') of a template class with template
+	       * argument "T > &Foo < T" *)
+	      cancel "template argument has unparenthesised greater-than operator"
 	  | Some e ->
-	    TA_nontype (e)
+	      Some (TA_nontype (e, next))
 	}
 
   (* is this for template args that are templates, or what? *)
   (*-> IdExpression; *)
+}
+
+nonterm TemplateArgumentListContinuation {
+  fun merge(l,r) { unimplemented 1006 }
+
+  -> empty
+	[Head] { None }
+
+  -> x:TemplateArgumentList ","
+	[Tail] { x }
 }
 
 nonterm ExplicitInstantiation {
@@ -2463,8 +2498,7 @@ nonterm UnqualifiedDeclarator {
     let n = Query.id_of_declarator d in
     (* n is never None *)
     if Query.name_has_qualifiers (BatOption.get n) then
-      (* qualified UnqualifiedDeclarator *)
-      false
+      cancel "qualified UnqualifiedDeclarator"
     else
       true
   }

@@ -326,7 +326,7 @@ and pq_name =
   | PQ_ambig of pq_name * pq_name
   (* outer qualifier applied to some inner PQName, plus an optional
    * list of template arguments to the qualifier *)
-  | PQ_qualifier of (*qualifier*)string option * (*templArgs*)template_argument list * (*rest*)pq_name
+  | PQ_qualifier of (*qualifier*)string option * (*templArgs*)template_argument_list * (*rest*)pq_name
   (* final name, when it's an ordinary identifier
    * NOTE: 'name' here is *never* NULL--instead, I use NULL
    * PQName pointers in abstract declarators *)
@@ -335,7 +335,7 @@ and pq_name =
   | PQ_operator of (*o*)operator_name
   (* template instances: a template function or class name, plus
    * some template arguments *)
-  | PQ_template of (*name*)string * (*templArgs*)template_argument list
+  | PQ_template of (*name*)string * (*templArgs*)template_argument_list
 
 (* a name of an "atomic" type--one to which type constructors
  * (e.g. '*') can be applied, but which itself is not syntactically
@@ -591,13 +591,13 @@ and initialiser =
 (* wrap some template parameters on a declaration or function *)
 and template_declaration =
   (* define a template function *)
-  | TD_func of (*params*)template_parameter list * (*f*)function_definition
+  | TD_func of (*params*)template_parameter_list * (*f*)function_definition
   (* declare a template function prototype, or declare or define a
    * template class *)
-  | TD_decl of (*params*)template_parameter list * (*d*)declaration
+  | TD_decl of (*params*)template_parameter_list * (*d*)declaration
   (* wrap another set of parameters around a template decl;
    * this is for template members of template classes (14.5.2) *)
-  | TD_tmember of (*params*)template_parameter list * (*d*)template_declaration
+  | TD_tmember of (*params*)template_parameter_list * (*d*)template_declaration
 
 (* one of the parameters to a template declaration *)
 and template_parameter =
@@ -608,28 +608,36 @@ and template_parameter =
    *
    * 'name' can be None after parsing, but the type checker sticks
    * in a synthesized name, so after tchecking it is never None *)
-  | TP_type of (*name*)string option * (*defaultType*)type_id option
+  | TP_type of (*name*)string option * (*defaultType*)type_id option * (*next*)template_parameter_list
   (* non-type parameters *)
-  | TP_nontype of (*param*)type_id
+  | TP_nontype of (*param*)type_id * (*next*)template_parameter_list
   (* template template parameter *)
   | TP_template of (*parameters*)template_parameter list
   		 * (*name*)string option
                  * (*defaultTemplate*)pq_name option
+                 * (*next*)template_parameter_list
+
+(* the list is an intrusive linked list in template_parameter *)
+and template_parameter_list =
+  template_parameter option
 
 (* one of the arguments to a template instantiation *)
 and template_argument =
   | TA_ambig of template_argument * template_argument
   (* type argument, corresponds to a TP_type parameter *)
-  | TA_type of (*type*)type_id
+  | TA_type of (*type*)type_id * (*next*)template_argument_list
   (* non-type arguments, corresponds to a TP_nontype parameter *)
-  | TA_nontype of (*expr*)expression
+  | TA_nontype of (*expr*)expression * (*next*)template_argument_list
   (* This is a special element that, when found in the template
    * argument list of a PQ_qualifier or PQ_template, signals that
    * those names were prefixed by the "template" keyword (14.2 para
    * 4).  Doing it this way, instead of adding a boolean to the PQ_*
    * classes, saves a little space in the common case, and avoids
    * cluttering creation sites with "false /*templateUsed*/". *)
-  | TA_templateUsed
+  | TA_templateUsed of (*next*)template_argument_list
+
+and template_argument_list =
+  template_argument option
 
 (* -------------------- namespace declarations ---------------------- *)
 (* since each of these three forms can appear either at toplevel
