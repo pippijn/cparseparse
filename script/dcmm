@@ -15,7 +15,7 @@ my @keywords = qw/let store data if seq app load function try catch raise extcal
 my @types = qw/int addr unit string skip byte/;
 
 my $src = $ARGV[0] or die "Usage: dcmm <basename>\n  where basename is a .ml file without .ml suffix";
-my $cmd = "ocamlopt -dcmm -c -I _build/glr -I _build/baselib -o _build/$ARGV[0].cmx $ARGV[0].ml 2>&1";
+my $cmd = "ocamlopt -dcmm -c -I _build/src/gramanl -I _build/src/glr -I _build/src/baselib -o _build/$ARGV[0].cmx $ARGV[0].ml 2>&1";
 
 sub clear {
    my ($text) = @_;
