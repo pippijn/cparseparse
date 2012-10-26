@@ -46,12 +46,12 @@ let main =
       program |> Program.output_untyped_program stdout
     );
 
-    if not (Options._no_emit ()) then (
-      Typing.program program
-      |> if Options._special ()
-         then SpecialBackend.output_program "/dev/stdout"
-         else SimpleBackend.output_program "/dev/stdout"
-    );
+    (* if not (Options._no_emit ()) then ( *)
+    (*   Typing.program program *)
+    (*   |> if Options._special () *)
+    (*      then SpecialBackend.output_program "/dev/stdout" *)
+    (*      else SimpleBackend.output_program "/dev/stdout" *)
+    (* ); *)
 
     if Options._infer () then (
       List.iter ((|>) program) [
@@ -59,7 +59,11 @@ let main =
         Typing.program |- Program.output_typed_program stdout;
         Typing.program |- (new Program.typed_print)#program Format.std_formatter;
       ]
-    )
+    );
+
+    (* if Options._show_tycon_freq() then ( *)
+      Inline.program program
+    (* ) *)
   in
   List.iter single
 
