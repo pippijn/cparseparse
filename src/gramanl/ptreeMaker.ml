@@ -25,7 +25,7 @@ let is_tail_of tail head_tail =
   (* possibly empty list *)
   | [], [_; _] -> true
   (* non-empty list *)
-  | [tail1], [_; tail2] -> tail1 = tail2
+  | [tail1], [_; tail2] -> GrammarUtil.equal_symbol tail1 tail2
   | _ -> false
 
 
@@ -49,13 +49,13 @@ let is_list_nonterminal tail head_tail =
 
 
 let is_option_nonterminal none some =
-  symbols_of_production none = []
-  && List.length (symbols_of_production some) = 1
+  symbols_of_production none == []
+  && List.length (symbols_of_production some) == 1
 
 
 let is_boolean_nonterminal none some =
-  none.right = []
-  && symbols_of_production some = []
+  none.right == []
+  && symbols_of_production some == []
 
 
 let right_symbol head_tail =
