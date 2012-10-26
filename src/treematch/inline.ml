@@ -30,9 +30,11 @@ let definition = function
         try
 
           let c = Hashtbl.find counter name in
+          Hashtbl.remove counter name;
           Hashtbl.add counter name (c+1)
 
-        with Not_found -> ()
+        with Not_found -> Hashtbl.add counter name 1
+
       in
       List.iter (Clause.iter_tycon iter) tycon
     in
