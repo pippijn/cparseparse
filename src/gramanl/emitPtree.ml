@@ -3,6 +3,7 @@ open GrammarType
 open PtreeType
 
 let (|>) = BatPervasives.(|>)
+let ghost lnum = Loc.of_tuple ("emitPtree.ml", lnum, 0, 0, lnum, 0, 0, false)
 
 
 let make_tycon_arg = function
@@ -23,7 +24,7 @@ let make_binding (left, right) =
   let intf_types, impl_types =
     match right with
     | Native ctyp ->
-        let _loc = Loc.ghost in
+        let _loc = ghost 26 in
         <:sig_item<type t = ($ctyp$)>>,
         <:str_item<type t = ($ctyp$)>>
     | Alias semtype ->
@@ -42,7 +43,7 @@ let make_binding (left, right) =
         let types = Ast.tyOr_of_list (List.map make_tycon types) in
 
         (* TODO: with sexp *)
-        let _loc = Loc.ghost in
+        let _loc = ghost 45 in
         <:sig_item<type t = $types$ | SEXP>>,
         <:str_item<type t = $types$ | SEXP>>
   in
@@ -74,7 +75,7 @@ let make_binding (left, right) =
 let make_ml_parse_tree ptree =
   let bindings = List.map make_binding ptree in
 
-  let _loc = Loc.ghost in
+  let _loc = ghost 77 in
 
   let combined =
     BatList.reduce (fun combined binding ->

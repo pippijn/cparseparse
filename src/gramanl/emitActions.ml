@@ -3,7 +3,7 @@ open GrammarType
 open CodegenHelpers
 
 let (|>) = BatPervasives.(|>)
-let _loc = Loc.ghost
+let ghost lnum = Loc.of_tuple ("emitActions.ml", lnum, 0, 0, lnum, 0, 0, false)
 
 
 (************************************************
@@ -11,6 +11,7 @@ let _loc = Loc.ghost
  ************************************************)
 
 let fold_bindings =
+  let _loc = ghost 13 in
   List.fold_left (fun code binding ->
     <:expr<let $binding$ in $code$>>
   )
@@ -110,6 +111,7 @@ let make_ml_actions variant index =
         | None ->
             begin match bindings with
             | [ <:binding<$lid:first_tagged$ = $_$>> ] ->
+                let _loc = ghost 115 in
                 <:expr<$lid:first_tagged$>>
 
             | [binding] ->
@@ -133,6 +135,7 @@ let make_ml_actions variant index =
        * the declared type *)
       let result =
         let left = NtArray.get index.nonterms prod.left in
+        let _loc = ghost 139 in
         <:expr<
           (* now insert the user's code, to execute in this environment of
            * properly-typed semantic values *)
@@ -144,6 +147,7 @@ let make_ml_actions variant index =
 
       let fun_body = fold_bindings result bindings in
       
+      let _loc = ghost 151 in
       <:expr<fun svals start_p end_p -> $fun_body$>>
     ) index.prods
 
@@ -151,17 +155,20 @@ let make_ml_actions variant index =
     |> Ast.exSem_of_list
   in
 
+  let _loc = ghost 159 in
   <:rec_binding<reductionActionArray = [| $closures$ |]>>
 
 
 let make_ml_spec_func default semtype rettype kind func id =
   match func with
   | None ->
+      let _loc = ghost 166 in
       <:expr<$default$ ($int:string_of_int id$)>>
 
   | Some { params; code } ->
       let real_rettype =
         if rettype = semtype then
+          let _loc = ghost 172 in
           <:ctyp<SemanticValue.t>>
         else
           rettype
@@ -169,12 +176,13 @@ let make_ml_spec_func default semtype rettype kind func id =
 
       let untyped_params =
         List.rev_map (fun param ->
-          let param = Sloc.value param in
+          let _loc, param = Sloc._loc param in
           <:patt<($lid:"_" ^ param$ : SemanticValue.t)>>
         ) params
       in
 
       let bindings =
+        let _loc = ghost 186 in
         <:binding<__result : $rettype$ = $code$>>
         :: List.map (fun param ->
           let _loc, param = Sloc._loc param in
@@ -183,6 +191,7 @@ let make_ml_spec_func default semtype rettype kind func id =
       in
 
       let result =
+        let _loc = ghost 195 in
         if real_rettype != rettype then
           <:expr<SemanticValue.repr __result>>
         else
@@ -191,6 +200,7 @@ let make_ml_spec_func default semtype rettype kind func id =
 
       let fun_body = fold_bindings result bindings in
 
+      let _loc = ghost 204 in
       List.fold_left (fun code param ->
         <:expr<fun $param$ -> $code$>>
       ) fun_body untyped_params
@@ -203,10 +213,12 @@ let array_expr_of_array array =
     |> Ast.exSem_of_list
   in
 
+  let _loc = ghost 217 in
   <:expr<[| $exsem$ |]>>
 
 
 let make_spec_func_closures variant name rettype kind base func syms =
+  let _loc = ghost 222 in
   let namesModule = <:expr<$uid:Options._module_prefix () ^ "Names"$>> in
   let default = <:expr<$lid:"default_" ^ name$ $namesModule$.$lid:kind ^ "NamesArray"$>> in
 
@@ -227,6 +239,7 @@ let make_ml_dup_del_merge variant terms nonterms =
     let closures = make_spec_func_closures variant sf_name rettype kind base func syms in
 
     assert (is_lid a_name);
+    let _loc = ghost 243 in
     <:rec_binding<$lid:a_name ^ "Array"$ = $closures$>>
   in
 
@@ -250,6 +263,7 @@ let make_ml_dup_del_merge variant terms nonterms =
       (TermArray.to_array terms)
   in
 
+  let _loc = ghost 267 in
   [
     (* ------------------- dup/del/merge/keep nonterminals ------------------ *)
     make_nonterm "dup"   "duplicateNontermValue"   Semantic.dup_of_nonterm   (None);
@@ -265,6 +279,8 @@ let make_ml_dup_del_merge variant terms nonterms =
 
 
 let make_ml_action_code variant index final_prod verbatim =
+  let _loc = ghost 283 in
+
   let result_type = final_semtype variant index.nonterms (ProdArray.get index.prods final_prod) in
 
   let closures =

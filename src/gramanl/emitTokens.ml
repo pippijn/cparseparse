@@ -3,7 +3,7 @@ open GrammarType
 open CodegenHelpers
 
 let (|>) = BatPervasives.(|>)
-let _loc = Loc.ghost
+let ghost lnum = Loc.of_tuple ("emitTokens.ml", lnum, 0, 0, lnum, 0, 0, false)
 
 
 (************************************************
@@ -12,6 +12,7 @@ let _loc = Loc.ghost
 
 
 let make_ml_token_type terms =
+  let _loc = ghost 15 in
   TermArray.map (fun term ->
     let semtype =
       <:ctyp<$Sloc.tyUid term.tbase.name$>>
@@ -27,6 +28,7 @@ let make_ml_token_type terms =
 
 
 let make_ml_token_fn ?default value terms =
+  let _loc = ghost 31 in
   let cases =
     TermArray.fold_left (fun cases term ->
       try
@@ -58,6 +60,7 @@ let make_ml_token_fn ?default value terms =
 
 
 let make_ml_tokens terms =
+  let _loc = ghost 63 in
   (* emit token type declaration in both mli and ml *)
   let types = make_ml_token_type terms in
   let intf =

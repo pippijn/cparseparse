@@ -3,7 +3,7 @@ open GrammarType
 open CodegenHelpers
 
 let (|>) = BatPervasives.(|>)
-let _loc = Loc.ghost
+let ghost lnum = Loc.of_tuple ("emitNames.ml", lnum, 0, 0, lnum, 0, 0, false)
 
 
 let str str =
@@ -13,6 +13,7 @@ let str str =
 
 (* ------------------- description functions ------------------ *)
 let make_ml_descriptions terms nonterms =
+  let _loc = ghost 15 in
   (* emit a map of terminal ids to their names *)
   let term_names_array =
     let names =

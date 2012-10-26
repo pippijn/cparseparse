@@ -4,7 +4,7 @@ open GrammarType
 open CodegenHelpers
 
 let (|>) = BatPervasives.(|>)
-let _loc = Loc.ghost
+let ghost lnum = Loc.of_tuple ("emitTables.ml", lnum, 0, 0, lnum, 0, 0, false)
 
 
 (************************************************
@@ -12,6 +12,7 @@ let _loc = Loc.ghost
  ************************************************)
 
 let exSem_of_int_list table =
+  let _loc = ghost 15 in
   Array.map (fun value ->
     <:expr<$int:string_of_int value$>>
   ) table
@@ -22,6 +23,7 @@ let exSem_of_int_list table =
 let print_tables tables =
   let open ParseTablesType in
 
+  let _loc = ghost 26 in
   <:str_item<
     let parseTables = Glr.ParseTablesType.({
       numTerms = $int:string_of_int tables.numTerms$;
@@ -53,6 +55,7 @@ let print_tables tables =
 let make_ml_tables tables dat =
   Marshal.to_channel dat tables [Marshal.No_sharing];
 
+  let _loc = ghost 58 in
   <:sig_item<
     include Glr.ParseTablesType.S
   >>,

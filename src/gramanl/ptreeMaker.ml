@@ -2,8 +2,7 @@ open GrammarType
 open Camlp4.PreCast
 
 let (|>) = BatPervasives.(|>)
-
-let _loc = Loc.ghost
+let ghost lnum = Loc.of_tuple ("ptreeMaker.ml", lnum, 0, 0, lnum, 0, 0, false)
 
 
 (* yield all tagged symbols *)
@@ -66,6 +65,7 @@ let right_symbol head_tail =
 
 let nonterm_type = function
   | None ->
+      let _loc = ghost 68 in
       <:ctyp<t>>
   | Some name ->
       let _loc, name = Sloc._loc name in
@@ -73,9 +73,10 @@ let nonterm_type = function
 
 let merge name = function
   | { params = [l; r] as params } ->
+      let _loc, name = Sloc._loc name in
       `SEM_MERGE {
         params;
-        code = <:expr<$Sloc.exUid name$.Merge ($Sloc.exLid l$, $Sloc.exLid r$)>>
+        code = <:expr<$uid:name$.Merge ($Sloc.exLid l$, $Sloc.exLid r$)>>
       }
   | _ ->
       failwith "invalid merge function"
@@ -86,6 +87,7 @@ let nonterminal variant reachable nonterm =
 
   let semtype =
     if not is_reachable then
+      let _loc = ghost 90 in
       <:ctyp<unit>>
     else if Ids.Nonterminal.is_start nonterm.nbase.index_id then
       (* synthesised start symbol *)
@@ -142,6 +144,7 @@ let require_tag sym =
 let map_prods variant nonterms reachable has_merge prods =
   match prods with
   | [prod] when is_singleton_nonterminal prod && not has_merge ->
+      let _loc = ghost 147 in
       check_noname nonterms prod;
 
       let tag =
@@ -156,6 +159,7 @@ let map_prods variant nonterms reachable has_merge prods =
       [set_action variant prod action]
 
   | [tail; head_tail] when is_list_nonterminal tail head_tail && not has_merge ->
+      let _loc = ghost 162 in
       check_noname nonterms tail;
       check_noname nonterms head_tail;
       begin match symbols_of_production tail, symbols_of_production head_tail with
@@ -181,18 +185,20 @@ let map_prods variant nonterms reachable has_merge prods =
       end
 
   | [none; some] when is_option_nonterminal none some && not has_merge ->
+      let _loc = ghost 188 in
       begin match symbols_of_production some with
       | [some_sym] ->
-          let some_tag = require_tag some_sym in
+          let _loc, some_tag = Sloc._loc (require_tag some_sym) in
           [
             set_action variant none <:expr<None>>;
-            set_action variant some <:expr<Some $Sloc.exLid some_tag$>>;
+            set_action variant some <:expr<Some $lid:some_tag$>>;
           ]
 
       | _ -> failwith "error in is_option_nonterminal"
       end
 
   | [none; some] when is_boolean_nonterminal none some && not has_merge ->
+      let _loc = ghost 201 in
       [
         set_action variant none <:expr<false>>;
         set_action variant some <:expr<true>>;
@@ -203,6 +209,7 @@ let map_prods variant nonterms reachable has_merge prods =
         let action =
           (* production 0 is the synthesised start symbol *)
           if Ids.Production.is_start prod.pbase.index_id then (
+            let _loc = ghost 212 in
             <:expr<top>>
           ) else (
             let prod_name =
@@ -211,21 +218,28 @@ let map_prods variant nonterms reachable has_merge prods =
               | _  -> prod.pbase.name
             in
 
-            let prod_variant =
+            let _loc, prod_variant =
               let left = NtArray.get nonterms prod.left in
-              <:expr<$Sloc.exUid left.nbase.name$.$Sloc.exUid prod_name$>>
+              let _loc, prod_name = Sloc._loc prod_name in
+              _loc, <:expr<$Sloc.exUid left.nbase.name$.$uid:prod_name$>>
             in
 
             let args =
+              let pos_args =
+                let _loc = ghost 230 in
+                [ <:expr<(start_p, end_p)>> ]
+              in
+
               List.fold_left (fun args sym ->
                 match GrammarUtil.tag_of_symbol sym with
                 | None ->
                     (* nothing to do for untagged symbols *)
                     args
                 | Some tag ->
-                    <:expr<$Sloc.exLid tag$>> :: args
+                    let _loc, tag = Sloc._loc tag in
+                    <:expr<$lid:tag$>> :: args
 
-              ) [ <:expr<(start_p, end_p)>> ] prod.right
+              ) pos_args prod.right
               |> List.rev
             in
 
@@ -240,6 +254,7 @@ let map_prods variant nonterms reachable has_merge prods =
 
 
 let unit_prods variant nonterms =
+  let _loc = ghost 261 in
   List.map (fun prod ->
     check_noname nonterms prod;
     set_action variant prod <:expr<()>>
@@ -286,6 +301,7 @@ let prods variant reachable nonterms prods_by_lhs prods =
 
 let verbatims variant =
   let prefix = SemanticVariant.prefix_for_variant_kind variant in
+  let _loc = ghost 307 in
   SemanticVariant.of_list variant [
     Some (`SEM_VERBATIM      [ <:sig_item< open $uid:Options._module_prefix () ^ prefix$.Ptree >> ]);
     Some (`SEM_IMPL_VERBATIM [ <:str_item< open $uid:Options._module_prefix () ^ prefix$.Ptree >> ]);
