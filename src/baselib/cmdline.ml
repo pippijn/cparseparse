@@ -2,11 +2,13 @@ let _trace_progress = ref false
 let _alloc_stats = ref false
 let _alloc_timing = ref false
 
+let dummy_spec = ("", Arg.Unit ignore, "")
 
 let specs = let open Arg in ref ([
   "-timing",		Set _trace_progress,		" output timing details";
   "-alloc-stats",	Set _alloc_stats,		" print memory allocation statistics";
   "-alloc-timing",	Set _alloc_timing,		" print alloc statistics in timings (implies -timing)";
+  dummy_spec;
 ])
 let actions = ref [
   (fun inputs ->
@@ -22,7 +24,7 @@ let _alloc_timing () = !_alloc_timing
 
 
 let register ?action spec =
-  specs := spec @ !specs;
+  specs := spec @ dummy_spec :: !specs;
   match action with
   | None -> ()
   | Some action ->
@@ -36,13 +38,20 @@ let run f =
     List.map (fun (arg, kind, desc) ->
       let default =
         match kind with
-        | Arg.Set ref -> string_of_bool !ref
-        | Arg.Set_int ref -> string_of_int !ref
-        | Arg.Set_string ref -> !ref
+        (* pass these on *)
+        | Arg.Unit _ -> None
+
+        | Arg.Set ref -> Some (string_of_bool !ref)
+        | Arg.Set_int ref -> Some (string_of_int !ref)
+        | Arg.Set_string ref -> Some !ref
         | _ -> failwith "unsupported argument kind"
       in
 
-      (arg, kind, desc ^ " (default: " ^ default ^ ")")
+      match default with
+      | None ->
+          (arg, kind, desc)
+      | Some default ->
+          (arg, kind, desc ^ " (default: " ^ default ^ ")")
     ) !specs
   in
 
