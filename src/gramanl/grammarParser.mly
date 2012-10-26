@@ -7,10 +7,10 @@
 /* ===================== tokens ============================ */
 /* tokens that have many lexical spellings */
 %token <int> TOK_INTEGER
-%token <string> TOK_UNAME
-%token <string> TOK_LNAME
-%token <string> TOK_STRING
-%token <string> TOK_LIT_CODE
+%token <string Sloc.t> TOK_UNAME
+%token <string Sloc.t> TOK_LNAME
+%token <string Sloc.t> TOK_STRING
+%token <string Sloc.t> TOK_LIT_CODE
 
 /* punctuators */
 %token TOK_LBRACK		/* "["	*/
@@ -74,7 +74,7 @@ verbatim
 parser_option
 	: TOK_OPTION TOK_LNAME		   TOK_SEMICOLON { TF_option ($2,  1) }
 	| TOK_OPTION TOK_LNAME TOK_INTEGER TOK_SEMICOLON { TF_option ($2, $3) }
-	| TOK_OPTION TOK_LNAME TOK_LNAME   TOK_SEMICOLON { TF_option ($2, (if $3 = "true" then 1 else 0)) }
+	| TOK_OPTION TOK_LNAME TOK_LNAME   TOK_SEMICOLON { TF_option ($2, (if Sloc.value $3 = "true" then 1 else 0)) }
 
 
 /* ------ terminals ------ */
@@ -98,9 +98,7 @@ terminal_decls
  * canonical name, and an optional alias; the name/alias appears in
  * the forms, rather than the integer code itself */
 terminal_decl
-	: TOK_INTEGER TOK_COLON TOK_UNAME	     TOK_SEMICOLON
-		{ TermDecl ($1, $3, "") }
-	| TOK_INTEGER TOK_COLON TOK_UNAME TOK_STRING TOK_SEMICOLON
+	: TOK_INTEGER TOK_COLON TOK_UNAME TOK_STRING? TOK_SEMICOLON
 		{ TermDecl ($1, $3, $4) }
 
 
@@ -125,7 +123,7 @@ prec_specs
 	: /* empty */
 		{ [] }
 	| prec_specs TOK_LNAME TOK_INTEGER name_or_string_list TOK_SEMICOLON
-		{ PrecSpec (Assoc.of_string $2, $3, List.rev $4) :: $1 }
+		{ PrecSpec (Sloc.map Assoc.of_string $2, $3, List.rev $4) :: $1 }
 
 
 name_or_string_list
@@ -156,8 +154,8 @@ formals_opt(NAME)
 
 
 formals(NAME)
-	: NAME				{ [$1, $startpos, $endpos] }
-	| formals(NAME) TOK_COMMA NAME	{ ($3, $startpos, $endpos) :: $1 }
+	: NAME				{ [$1] }
+	| formals(NAME) TOK_COMMA NAME	{ $3 :: $1 }
 
 
 
@@ -185,14 +183,12 @@ productions
 
 
 production
-	: TOK_ARROW rhs action
-		{ ProdDecl (PDK_NEW, "", List.rev $2, $3) }
-	| TOK_ARROW rhs production_name action
+	: TOK_ARROW rhs production_name? action
 		{ ProdDecl (PDK_NEW, $3, List.rev $2, $4) }
 	| TOK_REPLACE TOK_ARROW rhs action
-		{ ProdDecl (PDK_REPLACE, "", List.rev $3, $4) }
+		{ ProdDecl (PDK_REPLACE, None, List.rev $3, $4) }
 	| TOK_DELETE TOK_ARROW rhs TOK_SEMICOLON
-		{ ProdDecl (PDK_DELETE, "", List.rev $3, None) }
+		{ ProdDecl (PDK_DELETE, None, List.rev $3, None) }
 
 
 production_name
@@ -219,11 +215,11 @@ rhs_elt
 	: TOK_UNAME
 		{ RH_name (None, $1) }
 	| TOK_LNAME TOK_COLON TOK_UNAME
-		{ RH_name (Some ($1, $startpos($1), $endpos($1)), $3) }
+		{ RH_name (Some $1, $3) }
 	| TOK_STRING
 		{ RH_string (None, $1) }
 	| TOK_LNAME TOK_COLON TOK_STRING
-		{ RH_string (Some ($1, $startpos($1), $endpos($1)), $3) }
+		{ RH_string (Some $1, $3) }
 	| TOK_PRECEDENCE TOK_LPAREN name_or_string TOK_RPAREN
 		{ RH_prec ($3) }
 	| TOK_FORBID_NEXT TOK_LPAREN name_or_string TOK_RPAREN

@@ -89,8 +89,8 @@ let rec rewrite_nt_as_terminals nonterms prods prods_by_lhs output nonterm seen 
      * have any finite sentences) *)
     if Options._trace_rewrite () then (
       let nonterm = NtArray.get nonterms nonterm in
-      Printf.printf "could not find any unused, non-recursive rules for %s\n"
-        nonterm.nbase.name
+      Printf.printf "could not find any unused, non-recursive rules for %a\n"
+        Sloc.print_string nonterm.nbase.name
     );
 
     raise Not_found
@@ -146,7 +146,7 @@ let sample_input terms nonterms prods prods_by_lhs state =
     |> rewrite_as_terminals nonterms prods prods_by_lhs
     |> List.rev_map (TermArray.get terms)
     |> List.rev_map GrammarUtil.name_of_terminal
-    |> List.rev
+    |> List.rev_map Sloc.value
     |> String.concat " "
 
   with Failure msg ->
@@ -155,5 +155,6 @@ let sample_input terms nonterms prods prods_by_lhs state =
 
 let left_context terms nonterms state =
   left_context terms nonterms [] state
-  |> List.map (GrammarUtil.name_of_symbol terms nonterms)
+  |> List.rev_map (GrammarUtil.name_of_symbol terms nonterms)
+  |> List.rev_map Sloc.value
   |> String.concat " "

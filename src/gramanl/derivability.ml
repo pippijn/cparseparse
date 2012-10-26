@@ -39,9 +39,9 @@ let add_derivable_i env left right =
     if Options._trace_derivable () then (
       if not left.cyclic then (
         print_string "%%% derivable: ";
-        Printf.printf "discovered that %s ->+ %s (i.e. is cyclic)\n"
-          left.nbase.name
-          left.nbase.name;
+        Printf.printf "discovered that %a ->+ %a (i.e. is cyclic)\n"
+          Sloc.print_string left.nbase.name
+          Sloc.print_string left.nbase.name;
       )
     );
 
@@ -99,7 +99,8 @@ let add_derivable_nonterminal env left right_nonterm after_right_sym =
            * can't derive right_sym *)
           if Options._trace_derivable () then (
             let nonterm = NtArray.get env.index.nonterms nonterm in
-            Printf.printf "nonterminal %s can derive empty?\n" nonterm.nbase.name;
+            Printf.printf "nonterminal %a can derive empty?\n"
+              Sloc.print_string nonterm.nbase.name;
           );
           can_derive_empty env.derivable nonterm
     ) after_right_sym
@@ -107,8 +108,8 @@ let add_derivable_nonterminal env left right_nonterm after_right_sym =
 
   if Options._trace_derivable () then (
     let left = NtArray.get env.index.nonterms left in
-    Printf.printf "%s's rest can %sderive empty\n"
-      left.nbase.name
+    Printf.printf "%a's rest can %sderive empty\n"
+      Sloc.print_string left.nbase.name
       (if rest_derive_empty then "" else "NOT ");
   );
 
@@ -121,9 +122,9 @@ let add_derivable_nonterminal env left right_nonterm after_right_sym =
       let left = NtArray.get env.index.nonterms left in
       let right_nonterm = NtArray.get env.index.nonterms right_nonterm in
       print_string "%%% derivable: ";
-      Printf.printf "discovered (by production): %s ->* %s\n"
-        left.nbase.name
-        right_nonterm.nbase.name;
+      Printf.printf "discovered (by production): %a ->* %a\n"
+        Sloc.print_string left.nbase.name
+        Sloc.print_string right_nonterm.nbase.name;
     );
 
     true
@@ -135,7 +136,7 @@ let add_derivable_nonterminal env left right_nonterm after_right_sym =
 let add_derivable_relations env changes =
   ProdArray.iter (fun prod ->
     if Options._trace_derivable () then (
-      PrintGrammar.print_production env.index.terms env.index.nonterms prod;
+      PrintGrammar.print_production env.index.terms env.index.nonterms stdout prod;
       print_newline ();
     );
 
@@ -206,9 +207,9 @@ let compute_derivability_closure env changes =
             if add_derivable_i env u w then (
               if Options._trace_derivable () then (
                 print_string "%%% derivable: ";
-                Printf.printf "discovered (by closure step): %s ->* %s\n"
-                  (NtArray.get env.index.nonterms u).nbase.name
-                  (NtArray.get env.index.nonterms w).nbase.name;
+                Printf.printf "discovered (by closure step): %a ->* %a\n"
+                  Sloc.print_string (NtArray.get env.index.nonterms u).nbase.name
+                  Sloc.print_string (NtArray.get env.index.nonterms w).nbase.name;
               );
               incr changes
             )

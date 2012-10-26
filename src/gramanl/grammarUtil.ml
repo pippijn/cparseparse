@@ -2,10 +2,7 @@ open GrammarType
 
 
 let name_of_terminal { tbase = { name }; alias } =
-  if alias <> "" then
-    alias
-  else
-    name
+  BatOption.default name alias
 
 
 let name_of_nonterminal { nbase = { name } } =

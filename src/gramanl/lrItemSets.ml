@@ -60,9 +60,8 @@ let production_closure env finished worklist item b prod_index =
   let prod = ProdArray.get env.index.prods prod_index in
 
   if Options._trace_closure () then (
-    print_string "    considering production ";
-    PrintGrammar.print_production env.index.terms env.index.nonterms prod;
-    print_newline ();
+    Printf.printf "    considering production %a\n"
+      (PrintGrammar.print_production env.index.terms env.index.nonterms) prod;
   );
 
   (* key to good performance: do *no* dynamic allocation in this
@@ -87,9 +86,8 @@ let production_closure env finished worklist item b prod_index =
   let new_item_la =
     if beta.can_derive_empty then (
       if Options._trace_closure () then (
-        print_string "      beta: ";
-        PrintAnalysisEnv.print_dotted_production env.index beta;
-        print_newline ();
+        Printf.printf "      beta: %a\n"
+          (PrintAnalysisEnv.print_dotted_production env.index) beta;
         print_endline "      beta can derive empty";
       );
       TerminalSet.union new_item_la item.lookahead
@@ -108,9 +106,8 @@ let production_closure env finished worklist item b prod_index =
   in
 
   if Options._trace_closure () then (
-    print_string "      built item ";
-    PrintAnalysisEnv.print_lr_item env { dprod = new_dp; lookahead = new_item_la };
-    print_newline ();
+    Printf.printf "      built item %a\n"
+      (PrintAnalysisEnv.print_lr_item env) { dprod = new_dp; lookahead = new_item_la };
   );
 
   (* is 'newDP' already there?
@@ -133,9 +130,8 @@ let production_closure env finished worklist item b prod_index =
   | Some already ->
       (* yes, it's already there *)
       if Options._trace_closure () then (
-        print_string "      looks similar to ";
-        PrintAnalysisEnv.print_lr_item env already;
-        print_newline ();
+        Printf.printf "      looks similar to %a\n"
+          (PrintAnalysisEnv.print_lr_item env) already;
       );
 
       (* but the new item may have additional lookahead
@@ -145,9 +141,8 @@ let production_closure env finished worklist item b prod_index =
         already.lookahead <- merged;
 
         if Options._trace_closure () then (
-          print_string "      (chg) merged it to make ";
-          PrintAnalysisEnv.print_lr_item env already;
-          print_newline ();
+          Printf.printf "      (chg) merged it to make %a\n"
+            (PrintAnalysisEnv.print_lr_item env) already;
         );
 
         (* merging changed 'already' *)
@@ -192,7 +187,7 @@ let single_item_closure env finished worklist item =
 
   if Options._trace_closure () then (
     print_string "%%% considering item ";
-    PrintAnalysisEnv.print_lr_item env item;
+    PrintAnalysisEnv.print_lr_item env stdout item;
     print_newline ();
   );
 
@@ -228,7 +223,7 @@ let item_set_closure env item_set =
 
   if Options._trace_closure () then (
     print_string "%%% computing closure of ";
-    PrintAnalysisEnv.print_item_set env item_set;
+    PrintAnalysisEnv.print_item_set env stdout item_set;
   );
 
   (* set of items we've finished *)
@@ -273,7 +268,7 @@ let item_set_closure env item_set =
 
   if Options._trace_closure () then (
     print_string "%%% done with closure of ";
-    PrintAnalysisEnv.print_item_set env item_set;
+    PrintAnalysisEnv.print_item_set env stdout item_set;
   )
 
 
@@ -337,9 +332,9 @@ let merge_state env item_set sym in_done_list already dot_moved_items =
    * computed lookaheads with those in 'already' *)
   if merge_lookaheads_into already dot_moved_items.items then (
     if Options._trace_lrsets () then (
-      Printf.printf "from state %a, found that the transition on %s yielded a state similar to %a, but with different lookahead\n"
+      Printf.printf "from state %a, found that the transition on %a yielded a state similar to %a, but with different lookahead\n"
         Ids.State.print item_set.state_id
-        (GrammarUtil.name_of_symbol env.env.index.terms env.env.index.nonterms sym)
+        Sloc.print_string (GrammarUtil.name_of_symbol env.env.index.terms env.env.index.nonterms sym)
         Ids.State.print already.state_id
     );
 
@@ -424,7 +419,7 @@ let process_item env item_set item =
   | Some sym ->
       if Options._trace_lrsets () then (
         print_string "%%% considering item ";
-        PrintAnalysisEnv.print_lr_item env.env item;
+        PrintAnalysisEnv.print_lr_item env.env stdout item;
         print_newline ();
       );
 

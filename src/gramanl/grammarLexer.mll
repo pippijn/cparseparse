@@ -37,16 +37,16 @@
 
   let classify id =
     try
-      snd (List.find (fun (name, token) -> id = name) keywords)
+      snd (List.find (fun (name, token) -> Sloc.value id = name) keywords)
     with Not_found ->
       TOK_LNAME id
 
   let to_string = function
     | TOK_INTEGER i -> Printf.sprintf "TOK_INTEGER %d" i
-    | TOK_UNAME id -> "TOK_UNAME " ^ id
-    | TOK_LNAME id -> "TOK_LNAME " ^ id
-    | TOK_STRING id -> "TOK_STRING " ^ id
-    | TOK_LIT_CODE id -> "TOK_LIT_CODE " ^ id
+    | TOK_UNAME id -> "TOK_UNAME " ^ Sloc.value id
+    | TOK_LNAME id -> "TOK_LNAME " ^ Sloc.value id
+    | TOK_STRING id -> "TOK_STRING " ^ Sloc.value id
+    | TOK_LIT_CODE id -> "TOK_LIT_CODE " ^ Sloc.value id
 
     | TOK_LBRACK -> "TOK_LBRACK"
     | TOK_RBRACK -> "TOK_RBRACK"
@@ -106,6 +106,16 @@
       p.pos_lnum
       (p.pos_cnum - p.pos_bol)
 
+  let loc lexbuf t =
+    let s = Lexing.lexeme_start_p lexbuf in
+    let e = Lexing.lexeme_end_p lexbuf in
+    if Options._trace_lexing () then
+      Printf.printf "%a-%a: %s\n"
+	output_position s
+	output_position e
+	t;
+    (t, s, e)
+
   let return lexbuf t =
     let s = Lexing.lexeme_start_p lexbuf in
     let e = Lexing.lexeme_end_p lexbuf in
@@ -136,7 +146,7 @@ rule verbatim state = parse
 			    Buffer.clear state.code;
 			    state.automaton <- Normal;
 			    state.in_rhs <- false;
-			    return lexbuf (TOK_LIT_CODE (remove_braces code))
+			    return lexbuf (TOK_LIT_CODE (loc lexbuf (remove_braces code)))
 			  else
 			    verbatim state lexbuf
 			}
@@ -159,7 +169,7 @@ and typename state = parse
 			    let code = String.copy (Buffer.contents state.code) in
 			    Buffer.clear state.code;
 			    state.automaton <- Normal;
-			    return lexbuf (TOK_LIT_CODE (remove_parens code))
+			    return lexbuf (TOK_LIT_CODE (loc lexbuf (remove_parens code)))
 			  else
 			    typename state lexbuf
 			}
@@ -191,17 +201,17 @@ and normal state = parse
   }
 
 (* Handle this one specially, as it is a nonterminal *)
-| "empty"							{ return lexbuf (TOK_UNAME "empty") }
+| "empty"							{ return lexbuf (TOK_UNAME (loc lexbuf "empty")) }
 
 (* Identifier *)
-| ['A'-'Z'] ['A'-'Z' 'a'-'z' '_' '0'-'9']* as name		{ return lexbuf (TOK_UNAME name) }
-| ['A'-'Z' 'a'-'z' '_'] ['A'-'Z' 'a'-'z' '_' '0'-'9']* as name	{ return lexbuf (classify name) }
+| ['A'-'Z'] ['A'-'Z' 'a'-'z' '_' '0'-'9']* as name		{ return lexbuf (TOK_UNAME (loc lexbuf name)) }
+| ['A'-'Z' 'a'-'z' '_'] ['A'-'Z' 'a'-'z' '_' '0'-'9']* as name	{ return lexbuf (classify (loc lexbuf name)) }
 
 (* Integer *)
 | ['0'-'9']+ as int						{ return lexbuf (TOK_INTEGER (int_of_string int)) }
 
 (* Integer *)
-| '"' [^ '"' '\n']+ '"' as string				{ return lexbuf (TOK_STRING (string |> remove_quotes)) }
+| '"' [^ '"' '\n']+ '"' as string				{ return lexbuf (TOK_STRING (string |> remove_quotes |> loc lexbuf)) }
 
 (* Punctuators *)
 | "{"								{ if state.in_rhs then (

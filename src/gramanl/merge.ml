@@ -20,7 +20,7 @@ type topforms = {
   types : termtype list;
   precs : precspec list;
 
-  first_nonterm : string;
+  first_nonterm : string Sloc.t;
   nonterms : (topform * Ids.Nonterminal.t) StringMap.t;
 } with sexp
 
@@ -33,7 +33,7 @@ let empty_topforms = {
   types = [];
   precs = [];
 
-  first_nonterm = "";
+  first_nonterm = Sloc.empty_string;
   nonterms = StringMap.empty;
 }
 
@@ -141,11 +141,11 @@ let merge grammars =
         | TF_verbatim _ ->
             { topforms with verbatims = topform :: topforms.verbatims }, next_nt_index
 
-        | TF_option (name, value) when StringSet.mem name accumulators ->
+        | TF_option (name, value) when StringSet.mem (Sloc.value name) accumulators ->
             (* Sum up values for some options. *)
             let found, options =
               List.fold_left (fun (found, options) -> function
-                | TF_option (oname, ovalue) when oname = name ->
+                | TF_option (oname, ovalue) when Sloc.equal oname name ->
                     true, TF_option (name, value + ovalue) :: options
                 | TF_option _ as option ->
                     found, option :: options
@@ -180,11 +180,14 @@ let merge grammars =
             let topform, nt_index, next_nt_index =
               try
                 (* Find an existing non-terminal. *)
-                match StringMap.find name topforms.nonterms with
+                match StringMap.find (Sloc.value name) topforms.nonterms with
 
                 | TF_nonterm (_, osemtype, ofuncs, oprods, osubsets), nt_index ->
-                    if nsemtype <> osemtype then
-                      failwith ("non-terminal types for merged '" ^ name ^ "' inconsistent; do not use type aliases");
+                    if not (BatOption.eq ~eq:Sloc.equal nsemtype osemtype) then
+                      failwith (
+                        "non-terminal types for merged '"
+                        ^ (Sloc.value name) ^
+                        "' inconsistent; do not use type aliases");
 
                     let funcs = merge_funcs nfuncs ofuncs in
                     let prods = merge_prods nprods oprods in
@@ -201,14 +204,14 @@ let merge grammars =
             in
 
             let first_nonterm =
-              if topforms.first_nonterm = "" then
+              if topforms.first_nonterm == Sloc.empty_string then
                 name
               else
                 topforms.first_nonterm
             in
 
             { topforms with
-              nonterms = StringMap.add name (topform, nt_index) topforms.nonterms;
+              nonterms = StringMap.add (Sloc.value name) (topform, nt_index) topforms.nonterms;
               first_nonterm;
             }, next_nt_index
 
@@ -224,10 +227,10 @@ let merge grammars =
   StringMap.iter (fun _ (a, a_index) ->
     StringMap.iter (fun _ (b, b_index) ->
       if a != b && a_index = b_index then (
-        Printf.printf "%s has the same index (%a) as %s\n"
-          (nonterm_name a)
+        Printf.printf "%a has the same index (%a) as %a\n"
+          Sloc.print_string (nonterm_name a)
           Ids.Nonterminal.print a_index
-          (nonterm_name b)
+          Sloc.print_string (nonterm_name b)
       );
       assert (a == b || a_index <> b_index);
     ) topforms.nonterms;

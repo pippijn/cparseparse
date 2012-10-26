@@ -107,10 +107,11 @@ let state_graph dirname (_, _, states, _ as tuple) =
 
 
 let dump_automaton dirname (_, env, states, _ as tuple) =
-  let out = Pervasives.open_out (dirname ^ "/automaton.out") in
-  Timing.progress "dumping states to automaton.out"
-    (List.iter (PrintAnalysisEnv.print_item_set ~out env)) states;
-  close_out out;
+  BatStd.with_dispose ~dispose:close_out
+    (fun out ->
+      Timing.progress "dumping states to automaton.out"
+        (List.iter (PrintAnalysisEnv.print_item_set env out)) states
+    ) (Pervasives.open_out (dirname ^ "/automaton.out"));
   tuple
 
 

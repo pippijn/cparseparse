@@ -56,7 +56,7 @@ let compute_dotted_productions indexed_prods =
 
 let init_env grammar =
   let start_nt =
-    (StringMap.find grammar.start_symbol grammar.nonterminals).nbase.index_id
+    (StringMap.find (Sloc.value grammar.start_symbol) grammar.nonterminals).nbase.index_id
   in
 
   let indices = GrammarIndex.compute_indices grammar in

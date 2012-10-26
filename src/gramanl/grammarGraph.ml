@@ -8,7 +8,7 @@ module Dot = Graph.Graphviz.Dot(struct
     let graph_attributes _ = []
     let default_vertex_attributes _ = []
 
-    let vertex_name nonterm = nonterm.nbase.name
+    let vertex_name nonterm = Sloc.value nonterm.nbase.name
     let vertex_attributes _ = []
 
     let get_subgraph _ = None

@@ -23,10 +23,10 @@ let compute_indexed_nonterms nonterms =
     (* verify there are no duplicate indices *)
     let existing = NtArray.get indexed i in
     if existing != empty_nonterminal then (
-      Printf.printf "%s has the same index (%a) as %s\n"
-        existing.nbase.name
+      Printf.printf "%a has the same index (%a) as %a\n"
+        Sloc.print_string existing.nbase.name
         Ids.Nonterminal.print i
-        nonterm.nbase.name
+        Sloc.print_string nonterm.nbase.name
     );
     assert (existing == empty_nonterminal);
     NtArray.set indexed i nonterm (* map: index to symbol *)

@@ -105,12 +105,11 @@ let possible_reductions index item_set lookahead =
         prod :: reductions
       else (
         if Options._trace_reductions () then (
-          Printf.printf "state %a, not reducing by "
-            Ids.State.print item_set.state_id;
-          PrintGrammar.print_production index.terms index.nonterms prod;
-          Printf.printf " because %s is not in follow of %s\n"
-            lookahead.tbase.name
-            left.nbase.name;
+          Printf.printf "state %a, not reducing by %a because %a is not in follow of %a\n"
+            Ids.State.print item_set.state_id
+            (PrintGrammar.print_production index.terms index.nonterms) prod
+            Sloc.print_string lookahead.tbase.name
+            Sloc.print_string left.nbase.name;
         );
         reductions
       )
@@ -120,20 +119,18 @@ let possible_reductions index item_set lookahead =
       let prod = ProdArray.get index.prods item.dprod.prod in
       if TerminalSet.mem lookahead.tbase.index_id item.lookahead then (
         if Options._trace_reductions () then (
-          Printf.printf "state %a, reducing by "
-            Ids.State.print item_set.state_id;
-          PrintGrammar.print_production index.terms index.nonterms prod;
-          Printf.printf " because %s is in lookahead\n"
-            lookahead.tbase.name;
+          Printf.printf "state %a, reducing by %a because %a is in lookahead\n"
+            Ids.State.print item_set.state_id
+            (PrintGrammar.print_production index.terms index.nonterms) prod
+            Sloc.print_string lookahead.tbase.name;
         );
         prod :: reductions
       ) else (
         if Options._trace_reductions () then (
-          Printf.printf "state %a, not reducing by "
-            Ids.State.print item_set.state_id;
-          PrintGrammar.print_production index.terms index.nonterms prod;
-          Printf.printf " because %s is not in lookahead\n"
-            lookahead.tbase.name;
+          Printf.printf "state %a, not reducing by %a because %a is not in lookahead\n"
+            Ids.State.print item_set.state_id
+            (PrintGrammar.print_production index.terms index.nonterms) prod
+            Sloc.print_string lookahead.tbase.name;
         );
         reductions
       )

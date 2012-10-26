@@ -156,10 +156,10 @@ let compute_cell_action tables state shift_dest reductions terminal =
   let open GrammarType in
 
   if Options._trace_table () then (
-    Printf.printf "state %a, on terminal %a (\"%s\") "
+    Printf.printf "state %a, on terminal %a (\"%a\") "
       Ids.State.print state.state_id
       Ids.Terminal.print terminal.tbase.index_id
-      terminal.tbase.name;
+      Sloc.print_string terminal.tbase.name;
   );
 
   (* still conflicts? *)
@@ -233,9 +233,10 @@ let compute_action_row env tables allow_ambig sr rr state =
 
   if Options._trace_conflict () then (
     if false then (
-      PrintAnalysisEnv.print_item_set env state;
+      PrintAnalysisEnv.print_item_set env stdout state;
     );
-    Printf.printf "------ state %a ------\n" Ids.State.print state.state_id;
+    Printf.printf "------ state %a ------\n"
+      Ids.State.print state.state_id;
   );
 
   (* ---- fill in this row in the action table ---- *)
@@ -265,7 +266,7 @@ let compute_parse_tables env allow_ambig states =
 
   if false then (
     ProdArray.iter (fun prod ->
-      PrintGrammar.print_production env.index.terms env.index.nonterms prod;
+      PrintGrammar.print_production env.index.terms env.index.nonterms stdout prod;
       print_newline ();
     ) env.index.prods;
   );
@@ -296,8 +297,8 @@ let compute_parse_tables env allow_ambig states =
   (* report on cyclicity *)
   NtArray.iter (fun nonterm ->
     if nonterm.cyclic then
-      Printf.printf "grammar symbol %s is cyclic\n"
-        nonterm.nbase.name
+      Printf.printf "grammar symbol %a is cyclic\n"
+        Sloc.print_string nonterm.nbase.name
   ) env.index.nonterms;
 
   (* fill in 'prod_info' *)

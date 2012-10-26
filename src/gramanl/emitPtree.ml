@@ -13,7 +13,7 @@ let _loc = Loc.ghost
 let ctyp_of_nonterminal nonterms nonterm =
   let nonterm = NtArray.get nonterms nonterm in
   (* the type is the referenced nonterminal module *)
-  let typ = nonterm.nbase.name in
+  let _loc, typ = Sloc._loc nonterm.nbase.name in
   assert (is_uid typ);
   <:ctyp<$uid:typ$.t>>
 
@@ -74,9 +74,8 @@ let production_types terms nonterms has_merge prods =
       let types =
         List.map (fun prod ->
           if false then (
-            print_string "    (*";
-            PrintGrammar.print_production terms nonterms prod;
-            print_endline " *)";
+            Printf.printf "    (*%a *)\n"
+              (PrintGrammar.print_production terms nonterms) prod
           );
 
           let prod_type =
@@ -97,13 +96,13 @@ let production_types terms nonterms has_merge prods =
           in
 
           let prod_name =
-            match prod.pbase.name with
-            | ""   -> "P" ^ Ids.Production.to_string prod.pbase.index_id
-            | name -> assert (is_uid name); name
+            match Sloc.value prod.pbase.name with
+            | "" -> Sloc.at prod.pbase.name ("P" ^ Ids.Production.to_string prod.pbase.index_id)
+            | _  -> prod.pbase.name
           in
 
           let prod_variant =
-            <:ctyp<$uid:prod_name$ of $prod_type$>>
+            <:ctyp<$Sloc.tyUid prod_name$ of $prod_type$>>
           in
 
           <:ctyp<$prod_variant$>>
@@ -127,7 +126,7 @@ let make_ml_parse_tree reachable index prods_by_lhs =
 
       | first :: _ as prods ->
           let nonterm = NtArray.get index.nonterms first.left in
-          let name = nonterm.nbase.name in
+          let name = Sloc.value nonterm.nbase.name in
           if name.[0] = '_' then
             (* we do not emit code for the synthesised start rule *)
             types
@@ -145,7 +144,7 @@ let make_ml_parse_tree reachable index prods_by_lhs =
                 production_types index.terms index.nonterms has_merge prods
               in
 
-              (name, intf_types, impl_types) :: types
+              (nonterm.nbase.name, intf_types, impl_types) :: types
             )
           )
 
@@ -154,6 +153,8 @@ let make_ml_parse_tree reachable index prods_by_lhs =
 
   let bindings =
     List.fold_left (fun bindings (name, intf_types, impl_types) ->
+      let _loc, name = Sloc._loc name in
+
       (* signature *)
       let intf =
         <:module_type<
@@ -178,14 +179,6 @@ let make_ml_parse_tree reachable index prods_by_lhs =
     ) StringMap.empty types
   in
 
-  let first_module =
-    match types with
-    | (name, _, _) :: _ ->
-        name
-    | _ ->
-        failwith "could not find first module"
-  in
-
   let combined =
     BatList.reduce (fun combined binding ->
       <:module_binding<$combined$ and $binding$>>
@@ -193,6 +186,14 @@ let make_ml_parse_tree reachable index prods_by_lhs =
   in
 
   let modules = Ast.StRecMod (_loc, combined) in
+
+  let _loc, first_module =
+    match types with
+    | (name, _, _) :: _ ->
+        Sloc._loc name
+    | _ ->
+        failwith "could not find first module"
+  in
 
   let impl =
     <:str_item<

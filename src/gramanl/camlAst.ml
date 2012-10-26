@@ -25,6 +25,16 @@ let patt_of_string      _loc = parse_string CamlSyntax.patt      <:patt<()>>   _
 let sig_items_of_string _loc = parse_string CamlSyntax.sig_items <:sig_item<>> _loc
 let str_items_of_string _loc = parse_string CamlSyntax.str_items <:str_item<>> _loc
 
+let of_loc_string of_string sloc =
+  let _loc, t = Sloc._loc sloc in
+  of_string _loc t
+
+let ctyp_of_loc_string      sloc = of_loc_string ctyp_of_string      sloc
+let expr_of_loc_string      sloc = of_loc_string expr_of_string      sloc
+let patt_of_loc_string      sloc = of_loc_string patt_of_string      sloc
+let sig_items_of_loc_string sloc = of_loc_string sig_items_of_string sloc
+let str_items_of_loc_string sloc = of_loc_string str_items_of_string sloc
+
 
 let deparse_string syntax value =
     let printer = new CamlPrinter.printer () in
@@ -36,6 +46,12 @@ let string_of_expr = deparse_string (fun o -> o#expr)
 let string_of_patt = deparse_string (fun o -> o#patt)
 let string_of_sig_item = deparse_string (fun o -> o#sig_item)
 let string_of_str_item = deparse_string (fun o -> o#str_item)
+
+let loc_string_of_ctyp     ty = Sloc.generated (string_of_ctyp     ty)
+let loc_string_of_expr     ex = Sloc.generated (string_of_expr     ex)
+let loc_string_of_patt     pa = Sloc.generated (string_of_patt     pa)
+let loc_string_of_sig_item sg = Sloc.generated (string_of_sig_item sg)
+let loc_string_of_str_item st = Sloc.generated (string_of_str_item st)
 
 
 let ctyp_of_sexp     sx = Ast.TyNil (Loc.ghost)

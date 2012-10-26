@@ -16,11 +16,11 @@ let compute_reachable env =
   if false then (
     NtArray.iter (fun nonterm ->
       if not (NtSet.mem reachable_nonterms nonterm.nbase.index_id) then
-        Printf.printf "unreachable nonterminal: %s\n" nonterm.nbase.name
+        Printf.printf "unreachable nonterminal: %a\n" Sloc.print_string nonterm.nbase.name
     ) env.index.nonterms;
     TermArray.iter (fun term ->
       if not (TermSet.mem reachable_terms term.tbase.index_id) then
-        Printf.printf "unreachable terminal: %s\n" term.tbase.name
+        Printf.printf "unreachable terminal: %a\n" Sloc.print_string term.tbase.name
     ) env.index.terms;
   );
 

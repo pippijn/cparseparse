@@ -16,9 +16,8 @@ let print_actions terms nonterms shift_dest reductions =
   end;
 
   List.iter (fun prod ->
-    print_string "      | reduce by rule ";
-    PrintGrammar.print_production terms nonterms prod;
-    print_newline ();
+    Printf.printf "      | reduce by rule %a\n"
+      (PrintGrammar.print_production terms nonterms) prod;
   ) reductions
 
 
@@ -28,11 +27,10 @@ let handle_shift_reduce_conflict index state prod sym decision =
   let open GrammarType in
 
   if Options._trace_prec () then (
-    Printf.printf "    in state %a, S/R conflict on token %s with production "
+    Printf.printf "    in state %a, S/R conflict on token %a with production %a\n"
       Ids.State.print state.state_id
-      sym.tbase.name;
-    PrintGrammar.print_production index.terms index.nonterms prod;
-    print_newline ();
+      Sloc.print_string sym.tbase.name
+      (PrintGrammar.print_production index.terms index.nonterms) prod;
   );
 
   (* look at scannerless directives *)
@@ -88,7 +86,7 @@ let handle_shift_reduce_conflict index state prod sym decision =
   (* precedences are equal, so we look at associativity (of token) *)
   ) else (
     let open Assoc in
-    match sym.associativity with
+    match Sloc.value sym.associativity with
     | AK_LEFT ->
         if Options._trace_prec () then (
           print_endline "      => resolved in favor of REDUCE due to associativity";
@@ -107,7 +105,7 @@ let handle_shift_reduce_conflict index state prod sym decision =
     | AK_NEVERASSOC ->
         (* the user claimed this token would never be involved in a conflict *)
         failwith (Printf.sprintf "token %s was declared 'prec', but it is involved in an associativity conflict with \"%s\" in state %a\n"
-          sym.tbase.name
+          (Sloc.value sym.tbase.name)
           (* TODO *)"prod"
           Ids.State.sprint state.state_id)
     | AK_SPLIT ->
@@ -189,11 +187,11 @@ let subset_directive_resolution nonterms state sym reductions =
           if remove then (
             if Options._trace_prec () then (
               let sub = NtArray.get nonterms sub in
-              Printf.printf "in state %a, R/R conflict on token %s, removed production yielding %s, because another yields subset %s\n"
+              Printf.printf "in state %a, R/R conflict on token %a, removed production yielding %a, because another yields subset %a\n"
                 Ids.State.print state.state_id
-                sym.tbase.name
-                left.nbase.name
-                sub.nbase.name;
+                Sloc.print_string sym.tbase.name
+                Sloc.print_string left.nbase.name
+                Sloc.print_string sub.nbase.name;
             );
           );
 
@@ -241,11 +239,10 @@ let try_resolve_conflicts index state sym shift_dest reductions allow_ambig sr r
       List.fold_left (fun reductions prod ->
         if prod.prec <> 0 && prod.prec < highest_prec then (
           if Options._trace_prec () then (
-            Printf.printf "in state %a, R/R conflict on token %s, removed production "
+            Printf.printf "in state %a, R/R conflict on token %a, removed production %a because %d < %d\n"
               Ids.State.print state.state_id
-              sym.tbase.name;
-            PrintGrammar.print_production index.terms index.nonterms prod;
-            Printf.printf " because %d < %d\n"
+              Sloc.print_string sym.tbase.name
+              (PrintGrammar.print_production index.terms index.nonterms) prod
               prod.prec
               highest_prec;
           );
@@ -284,7 +281,7 @@ let try_resolve_conflicts index state sym shift_dest reductions allow_ambig sr r
 
     if Options._trace_conflict () then (
       let open GrammarType in
-      Printf.printf "    conflict for symbol %s\n" sym.tbase.name;
+      Printf.printf "    conflict for symbol %a\n" Sloc.print_string sym.tbase.name;
       print_actions index.terms index.nonterms shift_dest reductions;
     );
   );
@@ -326,7 +323,7 @@ let resolve_conflicts index (* indexed grammar structure arrays *)
     if actions >= 1 then (
       let open GrammarType in
       print_string "%%% before conflict resolution";
-      Printf.printf " (on token %s):\n" sym.tbase.name;
+      Printf.printf " (on token %a):\n" Sloc.print_string sym.tbase.name;
       print_actions index.terms index.nonterms shift_dest reductions;
     );
   );

@@ -6,11 +6,9 @@ open Camlp4.PreCast
 let (|>) = BatPervasives.(|>)
 let (--) = BatPervasives.(--)
 
-let _loc = Loc.ghost
 
 
-
-let start_name = "__EarlyStartSymbol"
+let start_name = Sloc.generated "__EarlyStartSymbol"
 
 
 (* synthesize a rule "__EarlyStartSymbol -> Start EOF" *)
@@ -21,7 +19,7 @@ let synthesise_start_rule topforms =
   (* build a start production *)
   let start =
     TF_nonterm ((* name = *)start_name, (* type = *)None, (* funcs = *)[], (* prods = *)[
-      ProdDecl (PDK_NEW, "", [
+      ProdDecl (PDK_NEW, None, [
         RH_name (Some (Sloc.generated "top"), topforms.first_nonterm);
         RH_name (None, eof);
       ], (* code: *)None)
@@ -29,20 +27,20 @@ let synthesise_start_rule topforms =
   in
 
   { topforms with
-    nonterms = StringMap.add start_name (start, Ids.Nonterminal.start) topforms.nonterms
+    nonterms = StringMap.add (Sloc.value start_name) (start, Ids.Nonterminal.start) topforms.nonterms
   }
 
 
 (* handle TF_option *)
 let collect_options options config =
   List.fold_left (fun config -> function
-    | TF_option ("shift_reduce_conflicts",   value) ->
+    | TF_option (("shift_reduce_conflicts", _, _),   value) ->
         { config with expectedSR          = value }
-    | TF_option ("reduce_reduce_conflicts",  value) ->
+    | TF_option (("reduce_reduce_conflicts", _, _),  value) ->
         { config with expectedRR          = value }
-    | TF_option ("unreachable_nonterminals", value) ->
+    | TF_option (("unreachable_nonterminals", _, _), value) ->
         { config with expectedUNRNonterms = value }
-    | TF_option ("unreachable_terminals",    value) ->
+    | TF_option (("unreachable_terminals", _, _),    value) ->
         { config with expectedUNRTerms    = value }
 
     | _ -> failwith "merge failed"
@@ -53,14 +51,10 @@ let collect_verbatims verbatims =
   let verbatim, impl_verbatim =
     List.fold_left (fun (verbatim, impl_verbatim) -> function
       | TF_verbatim (true, code) ->
-          let code =
-            CamlAst.str_items_of_string _loc code
-          in
+          let code = CamlAst.str_items_of_loc_string code in
           (verbatim, code :: impl_verbatim)
       | TF_verbatim (false, code) ->
-          let code =
-            CamlAst.sig_items_of_string _loc code
-          in
+          let code = CamlAst.sig_items_of_loc_string code in
           (code :: verbatim, impl_verbatim)
 
       | _ -> failwith "merge failed"
@@ -75,17 +69,18 @@ let collect_verbatims verbatims =
 
 let collect_terminal_aliases decls =
   List.fold_left (fun aliases (TermDecl (_, name, alias)) ->
-    if alias <> "" then
-      StringMap.add alias name aliases
-    else
-      aliases
+    match alias with
+    | Some alias ->
+        StringMap.add (Sloc.value alias) name aliases
+    | None ->
+        aliases
   ) StringMap.empty decls
 
 
 (* type annotations *)
 let collect_terminal_types types =
   let types =
-    List.fold_left (fun types (TermType (name, _, _) as termtype) ->
+    List.fold_left (fun types (TermType ((name, _, _), _, _) as termtype) ->
       if StringMap.mem name types then
         failwith "this token already has a type";
       StringMap.add name termtype types
@@ -101,10 +96,11 @@ let collect_terminal_precs precs aliases =
     List.fold_left (fun precs (PrecSpec (kind, prec, tokens) as termtype) ->
       List.fold_left (fun precs token ->
         let token =
-          try
-            StringMap.find token aliases
+          (try
+            StringMap.find (Sloc.value token) aliases
           with Not_found ->
             token
+          ) |> Sloc.value
         in
 
         if prec = 0 then
@@ -124,13 +120,13 @@ let collect_terminal_precs precs aliases =
 let spec_func funcs name formal_count =
   try
     let SpecFunc (_, params, code) =
-      List.find (fun (SpecFunc (fname, _, _)) -> fname = name) funcs
+      List.find (fun (SpecFunc (fname, _, _)) -> Sloc.value fname = name) funcs
     in
 
     if List.length params <> formal_count then
       failwith ("incorrect number of formal parameters for '" ^ name ^ "' function");
 
-    let code = CamlAst.expr_of_string _loc code in
+    let code = CamlAst.expr_of_loc_string code in
 
     Some { params; code; }
 
@@ -141,13 +137,13 @@ let spec_func funcs name formal_count =
 let collect_terminals decls types precs =
   let max_index, terminals =
     List.fold_left (fun (max_index, terminals) (TermDecl (code, name, alias)) ->
-      if StringMap.mem name terminals then
+      if StringMap.mem (Sloc.value name) terminals then
         failwith "token already declared";
 
       (* annotate with declared type *)
       let semtype, funcs =
         try
-          let (TermType (_, termtype, funcs)) = StringMap.find name types in
+          let (TermType (_, termtype, funcs)) = StringMap.find (Sloc.value name) types in
           Some termtype, funcs
         with Not_found ->
           None, []
@@ -156,15 +152,15 @@ let collect_terminals decls types precs =
       (* apply precedence spec *)
       let associativity, precedence =
         try
-          let PrecSpec (kind, prec, _) = StringMap.find name precs in
+          let PrecSpec (kind, prec, _) = StringMap.find (Sloc.value name) precs in
           kind, prec
         with Not_found ->
-          Assoc.AK_NONASSOC, 0
+          Sloc.generated Assoc.AK_NONASSOC, 0
       in
 
       let semantic =
         SemanticVariant.(of_list User [
-          BatOption.map (fun semtype -> `SEM_TYPE (CamlAst.ctyp_of_string _loc semtype)) semtype;
+          BatOption.map (fun semtype -> `SEM_TYPE (CamlAst.ctyp_of_loc_string semtype)) semtype;
           BatOption.map (fun func -> `SEM_DUP func) (spec_func funcs "dup" 1);
           BatOption.map (fun func -> `SEM_DEL func) (spec_func funcs "del" 1);
           BatOption.map (fun func -> `SEM_CLASSIFY func) (spec_func funcs "classify" 1);
@@ -186,7 +182,7 @@ let collect_terminals decls types precs =
 
       let max_index = max max_index index_id in
 
-      max_index, StringMap.add name terminal terminals
+      max_index, StringMap.add (Sloc.value name) terminal terminals
     ) (Ids.Terminal.default, StringMap.empty) decls
   in
 
@@ -205,7 +201,7 @@ let collect_terminals decls types precs =
       if TerminalSet.mem has_code i then
         terminals
       else
-        let dummy_name = "Dummy_filler_token" ^ Ids.Terminal.to_string i in
+        let dummy_name = Sloc.generated ("Dummy_filler_token" ^ Ids.Terminal.to_string i) in
         let dummy = { empty_terminal with
           tbase = {
             name = dummy_name;
@@ -213,7 +209,7 @@ let collect_terminals decls types precs =
             semantic = SemanticVariant.empty ();
           };
         } in
-        StringMap.add dummy_name dummy terminals
+        StringMap.add (Sloc.value dummy_name) dummy terminals
     ) terminals max_index
   in
 
@@ -239,7 +235,7 @@ let collect_nonterminals nonterms term_count =
 
           let semantic =
             SemanticVariant.(of_list User [
-              BatOption.map (fun semtype -> `SEM_TYPE (CamlAst.ctyp_of_string _loc semtype)) semtype;
+              BatOption.map (fun semtype -> `SEM_TYPE (CamlAst.ctyp_of_loc_string semtype)) semtype;
               BatOption.map (fun func -> `SEM_DUP func) (spec_func funcs "dup" 1);
               BatOption.map (fun func -> `SEM_DEL func) (spec_func funcs "del" 1);
               BatOption.map (fun func -> `SEM_MERGE func) (spec_func funcs "merge" 2);
@@ -257,10 +253,10 @@ let collect_nonterminals nonterms term_count =
             maximal = (BatOption.is_some (spec_func funcs "maximal" 0));
             (* we simply store the (validated) string references here, because
              * it is very hard to have cyclic immutable data structures *)
-            subset_names = List.map Sloc.value subsets;
+            subset_names = subsets;
           } in
 
-          StringMap.add name nonterminal nonterminals
+          StringMap.add (Sloc.value name) nonterminal nonterminals
 
       | _ -> failwith "merge failed"
     ) nonterms StringMap.empty
@@ -274,23 +270,23 @@ let collect_nonterminals nonterms term_count =
 let collect_production_rhs aliases terminals nonterminals is_synthesised rhs_list production =
   let find_nonterminal name =
     try
-      StringMap.find name nonterminals
+      StringMap.find (Sloc.value name) nonterminals
     with Not_found ->
-      failwith ("no symbol found named " ^ name)
+      failwith ("no symbol found named " ^ Sloc.value name)
   in
 
   let find_terminal name =
     let terminal =
       try
-        StringMap.find name terminals
+        StringMap.find (Sloc.value name) terminals
       with Not_found ->
         let name =
           try
-            StringMap.find name aliases
+            StringMap.find (Sloc.value name) aliases
           with Not_found ->
-            failwith ("terminal \"" ^ name ^ "\" must be defined")
+            failwith ("terminal \"" ^ Sloc.value name ^ "\" must be defined")
         in
-        StringMap.find name terminals
+        StringMap.find (Sloc.value name) terminals
     in
 
     if Ids.Terminal.is_eof terminal.tbase.index_id && not is_synthesised then
@@ -303,7 +299,7 @@ let collect_production_rhs aliases terminals nonterminals is_synthesised rhs_lis
       | RH_name (tag, name) ->
           (* "empty" is a syntactic convenience; it doesn't get
            * added to the production *)
-          if name = empty_nonterminal.nbase.name then
+          if Sloc.equal name empty_nonterminal.nbase.name then
             production
           else
             let symbol, prec =
@@ -364,14 +360,14 @@ let collect_productions aliases terminals nonterminals nonterms =
     StringMap.fold (fun _ (nterm, _) (productions, next_prod_index) ->
       match nterm with
       | TF_nonterm (name, _, _, prods, _) ->
-          let left = (StringMap.find name nonterminals).nbase.index_id in
+          let left = (StringMap.find (Sloc.value name) nonterminals).nbase.index_id in
           (* is this the special start symbol I inserted? *)
-          let is_synthesised = name = start_name in
+          let is_synthesised = name == start_name in
 
           List.fold_left (fun (productions, next_prod_index) (ProdDecl (kind, name, rhs, action)) ->
             let semantic =
               SemanticVariant.(of_list User [
-                BatOption.map (fun action -> `SEM_ACTION (CamlAst.expr_of_string _loc action)) action;
+                BatOption.map (fun action -> `SEM_ACTION (CamlAst.expr_of_loc_string action)) action;
               ])
             in
 
@@ -381,7 +377,7 @@ let collect_productions aliases terminals nonterminals nonterms =
             let production =
               { empty_production with
                 pbase = {
-                  name;
+                  name = BatOption.default Sloc.empty_string name;
                   index_id = prod_index;
                   semantic;
                 };

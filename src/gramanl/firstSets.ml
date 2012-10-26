@@ -61,13 +61,10 @@ let rec compute_first derivable index =
         lhs.first <- merged;
 
         if Options._trace_first () then (
-          print_string "added ";
-          PrintAnalysisEnv.print_terminal_set index.terms first_of_rhs;
-          print_string " to ";
-          print_string lhs.nbase.name;
-          print_string " because of ";
-          PrintGrammar.print_production index.terms index.nonterms prod;
-          print_newline ();
+          Printf.printf "added %a to %a because of %a\n"
+            (PrintAnalysisEnv.print_terminal_set index.terms) first_of_rhs
+            Sloc.print_string lhs.nbase.name
+            (PrintGrammar.print_production index.terms index.nonterms) prod
         );
 
         true
@@ -82,7 +79,7 @@ let rec compute_first derivable index =
     if Options._trace_first () then (
       NtArray.iter (fun nonterm ->
         if nonterm != empty_nonterminal then (
-          PrintAnalysisEnv.print_terminal_set ~name:nonterm.nbase.name index.terms nonterm.first;
+          PrintAnalysisEnv.print_terminal_set ~name:nonterm.nbase.name index.terms stdout nonterm.first;
           print_newline ();
         )
       ) index.nonterms
@@ -119,7 +116,7 @@ let compute_dprod_first derivable dotted_prods index =
       dprod.can_derive_empty <- Derivability.can_sequence_derive_empty derivable right;
 
       if Options._trace_first () then (
-        PrintAnalysisEnv.print_dotted_production index dprod;
+        PrintAnalysisEnv.print_dotted_production index stdout dprod;
 
         if dprod.can_derive_empty then
           print_endline " - can derive empty"

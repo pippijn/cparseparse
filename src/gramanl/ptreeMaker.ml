@@ -68,13 +68,14 @@ let nonterm_type = function
   | None ->
       <:ctyp<t>>
   | Some name ->
+      let _loc, name = Sloc._loc name in
       <:ctyp<$uid:name$.t>>
 
 let merge name = function
   | { params = [l; r] as params } ->
       `SEM_MERGE {
         params;
-        code = <:expr<$uid:name$.Merge ($Sloc.lid l$, $Sloc.lid r$)>>
+        code = <:expr<$Sloc.exUid name$.Merge ($Sloc.exLid l$, $Sloc.exLid r$)>>
       }
   | _ ->
       failwith "invalid merge function"
@@ -117,12 +118,12 @@ let nonterms variant reachable nonterms =
 
 let check_noname nonterms prod =
   match prod.pbase.name with
-  | "" -> ()
-  | name ->
+  | ("", _, _) -> ()
+  | (name, _, _) ->
       let left = NtArray.get nonterms prod.left in
       failwith (
         "uselessly defined production name \"" ^ name ^ "\"" ^
-        " in nonterminal \"" ^ left.nbase.name ^ "\"")
+        " in nonterminal \"" ^ (Sloc.value left.nbase.name) ^ "\"")
 
 
 let set_action variant prod action =
@@ -149,7 +150,7 @@ let map_prods variant nonterms reachable has_merge prods =
         |> require_tag
       in
       let action =
-        Sloc.lid tag
+        Sloc.exLid tag
       in
 
       [set_action variant prod action]
@@ -164,7 +165,7 @@ let map_prods variant nonterms reachable has_merge prods =
           let tail2_tag = require_tag tail2 in
           [
             set_action variant tail <:expr<[]>>;
-            set_action variant head_tail <:expr<$Sloc.lid tail2_tag$ :: $Sloc.lid head2_tag$>>;
+            set_action variant head_tail <:expr<$Sloc.exLid tail2_tag$ :: $Sloc.exLid head2_tag$>>;
           ]
       (* non-empty list *)
       | [tail1], [head2; tail2] ->
@@ -172,8 +173,8 @@ let map_prods variant nonterms reachable has_merge prods =
           let head2_tag = require_tag head2 in
           let tail2_tag = require_tag tail2 in
           [
-            set_action variant tail <:expr<[$Sloc.lid tail1_tag$]>>;
-            set_action variant head_tail <:expr<$Sloc.lid tail2_tag$ :: $Sloc.lid head2_tag$>>;
+            set_action variant tail <:expr<[$Sloc.exLid tail1_tag$]>>;
+            set_action variant head_tail <:expr<$Sloc.exLid tail2_tag$ :: $Sloc.exLid head2_tag$>>;
           ]
 
       | _ -> failwith "error in is_list_nonterminal"
@@ -185,7 +186,7 @@ let map_prods variant nonterms reachable has_merge prods =
           let some_tag = require_tag some_sym in
           [
             set_action variant none <:expr<None>>;
-            set_action variant some <:expr<Some $Sloc.lid some_tag$>>;
+            set_action variant some <:expr<Some $Sloc.exLid some_tag$>>;
           ]
 
       | _ -> failwith "error in is_option_nonterminal"
@@ -205,14 +206,14 @@ let map_prods variant nonterms reachable has_merge prods =
             <:expr<top>>
           ) else (
             let prod_name =
-              match prod.pbase.name with
-              | ""   -> "P" ^ Ids.Production.to_string prod.pbase.index_id
-              | name -> assert (name <> ""); name
+              match Sloc.value prod.pbase.name with
+              | "" -> Sloc.at prod.pbase.name ("P" ^ Ids.Production.to_string prod.pbase.index_id)
+              | _  -> prod.pbase.name
             in
 
             let prod_variant =
               let left = NtArray.get nonterms prod.left in
-              <:expr<$uid:left.nbase.name$.$uid:prod_name$>>
+              <:expr<$Sloc.exUid left.nbase.name$.$Sloc.exUid prod_name$>>
             in
 
             let args =
@@ -222,7 +223,7 @@ let map_prods variant nonterms reachable has_merge prods =
                     (* nothing to do for untagged symbols *)
                     args
                 | Some tag ->
-                    <:expr<$Sloc.lid tag$>> :: args
+                    <:expr<$Sloc.exLid tag$>> :: args
 
               ) [ <:expr<(start_p, end_p)>> ] prod.right
               |> List.rev

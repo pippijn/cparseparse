@@ -4,7 +4,7 @@ open GrammarType
 
 let output_token out term =
   if (*term.tbase.reachable*) true then
-    Printf.fprintf out "%%token %-30s\n" term.tbase.name
+    Printf.fprintf out "%%token %-30a\n" Sloc.print_string term.tbase.name
 
 
 let output_assoc = let open Assoc in function
@@ -32,8 +32,8 @@ let output_precs out terms =
   Array.iter (function
     | [] -> ()
     | first :: _ as terms ->
-        output_string out (output_assoc first.associativity);
-        List.iter (fun term -> output_string out (" " ^ term.tbase.name)) terms;
+        output_string out (output_assoc (Sloc.value first.associativity));
+        List.iter (fun term -> output_string out (" " ^ Sloc.value term.tbase.name)) terms;
         output_string out "\n"
 
   ) precs;
@@ -49,10 +49,10 @@ let output_tag out = function
 let output_symbol terms nonterms out = function
   | Terminal (tag, term) ->
       let term = TermArray.get terms term in
-      Printf.fprintf out " %a%s" output_tag tag term.tbase.name
+      Printf.fprintf out " %a%a" output_tag tag Sloc.print_string term.tbase.name
   | Nonterminal (tag, nonterm) ->
       let nonterm = NtArray.get nonterms nonterm in
-      Printf.fprintf out " %a%s" output_tag tag nonterm.nbase.name
+      Printf.fprintf out " %a%a" output_tag tag Sloc.print_string nonterm.nbase.name
 
 
 let last_prec terms =
@@ -74,7 +74,7 @@ let output_production out variant index prod_index =
     List.iter (output_symbol index.terms index.nonterms out) prod.right;
   if prod.prec <> 0 && prod.prec <> last_prec index.terms prod.right then (
     let term = TermArray.find (fun term -> term.precedence = prod.prec) index.terms in
-    Printf.fprintf out " %%prec %s" term.tbase.name;
+    Printf.fprintf out " %%prec %a" Sloc.print_string term.tbase.name;
   );
   match Semantic.action_of_prod variant prod with
   | None ->
@@ -92,7 +92,7 @@ let output_nonterm out variant index = function
       let first = ProdArray.get index.prods first_index in
       if (*first.left.nbase.reachable*) true then (
         let left = NtArray.get index.nonterms first.left in
-        Printf.fprintf out "%s:\n" left.nbase.name;
+        Printf.fprintf out "%a:\n" Sloc.print_string left.nbase.name;
         List.iter (output_production out variant index) indices;
         output_string out "\n";
       )
@@ -107,7 +107,7 @@ let output_grammar ~file variant env =
   output_string out "\n";
   output_precs out env.index.terms;
   let first = NtArray.get env.index.nonterms Ids.Nonterminal.start in
-  Printf.fprintf out "\n%%start<int> %s\n\n" first.nbase.name;
+  Printf.fprintf out "\n%%start<int> %a\n\n" Sloc.print_string first.nbase.name;
   output_string out "%%\n\n";
   NtArray.iter (output_nonterm out variant env.index) env.prods_by_lhs;
 

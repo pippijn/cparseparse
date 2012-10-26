@@ -2,7 +2,7 @@ open AnalysisEnvType
 
 
 let name_of_symbol_opt terms nonterms = function
-  | Some sym -> GrammarUtil.name_of_symbol terms nonterms sym
+  | Some sym -> Sloc.value (GrammarUtil.name_of_symbol terms nonterms sym)
   | None -> "None"
 
 
@@ -77,8 +77,8 @@ let renumber_states_compare env a b =
         (ordering_operator order)
         Ids.State.print b.state_id
         (name_of_symbol_opt env.index.terms env.index.nonterms b.state_symbol);
-      PrintAnalysisEnv.print_item_set env a;
-      PrintAnalysisEnv.print_item_set env b;
+      PrintAnalysisEnv.print_item_set env stdout a;
+      PrintAnalysisEnv.print_item_set env stdout b;
     );
   );
 
@@ -118,7 +118,7 @@ let renumber_states env states =
 
   if false then (
     List.iter (fun state ->
-      PrintAnalysisEnv.print_item_set env state;
+      PrintAnalysisEnv.print_item_set env stdout state;
     ) states;
   );
 

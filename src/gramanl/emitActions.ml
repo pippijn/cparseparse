@@ -21,7 +21,8 @@ let fold_bindings =
  ************************************************)
 
 let polytype sym =
-  <:ctyp<'$lid:"t" ^ sym.name$>>
+  let _loc, name = Sloc._loc sym.name in
+  <:ctyp<'$lid:"t" ^ name$>>
 
 
 let semtype variant sym =
@@ -60,17 +61,15 @@ let make_ml_actions variant index =
     ProdArray.map (fun prod ->
       (* put the production in comments above the defn *)
       if false then (
-        print_string "(*";
-        PrintGrammar.print_production index.terms index.nonterms prod;
-        print_endline " *)";
+        Printf.printf "(*%a *)\n"
+          (PrintGrammar.print_production index.terms index.nonterms) prod
       );
 
       let make_binding tag rhs_index sym =
         let semtype = semtype variant sym in
         let polytype = polytype sym in
 
-        let _loc = Sloc._loc tag in
-        let tag = Sloc.value tag in
+        let _loc, tag = Sloc._loc tag in
 
         if semtype = polytype then
           <:binding<
@@ -178,8 +177,7 @@ let make_ml_spec_func default semtype rettype kind func id =
       let bindings =
         <:binding<__result : $rettype$ = $code$>>
         :: List.map (fun param ->
-          let _loc = Sloc._loc param in
-          let param = Sloc.value param in
+          let _loc, param = Sloc._loc param in
           <:binding<($lid:param$ : $semtype$) = SemanticValue.obj $lid:"_" ^ param$>>
         ) params
       in

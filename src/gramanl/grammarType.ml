@@ -68,7 +68,7 @@ type global_semantic = [
 
 type ('index, 'semantic) symbol_base = {
   (* --- representation --- *)
-  name                  : string; (* symbol's name in grammar *)
+  name                  : string Sloc.t; (* symbol's name in grammar *)
   index_id		: 'index; (* unique symbol id *)
   semantic		: 'semantic SemanticVariant.variants; (* semantic actions and type *)
 } with sexp
@@ -86,9 +86,8 @@ type terminal = {
   (* whereas 'name' is the canonical name for the terminal class,
    * this field is an alias; for example, if the canonical name is
    * L2_EQUALEQUAL, the alias might be "=="; the alias should *not*
-   * include actual double-quote characters
-   * if the alias is "", there is no alias *)
-  alias                 : string;
+   * include actual double-quote characters *)
+  alias                 : string Sloc.t option;
   (* parsgen-time conflict resolution: if a shift/reduce conflict
    * occurs between a production and a symbol, both with specified
    * precedence (not 0), then the one with the numerically higher
@@ -96,7 +95,7 @@ type terminal = {
   precedence            : int;
   (* if, in the above scenario, the precedence values are the same,
    * then the associativity kind will be used to decide which to use *)
-  associativity         : Assoc.kind;
+  associativity         : Assoc.kind Sloc.t;
 } with sexp
 
 (* something that can appear on the left-hand side of a production
@@ -108,7 +107,7 @@ type nonterminal = {
   (* --- representation --- *)
   maximal               : bool; (* if true, use maximal munch disambiguation *)
 
-  subset_names          : string list; (* preferred subsets (for scannerless) *)
+  subset_names          : string Sloc.t list; (* preferred subsets (for scannerless) *)
 
   (* --- annotation --- *)
   mutable first         : TerminalSet.t; (* set of terminals that can be start of a string derived from 'this' *)
@@ -161,9 +160,9 @@ type grammar = {
   (* --- representation --- *)
   nonterminals          : nonterminal StringMap.t;
   terminals             : terminal StringMap.t;
-  aliases               : string StringMap.t;
+  aliases               : string Sloc.t StringMap.t;
   productions           : production list;
-  start_symbol          : string;
+  start_symbol          : string Sloc.t;
 
   (* code emitted at the beginning of interface/implementation files *)
   verbatim		: global_semantic SemanticVariant.variants;
@@ -174,14 +173,14 @@ type grammar = {
 
 let empty_terminal = {
   tbase         = {
-    name     = "";
+    name     = Sloc.empty_string;
     index_id = Ids.Terminal.default;
     semantic = SemanticVariant.empty ();
   };
 
-  alias         = "";
+  alias         = None;
   precedence    = 0;
-  associativity = Assoc.AK_NONASSOC;
+  associativity = Sloc.dummy Assoc.AK_NONASSOC;
 }
 
 
@@ -193,7 +192,7 @@ let empty_terminal = {
  * nice to treat empty like any other symbol *)
 let empty_nonterminal = {
   nbase         = {
-    name     = "empty";
+    name     = Sloc.generated "empty";
     (* empty has an index of 0; all other nonterminals must have indices >= 1 *)
     index_id = Ids.Nonterminal.default;
     semantic = SemanticVariant.empty ();
@@ -213,7 +212,7 @@ let empty_nonterminal = {
 
 let empty_production = {
   pbase         = {
-    name     = "";
+    name     = Sloc.empty_string;
     index_id = Ids.Production.default;
     semantic = SemanticVariant.empty ();
   };

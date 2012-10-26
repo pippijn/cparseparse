@@ -2,9 +2,9 @@ open GrammarType
 open AnalysisEnvType
 
 
-let print_terminal_set ?(out=stdout) ?(abbreviate=true) ?(name=".") terms set =
+let print_terminal_set ?(abbreviate=true) ?(name=Sloc.dummy ".") terms out set =
   (*Printf.fprintf out "[1;30mFirst(%s) = " name;*)
-  Printf.fprintf out "First(%s) = " name;
+  Printf.fprintf out "First(%a) = " Sloc.print_string name;
   Printf.fprintf out "%d {" (TerminalSet.cardinal set);
 
   if abbreviate then (
@@ -18,13 +18,7 @@ let print_terminal_set ?(out=stdout) ?(abbreviate=true) ?(name=".") terms set =
         output_string out " ";
         first := false;
 
-        let name =
-          if term.alias <> "" then
-            term.alias
-          else
-            term.tbase.name
-        in
-        output_string out name
+        Sloc.print_string out (GrammarUtil.name_of_terminal term)
       )
     ) terms
   );
@@ -32,11 +26,11 @@ let print_terminal_set ?(out=stdout) ?(abbreviate=true) ?(name=".") terms set =
   output_string out " }"
 
 
-let print_dotted_production ?(out=stdout) index dprod =
+let print_dotted_production index out dprod =
   let prod = ProdArray.get index.prods dprod.prod in
   let left = NtArray.get index.nonterms prod.left in
 
-  output_string out left.nbase.name;
+  Sloc.print_string out left.nbase.name;
   output_string out " ->";
   BatList.iteri (fun position rhs ->
     output_string out " ";
@@ -47,7 +41,7 @@ let print_dotted_production ?(out=stdout) index dprod =
     in
     if position = dprod.dot then
       output_string out ".[";
-    PrintGrammar.print_symbol ~out index.terms index.nonterms rhs;
+    PrintGrammar.print_symbol index.terms index.nonterms out rhs;
     if after_dot then
       output_string out "]";
   ) prod.right;
@@ -57,20 +51,20 @@ let print_dotted_production ?(out=stdout) index dprod =
     output_string out " .";
   
   output_string out "  ";
-  print_terminal_set ~out index.terms dprod.first_set
+  print_terminal_set index.terms out dprod.first_set
 
 
-let print_lr_item ?(out=stdout) env item =
-  print_dotted_production ~out env.index item.dprod;
+let print_lr_item env out item =
+  print_dotted_production env.index out item.dprod;
   output_string out "  ";
-  print_terminal_set ~out env.index.terms item.lookahead
+  print_terminal_set env.index.terms out item.lookahead
 
 
-let print_item_set ?(out=stdout) ?(print_nonkernels=false) env item_set =
+let print_item_set ?(print_nonkernels=false) env out item_set =
   let print_lr_item item =
     (* print its text *)
     output_string out "  ";
-    print_lr_item ~out env item;
+    print_lr_item env out item;
     output_string out "\t\t";
 
     (* print any transitions on its after-dot symbol *)
@@ -108,8 +102,8 @@ let print_item_set ?(out=stdout) ?(print_nonkernels=false) env item_set =
     match transition with
     | None -> ()
     | Some transition ->
-        Printf.fprintf out "  on terminal %s go to %a\n"
-          (TermArray.get env.index.terms i).tbase.name
+        Printf.fprintf out "  on terminal %a go to %a\n"
+          Sloc.print_string (TermArray.get env.index.terms i).tbase.name
           Ids.State.print transition.state_id
   ) item_set.term_transition;
 
@@ -117,16 +111,16 @@ let print_item_set ?(out=stdout) ?(print_nonkernels=false) env item_set =
     match transition with
     | None -> ()
     | Some transition ->
-        Printf.fprintf out "  on nonterminal %s go to %a\n"
-          (NtArray.get env.index.nonterms i).nbase.name
+        Printf.fprintf out "  on nonterminal %a go to %a\n"
+          Sloc.print_string (NtArray.get env.index.nonterms i).nbase.name
           Ids.State.print transition.state_id
   ) item_set.nonterm_transition;
 
   List.iter (fun item ->
     output_string out "  can reduce by ";
     let prod = ProdArray.get env.index.prods item.dprod.prod in
-    PrintGrammar.print_production ~out env.index.terms env.index.nonterms prod;
-    output_string out "\n";
+    PrintGrammar.print_production env.index.terms env.index.nonterms out prod;
+    output_char out '\n';
   ) item_set.dots_at_end;
 
   output_string out "}\n\n";

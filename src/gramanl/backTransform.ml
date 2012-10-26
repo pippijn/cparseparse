@@ -15,10 +15,12 @@ let proddecl_of_prod variant index prod =
     List.map (function
       | Terminal (tag, term_index) ->
           let { alias; tbase = { name } } = TermArray.get index.terms term_index in
-          if alias <> "" then
-            RH_string (tag, alias)
-          else
-            RH_name (tag, name)
+          begin match alias with
+          | None ->
+              RH_name (tag, name)
+          | Some alias ->
+              RH_string (tag, alias)
+          end
 
       | Nonterminal (tag, nt_index) ->
           let { nbase = { name } } = NtArray.get index.nonterms nt_index in
@@ -29,35 +31,36 @@ let proddecl_of_prod variant index prod =
     ) prod.right
   in
 
-  let action = BatOption.map CamlAst.string_of_expr (Semantic.action_of_prod variant prod) in
+  let action = BatOption.map CamlAst.loc_string_of_expr (Semantic.action_of_prod variant prod) in
 
-  ProdDecl (PDK_NEW, prod.pbase.name, rhs, action)
+  ProdDecl (PDK_NEW, Some prod.pbase.name, rhs, action)
 
 
 let specfunc_of_spec_func funcs = function
-  | _, None -> funcs
+  | _, None ->
+      funcs
   | name, Some { params; code; } ->
-      SpecFunc (name, params, CamlAst.string_of_expr code) :: funcs
+      SpecFunc (Sloc.generated name, params, CamlAst.loc_string_of_expr code) :: funcs
 
 
 let ast_of_env env variant =
   (* first, we reconstruct the verbatim sections *)
   let verbatims =
     List.map (fun code ->
-      TF_verbatim (false, CamlAst.string_of_sig_item code)
+      TF_verbatim (false, CamlAst.loc_string_of_sig_item code)
     ) (Semantic.verbatims variant env.verbatims)
     @
     List.map (fun code ->
-      TF_verbatim (true, CamlAst.string_of_str_item code)
+      TF_verbatim (true, CamlAst.loc_string_of_str_item code)
     ) (Semantic.impl_verbatims variant env.verbatims)
   in
 
   (* then, the options *)
-  let options = [
-    TF_option ("shift_reduce_conflicts", env.options.expectedSR);
-    TF_option ("reduce_reduce_conflicts", env.options.expectedRR);
-    TF_option ("unreachable_nonterminals", env.options.expectedUNRNonterms);
-    TF_option ("unreachable_terminals", env.options.expectedUNRTerms);
+  let options = let str = Sloc.generated in [
+    TF_option (str "shift_reduce_conflicts", env.options.expectedSR);
+    TF_option (str "reduce_reduce_conflicts", env.options.expectedRR);
+    TF_option (str "unreachable_nonterminals", env.options.expectedUNRNonterms);
+    TF_option (str "unreachable_terminals", env.options.expectedUNRTerms);
   ] in
 
   (* after that, the terminals *)
@@ -74,11 +77,16 @@ let ast_of_env env variant =
         "classify", Semantic.classify_of_term variant term;
       ] in
 
+      let specfuncs =
+        List.fold_left specfunc_of_spec_func [] specfuncs
+      in
+
       match Semantic.semtype_of_term variant term with
       | None ->
+          assert (specfuncs = []);
           types
       | Some semtype -> 
-          TermType (term.tbase.name, CamlAst.string_of_ctyp semtype, (*TODO: specfuncs*)[]) :: types
+          TermType (term.tbase.name, CamlAst.loc_string_of_ctyp semtype, (*TODO: specfuncs*)[]) :: types
     ) [] env.index.terms
   in
   let precs =
@@ -90,7 +98,6 @@ let ast_of_env env variant =
   in
 
   (* finally, the nonterminals with their productions *)
-  let first_nonterm = "" in
   let nonterms =
     NtArray.fold_left (fun nonterms nonterm ->
       let prods =
@@ -109,19 +116,23 @@ let ast_of_env env variant =
         "keep", Semantic.keep_of_nonterm variant nonterm;
       ] in
 
+      let specfuncs =
+        List.fold_left specfunc_of_spec_func [] specfuncs
+      in
+
       let semtype = Semantic.semtype_of_nonterm variant nonterm in
 
       let nt =
         TF_nonterm (
           nonterm.nbase.name,
-          BatOption.map CamlAst.string_of_ctyp semtype,
-          List.fold_left specfunc_of_spec_func [] specfuncs,
+          BatOption.map CamlAst.loc_string_of_ctyp semtype,
+          specfuncs,
           prods,
           (*TODO: subsets*)[]
         ), nonterm.nbase.index_id
       in
 
-      StringMap.add nonterm.nbase.name nt nonterms
+      StringMap.add (Sloc.value nonterm.nbase.name) nt nonterms
     ) StringMap.empty env.index.nonterms
   in
 
@@ -131,7 +142,7 @@ let ast_of_env env variant =
     decls;
     types;
     precs;
-    first_nonterm;
+    first_nonterm = Sloc.empty_string (* TODO *);
     nonterms;
   }) in
 

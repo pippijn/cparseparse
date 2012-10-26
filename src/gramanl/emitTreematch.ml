@@ -13,7 +13,7 @@ let _loc = Loc.ghost
 let ctyp_of_nonterminal nonterms nonterm =
   let nonterm = NtArray.get nonterms nonterm in
   (* the type is the referenced nonterminal module *)
-  let typ = nonterm.nbase.name in
+  let typ = Sloc.value nonterm.nbase.name in
   assert (CodegenHelpers.is_uid typ);
   typ
 
@@ -25,7 +25,7 @@ let ctyp_of_terminal terms term =
   | None ->
       failwith "tagged terminals must have a declared type"
   | Some ty ->
-      term.tbase.name
+      Sloc.value term.tbase.name
 
 
 let ctyp_of_symbol index = function
@@ -49,8 +49,9 @@ let production_types index term_mods left has_merge prods =
         let term = TermArray.get index.terms term_index in
         begin match Semantic.semtype_of_term SemanticVariant.User term with
         | Some semtype ->
-            if not (Hashtbl.mem term_mods term.tbase.name) then
-              Hashtbl.add term_mods term.tbase.name (CamlAst.string_of_ctyp semtype)
+            let name = Sloc.value term.tbase.name in
+            if not (Hashtbl.mem term_mods name) then
+              Hashtbl.add term_mods name (CamlAst.string_of_ctyp semtype)
         | _ -> ()
         end
     | _ -> ()
@@ -99,9 +100,9 @@ let production_types index term_mods left has_merge prods =
           in
 
           let prod_name =
-            match prod.pbase.name with
-            | ""   -> "P" ^ Ids.Production.to_string prod.pbase.index_id
-            | name -> assert (is_uid name); name
+            match Sloc.value prod.pbase.name with
+            | "" -> "P" ^ Ids.Production.to_string prod.pbase.index_id
+            | nm -> nm
           in
 
           prod_name ^ " SourceLocation " ^ prod_type
@@ -133,7 +134,7 @@ let make_ml_treematch reachable index prods_by_lhs =
 
       | first :: _ as prods ->
           let nonterm = NtArray.get index.nonterms first.left in
-          let name = nonterm.nbase.name in
+          let name = Sloc.value nonterm.nbase.name in
 
           if name.[0] = '_' then
             (* we do not emit code for the synthesised start rule *)

@@ -14,8 +14,7 @@ let _loc = Loc.ghost
 let make_ml_token_type terms =
   TermArray.map (fun term ->
     let semtype =
-      assert (is_uid term.tbase.name);
-      <:ctyp<$uid:term.tbase.name$>>
+      <:ctyp<$Sloc.tyUid term.tbase.name$>>
     in
 
     match Semantic.semtype_of_term SemanticVariant.User term with
@@ -31,8 +30,7 @@ let make_ml_token_fn ?default value terms =
   let cases =
     TermArray.fold_left (fun cases term ->
       try
-        let name = term.tbase.name in
-        assert (is_uid name);
+        let _loc, name = Sloc._loc term.tbase.name in
 
         let patt =
           match Semantic.semtype_of_term SemanticVariant.User term with
@@ -72,15 +70,20 @@ let make_ml_tokens terms =
   (* emit the token functions *)
   let name_fn =
     make_ml_token_fn (fun term ->
-      <:expr<$str:term.tbase.name$>>
+      let _loc, name = Sloc._loc term.tbase.name in
+      <:expr<$str:name$>>
     ) terms
   in
 
   let desc_fn =
     make_ml_token_fn (fun { alias; tbase = { name } } ->
       match alias with
-      | ""    -> <:expr<$str:name$>>
-      | alias -> <:expr<$str:alias$>>
+      | None ->
+          let _loc, name = Sloc._loc name in
+          <:expr<$str:name$>>
+      | Some alias ->
+          let _loc, alias = Sloc._loc alias in
+          <:expr<$str:alias$>>
     ) terms
   in
 
