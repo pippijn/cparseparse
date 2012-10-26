@@ -11,7 +11,7 @@ let error_goto_entry : goto_entry = 0xffff
 
 
 let create numTerms numNonterms numStates numProds nontermOrder startState finalProductionIndex =
-  assert (NtArray.length nontermOrder = numNonterms);
+  assert (NtArray.length nontermOrder == numNonterms);
   {
     tables = {
       numTerms;

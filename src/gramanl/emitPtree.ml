@@ -127,7 +127,7 @@ let make_ml_parse_tree reachable index prods_by_lhs =
       | first :: _ as prods ->
           let nonterm = NtArray.get index.nonterms first.left in
           let name = Sloc.value nonterm.nbase.name in
-          if name.[0] = '_' then
+          if name.[0] == '_' then
             (* we do not emit code for the synthesised start rule *)
             types
           else (

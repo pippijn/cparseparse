@@ -2,8 +2,6 @@ open AnalysisEnvType
 
 module NonterminalSet = BitSet.Make(Ids.Nonterminal)
 
-let (--) = BatPervasives.(--)
-
 
 (* this is a depth-first traversal of the 'derivable' relation;
  * when we reach a nonterminal that can't derive any others not
@@ -80,7 +78,7 @@ let compute_actions index state terminal allow_ambig sr rr =
   in
 
   if Options._trace_conflict () then (
-    if sr_old <> !sr || rr_old <> !rr then
+    if sr_old != !sr || rr_old != !rr then
       Printf.printf "%d / %d\n" !sr !rr;
   );
 
@@ -119,7 +117,7 @@ let encode_ambig tables state terminal shift_dest reductions =
   );
 
   let set = shift_action @ reduce_actions in
-  assert (List.length set = ConflictResolution.actions shift_dest reductions);
+  assert (List.length set == ConflictResolution.actions shift_dest reductions);
 
   TableEncoding.encode_ambig tables set state.state_id
 

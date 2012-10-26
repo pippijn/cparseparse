@@ -55,9 +55,9 @@ let renumber_states_compare env a b =
    * arc symbols
    *)
 
-  let (|<>) a b = if a <> 0 then a else Lazy.force b in
+  let (|<>) a b = if a != 0 then a else Lazy.force b in
 
-  let arbitrary_order = a != b && order = 0 in
+  let arbitrary_order = a != b && order == 0 in
 
   let order =
     order
@@ -84,13 +84,13 @@ let renumber_states_compare env a b =
 
   (* validate invariants *)
   if a != b then (
-    assert (order <> 0);
+    assert (order != 0);
     if Ids.State.is_start a.state_id then
       assert (order < 0);
     if Ids.State.is_start b.state_id then
       assert (order > 0);
   ) else (
-    assert (order = 0);
+    assert (order == 0);
   );
 
   order
@@ -107,7 +107,7 @@ let renumber_states env states =
 
   (* number them in that order *)
   BatList.iteri (fun i state ->
-    if i = 0 then (
+    if i == 0 then (
       (* the first element should always be the start state *)
       assert (Ids.State.is_start state.state_id);
       assert (BatOption.get env.start_state == state);

@@ -18,7 +18,7 @@ module M : GrammarSig.S with type t = item_set = struct
     ItemList.M.compare a.kernel_items b.kernel_items
 
   let equal a b =
-    compare a b = 0
+    compare a b == 0
 
   let stats _ = failwith "Not supported"
   let reset _ = failwith "Not supported"

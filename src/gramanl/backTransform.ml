@@ -83,7 +83,7 @@ let ast_of_env env variant =
 
       match Semantic.semtype_of_term variant term with
       | None ->
-          assert (specfuncs = []);
+          assert (specfuncs == []);
           types
       | Some semtype -> 
           TermType (term.tbase.name, CamlAst.loc_string_of_ctyp semtype, (*TODO: specfuncs*)[]) :: types

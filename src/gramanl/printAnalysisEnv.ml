@@ -39,14 +39,14 @@ let print_dotted_production index out dprod =
       | None -> false
       | Some sym -> rhs == sym
     in
-    if position = dprod.dot then
+    if position == dprod.dot then
       output_string out ".[";
     PrintGrammar.print_symbol index.terms index.nonterms out rhs;
     if after_dot then
       output_string out "]";
   ) prod.right;
 
-  if dprod.dot = List.length prod.right then
+  if dprod.dot == List.length prod.right then
     (* dot is at end *)
     output_string out " .";
   

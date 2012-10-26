@@ -29,7 +29,7 @@ let print_production terms nonterms out prod =
     Ids.Production.print prod.pbase.index_id
     print_sloc left.nbase.name;
 
-  if prod.right = [] then
+  if prod.right == [] then
     output_string out " empty"
   else
     List.iter (fun sym ->
@@ -37,5 +37,5 @@ let print_production terms nonterms out prod =
       print_symbol terms nonterms out sym
     ) prod.right;
 
-  if prod.prec <> 0 then
+  if prod.prec != 0 then
     Printf.fprintf out " %%prec(%d)" prod.prec

@@ -33,7 +33,7 @@ let compute_dotted_productions indexed_prods =
     (* one dottedproduction for every dot position, which is one
      * more than the # of RHS elements *)
     IntegralIndexedArray.init (rhs_length + 1) (fun dot ->
-      let dot_at_end = dot = rhs_length in
+      let dot_at_end = dot == rhs_length in
 
       {
         prod = prod.pbase.index_id;

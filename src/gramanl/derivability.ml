@@ -198,11 +198,11 @@ let compute_derivability_closure env changes =
     (* for each edge (u,v) where u != v *)
     for v = 0 to nonterm_count - 1 do
       let v = Ids.Nonterminal.of_int v in
-      if u <> v && can_derive_i env.derivable u v then
+      if u != v && can_derive_i env.derivable u v then
         (* for each edge (v,w) where v != w *)
         for w = 0 to nonterm_count - 1 do
           let w = Ids.Nonterminal.of_int w in
-          if v <> w && can_derive_i env.derivable v w then
+          if v != w && can_derive_i env.derivable v w then
             (* add an edge (u,w), if there isn't one already *)
             if add_derivable_i env u w then (
               if Options._trace_derivable () then (
@@ -224,7 +224,7 @@ let compute_derivability_relation env =
 
   (* iterate: propagate 'true' bits across the derivability matrix
    * (i.e. compute transitive closure on the can_derive relation) *)
-  while !changes <> 0 do
+  while !changes != 0 do
     changes := 0;
 
     (* first part: add new can_derive relations *)

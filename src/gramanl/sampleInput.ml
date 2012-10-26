@@ -29,7 +29,7 @@ let left_context terms nonterms =
  * library somewhere) *)
 let compare_priority a_dominant b_dominant a_recessive b_recessive =
   let order = a_dominant - b_dominant in
-  if order <> 0 then
+  if order != 0 then
     order
   else
     a_recessive - b_recessive
@@ -56,7 +56,7 @@ let compare_rewrite seen prods p1 p2 =
     ) 0 seen
   in
 
-  if order <> 0 then
+  if order != 0 then
     order
   else
     compare_priority
@@ -83,7 +83,7 @@ let rec rewrite_nt_as_terminals nonterms prods prods_by_lhs output nonterm seen 
     ) (NtArray.get prods_by_lhs nonterm)
   in
 
-  if candidates = [] then (
+  if candidates == [] then (
     (* I don't expect this... either the NT doesn't have any rules,
      * or all of them are recursive (which means the language doesn't
      * have any finite sentences) *)

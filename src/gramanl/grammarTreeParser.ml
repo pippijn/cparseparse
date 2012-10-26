@@ -4,7 +4,6 @@ open Merge
 open Camlp4.PreCast
 
 let (|>) = BatPervasives.(|>)
-let (--) = BatPervasives.(--)
 
 
 
@@ -14,7 +13,7 @@ let start_name = Sloc.generated "__EarlyStartSymbol"
 (* synthesize a rule "__EarlyStartSymbol -> Start EOF" *)
 let synthesise_start_rule topforms =
   (* find the name of the user's EOF token *)
-  let TermDecl (_, eof, _) = List.find (fun (TermDecl (code, _, _)) -> code = 0) topforms.decls in
+  let TermDecl (_, eof, _) = List.find (fun (TermDecl (code, _, _)) -> code == 0) topforms.decls in
 
   (* build a start production *)
   let start =
@@ -103,7 +102,7 @@ let collect_terminal_precs precs aliases =
           ) |> Sloc.value
         in
 
-        if prec = 0 then
+        if prec == 0 then
           (* 0 means precedence isn't specified *)
           failwith "you can't use 0 as a precedence level, because that value is used internally to mean something else";
 
@@ -123,7 +122,7 @@ let spec_func funcs name formal_count =
       List.find (fun (SpecFunc (fname, _, _)) -> Sloc.value fname = name) funcs
     in
 
-    if List.length params <> formal_count then
+    if List.length params != formal_count then
       failwith ("incorrect number of formal parameters for '" ^ name ^ "' function");
 
     let code = CamlAst.expr_of_loc_string code in
@@ -262,7 +261,7 @@ let collect_nonterminals nonterms term_count =
     ) nonterms StringMap.empty
   in
 
-  assert (StringMap.cardinal nonterminals = StringMap.cardinal nonterms);
+  assert (StringMap.cardinal nonterminals == StringMap.cardinal nonterms);
 
   nonterminals
 
@@ -395,8 +394,8 @@ let collect_productions aliases terminals nonterminals nonterms =
     ) nonterms ([], last_prod_index)
   in
 
-  assert (first_prod_index = 0);
-  assert (last_prod_index = List.length productions);
+  assert (first_prod_index == 0);
+  assert (last_prod_index == List.length productions);
   productions
 
 

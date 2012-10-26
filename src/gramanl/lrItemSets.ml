@@ -46,7 +46,7 @@ let changed_items prods item_set =
        * have their dots at the left side *)
       let item =
         List.find (fun item ->
-          item.dprod.dot <> 0
+          item.dprod.dot != 0
         ) item_set.kernel_items.items
       in
       Some (DottedProduction.symbol_before_dot prods item.dprod)
@@ -295,12 +295,12 @@ let move_dot_no_closure dotted_prods source symbol =
     ) [] [source.kernel_items.items; source.nonkernel_items]
   in
 
-  assert (kernel_items <> []);
+  assert (kernel_items != []);
 
   (* we added stuff; sorting is needed both for hashing, and also
    * for the lookahead merge step that follows a successful lookup *)
   let kernel_items = List.sort LrItem.M.compare kernel_items in
-  { items = kernel_items; hash = 0; }
+  { items = kernel_items; hash = 0 }
   
 
 
@@ -325,7 +325,7 @@ let merge_lookaheads_into dest items =
 
 let merge_state env item_set sym in_done_list already dot_moved_items =
   let open GrammarType in
-  assert (List.length dot_moved_items.items = List.length already.kernel_items.items);
+  assert (List.length dot_moved_items.items == List.length already.kernel_items.items);
 
   (* we already have a state with at least equal kernel items, not
    * considering their lookahead sets; so we have to merge the

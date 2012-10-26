@@ -51,7 +51,7 @@ let compute_indexed_nonterms nonterms =
   ) indexed;
 
   (* number of nonterminals + 1 for empty_nonterminal *)
-  assert (NtArray.length indexed = StringMap.cardinal nonterms + 1);
+  assert (NtArray.length indexed == StringMap.cardinal nonterms + 1);
 
   NtArray.readonly indexed
 
@@ -68,7 +68,7 @@ let compute_indexed_terms terms =
   (* verify we filled the term_index map *)
   TermArray.iter (fun term -> assert (term != empty_terminal)) indexed;
 
-  assert (TermArray.length indexed = StringMap.cardinal terms);
+  assert (TermArray.length indexed == StringMap.cardinal terms);
 
   TermArray.readonly indexed
 

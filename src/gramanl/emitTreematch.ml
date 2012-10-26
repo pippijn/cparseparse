@@ -136,7 +136,7 @@ let make_ml_treematch reachable index prods_by_lhs =
           let nonterm = NtArray.get index.nonterms first.left in
           let name = Sloc.value nonterm.nbase.name in
 
-          if name.[0] = '_' then
+          if name.[0] == '_' then
             (* we do not emit code for the synthesised start rule *)
             bindings
           else (

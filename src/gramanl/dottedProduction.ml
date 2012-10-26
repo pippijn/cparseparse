@@ -71,7 +71,7 @@ let symbol_after_dot dprod =
 
 
 let is_dot_at_start dprod =
-  dprod.dot = 0
+  dprod.dot == 0
 
 
 let is_dot_at_end dprod =

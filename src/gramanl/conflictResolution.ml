@@ -62,7 +62,7 @@ let handle_shift_reduce_conflict index state prod sym decision =
     { decision with keep_reduce = false }
 
   (* precedence *)
-  ) else if prod.prec = 0 || sym.precedence = 0 then (
+  ) else if prod.prec == 0 || sym.precedence == 0 then (
     if Options._trace_prec () then (
       print_endline "      => will SPLIT because no disambiguation spec available";
     );
@@ -224,7 +224,7 @@ let try_resolve_conflicts index state sym shift_dest reductions allow_ambig sr r
 
   (* static disambiguation for R/R conflicts *)
   let reductions =
-    if List.length reductions = 1 then (
+    if List.length reductions == 1 then (
       reductions
     ) else (
       let open GrammarType in
@@ -237,7 +237,7 @@ let try_resolve_conflicts index state sym shift_dest reductions allow_ambig sr r
 
       (* remove any productions that are lower than 'highest_prec' *)
       List.fold_left (fun reductions prod ->
-        if prod.prec <> 0 && prod.prec < highest_prec then (
+        if prod.prec != 0 && prod.prec < highest_prec then (
           if Options._trace_prec () then (
             Printf.printf "in state %a, R/R conflict on token %a, removed production %a because %d < %d\n"
               Ids.State.print state.state_id
@@ -256,7 +256,7 @@ let try_resolve_conflicts index state sym shift_dest reductions allow_ambig sr r
 
   (* additional R/R resolution using subset directives *)
   let reductions =
-    if List.length reductions = 1 then (
+    if List.length reductions == 1 then (
       reductions
     ) else (
       subset_directive_resolution index.nonterms state sym reductions

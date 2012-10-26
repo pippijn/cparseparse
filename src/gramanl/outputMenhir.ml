@@ -25,7 +25,7 @@ let output_precs out terms =
   let precs = Array.make (max_prec + 1) [] in
 
   TermArray.iter (fun term ->
-    if term.precedence <> 0 then
+    if term.precedence != 0 then
       precs.(term.precedence) <- term :: precs.(term.precedence)
   ) terms;
 
@@ -68,12 +68,12 @@ let output_production out variant index prod_index =
   let prod = ProdArray.get index.prods prod_index in
 
   output_string out "\t|";
-  if prod.right = [] then
+  if prod.right == [] then
     output_string out " /* empty */"
   else
     List.iter (output_symbol index.terms index.nonterms out) prod.right;
-  if prod.prec <> 0 && prod.prec <> last_prec index.terms prod.right then (
-    let term = TermArray.find (fun term -> term.precedence = prod.prec) index.terms in
+  if prod.prec != 0 && prod.prec != last_prec index.terms prod.right then (
+    let term = TermArray.find (fun term -> term.precedence == prod.prec) index.terms in
     Printf.fprintf out " %%prec %a" Sloc.print_string term.tbase.name;
   );
   match Semantic.action_of_prod variant prod with

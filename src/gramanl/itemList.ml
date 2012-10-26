@@ -12,14 +12,14 @@ module M : GrammarSig.S with type t = item_list = struct
     List.fold_left (lxor) 0 (List.map LrItem.M.hash items)
 
   let hash a =
-    if a.hash = 0 then
+    if a.hash == 0 then
       a.hash <- hash_items a.items;
     a.hash
 
   let rec compare_items result a b =
     match a, b with
     | ah :: at, bh :: bt ->
-        if result <> 0 then
+        if result != 0 then
           result
         else
           compare_items (LrItem.M.compare ah bh) at bt
@@ -34,7 +34,7 @@ module M : GrammarSig.S with type t = item_list = struct
     compare_items 0 a.items b.items
 
   let equal a b =
-    compare a b = 0
+    compare a b == 0
 
   let stats _ = failwith "Not supported"
   let reset _ = failwith "Not supported"
