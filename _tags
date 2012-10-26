@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 3b8753e07a6972d693b84ca8fc842a3b)
+# DO NOT EDIT (digest: 0fc8e5b90c99cd11b0717f1befef7f46)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -60,6 +60,7 @@
 "src/glr/parseTablesType.cmx": for-pack(Glr)
 "src/glr/ptreeActions.cmx": for-pack(Glr)
 "src/glr/ptreeNode.cmx": for-pack(Glr)
+"src/glr/sourceLocation.cmx": for-pack(Glr)
 "src/glr/tokenInfo.cmx": for-pack(Glr)
 "src/glr/userActions.cmx": for-pack(Glr)
 <src/glr/*.ml{,i}>: use_baselib
@@ -146,18 +147,23 @@
 "src/gramanl/grammarAnalysis.cmx": for-pack(Gramanl)
 "src/gramanl/grammarAst.cmx": for-pack(Gramanl)
 "src/gramanl/grammarGraph.cmx": for-pack(Gramanl)
+"src/gramanl/grammarIndex.cmx": for-pack(Gramanl)
 "src/gramanl/grammarLexer.cmx": for-pack(Gramanl)
 "src/gramanl/grammarParser.cmx": for-pack(Gramanl)
 "src/gramanl/grammarTreeParser.cmx": for-pack(Gramanl)
 "src/gramanl/grammarType.cmx": for-pack(Gramanl)
 "src/gramanl/grammarUtil.cmx": for-pack(Gramanl)
+"src/gramanl/ids.cmx": for-pack(Gramanl)
 "src/gramanl/itemList.cmx": for-pack(Gramanl)
 "src/gramanl/itemSet.cmx": for-pack(Gramanl)
+"src/gramanl/locStringMap.cmx": for-pack(Gramanl)
 "src/gramanl/lrItem.cmx": for-pack(Gramanl)
 "src/gramanl/lrItemSets.cmx": for-pack(Gramanl)
 "src/gramanl/merge.cmx": for-pack(Gramanl)
 "src/gramanl/nonterminal.cmx": for-pack(Gramanl)
+"src/gramanl/nonterminalSet.cmx": for-pack(Gramanl)
 "src/gramanl/ntArray.cmx": for-pack(Gramanl)
+"src/gramanl/ntSet.cmx": for-pack(Gramanl)
 "src/gramanl/options.cmx": for-pack(Gramanl)
 "src/gramanl/outputMenhir.cmx": for-pack(Gramanl)
 "src/gramanl/printAnalysisEnv.cmx": for-pack(Gramanl)
@@ -168,13 +174,16 @@
 "src/gramanl/reachability.cmx": for-pack(Gramanl)
 "src/gramanl/renumbering.cmx": for-pack(Gramanl)
 "src/gramanl/sampleInput.cmx": for-pack(Gramanl)
+"src/gramanl/semantic.cmx": for-pack(Gramanl)
+"src/gramanl/semanticVariant.cmx": for-pack(Gramanl)
+"src/gramanl/sloc.cmx": for-pack(Gramanl)
 "src/gramanl/stateGraph.cmx": for-pack(Gramanl)
-"src/gramanl/stateId.cmx": for-pack(Gramanl)
 "src/gramanl/superSets.cmx": for-pack(Gramanl)
 "src/gramanl/tableConstruction.cmx": for-pack(Gramanl)
 "src/gramanl/tableEncoding.cmx": for-pack(Gramanl)
 "src/gramanl/tablePrinting.cmx": for-pack(Gramanl)
 "src/gramanl/termArray.cmx": for-pack(Gramanl)
+"src/gramanl/termSet.cmx": for-pack(Gramanl)
 "src/gramanl/terminal.cmx": for-pack(Gramanl)
 "src/gramanl/terminalSet.cmx": for-pack(Gramanl)
 "src/gramanl/warnings.cmx": for-pack(Gramanl)
@@ -185,7 +194,6 @@
 <src/gramanl/*.ml{,i}>: pkg_batteries
 <src/gramanl/*.ml{,i}>: pkg_sexplib
 <src/gramanl/*.ml{,i}>: pkg_unix
-<src/gramanl/*.ml{,i}>: pkg_ulex
 <src/gramanl/*.ml{,i}>: pkg_ocamlgraph
 # Executable elkhound
 "src/elkhound/elkhound.native": use_gramanl
@@ -197,7 +205,6 @@
 "src/elkhound/elkhound.native": pkg_sexplib
 "src/elkhound/elkhound.native": pkg_unix
 "src/elkhound/elkhound.native": pkg_menhirLib
-"src/elkhound/elkhound.native": pkg_ulex
 "src/elkhound/elkhound.native": pkg_ocamlgraph
 <src/elkhound/*.ml{,i}>: use_gramanl
 <src/elkhound/*.ml{,i}>: use_glr
@@ -208,7 +215,6 @@
 <src/elkhound/*.ml{,i}>: pkg_sexplib
 <src/elkhound/*.ml{,i}>: pkg_unix
 <src/elkhound/*.ml{,i}>: pkg_menhirLib
-<src/elkhound/*.ml{,i}>: pkg_ulex
 <src/elkhound/*.ml{,i}>: pkg_ocamlgraph
 # Executable runtests
 "testsuite/runtests.native": use_baselib
