@@ -104,6 +104,7 @@ Library gramanl
                                 GrammarIndex,
                                 GrammarLexer,
                                 GrammarParser,
+                                GrammarStructure,
                                 GrammarTreeParser,
                                 GrammarType,
                                 GrammarUtil,

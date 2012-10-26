@@ -1,4 +1,4 @@
-open AnalysisEnvType
+open GrammarStructure
 open GrammarType
 
 
@@ -98,17 +98,17 @@ let output_nonterm out variant index = function
       )
 
 
-let output_grammar ~file variant env =
+let output_grammar ~file variant gram =
   let out = open_out file in
 
   output_string out "%{\n";
   output_string out "%}\n\n";
-  TermArray.iter (output_token out) env.index.terms;
+  TermArray.iter (output_token out) gram.gram_index.terms;
   output_string out "\n";
-  output_precs out env.index.terms;
-  let first = NtArray.get env.index.nonterms Ids.Nonterminal.start in
+  output_precs out gram.gram_index.terms;
+  let first = NtArray.get gram.gram_index.nonterms Ids.Nonterminal.start in
   Printf.fprintf out "\n%%start<int> %a\n\n" Sloc.print_string first.nbase.name;
   output_string out "%%\n\n";
-  NtArray.iter (output_nonterm out variant env.index) env.prods_by_lhs;
+  NtArray.iter (output_nonterm out variant gram.gram_index) gram.gram_prods_by_lhs;
 
   close_out out

@@ -62,58 +62,56 @@ let tree_parse topforms =
   grammar
 
 
-let init_env grammar =
-  let env = AnalysisEnv.init_env grammar in
-  grammar, env
+let make_ptree grammar =
+  let gram = GrammarStructure.make grammar in
+  gram
 
 
-let analyse (grammar, env) =
-  let open GrammarType in
-
-  let env, (states, tables) = GrammarAnalysis.run_analyses env grammar.nonterminals in
-  grammar, env, states, tables
-
-
-let grammar_graph dirname (grammar, env, _, _ as tuple) =
-  let open AnalysisEnvType in
+let grammar_graph dirname gram =
+  let open GrammarStructure in
   let open GrammarType in
 
   let file = dirname ^ "/grammar.dot" in
   Timing.progress "writing grammar graph to grammar.dot"
-    (GrammarGraph.visualise ~file env.index.nonterms) grammar;
-  tuple
+    (GrammarGraph.visualise ~file gram.gram_index.nonterms) gram.gram_index.prods;
+  gram
 
 
-let print_transformed dirname (_, env, _, _ as tuple) =
-  let open AnalysisEnvType in
-
+let print_transformed dirname gram =
   Timing.progress "writing transformed grammars to grammar.gr"
     SemanticVariant.iter (fun variant ->
       let file = dirname ^ "/grammar.gr" in
-      let ast = BackTransform.ast_of_env env variant in
+      let ast = BackTransform.ast_of_gram gram variant in
       BatStd.with_dispose ~dispose:close_out
         (fun out -> PrintAst.print ~out ast) (open_out file);
     );
-  tuple
+  gram
 
 
-let output_menhir dirname (_, env, _, _ as tuple) =
+let output_menhir dirname gram =
   Timing.progress "writing menhir grammar to grammar.mly"
     SemanticVariant.iter (fun variant ->
       let file = dirname ^ "/grammar.mly" in
-      OutputMenhir.output_grammar ~file variant env
+      OutputMenhir.output_grammar ~file variant gram
     );
-  tuple
+  gram
 
 
-let state_graph dirname (_, _, states, _ as tuple) =
+let analyse gram =
+  let open GrammarType in
+
+  let env, (states, tables) = GrammarAnalysis.run_analyses gram in
+  env, states, tables
+
+
+let state_graph dirname (_, states, _ as tuple) =
   let file = dirname ^ "/automaton.dot" in
   Timing.progress "writing automaton graph to automaton.dot"
     (StateGraph.visualise ~file) states;
   tuple
 
 
-let dump_automaton dirname (_, env, states, _ as tuple) =
+let dump_automaton dirname (env, states, _ as tuple) =
   BatStd.with_dispose ~dispose:close_out
     (fun out ->
       Timing.progress "dumping states to automaton.out"
@@ -122,17 +120,15 @@ let dump_automaton dirname (_, env, states, _ as tuple) =
   tuple
 
 
-let emit_code dirname (_, env, states, tables) =
+let emit_code dirname (env, states, tables) =
   let open AnalysisEnvType in
 
   let index = env.index in
-  let prods_by_lhs = env.prods_by_lhs in
-  let reachable = env.reachable in
   let ptree = env.ptree in
   let verbatims = env.verbatims in
 
   Timing.progress "emitting ML code"
-    (EmitCode.emit_ml dirname index prods_by_lhs verbatims reachable ptree) tables
+    (EmitCode.emit_ml dirname index verbatims ptree) tables
 
 
 let optional enabled f x = if enabled () then f x else x
@@ -150,11 +146,11 @@ let main inputs =
     |> Timing.progress "parsing grammar files" parse
     |> Timing.progress "merging modules" merge
     |> Timing.progress "extracting grammar structure" tree_parse
-    |> Timing.progress "adding parse tree actions" init_env
-    |> analyse
+    |> Timing.progress "adding parse tree actions" make_ptree
     |> optional Options._graph_grammar (grammar_graph dirname)
     |> optional Options._print_transformed (print_transformed dirname)
     |> optional Options._output_menhir (output_menhir dirname)
+    |> analyse
     |> optional Options._graph_automaton (state_graph dirname)
     |> optional Options._dump_automaton (dump_automaton dirname)
     |> Valgrind.Callgrind.instrumented (emit_code dirname)

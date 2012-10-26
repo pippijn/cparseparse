@@ -108,7 +108,7 @@ let emit_tables name tables =
  * :: Main entry point
  ************************************************)
 
-let emit_ml dirname index prods_by_lhs verbatims reachable ptree tables =
+let emit_ml dirname index verbatims ptree tables =
   let open AnalysisEnvType in
 
   let final_prod = Ids.Production.of_int tables.ParseTablesType.finalProductionIndex in

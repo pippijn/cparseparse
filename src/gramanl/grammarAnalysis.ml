@@ -31,7 +31,7 @@ let compute_reachable env =
 
 
 
-let compute_grammar_properties env nonterminals =
+let compute_grammar_properties env =
   compute_reachable env;
 
   let index = env.index in
@@ -44,7 +44,7 @@ let compute_grammar_properties env nonterminals =
   let index = { index with
     nonterms =
       Timing.progress "super sets computation"
-        (SuperSets.compute_supersets index.nonterms) nonterminals;
+        SuperSets.compute_supersets index.nonterms;
   } in
 
   let index =
@@ -78,7 +78,29 @@ let compute_lr_tables env =
   states, tables
 
 
-let run_analyses env nonterminals =
-  let env = compute_grammar_properties env nonterminals in
+let init_env gram =
+  let open GrammarStructure in
+  (* build dotted productions for each production *)
+  let dotted_prods = DottedProduction.compute_dotted_productions gram.gram_index.prods in
+
+  (* make the env *)
+  let env = {
+    index = gram.gram_index;
+    start_nt = gram.gram_start_nt;
+    ptree = gram.gram_ptree;
+    prods_by_lhs = gram.gram_prods_by_lhs;
+    dotted_prods;
+    derivable = Derivable.empty;
+    start_state = None;
+
+    options = gram.gram_options;
+    verbatims = gram.gram_verbatims;
+  } in
+
+  env
+
+
+let run_analyses gram =
+  let env = compute_grammar_properties (init_env gram) in
 
   env, compute_lr_tables env

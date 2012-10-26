@@ -128,9 +128,7 @@ type env = {
   (* start nonterminal symbol *)
   start_nt			: Ids.Nonterminal.t;
 
-  (* nonterminals reachable via tags *)
-  reachable			: Sig.readonly NtSet.t;
-
+  (* parse tree structure *)
   ptree				: PtreeType.t;
 
   (* during item set closure, profiling reports we spend a lot of time

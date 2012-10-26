@@ -1,6 +1,6 @@
 open GrammarAst
 open GrammarType
-open AnalysisEnvType
+open GrammarStructure
 
 let (|>) = BatPervasives.(|>)
 
@@ -43,31 +43,31 @@ let specfunc_of_spec_func funcs = function
       SpecFunc (Sloc.generated name, params, CamlAst.loc_string_of_expr code) :: funcs
 
 
-let ast_of_env env variant =
+let ast_of_gram gram variant =
   (* first, we reconstruct the verbatim sections *)
   let verbatims =
     List.map (fun code ->
       TF_verbatim (false, CamlAst.loc_string_of_sig_item code)
-    ) (Semantic.verbatims variant env.verbatims)
+    ) (Semantic.verbatims variant gram.gram_verbatims)
     @
     List.map (fun code ->
       TF_verbatim (true, CamlAst.loc_string_of_str_item code)
-    ) (Semantic.impl_verbatims variant env.verbatims)
+    ) (Semantic.impl_verbatims variant gram.gram_verbatims)
   in
 
   (* then, the options *)
   let options = let str = Sloc.generated in [
-    TF_option (str "shift_reduce_conflicts", env.options.expectedSR);
-    TF_option (str "reduce_reduce_conflicts", env.options.expectedRR);
-    TF_option (str "unreachable_nonterminals", env.options.expectedUNRNonterms);
-    TF_option (str "unreachable_terminals", env.options.expectedUNRTerms);
+    TF_option (str "shift_reduce_conflicts", gram.gram_options.expectedSR);
+    TF_option (str "reduce_reduce_conflicts", gram.gram_options.expectedRR);
+    TF_option (str "unreachable_nonterminals", gram.gram_options.expectedUNRNonterms);
+    TF_option (str "unreachable_terminals", gram.gram_options.expectedUNRTerms);
   ] in
 
   (* after that, the terminals *)
   let decls =
     TermArray.fold_left (fun decls term ->
       TermDecl (Ids.Terminal.to_int term.tbase.index_id, term.tbase.name, term.alias) :: decls
-    ) [] env.index.terms
+    ) [] gram.gram_index.terms
   in
   let types =
     TermArray.fold_left (fun types term ->
@@ -87,14 +87,14 @@ let ast_of_env env variant =
           types
       | Some semtype -> 
           TermType (term.tbase.name, CamlAst.loc_string_of_ctyp semtype, (*TODO: specfuncs*)[]) :: types
-    ) [] env.index.terms
+    ) [] gram.gram_index.terms
   in
   let precs =
     TermArray.fold_left (fun precs term ->
       match term.precedence with
       | 0    -> precs
       | prec -> PrecSpec (term.associativity, prec, [term.tbase.name]) :: precs
-    ) [] env.index.terms
+    ) [] gram.gram_index.terms
   in
 
   (* finally, the nonterminals with their productions *)
@@ -102,11 +102,11 @@ let ast_of_env env variant =
     NtArray.fold_left (fun nonterms nonterm ->
       let prods =
         (* Get production indices *)
-        NtArray.get env.prods_by_lhs nonterm.nbase.index_id
+        NtArray.get gram.gram_prods_by_lhs nonterm.nbase.index_id
         (* Get actual productions *)
-        |> List.map (ProdArray.get env.index.prods)
+        |> List.map (ProdArray.get gram.gram_index.prods)
         (* Transform to ProdDecl *)
-        |> List.map (proddecl_of_prod variant env.index)
+        |> List.map (proddecl_of_prod variant gram.gram_index)
       in
 
       let specfuncs = [
@@ -133,7 +133,7 @@ let ast_of_env env variant =
       in
 
       LocStringMap.add nonterm.nbase.name nt nonterms
-    ) LocStringMap.empty env.index.nonterms
+    ) LocStringMap.empty gram.gram_index.nonterms
   in
 
   let topforms = Merge.({

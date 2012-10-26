@@ -38,9 +38,9 @@ module Graph = Graph.Persistent.Digraph.ConcreteLabeled(M)(M)
  * :: Compute graph over nonterminals
  ************************************************************)
 
-let compute_graph nonterms =
+let compute_graph nonterms prods =
   (* fold over productions *)
-  List.fold_left (fun g prod ->
+  ProdArray.fold_left (fun g prod ->
     let left = NtArray.get nonterms prod.left in
     (* fold over rhs *)
     List.fold_left (fun g -> function
@@ -50,4 +50,4 @@ let compute_graph nonterms =
       | _ ->
           g
     ) g prod.right
-  ) Graph.empty
+  ) Graph.empty prods
