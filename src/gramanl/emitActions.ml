@@ -66,9 +66,12 @@ let make_ml_actions variant index =
       );
 
       let make_binding tag rhs_index sym =
-        assert (is_lid tag);
         let semtype = semtype variant sym in
         let polytype = polytype sym in
+
+        let _loc = Sloc._loc tag in
+        let tag = Sloc.value tag in
+
         if semtype = polytype then
           <:binding<
             $lid:tag$ : $semtype$ =
@@ -87,16 +90,16 @@ let make_ml_actions variant index =
       let bindings =
         BatList.mapi (fun rhs_index sym ->
           match sym with
-          | Terminal ("", _)
-          | Nonterminal ("", _) ->
+          | Terminal (None, _)
+          | Nonterminal (None, _) ->
               (* only consider elements with a tag *)
               []
 
-          | Terminal (tag, term) ->
+          | Terminal (Some tag, term) ->
               let term = TermArray.get index.terms term in
               [make_binding tag rhs_index term.tbase]
 
-          | Nonterminal (tag, nonterm) ->
+          | Nonterminal (Some tag, nonterm) ->
               let nonterm = NtArray.get index.nonterms nonterm in
               [make_binding tag rhs_index nonterm.nbase]
         ) prod.right
@@ -167,13 +170,16 @@ let make_ml_spec_func default semtype rettype kind func id =
 
       let untyped_params =
         List.rev_map (fun param ->
+          let param = Sloc.value param in
           <:patt<($lid:"_" ^ param$ : SemanticValue.t)>>
         ) params
       in
 
       let bindings =
         <:binding<__result : $rettype$ = $code$>>
-        :: List.rev_map (fun param ->
+        :: List.map (fun param ->
+          let _loc = Sloc._loc param in
+          let param = Sloc.value param in
           <:binding<($lid:param$ : $semtype$) = SemanticValue.obj $lid:"_" ^ param$>>
         ) params
       in

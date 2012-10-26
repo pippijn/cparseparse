@@ -19,6 +19,7 @@ let _use_table_dump = ref true
 let _inline_table_dump = ref true
 let _compress_table_dump = ref true
 
+let _trace_lexing = ref false
 let _trace_renumbering = ref false
 let _trace_closure = ref false
 let _trace_lrsets = ref false
@@ -56,6 +57,7 @@ let () =
     "-inline-table-dump",	Set _inline_table_dump,		" inline serialised tables into the Tables module as string";
     "-compress-table-dump",	Set _compress_table_dump,	" compress serialised tables with zlib";
 
+    "-trace-lexing",		Set _trace_lexing,		" output each token as it is parsed";
     "-trace-renumbering",	Set _trace_renumbering,		" output details on state renumbering";
     "-trace-closure",		Set _trace_closure,		" output details during LR item set closure";
     "-trace-lrsets",		Set _trace_lrsets,		" output details during LR item set construction";
@@ -102,6 +104,7 @@ let _use_table_dump () = !_use_table_dump
 let _inline_table_dump () = !_inline_table_dump
 let _compress_table_dump () = !_compress_table_dump
 
+let _trace_lexing () = !_trace_lexing
 let _trace_renumbering () = !_trace_renumbering
 let _trace_closure () = !_trace_closure
 let _trace_lrsets () = !_trace_lrsets

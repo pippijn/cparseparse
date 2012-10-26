@@ -19,27 +19,11 @@ SourceRepository head
         Browser:                http://xinutec.org/git/lang/cxxparse.git
 
 
-Executable arith
-        Path:                   testsuite/elkhound/arith
-        BuildTools:             ocamlbuild,camlp4o
-        BuildDepends:           glr,                                    # internal
-                                sexplib                                 # external
-        CompiledObject:         native
-        MainIs:                 arith.ml
-
-Executable sless
-        Path:                   testsuite/elkhound/scannerless
-        BuildTools:             ocamlbuild,camlp4o
-        BuildDepends:           glr,                                    # internal
-                                sexplib                                 # external
-        CompiledObject:         native
-        MainIs:                 sless.ml
-
 Executable elkhound
         Path:                   src/elkhound
         BuildTools:             ocamlbuild,camlp4o
         BuildDepends:           gramanl,                                # internal
-                                batteries,menhirLib,ulex                # external
+                                batteries,menhirLib                     # external
         CompiledObject:         native
         MainIs:                 elkhound.ml
 
@@ -68,6 +52,22 @@ Executable runtests
         CompiledObject:         native
         MainIs:                 runtests.ml
 
+Executable arith
+        Path:                   testsuite/elkhound/arith
+        BuildTools:             ocamlbuild,camlp4o
+        BuildDepends:           glr,                                    # internal
+                                sexplib                                 # external
+        CompiledObject:         native
+        MainIs:                 arith.ml
+
+Executable sless
+        Path:                   testsuite/elkhound/scannerless
+        BuildTools:             ocamlbuild,camlp4o
+        BuildDepends:           glr,                                    # internal
+                                sexplib                                 # external
+        CompiledObject:         native
+        MainIs:                 sless.ml
+
 
 Library gramanl
         Path:                   src/gramanl
@@ -75,7 +75,7 @@ Library gramanl
         BuildTools:             ocamlbuild,camlp4of
         BuildDepends:           baselib,glr,                            # internal
                                 unix,camlp4,camlp4.lib,                 # core
-                                batteries,sexplib,ocamlgraph,ulex       # external
+                                batteries,sexplib,ocamlgraph            # external
         CompiledObject:         native
 #        NativeOpt:              -inline 999 -unsafe -noassert
         Modules:                AnalysisEnv,
@@ -129,6 +129,7 @@ Library gramanl
                                 SampleInput,
                                 Semantic,
                                 SemanticVariant,
+                                Sloc,
                                 StateGraph,
                                 SuperSets,
                                 TableConstruction,
@@ -217,7 +218,8 @@ Library baselib
                                 ml_Sched.c,
                                 ml_Valgrind.c,
                                 ml_Zlib.c
-        Modules:                Bit2d,
+        Modules:                BaseOptions,
+                                Bit2d,
                                 BitSet,
                                 Cmdline,
                                 CompressedBitSet,

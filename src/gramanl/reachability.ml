@@ -66,7 +66,7 @@ let rec compute_reachable_tagged_dfs reachable prods prods_by_lhs nt_index =
 
       (* iterate over symbols in the rule RHS *)
       List.iter (function
-        | Nonterminal (tag, nonterm) when tag <> "" ->
+        | Nonterminal (Some tag, nonterm) ->
             (* recursively analyze nonterminal elements *)
             compute_reachable_tagged_dfs reachable prods prods_by_lhs nonterm
 

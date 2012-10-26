@@ -1,4 +1,4 @@
-let first_of_sequence derivable nonterms seq =
+let first_of_sequence derivable first_of seq =
   (* for each sequence member such that all
    * preceding members can derive the empty string *)
   fst (List.fold_left (fun (dest, blocked) sym ->
@@ -17,8 +17,7 @@ let first_of_sequence derivable nonterms seq =
 
       | Nonterminal (_, nt_index) ->
           (* anything already in nonterm's First should be added to dest *)
-          let nonterm = NtArray.get nonterms nt_index in
-          let dest = TerminalSet.union nonterm.first dest in
+          let dest = TerminalSet.union (first_of nt_index) dest in
 
           (* if nonterm can't derive the empty string, then it blocks
            * further consideration of right-hand side members *)
@@ -41,13 +40,18 @@ let first_of_sequence derivable nonterms seq =
 let rec compute_first derivable index =
   let open GrammarType in
 
+  let first_of nt_index =
+    let nonterm = NtArray.get index.nonterms nt_index in
+    nonterm.first
+  in
+
   (* for each production *)
   let changed =
     ProdArray.fold_left (fun changed prod ->
       let lhs = NtArray.get index.nonterms prod.left in
 
       (* compute First(RHS-sequence) *)
-      let first_of_rhs = first_of_sequence derivable index.nonterms prod.right in
+      let first_of_rhs = first_of_sequence derivable first_of prod.right in
 
       (* add everything in First(RHS-sequence) to First(LHS) *)
       let merged = TerminalSet.union lhs.first first_of_rhs in
@@ -90,6 +94,11 @@ let compute_dprod_first derivable dotted_prods index =
   let open AnalysisEnvType in
   let open GrammarType in
 
+  let first_of nt_index =
+    let nonterm = NtArray.get index.nonterms nt_index in
+    nonterm.first
+  in
+
   (* for each production *)
   ProdArray.iteri (fun prod_index prod ->
     let dprods = ProdArray.get dotted_prods prod_index in
@@ -103,7 +112,7 @@ let compute_dprod_first derivable dotted_prods index =
       let right = ExtList.nth_tl prod.right posn in
 
       (* compute its first *)
-      let first_of_rhs = first_of_sequence derivable index.nonterms right in
+      let first_of_rhs = first_of_sequence derivable first_of right in
       dprod.first_set <- first_of_rhs;
 
       (* can it derive empty? *)

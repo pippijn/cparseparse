@@ -6,17 +6,17 @@
  * the data.
  *
  * Another measure is I've split all grammar-wide algorithm
- * stuff into GrammarAnalysis (gramanl.ml).  Things should
- * only be put into Grammar if they are directly related
- * to the grammar representation.  (However, constitutent
- * objects like Production will continue to be a mix.)
+ * stuff into AnalysisEnvType.  Things should only be put into
+ * Grammar if they are directly related to the grammar
+ * representation.  (However, constitutent objects like
+ * productions will continue to be a mix.)
  *)
 
 open Sexplib.Conv
 
 
 type spec_func = {
-  params                : string list;
+  params                : string Sloc.t list;
   code                  : CamlAst.expr;
 } with sexp
 
@@ -123,8 +123,8 @@ type symbol =
   (* tags are applied to the symbols for purposes of unambiguous naming
    * in actions, and for self-commenting value as role indicators; an
    * empty tag ("") is allowed and means there is no tag *)
-  | Terminal    of (* tag: *)string * Ids.Terminal.t
-  | Nonterminal of (* tag: *)string * Ids.Nonterminal.t
+  | Terminal    of (* tag: *)string Sloc.t option * Ids.Terminal.t
+  | Nonterminal of (* tag: *)string Sloc.t option * Ids.Nonterminal.t
   with sexp
 
 (* a rewrite rule *)

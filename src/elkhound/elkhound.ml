@@ -19,22 +19,29 @@ let print_grammar grammar =
 
 let parse files =
   List.map (fun file ->
-    let ulexbuf = Ulexing.from_utf8_channel (open_in file) in
+    let lexbuf = Lexing.from_channel (open_in file) in
+    Lexing.(lexbuf.lex_curr_p <- {
+      pos_fname = file;
+      pos_lnum = 1;
+      pos_bol = 0;
+      pos_cnum = 0;
+    });
+
     let parse = MenhirLib.Convert.traditional2revised
-      (fun t -> t)
-      (fun _ -> Lexing.dummy_pos)
-      (fun _ -> Lexing.dummy_pos)
+      (fun (t, s, e) -> t)
+      (fun (t, s, e) -> s)
+      (fun (t, s, e) -> e)
       GrammarParser.parse
     in
 
-    let state = GrammarLexer.default_state ulexbuf in
+    let state = GrammarLexer.default_state lexbuf in
 
     try
       file, parse (fun () -> GrammarLexer.token state)
     with e ->
       Printf.printf "near position %d (\"%s\")\n"
-        (Ulexing.lexeme_start ulexbuf)
-        (Ulexing.utf8_lexeme ulexbuf);
+        (Lexing.lexeme_start lexbuf)
+        (Lexing.lexeme lexbuf);
       raise e
   ) files
 
@@ -140,7 +147,7 @@ let main inputs =
     |> optional Options._output_menhir (output_menhir dirname)
     |> optional Options._graph_automaton (state_graph dirname)
     |> optional Options._dump_automaton (dump_automaton dirname)
-    |> emit_code dirname
+    |> Valgrind.Callgrind.instrumented (emit_code dirname)
   with Diagnostics.Diagnostic (severity, msg) ->
     Printf.printf "%s: %s\n" (Diagnostics.string_of_severity severity) msg;
     exit 1

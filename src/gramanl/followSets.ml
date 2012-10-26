@@ -3,6 +3,11 @@ let compute_follow derivable index =
   let open GrammarType in
   let changed = ref true in
 
+  let first_of nt_index =
+    let nonterm = NtArray.get index.nonterms nt_index in
+    nonterm.first
+  in
+
   (* loop until no changes *)
   while !changed do
     changed := false;
@@ -26,7 +31,7 @@ let compute_follow derivable index =
                * everything in First(beta) is in Follow(B) *)
 
               (* compute First(beta) *)
-              let first_of_beta = FirstSets.first_of_sequence derivable index.nonterms after_right_sym in
+              let first_of_beta = FirstSets.first_of_sequence derivable first_of after_right_sym in
 
               (* put those into Follow(right_nonterm) *)
               let merged = TerminalSet.union right_nonterm.follow first_of_beta in

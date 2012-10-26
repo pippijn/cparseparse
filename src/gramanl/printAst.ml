@@ -3,6 +3,10 @@ open GrammarAst
 let f = Printf.fprintf
 
 
+let print_sloc out located =
+  output_string out (Sloc.value located)
+
+
 let print_termdecl out = function
   | TermDecl (code, name, "") ->
       f out "  %3d : %s;\n" code name
@@ -21,7 +25,7 @@ let print_specfunc out = function
       ignore (List.fold_left (fun first formal ->
         if not first then
           output_string out ", ";
-        output_string out formal;
+        print_sloc out formal;
         false
       ) true formals);
       f out ")%a" print_action_code (Some code)
@@ -45,8 +49,8 @@ let print_precspec out = function
       f out ";\n"
 
 let print_tag out = function
-  | "" -> ()
-  | tag -> f out "%s:" tag
+  | None -> ()
+  | Some tag -> f out "%s:" (Sloc.value tag)
 
 let print_rhs out = function
   | RH_name (tag, name) ->
@@ -104,13 +108,13 @@ let print_topform out = function
       f out "nonterm %s {\n" name;
       List.iter (print_specfunc out) funcs;
       List.iter (print_proddecl out) prods;
-      List.iter (f out "  %s\n") subsets;
+      List.iter (f out "  %a\n" print_sloc) subsets;
       f out "}\n\n"
   | TF_nonterm (name, Some semtype, funcs, prods, subsets) ->
       f out "nonterm(%s) %s {\n" semtype name;
       List.iter (print_specfunc out) funcs;
       List.iter (print_proddecl out) prods;
-      List.iter (f out "  %s\n") subsets;
+      List.iter (f out "  %a\n" print_sloc) subsets;
       f out "}\n\n"
 
 let print ?(out=stdout) ast =

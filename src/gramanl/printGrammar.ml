@@ -1,16 +1,19 @@
 open GrammarType
 
+let print_tag out = function
+  | None -> ()
+  | Some tag ->
+      let tag = Sloc.value tag in
+      Printf.fprintf out "%s:" tag
+
+
 let print_symbol ?(out=stdout) terms nonterms sym =
   match sym with
-  | Terminal ("", term) ->
-      output_string out (GrammarUtil.name_of_symbol terms nonterms sym)
   | Terminal (tag, term) ->
-      Printf.fprintf out "%s:" tag;
-      output_string out (GrammarUtil.name_of_symbol terms nonterms sym)
-  | Nonterminal ("", nonterm) ->
+      print_tag out tag;
       output_string out (GrammarUtil.name_of_symbol terms nonterms sym)
   | Nonterminal (tag, nonterm) ->
-      Printf.fprintf out "%s:" tag;
+      print_tag out tag;
       output_string out (GrammarUtil.name_of_symbol terms nonterms sym)
 
 

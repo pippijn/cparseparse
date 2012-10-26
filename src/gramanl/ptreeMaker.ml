@@ -10,8 +10,8 @@ let _loc = Loc.ghost
 let symbols_of_production prod =
   List.fold_right (fun sym syms ->
     match sym with
-    | Terminal (tag, _)
-    | Nonterminal (tag, _) when tag <> "" -> sym :: syms
+    | Terminal (Some tag, _)
+    | Nonterminal (Some tag, _) -> sym :: syms
 
     | _ -> syms
   ) prod.right []
@@ -74,7 +74,7 @@ let merge name = function
   | { params = [l; r] as params } ->
       `SEM_MERGE {
         params;
-        code = <:expr<$uid:name$.Merge ($lid:l$, $lid:r$)>>
+        code = <:expr<$uid:name$.Merge ($Sloc.lid l$, $Sloc.lid r$)>>
       }
   | _ ->
       failwith "invalid merge function"
@@ -132,6 +132,12 @@ let set_action variant prod action =
   { prod with pbase = { prod.pbase with semantic } }
 
 
+let require_tag sym =
+  match GrammarUtil.tag_of_symbol sym with
+  | None -> failwith "tag required"
+  | Some tag -> tag
+
+
 let map_prods variant nonterms reachable has_merge prods =
   match prods with
   | [prod] when is_singleton_nonterminal prod && not has_merge ->
@@ -140,10 +146,10 @@ let map_prods variant nonterms reachable has_merge prods =
       let tag =
         symbols_of_production prod
         |> List.hd
-        |> GrammarUtil.tag_of_symbol
+        |> require_tag
       in
       let action =
-        <:expr<$lid:tag$>>
+        Sloc.lid tag
       in
 
       [set_action variant prod action]
@@ -154,20 +160,20 @@ let map_prods variant nonterms reachable has_merge prods =
       begin match symbols_of_production tail, symbols_of_production head_tail with
       (* possibly empty list *)
       | [], [head2; tail2] ->
-          let head2_tag = GrammarUtil.tag_of_symbol head2 in
-          let tail2_tag = GrammarUtil.tag_of_symbol tail2 in
+          let head2_tag = require_tag head2 in
+          let tail2_tag = require_tag tail2 in
           [
             set_action variant tail <:expr<[]>>;
-            set_action variant head_tail <:expr<$lid:tail2_tag$ :: $lid:head2_tag$>>;
+            set_action variant head_tail <:expr<$Sloc.lid tail2_tag$ :: $Sloc.lid head2_tag$>>;
           ]
       (* non-empty list *)
       | [tail1], [head2; tail2] ->
-          let tail1_tag = GrammarUtil.tag_of_symbol tail1 in
-          let head2_tag = GrammarUtil.tag_of_symbol head2 in
-          let tail2_tag = GrammarUtil.tag_of_symbol tail2 in
+          let tail1_tag = require_tag tail1 in
+          let head2_tag = require_tag head2 in
+          let tail2_tag = require_tag tail2 in
           [
-            set_action variant tail <:expr<[$lid:tail1_tag$]>>;
-            set_action variant head_tail <:expr<$lid:tail2_tag$ :: $lid:head2_tag$>>;
+            set_action variant tail <:expr<[$Sloc.lid tail1_tag$]>>;
+            set_action variant head_tail <:expr<$Sloc.lid tail2_tag$ :: $Sloc.lid head2_tag$>>;
           ]
 
       | _ -> failwith "error in is_list_nonterminal"
@@ -176,10 +182,10 @@ let map_prods variant nonterms reachable has_merge prods =
   | [none; some] when is_option_nonterminal none some && not has_merge ->
       begin match symbols_of_production some with
       | [some_sym] ->
-          let some_tag = GrammarUtil.tag_of_symbol some_sym in
+          let some_tag = require_tag some_sym in
           [
             set_action variant none <:expr<None>>;
-            set_action variant some <:expr<Some $lid:some_tag$>>;
+            set_action variant some <:expr<Some $Sloc.lid some_tag$>>;
           ]
 
       | _ -> failwith "error in is_option_nonterminal"
@@ -210,15 +216,14 @@ let map_prods variant nonterms reachable has_merge prods =
             in
 
             let args =
-              List.fold_left (fun args -> function
-                | Nonterminal ("", _)
-                | Terminal ("", _) ->
+              List.fold_left (fun args sym ->
+                match GrammarUtil.tag_of_symbol sym with
+                | None ->
                     (* nothing to do for untagged symbols *)
                     args
+                | Some tag ->
+                    <:expr<$Sloc.lid tag$>> :: args
 
-                | Nonterminal (tag, _)
-                | Terminal (tag, _) ->
-                    <:expr<$lid:tag$>> :: args
               ) [ <:expr<(start_p, end_p)>> ] prod.right
               |> List.rev
             in

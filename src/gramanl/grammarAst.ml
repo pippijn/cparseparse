@@ -3,8 +3,8 @@ open Sexplib.Conv
 
 (* one of the things that appears after the '->', i.e. the right-hand-side elements *)
 type rhs =
-  | RH_name of (* tag: *)string * (* name: *)string (* tagged terminal or nonterminal reference *)
-  | RH_string of (* tag: *)string * (* str: *)string (* tagged terminal reference by string alias *)
+  | RH_name of (* tag: *)string Sloc.t option * (* name: *)string (* tagged terminal or nonterminal reference *)
+  | RH_string of (* tag: *)string Sloc.t option * (* str: *)string (* tagged terminal reference by string alias *)
   | RH_prec of (* token: *)string (* assigns a specific precedence level to a rule *)
   | RH_forbid of (* token: *)string (* forbids a rule from being used when a given token is next in the input *)
   with sexp
@@ -22,7 +22,7 @@ type proddecl =
 
 (* specification function: formals + code *)
 type specfunc =
-  | SpecFunc of (* name: *)string * (* formals: *)string list * (* code: *)string
+  | SpecFunc of (* name: *)string * (* formals: *)string Sloc.t list * (* code: *)string
   with sexp
 
 (* a set of equal-precedence tokens (named either by name or by alias), 
@@ -58,7 +58,7 @@ type topform =
   		* (* type: *)string option (* semantic value type *)
                 * (* funcs: *)specfunc list (* special situation action functions *)
                 * (* prods: *)proddecl list (* productions (right-hand side alternatives) *)
-                * (* subsets: *)string list (* preference subset nonterminals (for scannerless) *)
+                * (* subsets: *)string Sloc.t list (* preference subset nonterminals (for scannerless) *)
   with sexp
 
 type topforms = topform list with sexp

@@ -2,7 +2,13 @@ open Glr
 open Camlp4.PreCast
 open GrammarType
 
-module OCamlPrinter = Printers.OCaml
+module Dumper = Printers.DumpOCamlAst
+module Printer = Printers.OCaml
+
+let print_interf output_file intf = Printer.print_interf ~output_file intf
+let print_implem output_file impl = Printer.print_implem ~output_file impl
+let dump_interf output_file intf = Dumper.print_interf ~output_file intf
+let dump_implem output_file impl = Dumper.print_implem ~output_file impl
 
 
 (************************************************
@@ -16,8 +22,8 @@ let emit_tokens name terms =
   let out = name ^ "Tokens.ml" in
   let intf, impl = EmitTokens.make_ml_tokens terms in
 
-  OCamlPrinter.print_interf ~output_file:dcl intf;
-  OCamlPrinter.print_implem ~output_file:out impl
+  dump_interf dcl intf;
+  dump_implem out impl
 
 
 let emit_parse_tree name reachable index prods_by_lhs =
@@ -25,7 +31,7 @@ let emit_parse_tree name reachable index prods_by_lhs =
   let out = name ^ "Ptree.ml" in
   let impl = EmitPtree.make_ml_parse_tree reachable index prods_by_lhs in
 
-  OCamlPrinter.print_implem ~output_file:out impl;
+  print_implem out impl;
   (* TODO: with sexp *)
   ignore (Sys.command
     ("sed -i -e 's/type t = \\([^;|]*\\);;/type t = \\1 with sexp;;/g;s/ | SEXP;;/ with sexp;;/g' " ^ out))
@@ -50,8 +56,8 @@ let emit_symbol_names name terms nonterms =
       nonterms
   in
 
-  OCamlPrinter.print_interf ~output_file:dcl intf;
-  OCamlPrinter.print_implem ~output_file:out impl
+  dump_interf dcl intf;
+  dump_implem out impl
 
 
 let emit_user_actions name variant index final_prod verbatims =
@@ -65,10 +71,15 @@ let emit_user_actions name variant index final_prod verbatims =
       variant index final_prod verbatims
   in
 
-  OCamlPrinter.print_interf ~output_file:dcl intf;
-  OCamlPrinter.print_implem ~output_file:out impl;
-  (* TODO: True/False *)
-  ignore (Sys.command ("sed -i -e 's/\\.true/.True/;s/\\.false/.False/' " ^ out))
+  if variant = SemanticVariant.User then (
+    dump_interf dcl intf;
+    dump_implem out impl;
+  ) else (
+    print_interf dcl intf;
+    print_implem out impl;
+    (* TODO: True/False *)
+    ignore (Sys.command ("sed -i -e 's/\\.true/.True/;s/\\.false/.False/' " ^ out))
+  )
 
 
 let emit_tables name tables =
@@ -82,7 +93,7 @@ let emit_tables name tables =
       (EmitTables.make_ml_tables tables) (open_out_bin dat)
   in
 
-  OCamlPrinter.print_interf ~output_file:dcl intf;
+  dump_interf dcl intf;
 
   match impl with
   | None ->
@@ -90,7 +101,7 @@ let emit_tables name tables =
         (TablePrinting.print_tables tables) (open_out out)
 
   | Some impl ->
-      OCamlPrinter.print_implem ~output_file:out impl
+      dump_implem out impl
 
 
 (************************************************

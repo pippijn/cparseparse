@@ -22,8 +22,8 @@ let synthesise_start_rule topforms =
   let start =
     TF_nonterm ((* name = *)start_name, (* type = *)None, (* funcs = *)[], (* prods = *)[
       ProdDecl (PDK_NEW, "", [
-        RH_name ("top", topforms.first_nonterm);
-        RH_name ("", eof);
+        RH_name (Some (Sloc.generated "top"), topforms.first_nonterm);
+        RH_name (None, eof);
       ], (* code: *)None)
     ], (* subsets: *)[])
   in
@@ -230,7 +230,7 @@ let collect_nonterminals nonterms term_count =
       | TF_nonterm (name, semtype, funcs, prods, subsets) ->
           (* record subsets *)
           List.iter (fun subset ->
-            if not (StringMap.mem subset nonterms) then
+            if not (StringMap.mem (Sloc.value subset) nonterms) then
               failwith "subsets contains non-existent nonterminal"
             (* note that, since context-free language inclusion is
              * undecidable (Hopcroft/Ullman), we can't actually check that
@@ -257,7 +257,7 @@ let collect_nonterminals nonterms term_count =
             maximal = (BatOption.is_some (spec_func funcs "maximal" 0));
             (* we simply store the (validated) string references here, because
              * it is very hard to have cyclic immutable data structures *)
-            subset_names = subsets;
+            subset_names = List.map Sloc.value subsets;
           } in
 
           StringMap.add name nonterminal nonterminals

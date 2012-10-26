@@ -7,6 +7,7 @@
 "ids.ml":		syntax_camlp4o, pkg_sexplib.syntax
 "merge.ml":		syntax_camlp4o, pkg_sexplib.syntax
 "semanticVariant.ml":	syntax_camlp4o, pkg_sexplib.syntax
+"sloc.ml":		syntax_camlp4o, pkg_sexplib.syntax
 
 # ulex
 "grammarLexer.ml":	syntax_camlp4o
@@ -18,6 +19,6 @@
 # ML code generation
 <emit*.ml>:		camlp4of
 "camlAst.ml":		camlp4of
-"tablePrinting.ml":	camlp4of
-"ptreeMaker.ml":	camlp4of
 "grammarTreeParser.ml":	camlp4of
+"ptreeMaker.ml":	camlp4of
+"tablePrinting.ml":	camlp4of

@@ -158,13 +158,13 @@ let eq_option a b =
 let inverse_transition last_term last_nonterm source target =
   let open GrammarType in
   try
-    Terminal ("",
+    Terminal (None,
       Ids.Terminal.find (fun term_index ->
         eq_option target (transition_for_term source term_index)
       ) last_term
     )
   with Not_found ->
-    Nonterminal ("",
+    Nonterminal (None,
       Ids.Nonterminal.find (fun nt_index ->
         eq_option target (transition_for_nonterm source nt_index)
       ) last_nonterm

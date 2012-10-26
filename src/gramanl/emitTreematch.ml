@@ -42,11 +42,13 @@ let ctyp_of_right_symbol index head_tail =
  * also needs to change *)
 let production_types index term_mods left has_merge prods =
   let add_term_mod = function
-    | Terminal (tag, term_index) ->
+    | Terminal (None, term_index) ->
+        assert false
+
+    | Terminal (Some tag, term_index) ->
         let term = TermArray.get index.terms term_index in
         begin match Semantic.semtype_of_term SemanticVariant.User term with
         | Some semtype ->
-            assert (tag <> "");
             if not (Hashtbl.mem term_mods term.tbase.name) then
               Hashtbl.add term_mods term.tbase.name (CamlAst.string_of_ctyp semtype)
         | _ -> ()
@@ -82,8 +84,8 @@ let production_types index term_mods left has_merge prods =
           let prod_type =
             List.map (fun sym ->
               match sym with
-              | Nonterminal ("", _)
-              | Terminal ("", _) ->
+              | Nonterminal (None, _)
+              | Terminal (None, _) ->
                   (* nothing to do for untagged symbols *)
                   []
 

@@ -33,7 +33,6 @@
 %token TOK_IMPL_VERBATIM	/* "impl_verbatim"	*/
 %token TOK_PRECEDENCE		/* "precedence"		*/
 %token TOK_OPTION		/* "option"		*/
-%token TOK_CONTEXT_CLASS	/* "context_class"	*/
 %token TOK_SUBSETS		/* "subsets"		*/
 %token TOK_DELETE		/* "delete"		*/
 %token TOK_REPLACE		/* "replace"		*/
@@ -57,7 +56,6 @@ parse
 top_form_list
 	: /*empty*/			{ [] }
 	| top_form_list top_form	{ $2 :: $1 }
-	| top_form_list context_class	{ $1 }
 
 
 top_form
@@ -65,11 +63,6 @@ top_form
 	| parser_option			{ $1 }
 	| terminals			{ $1 }
 	| nonterminal			{ $1 }
-
-
-context_class
-	: TOK_CONTEXT_CLASS TOK_LIT_CODE TOK_SEMICOLON
-		{ () }
 
 
 verbatim
@@ -163,8 +156,8 @@ formals_opt(NAME)
 
 
 formals(NAME)
-	: NAME				{ [$1] }
-	| formals(NAME) TOK_COMMA NAME	{ $3 :: $1 }
+	: NAME				{ [$1, $startpos, $endpos] }
+	| formals(NAME) TOK_COMMA NAME	{ ($3, $startpos, $endpos) :: $1 }
 
 
 
@@ -224,13 +217,13 @@ rhs
  */
 rhs_elt
 	: TOK_UNAME
-		{ RH_name ("", $1) }
+		{ RH_name (None, $1) }
 	| TOK_LNAME TOK_COLON TOK_UNAME
-		{ RH_name ($1, $3) }
+		{ RH_name (Some ($1, $startpos($1), $endpos($1)), $3) }
 	| TOK_STRING
-		{ RH_string ("", $1) }
+		{ RH_string (None, $1) }
 	| TOK_LNAME TOK_COLON TOK_STRING
-		{ RH_string ($1, $3) }
+		{ RH_string (Some ($1, $startpos($1), $endpos($1)), $3) }
 	| TOK_PRECEDENCE TOK_LPAREN name_or_string TOK_RPAREN
 		{ RH_prec ($3) }
 	| TOK_FORBID_NEXT TOK_LPAREN name_or_string TOK_RPAREN

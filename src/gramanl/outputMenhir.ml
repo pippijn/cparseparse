@@ -42,8 +42,8 @@ let output_precs out terms =
 
 
 let output_tag out = function
-  | "" -> ()
-  | tag -> output_string out (tag ^ "=")
+  | None -> ()
+  | Some tag -> output_string out (Sloc.value tag ^ "=")
 
 
 let output_symbol terms nonterms out = function
@@ -80,7 +80,8 @@ let output_production out variant index prod_index =
   | None ->
       let sym = PtreeMaker.right_symbol prod in
       let tag = GrammarUtil.tag_of_symbol sym in
-      Printf.fprintf out "\t{ %s }\n" tag
+      assert (tag != None);
+      Printf.fprintf out "\t{ %a }\n" output_tag tag
   | Some action ->
       Printf.fprintf out "\t{ %s }\n" (CamlAst.string_of_expr action)
 

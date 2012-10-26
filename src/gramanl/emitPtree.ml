@@ -83,8 +83,8 @@ let production_types terms nonterms has_merge prods =
             [ <:ctyp<Glr.SourceLocation.t>> ]
             :: List.map (fun sym ->
               match sym with
-              | Nonterminal ("", _)
-              | Terminal ("", _) ->
+              | Nonterminal (None, _)
+              | Terminal (None, _) ->
                   (* nothing to do for untagged symbols *)
                   []
 
