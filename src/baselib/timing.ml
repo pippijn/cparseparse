@@ -28,7 +28,7 @@ let output_maybe out = function
 
 
 let alloc_stats () =
-  if Cmdline._alloc_stats () then
+  if BaseOptions._alloc_stats () then
     Gc.full_major ();
   Gc.stat (), Gc.allocated_bytes ()
 
@@ -38,7 +38,7 @@ let alloc desc f x =
   let result = f x in
   let finish = alloc_stats () in
 
-  if Cmdline._alloc_stats () then (
+  if BaseOptions._alloc_stats () then (
     print_string "%%% ";
     Printf.printf "%s%a\n"
       desc
@@ -57,7 +57,7 @@ let start = Unix.gettimeofday ()
 
 
 let maybe_alloc_stats alloc =
-  if alloc && Cmdline._alloc_timing () then
+  if alloc && BaseOptions._alloc_timing () then
     Some (alloc_stats ())
   else
     None
@@ -72,7 +72,7 @@ let progress ?(alloc=false) desc f x =
 
   let finish_alloc = maybe_alloc_stats alloc in
 
-  if Cmdline._trace_progress () then (
+  if BaseOptions._trace_progress () then (
     print_string "%%% ";
     Printf.printf "[+%fs = %fs] %s%a\n"
       (finish -. localstart)
@@ -94,7 +94,7 @@ let time ?(alloc=false) desc f x =
 
   let finish_alloc = maybe_alloc_stats alloc in
 
-  if Cmdline._trace_progress () then (
+  if BaseOptions._trace_progress () then (
     print_string "%%% ";
     Printf.printf "%s took %fs%a\n"
       desc

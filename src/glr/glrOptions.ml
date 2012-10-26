@@ -9,7 +9,7 @@ let _ptree_indent = ref 2
 
 
 let () =
-  Cmdline.register (Arg.([
+  Cmdline.register "glr engine" (Arg.([
     "-terminal-names",		Set _terminal_names,		" display terminal names instead of their aliases";
     "-trace-parse",		Set _trace_parse,		" trace parse actions in GLR engine";
     "-accounting",		Set _accounting,		" keep some statistics useful for performance evaluation";

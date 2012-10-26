@@ -8,8 +8,9 @@ module Priv = struct
   let _show_tycon_freq = ref false
 end
 
+
 let () =
-  Cmdline.register Arg.([
+  Cmdline.register "treematch" Arg.([
     "-i",                       Set Priv._i,		   " generate interface files";
     "-infer",                   Set Priv._infer,           " infer the ast from map strategies";
     "-no-emit",                 Set Priv._i,		   " Don't generate code";
@@ -18,6 +19,7 @@ let () =
     "-dump-tokens",		Set Priv._dump_tokens,	   " dump source tokens";
     "-show-tycon-freq",         Set Priv._show_tycon_freq, " Show type constructor usage frequency"
   ])
+
 
 let _i () = !Priv._i
 let _infer () = !Priv._infer

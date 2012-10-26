@@ -34,7 +34,7 @@ let _trace_unreachable_ptree = ref false
 
 
 let () =
-  Cmdline.register Arg.([
+  Cmdline.register "grammar analysis" Arg.([
     "-module-prefix",		Set_string _module_prefix,	" prefix for generated modules (%Tables, %Actions, ...)";
 
     "-paranoid",		Set _paranoid,			" do more expensive internal checks";

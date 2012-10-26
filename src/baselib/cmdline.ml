@@ -1,30 +1,11 @@
-let _trace_progress = ref false
-let _alloc_stats = ref false
-let _alloc_timing = ref false
+let dummy_spec section = ("\n" ^ section ^ ":", Arg.Unit ignore, "")
 
-let dummy_spec = ("", Arg.Unit ignore, "")
-
-let specs = let open Arg in ref ([
-  "-timing",		Set _trace_progress,		" output timing details";
-  "-alloc-stats",	Set _alloc_stats,		" print memory allocation statistics";
-  "-alloc-timing",	Set _alloc_timing,		" print alloc statistics in timings (implies -timing)";
-  dummy_spec;
-])
-let actions = ref [
-  (fun inputs ->
-    if !_alloc_timing then
-      _trace_progress := true;
-  )
-]
+let specs = ref [dummy_spec "help"]
+let actions = ref []
 
 
-let _trace_progress () = !_trace_progress
-let _alloc_stats () = !_alloc_stats
-let _alloc_timing () = !_alloc_timing
-
-
-let register ?action spec =
-  specs := spec @ dummy_spec :: !specs;
+let register ?action section spec =
+  specs := dummy_spec section :: spec @ !specs;
   match action with
   | None -> ()
   | Some action ->

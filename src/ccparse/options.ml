@@ -15,7 +15,7 @@ let _rt = ref false
 
 
 let () =
-  Cmdline.register Arg.([
+  Cmdline.register "parser" Arg.([
     "-ptree",		Set _ptree,		" build parse tree";
     "-tptree",		Set _tptree,		" build strongly typed parse tree";
     "-treematch",	Set _treematch,		" build treematch-backed tree";
