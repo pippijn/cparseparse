@@ -13,14 +13,11 @@ and ast_node = Ident.uident * node
 and 'a rewrite_node = Ident.uident * 'a rewrite_clause list
 and 'a rewrite_clause = 'a Tree.t * 'a Tree.t
 and node =
-    CustomNode of ast_clause list
+    CustomNode of clause list
   | NativeNode of Ident.lident
   | AliasNode of Constr.tycon
 and type_decl = Ident.uident * Ident.uident
-and ast_clause = topl_tree
-and topl_tree = Constr.t
-and location = Ident.uident * tag
-and tag = Ident.uident
+and clause = Constr.t
 and arg = int
 with sexp
 
@@ -53,13 +50,12 @@ class virtual ['a] base_print = object (self)
   method rewrite_node pp (nm, clauses) =
     f pp "@[<hov>%a:@ %a@]" Ident.pp_uident nm (pp_list self # rewrite_clause pp_newline_bar_sep) clauses
   method node pp = function
-    CustomNode clauses -> f pp "%a" (pp_list self # ast_clause pp_newline_bar_sep) clauses
+    CustomNode clauses -> f pp "%a" (pp_list self # clause pp_newline_bar_sep) clauses
   | NativeNode name -> Ident.pp_lident pp name
   | AliasNode t -> (new Constr.print) # tycon pp t
   method type_decl pp (s,d) =
     f pp "@[<hov 2>%a@]" (pp_list Ident.pp_uident pp_biarrow_sep) [s;d]
-  method ast_clause = self # topl_tree
-  method topl_tree = (new Constr.print) # constr
+  method clause = (new Constr.print) # constr
 end
 
 (* +=====~~~-------------------------------------------------------~~~=====+ *)
