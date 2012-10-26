@@ -1,203 +1,96 @@
 open Camlp4.PreCast
 open GrammarType
-open CodegenHelpers
+open PtreeType
 
 let (|>) = BatPervasives.(|>)
-let _loc = Loc.ghost
 
 
-(************************************************
- * :: Concrete syntax tree
- ************************************************)
-
-let ctyp_of_nonterminal nonterms nonterm =
-  let nonterm = NtArray.get nonterms nonterm in
-  (* the type is the referenced nonterminal module *)
-  let _loc, typ = Sloc._loc nonterm.nbase.name in
-  assert (is_uid typ);
-  <:ctyp<$uid:typ$.t>>
+let make_tycon_arg = function
+  | Alias semtype ->
+      let _loc, semtype = Sloc._loc semtype in
+      <:ctyp<$uid:semtype$.t>>
+  | _ ->
+      failwith "unsupported in ptree"
 
 
-let ctyp_of_terminal terms term =
-  let term = TermArray.get terms term in
-  (* use the terminal type *)
-  match Semantic.semtype_of_term SemanticVariant.User term with
-  | None ->
-      failwith "tagged terminals must have a declared type"
-  | Some ty ->
-      ty
+let make_tycon (name, args) =
+  let types = Ast.tyAnd_of_list (List.map make_tycon_arg args) in
+  let _loc, name = Sloc._loc name in
+  <:ctyp<$uid:name$ of $types$>>
 
 
-let ctyp_of_symbol terms nonterms = function
-  | Nonterminal (_, nonterm) -> ctyp_of_nonterminal nonterms nonterm
-  | Terminal    (_,    term) -> ctyp_of_terminal terms term
+let make_binding (left, right) =
+  let intf_types, impl_types =
+    match right with
+    | Native ctyp ->
+        let _loc = Loc.ghost in
+        <:sig_item<type t = ($ctyp$)>>,
+        <:str_item<type t = ($ctyp$)>>
+    | Alias semtype ->
+        let _loc, semtype = Sloc._loc semtype in
+        <:sig_item<type t = $uid:semtype$.t>>,
+        <:str_item<type t = $uid:semtype$.t>>
+    | List semtype ->
+        let _loc, semtype = Sloc._loc semtype in
+        <:sig_item<type t = $uid:semtype$.t list>>,
+        <:str_item<type t = $uid:semtype$.t list>>
+    | Option semtype ->
+        let _loc, semtype = Sloc._loc semtype in
+        <:sig_item<type t = $uid:semtype$.t option>>,
+        <:str_item<type t = $uid:semtype$.t option>>
+    | Tycon types ->
+        let types = Ast.tyOr_of_list (List.map make_tycon types) in
 
-
-let ctyp_of_right_symbol terms nonterms head_tail =
-  PtreeMaker.right_symbol head_tail
-  |> ctyp_of_symbol terms nonterms
-
-
-(* XXX: if this function changes its output, PtreeMaker.prods probably
- * also needs to change *)
-let production_types terms nonterms has_merge prods =
-  let merge_types =
-    if has_merge then
-      [ <:ctyp<Merge of t * t>> ]
-    else
-      []
+        (* TODO: with sexp *)
+        let _loc = Loc.ghost in
+        <:sig_item<type t = $types$ | SEXP>>,
+        <:str_item<type t = $types$ | SEXP>>
   in
 
-  match prods with
-  (* nonterminal with a single production that is a tagged symbol
-   * (and there is no merge) *)
-  | [prod] when PtreeMaker.is_singleton_nonterminal prod && not has_merge ->
-      let semtype = ctyp_of_right_symbol terms nonterms prod in
-      <:sig_item<type t = ($semtype$)>>,
-      <:str_item<type t = ($semtype$)>>
+  let _loc, left = Sloc._loc left in
 
-  | [tail; head_tail] when PtreeMaker.is_list_nonterminal tail head_tail && not has_merge ->
-      let semtype = ctyp_of_right_symbol terms nonterms head_tail in
-      <:sig_item<type t = ($semtype$ list)>>,
-      <:str_item<type t = ($semtype$ list)>>
-
-  | [none; some] when PtreeMaker.is_option_nonterminal none some && not has_merge ->
-      let semtype = ctyp_of_right_symbol terms nonterms some in
-      <:sig_item<type t = ($semtype$ option)>>,
-      <:str_item<type t = ($semtype$ option)>>
-
-  | [none; some] when PtreeMaker.is_boolean_nonterminal none some && not has_merge ->
-      <:sig_item<type t = bool>>,
-      <:str_item<type t = bool>>
-
-  | prods ->
-      let types =
-        List.map (fun prod ->
-          if false then (
-            Printf.printf "    (*%a *)\n"
-              (PrintGrammar.print_production terms nonterms) prod
-          );
-
-          let prod_type =
-            [ <:ctyp<Glr.SourceLocation.t>> ]
-            :: List.map (fun sym ->
-              match sym with
-              | Nonterminal (None, _)
-              | Terminal (None, _) ->
-                  (* nothing to do for untagged symbols *)
-                  []
-
-              | sym ->
-                  [ctyp_of_symbol terms nonterms sym]
-
-            ) prod.right
-            |> List.concat
-            |> Ast.tyAnd_of_list
-          in
-
-          let prod_name =
-            match Sloc.value prod.pbase.name with
-            | "" -> Sloc.at prod.pbase.name ("P" ^ Ids.Production.to_string prod.pbase.index_id)
-            | _  -> prod.pbase.name
-          in
-
-          let prod_variant =
-            <:ctyp<$Sloc.tyUid prod_name$ of $prod_type$>>
-          in
-
-          <:ctyp<$prod_variant$>>
-        ) prods
-      in
-
-      let types = Ast.tyOr_of_list (merge_types @ types) in
-
-      (* TODO: with sexp *)
-      <:sig_item<type t = $types$ | SEXP>>,
-      <:str_item<type t = $types$ | SEXP>>
-
-
-let make_ml_parse_tree reachable index prods_by_lhs =
-  let types =
-    NtArray.fold_right (fun indices types ->
-      match List.map (ProdArray.get index.prods) indices with
-      | [] ->
-          (* the empty nonterminal has no productions *)
-          types
-
-      | first :: _ as prods ->
-          let nonterm = NtArray.get index.nonterms first.left in
-          let name = Sloc.value nonterm.nbase.name in
-          if name.[0] == '_' then
-            (* we do not emit code for the synthesised start rule *)
-            types
-          else (
-            assert (is_uid name);
-
-            if not (NtSet.mem reachable first.left) then (
-              if Options._trace_unreachable_ptree () then
-                print_endline ("unreachable: " ^ name);
-              types
-            ) else (
-              let has_merge = Semantic.merge_of_nonterm SemanticVariant.User nonterm != None in
-
-              let intf_types, impl_types =
-                production_types index.terms index.nonterms has_merge prods
-              in
-
-              (nonterm.nbase.name, intf_types, impl_types) :: types
-            )
-          )
-
-    ) prods_by_lhs []
+  (* signature *)
+  let intf =
+    <:module_type<
+      sig
+        $intf_types$
+        include Sig.ConvertibleType with type t := t
+      end
+    >>
   in
 
-  let bindings =
-    List.fold_left (fun bindings (name, intf_types, impl_types) ->
-      let _loc, name = Sloc._loc name in
-
-      (* signature *)
-      let intf =
-        <:module_type<
-          sig
-            $intf_types$
-            include Sig.ConvertibleType with type t := t
-          end
-        >>
-      in
-
-      (* implementation *)
-      let impl =
-        <:module_expr<
-          struct
-            $impl_types$
-          end
-        >>
-      in
-
-      assert (not (StringMap.mem name bindings));
-      StringMap.add name <:module_binding<$name$ : $intf$ = $impl$>> bindings
-    ) StringMap.empty types
+  (* implementation *)
+  let impl =
+    <:module_expr<
+      struct
+        $impl_types$
+      end
+    >>
   in
+
+  <:module_binding<$left$ : $intf$ = $impl$>>
+
+
+let make_ml_parse_tree ptree =
+  let bindings = List.map make_binding ptree in
+
+  let _loc = Loc.ghost in
 
   let combined =
     BatList.reduce (fun combined binding ->
       <:module_binding<$combined$ and $binding$>>
-    ) (StringMap.bindings bindings |> List.split |> snd)
+    ) bindings
   in
 
   let modules = Ast.StRecMod (_loc, combined) in
 
-  let _loc, first_module =
-    match types with
-    | (name, _, _) :: _ ->
-        Sloc._loc name
-    | _ ->
-        failwith "could not find first module"
-  in
+  let first_module, _ = List.hd ptree in
 
   let impl =
+    let _loc, first_module = Sloc._loc first_module in
     <:str_item<
       open Sexplib.Conv
+      open Glr
 
       module Ptree = struct
         $modules$

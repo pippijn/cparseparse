@@ -26,10 +26,10 @@ let emit_tokens name terms =
   dump_implem out impl
 
 
-let emit_parse_tree name reachable index prods_by_lhs =
+let emit_parse_tree name ptree =
   (* Parse Tree *)
   let out = name ^ "Ptree.ml" in
-  let impl = EmitPtree.make_ml_parse_tree reachable index prods_by_lhs in
+  let impl = EmitPtree.make_ml_parse_tree ptree in
 
   print_implem out impl;
   (* TODO: with sexp *)
@@ -116,7 +116,7 @@ let emit_ml dirname index prods_by_lhs verbatims reachable ptree tables =
   let name = dirname ^ "/" ^ String.lowercase (Options._module_prefix ()) in
 
   emit_tokens name index.terms;
-  emit_parse_tree name reachable index prods_by_lhs;
+  emit_parse_tree name ptree;
   emit_treematch name ptree;
   emit_symbol_names name index.terms index.nonterms;
 
