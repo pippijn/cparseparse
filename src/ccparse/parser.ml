@@ -2,10 +2,10 @@ open Glr
 
 
 let cc_lexer = Lexerint.({
-  token = (fun () -> Lexing.dummy_pos, Lexing.dummy_pos, CcTokens.TOK_EOF);
-  index = (fun (_, _, next) -> CcTokens.index next);
-  sval  = (fun (_, _, next) -> CcTokens.sval next);
-  sloc  = (fun (s, e, _   ) -> s, e);
+  token = (fun () -> CcTokens.TOK_EOF, Lexing.dummy_pos, Lexing.dummy_pos);
+  index = (fun (t, s, e) -> CcTokens.index t);
+  sval  = (fun (t, s, e) -> CcTokens.sval t);
+  sloc  = (fun (t, s, e) -> s, e);
 })
 
 
@@ -74,7 +74,7 @@ let glrparse actions tables filename lexer =
 
 let rec tokenise tokens token lexbuf =
   match token lexbuf with
-  | _, _, CcTokens.TOK_EOF as next ->
+  | CcTokens.TOK_EOF, _, _ as next ->
       if false then (
         Printf.printf "%d tokens\n" (List.length tokens);
         flush stdout;

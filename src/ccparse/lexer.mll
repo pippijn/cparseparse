@@ -8,9 +8,9 @@
   let line = ref 1
 
   let return lexbuf token =
+    token,
     Lexing.lexeme_start_p lexbuf,
-    Lexing.lexeme_end_p lexbuf,
-    token
+    Lexing.lexeme_end_p lexbuf
 }
 
 
