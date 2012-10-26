@@ -50,13 +50,13 @@ module Graph = Graph.Persistent.Digraph.ConcreteLabeled(M)(M)
 
 let get dotted_prods prod dot =
   let open GrammarType in
-  IntegralIndexedArray.get
+  DenseIntMap.get
     (ProdArray.get dotted_prods prod) dot
 
 
 let next dotted_prods dprod =
   let open GrammarType in
-  IntegralIndexedArray.get
+  DenseIntMap.get
     (ProdArray.get dotted_prods dprod.prod) (dprod.dot + 1)
 
 
@@ -102,7 +102,7 @@ let compute_dotted_productions prods =
 
     (* one dottedproduction for every dot position, which is one
      * more than the # of RHS elements *)
-    IntegralIndexedArray.init (rhs_length + 1) (fun dot ->
+    DenseIntMap.init (rhs_length + 1) (fun dot ->
       let dot_at_end = dot == rhs_length in
 
       {

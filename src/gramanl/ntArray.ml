@@ -1,1 +1,1 @@
-include IntegralIndexedArray.Make(Ids.Nonterminal)
+include DenseIntMap.Make(Ids.Nonterminal)

@@ -33,7 +33,7 @@ module type IntegralType = sig
 end
 
 
-module type IntegralIndexedArrayType = sig
+module type DenseIntMapType = sig
   type integer
   type ('a, 'mutability) t
 

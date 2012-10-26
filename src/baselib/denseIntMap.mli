@@ -10,11 +10,11 @@ type ('a, 'mutability, 'integer) repr
 val append : ('a, 'mut_a, 'int_a) repr -> ('a, 'mut_b, 'int_b) repr -> 'a array
 
 module Make : functor (T : Sig.IntegralType) -> sig
-  include Sig.IntegralIndexedArrayType with
+  include Sig.DenseIntMapType with
     type integer = T.t
     and type ('a, 'm) t = ('a, 'm, T.t) repr
 end
 
-include Sig.IntegralIndexedArrayType with
+include Sig.DenseIntMapType with
   type integer = int
   and type ('a, 'm) t = ('a, 'm, int) repr

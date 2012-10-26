@@ -1,1 +1,1 @@
-include IntegralIndexedArray.Make(Ids.Production)
+include DenseIntMap.Make(Ids.Production)

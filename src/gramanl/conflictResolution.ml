@@ -159,8 +159,6 @@ let disambiguate_shift_reduce_conflict index state sym shift_dest reductions sup
 let subset_directive_resolution nonterms state sym reductions =
   let open GrammarType in
 
-  let module NonterminalSet = CompressedBitSet.Make(Ids.Nonterminal) in
-
   (* make a map of which nonterminals appear on the LHS of one
    * of the reductions, and has a superset *)
   let map =

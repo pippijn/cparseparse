@@ -1,4 +1,4 @@
-include CompressedBitSet.Make(Ids.Nonterminal)
+include SparseBitSet.Make(Ids.Nonterminal)
 
 let t_of_sexp sexp =
   empty

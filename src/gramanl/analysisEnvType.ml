@@ -52,7 +52,7 @@ and lr_item = {
 
 
 type dotted_production_array =
-  (dotted_production, Sig.readonly) IntegralIndexedArray.t
+  (dotted_production, Sig.readonly) DenseIntMap.t
   with sexp
 
 

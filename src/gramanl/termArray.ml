@@ -1,1 +1,1 @@
-include IntegralIndexedArray.Make(Ids.Terminal)
+include DenseIntMap.Make(Ids.Terminal)
