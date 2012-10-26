@@ -4,7 +4,7 @@ open GrammarType
 
 (* clear first/follow sets *)
 let reset_first_follow prods nonterms =
-  StringMap.iter (fun _ nonterm ->
+  LocStringMap.iter (fun _ nonterm ->
     nonterm.first <- TerminalSet.empty;
     nonterm.follow <- TerminalSet.empty;
   ) nonterms;
@@ -56,7 +56,7 @@ let compute_dotted_productions indexed_prods =
 
 let init_env grammar =
   let start_nt =
-    (StringMap.find (Sloc.value grammar.start_symbol) grammar.nonterminals).nbase.index_id
+    (LocStringMap.find grammar.start_symbol grammar.nonterminals).nbase.index_id
   in
 
   let indices = GrammarIndex.compute_indices grammar in

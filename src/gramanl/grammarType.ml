@@ -158,9 +158,9 @@ type index = {
 
 type grammar = {
   (* --- representation --- *)
-  nonterminals          : nonterminal StringMap.t;
-  terminals             : terminal StringMap.t;
-  aliases               : string Sloc.t StringMap.t;
+  nonterminals          : nonterminal LocStringMap.t;
+  terminals             : terminal LocStringMap.t;
+  aliases               : string Sloc.t LocStringMap.t;
   productions           : production list;
   start_symbol          : string Sloc.t;
 

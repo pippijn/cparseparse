@@ -26,7 +26,7 @@ let synthesise_start_rule topforms =
   in
 
   { topforms with
-    nonterms = StringMap.add (Sloc.value start_name) (start, Ids.Nonterminal.start) topforms.nonterms
+    nonterms = LocStringMap.add start_name (start, Ids.Nonterminal.start) topforms.nonterms
   }
 
 
@@ -70,20 +70,20 @@ let collect_terminal_aliases decls =
   List.fold_left (fun aliases (TermDecl (_, name, alias)) ->
     match alias with
     | Some alias ->
-        StringMap.add (Sloc.value alias) name aliases
+        LocStringMap.add alias name aliases
     | None ->
         aliases
-  ) StringMap.empty decls
+  ) LocStringMap.empty decls
 
 
 (* type annotations *)
 let collect_terminal_types types =
   let types =
-    List.fold_left (fun types (TermType ((name, _, _), _, _) as termtype) ->
-      if StringMap.mem name types then
+    List.fold_left (fun types (TermType (name, _, _) as termtype) ->
+      if LocStringMap.mem name types then
         failwith "this token already has a type";
-      StringMap.add name termtype types
-    ) StringMap.empty types
+      LocStringMap.add name termtype types
+    ) LocStringMap.empty types
   in
 
   types
@@ -95,22 +95,21 @@ let collect_terminal_precs precs aliases =
     List.fold_left (fun precs (PrecSpec (kind, prec, tokens) as termtype) ->
       List.fold_left (fun precs token ->
         let token =
-          (try
-            StringMap.find (Sloc.value token) aliases
+          try
+            LocStringMap.find token aliases
           with Not_found ->
             token
-          ) |> Sloc.value
         in
 
         if prec == 0 then
           (* 0 means precedence isn't specified *)
           failwith "you can't use 0 as a precedence level, because that value is used internally to mean something else";
 
-        if StringMap.mem token precs then
+        if LocStringMap.mem token precs then
           failwith "this token already has a specified precedence";
-        StringMap.add token termtype precs
+        LocStringMap.add token termtype precs
       ) precs tokens
-    ) StringMap.empty precs
+    ) LocStringMap.empty precs
   in
 
   precs
@@ -136,13 +135,13 @@ let spec_func funcs name formal_count =
 let collect_terminals decls types precs =
   let max_index, terminals =
     List.fold_left (fun (max_index, terminals) (TermDecl (code, name, alias)) ->
-      if StringMap.mem (Sloc.value name) terminals then
+      if LocStringMap.mem name terminals then
         failwith "token already declared";
 
       (* annotate with declared type *)
       let semtype, funcs =
         try
-          let (TermType (_, termtype, funcs)) = StringMap.find (Sloc.value name) types in
+          let (TermType (_, termtype, funcs)) = LocStringMap.find name types in
           Some termtype, funcs
         with Not_found ->
           None, []
@@ -151,7 +150,7 @@ let collect_terminals decls types precs =
       (* apply precedence spec *)
       let associativity, precedence =
         try
-          let PrecSpec (kind, prec, _) = StringMap.find (Sloc.value name) precs in
+          let PrecSpec (kind, prec, _) = LocStringMap.find name precs in
           kind, prec
         with Not_found ->
           Sloc.generated Assoc.AK_NONASSOC, 0
@@ -181,8 +180,8 @@ let collect_terminals decls types precs =
 
       let max_index = max max_index index_id in
 
-      max_index, StringMap.add (Sloc.value name) terminal terminals
-    ) (Ids.Terminal.default, StringMap.empty) decls
+      max_index, LocStringMap.add name terminal terminals
+    ) (Ids.Terminal.default, LocStringMap.empty) decls
   in
 
   (* track what terminals have codes *)
@@ -208,7 +207,7 @@ let collect_terminals decls types precs =
             semantic = SemanticVariant.empty ();
           };
         } in
-        StringMap.add (Sloc.value dummy_name) dummy terminals
+        LocStringMap.add dummy_name dummy terminals
     ) terminals max_index
   in
 
@@ -216,16 +215,16 @@ let collect_terminals decls types precs =
 
 
 let collect_nonterminals nonterms term_count =
-  (*Sexplib.Sexp.output_hum stdout (StringMap.sexp_of_t Gramast.sexp_of_topform nonterms);*)
+  (*Sexplib.Sexp.output_hum stdout (LocStringMap.sexp_of_t Gramast.sexp_of_topform nonterms);*)
   (*print_newline ();*)
 
   let nonterminals =
-    StringMap.fold (fun _ (nterm, index_id) nonterminals ->
+    LocStringMap.fold (fun _ (nterm, index_id) nonterminals ->
       match nterm with
       | TF_nonterm (name, semtype, funcs, prods, subsets) ->
           (* record subsets *)
           List.iter (fun subset ->
-            if not (StringMap.mem (Sloc.value subset) nonterms) then
+            if not (LocStringMap.mem subset nonterms) then
               failwith "subsets contains non-existent nonterminal"
             (* note that, since context-free language inclusion is
              * undecidable (Hopcroft/Ullman), we can't actually check that
@@ -255,13 +254,13 @@ let collect_nonterminals nonterms term_count =
             subset_names = subsets;
           } in
 
-          StringMap.add (Sloc.value name) nonterminal nonterminals
+          LocStringMap.add name nonterminal nonterminals
 
       | _ -> failwith "merge failed"
-    ) nonterms StringMap.empty
+    ) nonterms LocStringMap.empty
   in
 
-  assert (StringMap.cardinal nonterminals == StringMap.cardinal nonterms);
+  assert (LocStringMap.cardinal nonterminals == LocStringMap.cardinal nonterms);
 
   nonterminals
 
@@ -269,7 +268,7 @@ let collect_nonterminals nonterms term_count =
 let collect_production_rhs aliases terminals nonterminals is_synthesised rhs_list production =
   let find_nonterminal name =
     try
-      StringMap.find (Sloc.value name) nonterminals
+      LocStringMap.find name nonterminals
     with Not_found ->
       failwith ("no symbol found named " ^ Sloc.value name)
   in
@@ -277,15 +276,15 @@ let collect_production_rhs aliases terminals nonterminals is_synthesised rhs_lis
   let find_terminal name =
     let terminal =
       try
-        StringMap.find (Sloc.value name) terminals
+        LocStringMap.find name terminals
       with Not_found ->
         let name =
           try
-            StringMap.find (Sloc.value name) aliases
+            LocStringMap.find name aliases
           with Not_found ->
             failwith ("terminal \"" ^ Sloc.value name ^ "\" must be defined")
         in
-        StringMap.find (Sloc.value name) terminals
+        LocStringMap.find name terminals
     in
 
     if Ids.Terminal.is_eof terminal.tbase.index_id && not is_synthesised then
@@ -345,7 +344,7 @@ let collect_production_rhs aliases terminals nonterminals is_synthesised rhs_lis
 
 let collect_productions aliases terminals nonterminals nonterms =
   let last_prod_index =
-    StringMap.fold (fun _ (nterm, _) next_prod_index ->
+    LocStringMap.fold (fun _ (nterm, _) next_prod_index ->
       match nterm with
       | TF_nonterm (name, _, _, prods, _) ->
           List.fold_left (fun next_prod_index _ ->
@@ -356,10 +355,10 @@ let collect_productions aliases terminals nonterminals nonterms =
   in
 
   let productions, first_prod_index =
-    StringMap.fold (fun _ (nterm, _) (productions, next_prod_index) ->
+    LocStringMap.fold (fun _ (nterm, _) (productions, next_prod_index) ->
       match nterm with
       | TF_nonterm (name, _, _, prods, _) ->
-          let left = (StringMap.find (Sloc.value name) nonterminals).nbase.index_id in
+          let left = (LocStringMap.find name nonterminals).nbase.index_id in
           (* is this the special start symbol I inserted? *)
           let is_synthesised = name == start_name in
 
@@ -413,7 +412,7 @@ let of_ast topforms =
    * looking at productions we can tell if one isn't declared *)
   let terminals    = collect_terminals topforms.decls types precs in
   let verbatim     = collect_verbatims topforms.verbatims in
-  let nonterminals = collect_nonterminals topforms.nonterms (StringMap.cardinal terminals) in
+  let nonterminals = collect_nonterminals topforms.nonterms (LocStringMap.cardinal terminals) in
 
   (* process nonterminal bodies *)
   let productions  = collect_productions aliases terminals nonterminals topforms.nonterms in
@@ -434,8 +433,8 @@ let of_ast topforms =
   } in
 
   if Options._trace_merge () then (
-    Printf.printf "%d terminals\n" (StringMap.cardinal terminals);
-    Printf.printf "%d nonterminals\n" (StringMap.cardinal nonterminals);
+    Printf.printf "%d terminals\n" (LocStringMap.cardinal terminals);
+    Printf.printf "%d nonterminals\n" (LocStringMap.cardinal nonterminals);
     Printf.printf "%d productions\n" (List.length productions);
   );
 

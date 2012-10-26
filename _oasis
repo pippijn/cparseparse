@@ -110,6 +110,7 @@ Library gramanl
                                 Ids,
                                 ItemList,
                                 ItemSet,
+                                LocStringMap,
                                 LrItem,
                                 LrItemSets,
                                 Merge,

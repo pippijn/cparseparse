@@ -7,7 +7,7 @@ let compute_supersets indexed_nonterms nonterms =
     super.subsets <-
       List.map (fun sub ->
         (* we validated the existence of all subsets, already *)
-        (StringMap.find (Sloc.value sub) nonterms).nbase.index_id
+        (LocStringMap.find sub nonterms).nbase.index_id
       ) super.subset_names
   ) indexed_nonterms;
 

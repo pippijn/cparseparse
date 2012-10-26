@@ -12,12 +12,12 @@ type t = {
 
 
 let compute_indexed_nonterms nonterms =
-  let indexed = NtArray.make (StringMap.cardinal nonterms + 1) empty_nonterminal in
+  let indexed = NtArray.make (LocStringMap.cardinal nonterms + 1) empty_nonterminal in
 
   (* indexed.(0) is empty_nonterminal *)
   assert (Ids.Nonterminal.is_empty empty_nonterminal.nbase.index_id);
 
-  StringMap.iter (fun _ nonterm ->
+  LocStringMap.iter (fun _ nonterm ->
     (* the ids have already been assigned *)
     let i = nonterm.nbase.index_id in (* map: symbol to index *)
     (* verify there are no duplicate indices *)
@@ -51,15 +51,15 @@ let compute_indexed_nonterms nonterms =
   ) indexed;
 
   (* number of nonterminals + 1 for empty_nonterminal *)
-  assert (NtArray.length indexed == StringMap.cardinal nonterms + 1);
+  assert (NtArray.length indexed == LocStringMap.cardinal nonterms + 1);
 
   NtArray.readonly indexed
 
 
 let compute_indexed_terms terms =
-  let indexed = TermArray.make (StringMap.cardinal terms) empty_terminal in
+  let indexed = TermArray.make (LocStringMap.cardinal terms) empty_terminal in
 
-  StringMap.iter (fun _ term ->
+  LocStringMap.iter (fun _ term ->
     (* the ids have already been assigned *)
     let i = term.tbase.index_id in (* map: symbol to index *)
     TermArray.set indexed i term (* map: index to symbol *)
@@ -68,7 +68,7 @@ let compute_indexed_terms terms =
   (* verify we filled the term_index map *)
   TermArray.iter (fun term -> assert (term != empty_terminal)) indexed;
 
-  assert (TermArray.length indexed == StringMap.cardinal terms);
+  assert (TermArray.length indexed == LocStringMap.cardinal terms);
 
   TermArray.readonly indexed
 

@@ -21,7 +21,7 @@ type topforms = {
   precs : precspec list;
 
   first_nonterm : string Sloc.t;
-  nonterms : (topform * Ids.Nonterminal.t) StringMap.t;
+  nonterms : (topform * Ids.Nonterminal.t) LocStringMap.t;
 } with sexp
 
 
@@ -34,7 +34,7 @@ let empty_topforms = {
   precs = [];
 
   first_nonterm = Sloc.empty_string;
-  nonterms = StringMap.empty;
+  nonterms = LocStringMap.empty;
 }
 
 
@@ -180,7 +180,7 @@ let merge grammars =
             let topform, nt_index, next_nt_index =
               try
                 (* Find an existing non-terminal. *)
-                match StringMap.find (Sloc.value name) topforms.nonterms with
+                match LocStringMap.find name topforms.nonterms with
 
                 | TF_nonterm (_, osemtype, ofuncs, oprods, osubsets), nt_index ->
                     if not (BatOption.eq ~eq:Sloc.equal nsemtype osemtype) then
@@ -211,7 +211,7 @@ let merge grammars =
             in
 
             { topforms with
-              nonterms = StringMap.add (Sloc.value name) (topform, nt_index) topforms.nonterms;
+              nonterms = LocStringMap.add name (topform, nt_index) topforms.nonterms;
               first_nonterm;
             }, next_nt_index
 
@@ -221,11 +221,11 @@ let merge grammars =
 
   (* nt_index starts with 2, because 0 is empty and 1 is
    * the synthesised entry point *)
-  assert (last_nt_index = StringMap.cardinal topforms.nonterms + 2);
+  assert (last_nt_index = LocStringMap.cardinal topforms.nonterms + 2);
 
   (* verify that we didn't assign the same index twice *)
-  StringMap.iter (fun _ (a, a_index) ->
-    StringMap.iter (fun _ (b, b_index) ->
+  LocStringMap.iter (fun _ (a, a_index) ->
+    LocStringMap.iter (fun _ (b, b_index) ->
       if a != b && a_index = b_index then (
         Printf.printf "%a has the same index (%a) as %a\n"
           Sloc.print_string (nonterm_name a)
@@ -243,4 +243,4 @@ let to_ast topforms = []
   @ topforms.options
   @ topforms.verbatims
   @ [TF_terminals (topforms.decls, topforms.types, topforms.precs)]
-  @ fst (List.split (snd (List.split (StringMap.bindings topforms.nonterms))))
+  @ fst (List.split (snd (List.split (LocStringMap.bindings topforms.nonterms))))

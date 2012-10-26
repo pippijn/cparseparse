@@ -132,8 +132,8 @@ let ast_of_env env variant =
         ), nonterm.nbase.index_id
       in
 
-      StringMap.add (Sloc.value nonterm.nbase.name) nt nonterms
-    ) StringMap.empty env.index.nonterms
+      LocStringMap.add nonterm.nbase.name nt nonterms
+    ) LocStringMap.empty env.index.nonterms
   in
 
   let topforms = Merge.({

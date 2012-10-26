@@ -14,7 +14,8 @@ let value   (t, s, e) = t
 let start_p (t, s, e) = s
 let end_p   (t, s, e) = e
 
-let equal (t1, _, _) (t2, _, _) = t1 = t2
+let compare ?(cmp=Pervasives.compare) (a, _, _) (b, _, _) = cmp a b
+let equal   ?(eq =Pervasives.(=))     (a, _, _) (b, _, _) = eq  a b
 
 let at (_, s, e) t =
   (t, s, e)
