@@ -2,14 +2,7 @@ module P = Program
 module T = Tree
 let (|>) = BatPervasives.(|>)
 
-(* +=====~~~-------------------------------------------------------~~~=====+ *)
-(* |               This will associate a node with location                | *)
-(* +=====~~~-------------------------------------------------------~~~=====+ *)
-
-module TreeMap = Map.Make(struct
-  type t = P.location
-  let compare = Pervasives.compare
-end)
+module TreeMap = Node.Loc.Map
 
 (* +=====~~~-------------------------------------------------------~~~=====+ *)
 (* |                  Collect types from AST definitions                   | *)
