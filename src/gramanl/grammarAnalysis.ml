@@ -31,19 +31,36 @@ let compute_reachable env =
 
 
 
-let compute_grammar_properties env grammar =
+let compute_grammar_properties env nonterminals =
   compute_reachable env;
 
-  Timing.progress "derivability computation"
-    Derivability.compute_derivability_relation env;
-  Timing.progress "super sets computation"
-    (SuperSets.compute_supersets env.index.nonterms) grammar.nonterminals;
-  Timing.progress "first sets computation"
-    (FirstSets.compute_first env.derivable) env.index;
+  let index = env.index in
+
+  let derivable =
+    Timing.progress "derivability computation"
+      Derivability.compute_derivability_relation index
+  in
+
+  let index = { index with
+    nonterms =
+      Timing.progress "super sets computation"
+        (SuperSets.compute_supersets index.nonterms) nonterminals;
+  } in
+
+  let index =
+    Timing.progress "first sets computation"
+      (FirstSets.compute_first derivable) index;
+  in
+
   Timing.progress "computation of dotted production first sets"
-    (FirstSets.compute_dprod_first env.derivable env.dotted_prods) env.index;
-  Timing.progress "follow sets computation"
-    (FollowSets.compute_follow env.derivable) env.index
+    (FirstSets.compute_dprod_first derivable env.dotted_prods) index;
+
+  let index =
+    Timing.progress "follow sets computation"
+      (FollowSets.compute_follow derivable) index
+  in
+
+  { env with derivable; index }
 
 
 let compute_lr_tables env =
@@ -61,9 +78,7 @@ let compute_lr_tables env =
   states, tables
 
 
-let run_analyses grammar =
-  let env = AnalysisEnv.init_env grammar in
-
-  compute_grammar_properties env grammar;
+let run_analyses env nonterminals =
+  let env = compute_grammar_properties env nonterminals in
 
   env, compute_lr_tables env

@@ -24,7 +24,7 @@ let rec topological_sort nonterms (* number of nonterminals in the grammar *)
     (* look at all nonterminals this one can derive *)
     let next_ordinal =
       Ids.Nonterminal.fold_left (fun next_ordinal nt ->
-        if Derivability.can_derive_i derivable nt current then
+        if Derivability.can_derive derivable nt current then
           (* 'nt' can derive 'current'; expand 'nt' first, thus making
            * it later in the order, so we'll reduce to 'current' before
            * reducing to 'nt' (when token spans are equal) *)

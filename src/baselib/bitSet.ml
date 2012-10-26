@@ -23,7 +23,7 @@ module Set = struct
   let empty : readonly t = create 0
 
   let t_of_sexp () sexp =
-    empty
+    create 0
 
   let sexp_of_t () bset =
     Sexplib.Sexp.List []

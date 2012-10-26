@@ -62,8 +62,15 @@ let tree_parse topforms =
   grammar
 
 
-let analyse grammar =
-  let env, (states, tables) = GrammarAnalysis.run_analyses grammar in
+let init_env grammar =
+  let env = AnalysisEnv.init_env grammar in
+  grammar, env
+
+
+let analyse (grammar, env) =
+  let open GrammarType in
+
+  let env, (states, tables) = GrammarAnalysis.run_analyses env grammar.nonterminals in
   grammar, env, states, tables
 
 
@@ -120,11 +127,12 @@ let emit_code dirname (_, env, states, tables) =
 
   let index = env.index in
   let prods_by_lhs = env.prods_by_lhs in
-  let verbatims = env.verbatims in
   let reachable = env.reachable in
+  let ptree = env.ptree in
+  let verbatims = env.verbatims in
 
   Timing.progress "emitting ML code"
-    (EmitCode.emit_ml dirname index prods_by_lhs verbatims reachable) tables
+    (EmitCode.emit_ml dirname index prods_by_lhs verbatims reachable ptree) tables
 
 
 let optional enabled f x = if enabled () then f x else x
@@ -139,9 +147,10 @@ let main inputs =
 
   try
     inputs
-    |> parse
-    |> merge
-    |> tree_parse
+    |> Timing.progress "parsing grammar files" parse
+    |> Timing.progress "merging modules" merge
+    |> Timing.progress "extracting grammar structure" tree_parse
+    |> Timing.progress "adding parse tree actions" init_env
     |> analyse
     |> optional Options._graph_grammar (grammar_graph dirname)
     |> optional Options._print_transformed (print_transformed dirname)

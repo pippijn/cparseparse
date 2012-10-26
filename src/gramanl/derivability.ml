@@ -2,14 +2,11 @@ open AnalysisEnvType
 open GrammarType
 
 
-let can_derive_i derivable left right =
+let can_derive derivable left right =
   Derivable.is_set derivable left right
 
-let can_derive derivable left right =
-  can_derive_i derivable left.nbase.index_id right.nbase.index_id
-
 let can_derive_empty derivable nonterm =
-  can_derive_i derivable nonterm empty_nonterminal.nbase.index_id
+  can_derive derivable nonterm Ids.Nonterminal.empty
 
 let can_sequence_derive_empty derivable seq =
   (* look through the sequence; if any members cannot derive
@@ -22,7 +19,7 @@ let can_sequence_derive_empty derivable seq =
   ) seq
 
 
-let add_derivable_i env left right =
+let add_derivable nonterms derivable left right =
   (* Almost as an aside, I'd like to track cyclicity in grammars.
    * It's always true that N ->* N, because 0 steps are allowed.
    * A grammar is cyclic if N ->+ N, i.e. it derives itself in
@@ -34,7 +31,7 @@ let add_derivable_i env left right =
    * only calls to this with left==right will be when the
    * derivability code detects a nonzero-length path. *)
   if left == right then (
-    let left = NtArray.get env.index.nonterms left in (* == right *)
+    let left = NtArray.get nonterms left in (* == right *)
 
     if Options._trace_derivable () then (
       if not left.cyclic then (
@@ -46,7 +43,6 @@ let add_derivable_i env left right =
     );
 
     left.cyclic <- true; (* => right.cyclic is also true *)
-    env.cyclic_grammar <- true; (* for grammar as a whole *)
 
     (* Even though we didn't know this already, it doesn't
      * constitute a change in the ->* relation (which is what the
@@ -56,28 +52,10 @@ let add_derivable_i env left right =
 
   (* we only made a change, and hence should return true,
    * if there was a 0 here before *)
-  not (Derivable.test_and_set env.derivable left right)
-
-(* convenience for the function above *)
-let add_derivable env left right =
-  add_derivable_i env left.nbase.index_id right.nbase.index_id
+  not (Derivable.test_and_set derivable left right)
 
 
-let initial_derivable_relation nonterm_count =
-  (* two-dimensional bit matrix to represent token derivabilities *)
-  let derivable = Derivable.create nonterm_count nonterm_count in
-
-  for i = 0 to nonterm_count - 1 do
-    (* every nonterminal can derive itself in 0 or more steps
-     * (specifically, in 0 steps, at least) *)
-    let i = Ids.Nonterminal.of_int i in
-    Derivable.set derivable i i
-  done;
-
-  derivable
-
-
-let add_derivable_nonterminal env left right_nonterm after_right_sym =
+let add_derivable_nonterminal nonterms derivable left right_nonterm after_right_sym =
   (* we are wondering if prod.left can derive right_sym.. for
    * this to be true, every symbol that comes after nonterm
    * must be able to derive empty (we've already verified by
@@ -98,16 +76,16 @@ let add_derivable_nonterminal env left right_nonterm after_right_sym =
            * yet know that it can), so we conclude that prod.left
            * can't derive right_sym *)
           if Options._trace_derivable () then (
-            let nonterm = NtArray.get env.index.nonterms nonterm in
+            let nonterm = NtArray.get nonterms nonterm in
             Printf.printf "nonterminal %a can derive empty?\n"
               Sloc.print_string nonterm.nbase.name;
           );
-          can_derive_empty env.derivable nonterm
+          can_derive_empty derivable nonterm
     ) after_right_sym
   in
 
   if Options._trace_derivable () then (
-    let left = NtArray.get env.index.nonterms left in
+    let left = NtArray.get nonterms left in
     Printf.printf "%a's rest can %sderive empty\n"
       Sloc.print_string left.nbase.name
       (if rest_derive_empty then "" else "NOT ");
@@ -115,12 +93,12 @@ let add_derivable_nonterminal env left right_nonterm after_right_sym =
 
   if rest_derive_empty then (
     (* we have discovered that prod.left can derive right_sym *)
-    let added = add_derivable_i env left right_nonterm in
+    let added = add_derivable nonterms derivable left right_nonterm in
     assert added; (* above, we verified we didn't already know this *)
 
     if Options._trace_derivable () then (
-      let left = NtArray.get env.index.nonterms left in
-      let right_nonterm = NtArray.get env.index.nonterms right_nonterm in
+      let left = NtArray.get nonterms left in
+      let right_nonterm = NtArray.get nonterms right_nonterm in
       print_string "%%% derivable: ";
       Printf.printf "discovered (by production): %a ->* %a\n"
         Sloc.print_string left.nbase.name
@@ -133,10 +111,10 @@ let add_derivable_nonterminal env left right_nonterm after_right_sym =
   )
 
 
-let add_derivable_relations env changes =
+let add_derivable_relations index derivable changes =
   ProdArray.iter (fun prod ->
     if Options._trace_derivable () then (
-      PrintGrammar.print_production env.index.terms env.index.nonterms stdout prod;
+      PrintGrammar.print_production index.terms index.nonterms stdout prod;
       print_newline ();
     );
 
@@ -145,7 +123,7 @@ let add_derivable_relations env changes =
         (* since I don't include 'empty' explicitly in my rules, I won't
          * conclude that anything can derive empty, which is a problem;
          * so I special-case it here *)
-        ignore (add_derivable_i env prod.left empty_nonterminal.nbase.index_id)
+        ignore (add_derivable index.nonterms derivable prod.left Ids.Nonterminal.empty)
 
     | right ->
         (* iterate over RHS symbols, seeing if the LHS can derive that
@@ -161,11 +139,11 @@ let add_derivable_relations env changes =
 
             | Nonterminal (_, right_nonterm) ->
                 (* check if we already know that LHS derives this nonterm *)
-                if can_derive_i env.derivable prod.left right_nonterm then
+                if can_derive derivable prod.left right_nonterm then
                   (* we already know that prod.left derives right_sym,
                    * so let's not check it again *)
                   ()
-                else if add_derivable_nonterminal env prod.left right_nonterm after_right_sym then
+                else if add_derivable_nonterminal index.nonterms derivable prod.left right_nonterm after_right_sym then
                   incr changes;
 
                 (* ok, we've considered prod.left deriving right_sym.  now, we
@@ -175,13 +153,13 @@ let add_derivable_relations env changes =
                  *
                  * if it doesn't -- no point in further consideration of
                  * this production *)
-                can_derive_empty env.derivable right_nonterm
+                can_derive_empty derivable right_nonterm
         ) true right)
 
-  ) env.index.prods
+  ) index.prods
 
 
-let compute_derivability_closure env changes =
+let compute_derivability_closure nonterms derivable changes =
   (* I'll do this by computing R + R^2 -- that is, I'll find all
    * paths of length 2 and add an edge between their endpoints.
    * I do this, rather than computing the entire closure now, since
@@ -191,25 +169,25 @@ let compute_derivability_closure env changes =
    * I don't consider edges (u,u) because it messes up my cyclicity
    * detection logic.  (But (u,v) and (v,u) is ok, and in fact is
    * what I want, for detecting cycles.) *)
-  let nonterm_count = NtArray.length env.index.nonterms in
+  let nonterm_count = NtArray.length nonterms in
   (* for each node u (except empty) *)
   for u = 1 to nonterm_count - 1 do
     let u = Ids.Nonterminal.of_int u in
     (* for each edge (u,v) where u != v *)
     for v = 0 to nonterm_count - 1 do
       let v = Ids.Nonterminal.of_int v in
-      if u != v && can_derive_i env.derivable u v then
+      if u != v && can_derive derivable u v then
         (* for each edge (v,w) where v != w *)
         for w = 0 to nonterm_count - 1 do
           let w = Ids.Nonterminal.of_int w in
-          if v != w && can_derive_i env.derivable v w then
+          if v != w && can_derive derivable v w then
             (* add an edge (u,w), if there isn't one already *)
-            if add_derivable_i env u w then (
+            if add_derivable nonterms derivable u w then (
               if Options._trace_derivable () then (
                 print_string "%%% derivable: ";
                 Printf.printf "discovered (by closure step): %a ->* %a\n"
-                  Sloc.print_string (NtArray.get env.index.nonterms u).nbase.name
-                  Sloc.print_string (NtArray.get env.index.nonterms w).nbase.name;
+                  Sloc.print_string (NtArray.get nonterms u).nbase.name
+                  Sloc.print_string (NtArray.get nonterms w).nbase.name;
               );
               incr changes
             )
@@ -218,9 +196,24 @@ let compute_derivability_closure env changes =
   done
 
 
-let compute_derivability_relation env =
+let initial_derivable_relation last_nonterm =
+  (* two-dimensional bit matrix to represent token derivabilities *)
+  let derivable = Derivable.create last_nonterm last_nonterm in
+
+  Ids.Nonterminal.iter (fun i ->
+    (* every nonterminal can derive itself in 0 or more steps
+     * (specifically, in 0 steps, at least) *)
+    Derivable.set derivable i i
+  ) last_nonterm;
+
+  derivable
+
+
+let compute_derivability_relation index =
   (* start off with 1 so the loop is entered *)
   let changes = ref 1 in
+
+  let derivable = initial_derivable_relation (NtArray.last_index index.nonterms) in
 
   (* iterate: propagate 'true' bits across the derivability matrix
    * (i.e. compute transitive closure on the can_derive relation) *)
@@ -228,17 +221,19 @@ let compute_derivability_relation env =
     changes := 0;
 
     (* first part: add new can_derive relations *)
-    add_derivable_relations env changes;
+    add_derivable_relations index derivable changes;
     let new_relations = !changes in
     if Options._trace_derivable () then
       Printf.printf "%d new relations\n" new_relations;
 
     (* second part: compute closure over existing relations *)
-    compute_derivability_closure env changes;
+    compute_derivability_closure index.nonterms derivable changes;
     if Options._trace_derivable () then
       Printf.printf "%d relations by closure\n" (!changes - new_relations);
 
   done;
 
   if Options._trace_derivable () then
-    Derivable.print env.derivable
+    Derivable.print derivable;
+
+  Derivable.readonly derivable

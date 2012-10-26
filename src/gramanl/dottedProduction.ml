@@ -82,3 +82,43 @@ let back_pointer dprod =
   match dprod.back_pointer with
   | None -> failwith "no back_pointer"
   | Some item -> item
+
+
+let compute_dotted_productions prods =
+  let open GrammarType in
+
+  let next_id =
+    let next = ref 0 in
+    fun () ->
+      let id = !next in
+      incr next;
+      id
+  in
+
+  let dotted_prods = ProdArray.init (ProdArray.length prods) (fun i ->
+
+    let prod = ProdArray.get prods i in
+    let rhs_length = List.length prod.right in
+
+    (* one dottedproduction for every dot position, which is one
+     * more than the # of RHS elements *)
+    IntegralIndexedArray.init (rhs_length + 1) (fun dot ->
+      let dot_at_end = dot == rhs_length in
+
+      {
+        prod = prod.pbase.index_id;
+        dot;
+        dprod_id = next_id ();
+        after_dot  = (if dot_at_end then None else Some (List.nth prod.right dot));
+        can_derive_empty = false;
+        first_set = TerminalSet.empty;
+        back_pointer = None;
+      }
+    )
+
+  ) in
+
+  (* the mapping is dense by construction, no need to verify it *)
+
+  (* it is already readonly, too *)
+  dotted_prods

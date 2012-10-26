@@ -37,10 +37,10 @@ let emit_parse_tree name reachable index prods_by_lhs =
     ("sed -i -e 's/type t = \\([^;|]*\\);;/type t = \\1 with sexp;;/g;s/ | SEXP;;/ with sexp;;/g' " ^ out))
 
 
-let emit_treematch name reachable index prods_by_lhs =
+let emit_treematch name ptree =
   (* Parse Tree *)
   let out = name ^ "Treematch.tm" in
-  let impl = EmitTreematch.make_ml_treematch reachable index prods_by_lhs in
+  let impl = EmitTreematch.make_ml_treematch ptree in
 
   BatStd.with_dispose ~dispose:close_out
     (fun out -> output_string out impl) (open_out out)
@@ -108,7 +108,7 @@ let emit_tables name tables =
  * :: Main entry point
  ************************************************)
 
-let emit_ml dirname index prods_by_lhs verbatims reachable tables =
+let emit_ml dirname index prods_by_lhs verbatims reachable ptree tables =
   let open AnalysisEnvType in
 
   let final_prod = Ids.Production.of_int tables.ParseTablesType.finalProductionIndex in
@@ -117,7 +117,7 @@ let emit_ml dirname index prods_by_lhs verbatims reachable tables =
 
   emit_tokens name index.terms;
   emit_parse_tree name reachable index prods_by_lhs;
-  emit_treematch name reachable index prods_by_lhs;
+  emit_treematch name ptree;
   emit_symbol_names name index.terms index.nonterms;
 
   SemanticVariant.iter (fun variant ->

@@ -1,13 +1,27 @@
 module Make(T : Sig.IntegralType) = struct
-  type 'm t = {
+  open Sexplib.Conv
+
+  type integer = T.t
+
+  type bitset = {
     width  : int;
     height : int;
-    bitset : 'm BitSet.Set.t;
-  }
+    bitset : Sig.writable BitSet.Set.t;
+  } with sexp
+
+  type 'm t = bitset with sexp
 
 
   let create width height =
+    let width = T.to_int width + 1 in
+    let height = T.to_int height + 1 in
     { width; height; bitset = BitSet.Set.create (width * height); }
+
+  let empty = {
+    width  = 0;
+    height = 0;
+    bitset = BitSet.Set.create 0;
+  }
 
 
   let bit_position_i { width; height; } x y =
@@ -57,10 +71,6 @@ module Make(T : Sig.IntegralType) = struct
     done
 
 
-  let t_of_sexp () s =
-    create 0 0
-
-  let sexp_of_t () v =
-    Sexplib.Sexp.List []
+  let readonly = BatPervasives.identity
 
 end

@@ -200,12 +200,16 @@ let collect_terminals decls types precs =
         terminals
       else
         let dummy_name = Sloc.generated ("Dummy_filler_token" ^ Ids.Terminal.to_string i) in
-        let dummy = { empty_terminal with
+        let dummy = {
           tbase = {
             name = dummy_name;
             index_id = i;
             semantic = SemanticVariant.empty ();
           };
+
+          alias = None;
+          precedence = 0;
+          associativity = Sloc.generated Assoc.AK_NONASSOC;
         } in
         LocStringMap.add dummy_name dummy terminals
     ) terminals max_index

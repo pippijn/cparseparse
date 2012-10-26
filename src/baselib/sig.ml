@@ -65,6 +65,8 @@ module type IntegralIndexedArrayType = sig
   val mapi : (integer -> 'a -> 'b) -> ('a, 'm) t -> ('b, readonly) t
   val find : ('a -> bool) -> ('a, 'm) t -> 'a
   val exists : ('a -> bool) -> ('a, 'm) t -> bool
+  val mem : 'a -> ('a, 'm) t -> bool
+  val memq : 'a -> ('a, 'm) t -> bool
 
   val sum : ('a -> int) -> ('a, 'm) t -> int
   val count : ('a -> bool) -> ('a, 'm) t -> int

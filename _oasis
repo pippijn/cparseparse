@@ -125,6 +125,8 @@ Library gramanl
                                 PrintGrammar,
                                 ProdArray,
                                 PtreeMaker,
+                                PtreeStructure,
+                                PtreeType,
                                 Reachability,
                                 Renumbering,
                                 SampleInput,

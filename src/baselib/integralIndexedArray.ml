@@ -46,6 +46,8 @@ module Make(T : Sig.IntegralType) = struct
   let mapi f = Array.mapi (mapi_fun f)
   let find = BatArray.find
   let exists = BatArray.exists
+  let mem = BatArray.mem
+  let memq = BatArray.memq
 
   let sum = ExtArray.sum
   let count = ExtArray.count

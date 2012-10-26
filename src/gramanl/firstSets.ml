@@ -25,6 +25,34 @@ let first_of_sequence derivable first_of seq =
   ) (TerminalSet.empty, false) seq)
 
 
+let compute_prod_first first_of set_first derivable index prod =
+  let open GrammarType in
+
+  let first_of_lhs = first_of prod.left in
+
+  (* compute First(RHS-sequence) *)
+  let first_of_rhs = first_of_sequence derivable first_of prod.right in
+
+  (* add everything in First(RHS-sequence) to First(LHS) *)
+  let merged = TerminalSet.union first_of_lhs first_of_rhs in
+  if TerminalSet.equal first_of_lhs merged then
+    false
+  else (
+    set_first prod.left merged;
+
+    if Options._trace_first () then (
+      let lhs = NtArray.get index.nonterms prod.left in
+
+      Printf.printf "added %a to %a because of %a\n"
+        (PrintAnalysisEnv.print_terminal_set index.terms) first_of_rhs
+        Sloc.print_string lhs.nbase.name
+        (PrintGrammar.print_production index.terms index.nonterms) prod
+    );
+
+    true
+  )
+
+
 (* Compute, for each nonterminal, the "First" set, defined as:
  *
  *   First(N) = { x | N ->* x alpha }, where alpha is any sequence
@@ -37,54 +65,48 @@ let first_of_sequence derivable first_of seq =
  *
  * I also don't "compute" First for terminals, since they are trivial
  * (First(x) = {x}). *)
-let rec compute_first derivable index =
+let rec compute_first first_of set_first derivable index =
   let open GrammarType in
-
-  let first_of nt_index =
-    let nonterm = NtArray.get index.nonterms nt_index in
-    nonterm.first
-  in
 
   (* for each production *)
   let changed =
     ProdArray.fold_left (fun changed prod ->
-      let lhs = NtArray.get index.nonterms prod.left in
-
-      (* compute First(RHS-sequence) *)
-      let first_of_rhs = first_of_sequence derivable first_of prod.right in
-
-      (* add everything in First(RHS-sequence) to First(LHS) *)
-      let merged = TerminalSet.union lhs.first first_of_rhs in
-      if TerminalSet.equal lhs.first merged then
-        changed
-      else (
-        lhs.first <- merged;
-
-        if Options._trace_first () then (
-          Printf.printf "added %a to %a because of %a\n"
-            (PrintAnalysisEnv.print_terminal_set index.terms) first_of_rhs
-            Sloc.print_string lhs.nbase.name
-            (PrintGrammar.print_production index.terms index.nonterms) prod
-        );
-
-        true
-      )
+      compute_prod_first first_of set_first derivable index prod
+      || changed
     ) false index.prods
   in
 
   if changed then
     (* loop until no changes *)
-    compute_first derivable index
-  else (
-    if Options._trace_first () then (
-      NtArray.iter (fun nonterm ->
-        if nonterm != empty_nonterminal then (
-          PrintAnalysisEnv.print_terminal_set ~name:nonterm.nbase.name index.terms stdout nonterm.first;
-          print_newline ();
-        )
-      ) index.nonterms
-    )
-  )
+    compute_first first_of set_first derivable index
+
+
+let compute_first derivable index =
+  let open GrammarType in
+
+  let first =
+    NtArray.make (NtArray.length index.nonterms) TerminalSet.empty
+  in
+
+  compute_first (NtArray.get first) (NtArray.set first) derivable index;
+
+  (* update nonterms *)
+  let nonterms =
+    NtArray.mapi (fun nt_index nonterm ->
+      { nonterm with first = NtArray.get first nt_index }
+    ) index.nonterms
+  in
+
+  if Options._trace_first () then (
+    NtArray.iter (fun nonterm ->
+      if nonterm != empty_nonterminal then (
+        PrintAnalysisEnv.print_terminal_set ~name:nonterm.nbase.name index.terms stdout nonterm.first;
+        print_newline ();
+      )
+    ) nonterms
+  );
+
+  { index with nonterms }
 
 
 let compute_dprod_first derivable dotted_prods index =

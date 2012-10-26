@@ -6,7 +6,7 @@
  * the data.
  *
  * Another measure is I've split all grammar-wide algorithm
- * stuff into AnalysisEnvType.  Things should only be put into
+ * stuff into AnalysisEnvType.	Things should only be put into
  * Grammar if they are directly related to the grammar
  * representation.  (However, constitutent objects like
  * productions will continue to be a mix.)
@@ -16,8 +16,8 @@ open Sexplib.Conv
 
 
 type spec_func = {
-  params                : string Sloc.t list;
-  code                  : CamlAst.expr;
+  params		: string Sloc.t list;
+  code			: CamlAst.expr;
 } with sexp
 
 
@@ -68,7 +68,7 @@ type global_semantic = [
 
 type ('index, 'semantic) symbol_base = {
   (* --- representation --- *)
-  name                  : string Sloc.t; (* symbol's name in grammar *)
+  name			: string Sloc.t; (* symbol's name in grammar *)
   index_id		: 'index; (* unique symbol id *)
   semantic		: 'semantic SemanticVariant.variants; (* semantic actions and type *)
 } with sexp
@@ -80,41 +80,41 @@ type ('index, 'semantic) symbol_base = {
  * terminal class (e.g. "foo" and "bar" are both identifiers) *)
 type terminal = {
   (* terminal class index - this terminal's id; -1 means unassigned *)
-  tbase                 : (Ids.Terminal.t, term_semantic) symbol_base;
+  tbase			: (Ids.Terminal.t, term_semantic) symbol_base;
 
   (* --- representation --- *)
   (* whereas 'name' is the canonical name for the terminal class,
    * this field is an alias; for example, if the canonical name is
    * L2_EQUALEQUAL, the alias might be "=="; the alias should *not*
    * include actual double-quote characters *)
-  alias                 : string Sloc.t option;
+  alias			: string Sloc.t option;
   (* parsgen-time conflict resolution: if a shift/reduce conflict
    * occurs between a production and a symbol, both with specified
    * precedence (not 0), then the one with the numerically higher
    * precedence will be used *)
-  precedence            : int;
+  precedence		: int;
   (* if, in the above scenario, the precedence values are the same,
    * then the associativity kind will be used to decide which to use *)
-  associativity         : Assoc.kind Sloc.t;
+  associativity		: Assoc.kind Sloc.t;
 } with sexp
 
 (* something that can appear on the left-hand side of a production
  * (or, empty_nonterminal, since we classify that as a nonterminal also) *)
 type nonterminal = {
   (* nonterminal index in indexed_nonterminals for grammar analysis *)
-  nbase                 : (Ids.Nonterminal.t, nonterm_semantic) symbol_base;
+  nbase			: (Ids.Nonterminal.t, nonterm_semantic) symbol_base;
 
   (* --- representation --- *)
-  maximal               : bool; (* if true, use maximal munch disambiguation *)
+  maximal		: bool; (* if true, use maximal munch disambiguation *)
 
-  subset_names          : string Sloc.t list; (* preferred subsets (for scannerless) *)
+  subset_names		: string Sloc.t list; (* preferred subsets (for scannerless) *)
 
   (* --- annotation --- *)
-  mutable first         : TerminalSet.t; (* set of terminals that can be start of a string derived from 'this' *)
-  mutable follow        : TerminalSet.t; (* set of terminals that can follow a string derived from 'this' *)
-  mutable cyclic        : bool; (* true if this can derive itself in 1 or more steps *)
-  mutable subsets       : Ids.Nonterminal.t list; (* resolved subsets *)
-  mutable superset      : Ids.Nonterminal.t option; (* inverse of 'subsets' *)
+  first			: TerminalSet.t; (* set of terminals that can be start of a string derived from 'this' *)
+  follow		: TerminalSet.t; (* set of terminals that can follow a string derived from 'this' *)
+  subsets		: Ids.Nonterminal.t list; (* resolved subsets *)
+  superset		: Ids.Nonterminal.t option; (* inverse of 'subsets' *)
+  mutable cyclic	: bool; (* true if this can derive itself in 1 or more steps *)
 } with sexp
 
 (* either a nonterminal or terminal symbol *)
@@ -122,7 +122,7 @@ type symbol =
   (* tags are applied to the symbols for purposes of unambiguous naming
    * in actions, and for self-commenting value as role indicators; an
    * empty tag ("") is allowed and means there is no tag *)
-  | Terminal    of (* tag: *)string Sloc.t option * Ids.Terminal.t
+  | Terminal	of (* tag: *)string Sloc.t option * Ids.Terminal.t
   | Nonterminal of (* tag: *)string Sloc.t option * Ids.Nonterminal.t
   with sexp
 
@@ -131,57 +131,41 @@ type production = {
   (* --- representation --- *)
   pbase			: (Ids.Production.t, prod_semantic) symbol_base;
 
-  left                  : Ids.Nonterminal.t; (* left hand side *)
-  right                 : symbol list; (* right hand side; terminals & nonterminals *)
-  prec                  : int; (* precedence level for disambiguation (0 for none specified) *)
-  forbid                : TerminalSet.t; (* forbidden next tokens *)
-
-  (* --- annotation --- *)
-  mutable first_rhs     : TerminalSet.t; (* First(RHS) *)
+  left			: Ids.Nonterminal.t; (* left hand side *)
+  right			: symbol list; (* right hand side; terminals & nonterminals *)
+  prec			: int; (* precedence level for disambiguation (0 for none specified) *)
+  forbid		: TerminalSet.t; (* forbidden next tokens *)
 } with sexp
 
 type config = {
   (* expected numbers of various anomalies; -1 means no
    * expectation has been supplied; this informtion is used
    * to control what is reported after grammar analysis *)
-  expectedSR            : int; (* shift/reduce conflicts *)
-  expectedRR            : int; (* reduce/reduce conflicts *)
-  expectedUNRNonterms   : int; (* # unreachable nonterminals *)
-  expectedUNRTerms      : int; (* # unreachable terminals *)
+  expectedSR		: int; (* shift/reduce conflicts *)
+  expectedRR		: int; (* reduce/reduce conflicts *)
+  expectedUNRNonterms	: int; (* # unreachable nonterminals *)
+  expectedUNRTerms	: int; (* # unreachable terminals *)
 } with sexp
 
 type index = {
-  terms               	: (terminal,    Sig.readonly) TermArray.t; (* term_index -> terminal    *)
-  nonterms              : (nonterminal, Sig.readonly) NtArray.t;   (* nt_index   -> nonterminal *)
-  prods                 : (production,  Sig.readonly) ProdArray.t; (* prod_index -> production  *)
+  terms			: (terminal,	Sig.readonly) TermArray.t;	(* term_index -> terminal	*)
+  nonterms		: (nonterminal, Sig.readonly) NtArray.t;	(* nt_index   -> nonterminal	*)
+  prods			: (production,	Sig.readonly) ProdArray.t;	(* prod_index -> production	*)
 } with sexp
 
 type grammar = {
   (* --- representation --- *)
-  nonterminals          : nonterminal LocStringMap.t;
-  terminals             : terminal LocStringMap.t;
-  aliases               : string Sloc.t LocStringMap.t;
-  productions           : production list;
-  start_symbol          : string Sloc.t;
+  nonterminals		: nonterminal LocStringMap.t;
+  terminals		: terminal LocStringMap.t;
+  aliases		: string Sloc.t LocStringMap.t;
+  productions		: production list;
+  start_symbol		: string Sloc.t;
 
   (* code emitted at the beginning of interface/implementation files *)
   verbatim		: global_semantic SemanticVariant.variants;
 
-  config                : config;
+  config		: config;
 } with sexp
-
-
-let empty_terminal = {
-  tbase         = {
-    name     = Sloc.empty_string;
-    index_id = Ids.Terminal.default;
-    semantic = SemanticVariant.empty ();
-  };
-
-  alias         = None;
-  precedence    = 0;
-  associativity = Sloc.dummy Assoc.AK_NONASSOC;
-}
 
 
 (* the special terminal for the empty string; does not appear in the
@@ -191,44 +175,42 @@ let empty_terminal = {
  * motivated by things like the derivability relation, where it's
  * nice to treat empty like any other symbol *)
 let empty_nonterminal = {
-  nbase         = {
-    name     = Sloc.generated "empty";
+  nbase		= {
+    name	= Sloc.generated "empty";
     (* empty has an index of 0; all other nonterminals must have indices >= 1 *)
-    index_id = Ids.Nonterminal.default;
-    semantic = SemanticVariant.empty ();
+    index_id	= Ids.Nonterminal.default;
+    semantic	= SemanticVariant.empty ();
   };
 
-  maximal  	= false;
+  maximal	= false;
 
-  subset_names 	= [];
+  subset_names	= [];
 
-  first    	= TerminalSet.empty;
-  follow   	= TerminalSet.empty;
-  cyclic   	= false;
-  subsets  	= [];
-  superset 	= None;
+  first		= TerminalSet.empty;
+  follow	= TerminalSet.empty;
+  cyclic	= false;
+  subsets	= [];
+  superset	= None;
 }
 
 
 let empty_production = {
-  pbase         = {
-    name     = Sloc.empty_string;
-    index_id = Ids.Production.default;
-    semantic = SemanticVariant.empty ();
+  pbase		= {
+    name	= Sloc.empty_string;
+    index_id	= Ids.Production.default;
+    semantic	= SemanticVariant.empty ();
   };
 
-  left       = Ids.Nonterminal.default;
-  right      = [];
-  prec       = 0;
-  forbid     = TerminalSet.empty;
-
-  first_rhs  = TerminalSet.empty;
+  left		= Ids.Nonterminal.default;
+  right		= [];
+  prec		= 0;
+  forbid	= TerminalSet.empty;
 }
 
 
 let empty_config = {
-  expectedSR          = 0;
-  expectedRR          = 0;
-  expectedUNRNonterms = 0;
-  expectedUNRTerms    = 0;
+  expectedSR		= 0;
+  expectedRR		= 0;
+  expectedUNRNonterms	= 0;
+  expectedUNRTerms	= 0;
 }

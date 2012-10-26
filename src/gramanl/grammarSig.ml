@@ -24,6 +24,7 @@ module type IntegralModuleType = sig
 
   val find : (t -> bool) -> t -> t
   val fold_left : ('a -> t -> 'a) -> 'a -> t -> 'a
+  val iter : (t -> unit) -> t -> unit
 
   val default : t
 end

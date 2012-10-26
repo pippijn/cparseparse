@@ -1,90 +1,77 @@
 open AnalysisEnvType
 open GrammarType
 
-
-(* clear first/follow sets *)
-let reset_first_follow prods nonterms =
-  LocStringMap.iter (fun _ nonterm ->
-    nonterm.first <- TerminalSet.empty;
-    nonterm.follow <- TerminalSet.empty;
-  ) nonterms;
-
-  List.iter (fun prod ->
-    prod.first_rhs <- TerminalSet.empty;
-  ) prods
+let (|>) = BatPervasives.(|>)
 
 
-let compute_dotted_productions indexed_prods =
-  let open AnalysisEnvType in
+let compute_prods_by_lhs nonterms prods =
+  (* map: nonterminal -> productions with that nonterm on LHS *)
+  let prods_by_lhs = NtArray.make (NtArray.length nonterms) [] in
 
-  let next_id =
-    let next = ref 0 in
-    fun () ->
-      let id = !next in
-      incr next;
-      id
-  in
+  ProdArray.iteri (fun prod_index prod ->
+    NtArray.set prods_by_lhs prod.left
+      (prod_index :: NtArray.get prods_by_lhs prod.left)
+  ) prods;
 
-  let dotted_prods = ProdArray.init (ProdArray.length indexed_prods) (fun i ->
-
-    let prod = ProdArray.get indexed_prods i in
-    let rhs_length = List.length prod.right in
-
-    (* one dottedproduction for every dot position, which is one
-     * more than the # of RHS elements *)
-    IntegralIndexedArray.init (rhs_length + 1) (fun dot ->
-      let dot_at_end = dot == rhs_length in
-
-      {
-        prod = prod.pbase.index_id;
-        dot;
-        dprod_id = next_id ();
-        after_dot  = (if dot_at_end then None else Some (List.nth prod.right dot));
-        can_derive_empty = false;
-        first_set = TerminalSet.empty;
-        back_pointer = None;
-      }
+  (* verify invariants *)
+  NtArray.iteri (fun nt_index ->
+    List.iter (fun prod_index ->
+      let prod = ProdArray.get prods prod_index in
+      assert (prod.left == nt_index);
     )
+  ) prods_by_lhs;
 
-  ) in
-
-  (* the mapping is dense by construction, no need to verify it *)
-
-  (* it is already readonly, too *)
-  dotted_prods
+  NtArray.readonly prods_by_lhs
 
 
 let init_env grammar =
+  let { terms; nonterms; prods } as index = GrammarIndex.compute_indices grammar in
+
+  let prods_by_lhs = compute_prods_by_lhs nonterms prods in
+
+  let reachable = Reachability.compute_reachable_tagged prods prods_by_lhs in
+
+  (* construct parse tree variants *)
+  let nonterms =
+    nonterms
+    |> PtreeMaker.nonterms SemanticVariant.Ptree reachable
+    |> PtreeMaker.nonterms SemanticVariant.Treematch reachable
+  in
+
+  let prods =
+    prods
+    |> PtreeMaker.prods SemanticVariant.Ptree reachable nonterms prods_by_lhs
+    |> PtreeMaker.prods SemanticVariant.Treematch reachable nonterms prods_by_lhs
+  in
+
+  let verbatims =
+    grammar.verbatim
+    |> SemanticVariant.combine (PtreeMaker.verbatims SemanticVariant.Ptree)
+    |> SemanticVariant.combine (PtreeMaker.verbatims SemanticVariant.Treematch)
+  in
+
+  let ptree = PtreeStructure.make reachable index prods_by_lhs in
+
+  (* build dotted productions for each production *)
+  let dotted_prods = DottedProduction.compute_dotted_productions prods in
+
   let start_nt =
     (LocStringMap.find grammar.start_symbol grammar.nonterminals).nbase.index_id
   in
 
-  let indices = GrammarIndex.compute_indices grammar in
-
-  let index        = indices.GrammarIndex.index in
-  let reachable    = indices.GrammarIndex.reachable in
-  let prods_by_lhs = indices.GrammarIndex.prods_by_lhs in
-  let verbatims    = indices.GrammarIndex.verbatims in
-
-  (* build dotted productions for each production *)
-  let dotted_prods = compute_dotted_productions index.prods in
-
   (* make the env *)
   let env = {
-    index;
+    index = { terms; nonterms; prods };
     start_nt;
     reachable;
+    ptree;
     prods_by_lhs;
     dotted_prods;
-    derivable = Derivability.initial_derivable_relation (NtArray.length index.nonterms);
-    cyclic_grammar = false;
+    derivable = Derivable.empty;
     start_state = None;
 
     options = grammar.config;
     verbatims;
   } in
-
-  (* reset first/follow sets to 0 *)
-  reset_first_follow grammar.productions grammar.nonterminals;
 
   env

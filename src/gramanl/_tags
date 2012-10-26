@@ -6,6 +6,7 @@
 "grammarType.ml":	syntax_camlp4o, pkg_sexplib.syntax
 "ids.ml":		syntax_camlp4o, pkg_sexplib.syntax
 "merge.ml":		syntax_camlp4o, pkg_sexplib.syntax
+"ptreeType.ml":		syntax_camlp4o, pkg_sexplib.syntax
 "semanticVariant.ml":	syntax_camlp4o, pkg_sexplib.syntax
 "sloc.ml":		syntax_camlp4o, pkg_sexplib.syntax
 

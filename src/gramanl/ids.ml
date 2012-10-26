@@ -39,6 +39,12 @@ module IntegralModule = struct
     fold_left f x 0 e
 
 
+  let iter f e =
+    for i = 0 to e do
+      f i
+    done
+
+
   let to_string (id : t) = string_of_int id
   let print out (id : t) = output_string out (to_string id)
   let sprint () = to_string

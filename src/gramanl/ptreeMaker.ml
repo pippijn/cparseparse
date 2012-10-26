@@ -279,6 +279,7 @@ let prods variant reachable nonterms prods_by_lhs prods =
   let prod_count = NtArray.sum (List.length) prods_by_lhs in
   let prods = ProdArray.make prod_count empty_production in
   NtArray.iter (List.iter (fun prod -> ProdArray.set prods prod.pbase.index_id prod)) prods_by_lhs;
+  assert (not (ProdArray.memq empty_production prods));
 
   ProdArray.readonly prods
 

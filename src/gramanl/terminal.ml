@@ -23,7 +23,17 @@ module M : GrammarSig.S with type t = terminal = struct
   let sexp_of_t = sexp_of_terminal
   let t_of_sexp = terminal_of_sexp
 
-  let default = empty_terminal
+  let default = {
+    tbase = {
+      name	  = Sloc.empty_string;
+      index_id	  = Ids.Terminal.default;
+      semantic	  = SemanticVariant.empty ();
+    };
+
+    alias	  = None;
+    precedence	  = 0;
+    associativity = Sloc.dummy Assoc.AK_NONASSOC;
+  }
 
 end
 
