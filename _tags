@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 0fc8e5b90c99cd11b0717f1befef7f46)
+# DO NOT EDIT (digest: 2070ad857a3adaa8020caa6473a6ef71)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -150,6 +150,7 @@
 "src/gramanl/grammarIndex.cmx": for-pack(Gramanl)
 "src/gramanl/grammarLexer.cmx": for-pack(Gramanl)
 "src/gramanl/grammarParser.cmx": for-pack(Gramanl)
+"src/gramanl/grammarStructure.cmx": for-pack(Gramanl)
 "src/gramanl/grammarTreeParser.cmx": for-pack(Gramanl)
 "src/gramanl/grammarType.cmx": for-pack(Gramanl)
 "src/gramanl/grammarUtil.cmx": for-pack(Gramanl)
@@ -171,6 +172,8 @@
 "src/gramanl/printGrammar.cmx": for-pack(Gramanl)
 "src/gramanl/prodArray.cmx": for-pack(Gramanl)
 "src/gramanl/ptreeMaker.cmx": for-pack(Gramanl)
+"src/gramanl/ptreeStructure.cmx": for-pack(Gramanl)
+"src/gramanl/ptreeType.cmx": for-pack(Gramanl)
 "src/gramanl/reachability.cmx": for-pack(Gramanl)
 "src/gramanl/renumbering.cmx": for-pack(Gramanl)
 "src/gramanl/sampleInput.cmx": for-pack(Gramanl)
