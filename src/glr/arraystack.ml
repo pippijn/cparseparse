@@ -1,4 +1,3 @@
-(* arraystack.ml *)
 (* stack of pointers implemented as an array *)
 
 
@@ -6,7 +5,7 @@
 let growArray arr newLen =
   Array.init newLen (fun i ->
     if i < Array.length arr then
-      arr.(i)
+      Array.unsafe_get arr i
     else
       Obj.magic ()
   )
@@ -26,18 +25,17 @@ let length { len } = len
 
 let is_empty { len } = len = 0
 
-let clear rep =
-  rep.len <- 0
+let clear rep = rep.len <- 0
 
 
 (* get topmost element but don't change what is stored *)
-let top { len; arr } = arr.(len - 1)
+let top { len; arr } = Array.unsafe_get arr (len - 1)
 
 
 (* get topmost and remove it *)
 let pop rep =
   rep.len <- rep.len - 1;
-  rep.arr.(rep.len)
+  Array.unsafe_get rep.arr rep.len
 
 
 (* add a new topmost element *)
@@ -47,7 +45,7 @@ let push obj rep =
     rep.arr <- growArray rep.arr (rep.len * 2);
 
   (* put new element into the array at the end *)
-  rep.arr.(rep.len) <- obj;
+  Array.unsafe_set rep.arr rep.len obj;
   rep.len <- rep.len + 1
 
 
@@ -64,47 +62,34 @@ let set { arr } i v =
 (* iterate *)
 let iter f rep =
   for i = 0 to rep.len - 1 do
-    f rep.arr.(i)
+    f (Array.unsafe_get rep.arr i)
   done
 
 
-(* search and return the element index, or -1 for not found *)
-let findIndex f rep =
-  let index = ref (-1) in
-  begin
-    try
-      for i = 0 to rep.len - 1 do
-        if f rep.arr.(i) then (
-          index := i;
-          raise Exit
-        )
-      done
-    with Exit -> ()
-  end;
-  !index
+let rec index x arr i =
+  if i = -1 then
+    -1
+  else if Array.unsafe_get arr i == x then
+    i
+  else
+    index x arr (i - 1)
 
+(* search and return the element index, or -1 for not found *)
+let index x rep =
+  index x rep.arr (rep.len - 1)
+
+
+let rec find f arr i =
+  if i = -1 then
+    None
+  else let e = Array.unsafe_get arr i in if f e then
+    Some e
+  else
+    find f arr (i - 1)
 
 (* search and return the element, or None *)
 let find f rep =
-  let idx = findIndex f rep in
-  if idx < 0 then
-    None                 (* not found *)
-  else
-    Some rep.arr.(idx)   (* found *)
-  (* XXX: inlined does not seem to be worth it
-  let ret = ref None in
-  begin
-    try
-      for i = 0 to rep.len - 1 do
-        if f rep.arr.(i) then (
-          ret := Some rep.arr.(i);
-          raise Exit
-        )
-      done
-    with Exit -> ()
-  end;
-  !ret
-  *)
+  find f rep.arr (rep.len - 1)
 
 
 (* swap contents with another array stack *)

@@ -1,10 +1,4 @@
-(* ptreenode.ml *)
 (* parse tree node for use with ptreeact module *)
-(* based on elkhound/ptreenode *)
-
-
-(* for storing parse tree counts *)
-type tree_count = int
 
 
 (* a node in a parse tree *)
@@ -17,9 +11,6 @@ type t = {
 
   (* list of ambiguous alternatives to this node *)
   mutable merged : t option;
-
-  (* number of parse trees this node is root of *)
-  mutable count : tree_count;
 }
 
 
@@ -28,7 +19,6 @@ let make_leaf sym =
     symbol = sym;
     merged = None;
     children = [||];
-    count = 0;
   }
 
 let make sym child_count child_fun =
@@ -36,7 +26,6 @@ let make sym child_count child_fun =
     symbol = sym;
     merged = None;
     children = Array.init child_count child_fun;
-    count = 0;
   }
 
 
@@ -57,50 +46,17 @@ let countMergedList self =
   merged_fold (fun v _ -> v + 1) 0 (Some self)
 
 
-(* count trees rooted here *)
-let rec countTrees self =
-  (* memoise *)
-  if self.count > 0 then (
-    self.count
-  ) else (
-    (* sum over alternatives, product over children
-     * (look at me, functional programming boy)
-     * never mind, I am obviously not functional programming boy *)
-
-    (* product over children here *)
-    let ct =
-      Array.fold_left (fun ct c ->
-        ct * countTrees c
-      ) 1 self.children
-    in
-
-    (* alternatives? *)
-    let ct =
-      match self.merged with
-      | Some merged ->
-          (* add them too, recursively *)
-          ct + countTrees merged
-      | None ->
-          ct
-    in
-
-    self.count <- ct;
-
-    ct
-  )
-
-
 (* add an ambiguous alternative *)
 let add_alternative self alt =
   (* insert as 2nd element *)
-  alt.merged <- self.merged;
+  alt .merged <- self.merged;
   self.merged <- Some alt
 
 
 let cyclicSkip self indentation out path =
   if GlrOptions._ptree_cycles () then (
     (* does 'self' appear in 'path'? *)
-    let idx = Arraystack.findIndex ((==) self) path in
+    let idx = Arraystack.index self path in
     if idx >= 0 then (
       (* yes; print a cyclicity reference *)
       indent out indentation;
