@@ -1,11 +1,11 @@
-let dummy_spec section = ("\n" ^ section ^ ":", Arg.Unit ignore, "")
+let section_separator section = ("\n" ^ section ^ ":", Arg.Unit ignore, "")
 
-let specs = ref [dummy_spec "help"]
+let specs = ref [section_separator "help"]
 let actions = ref []
 
 
 let register ?action section spec =
-  specs := dummy_spec section :: spec @ !specs;
+  specs := section_separator section :: spec @ !specs;
   match action with
   | None -> ()
   | Some action ->
