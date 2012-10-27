@@ -38,7 +38,7 @@
     | TOK_INTEGER i -> Printf.sprintf "TOK_INTEGER %d" i
     | TOK_UNAME id -> "TOK_UNAME " ^ Sloc.value id
     | TOK_LNAME id -> "TOK_LNAME " ^ Sloc.value id
-    | TOK_CHAR id -> "TOK_CHAR " ^ Sloc.value id
+    | TOK_CHAR id -> "TOK_CHAR " ^ Char.escaped (Sloc.value id)
     | TOK_STRING id -> "TOK_STRING " ^ Sloc.value id
     | TOK_LIT_CODE id -> "TOK_LIT_CODE " ^ Sloc.value id
 
@@ -97,6 +97,14 @@
     |> BatString.trim
 
 
+  let parse_string str =
+    str |> remove_quotes |> ExtString.unescape
+
+  let parse_char str =
+    let unesaped = parse_string str in
+    unesaped.[0]
+
+
   let output_position out p =
     let open Lexing in
     Printf.fprintf out "(%s, %d, %d)"
@@ -107,11 +115,13 @@
   let loc lexbuf t =
     let s = Lexing.lexeme_start_p lexbuf in
     let e = Lexing.lexeme_end_p lexbuf in
+    (*
     if Options._trace_srcloc () then
       Printf.printf "%a-%a: %s\n"
 	output_position s
 	output_position e
 	t;
+    *)
     (t, s, e)
 }
 
@@ -162,8 +172,8 @@ and normal state = parse
 | ['0'-'9']+ as int						{ TOK_INTEGER (int_of_string int) }
 
 (* Integer *)
-| '"' ('\\' _ | [^ '"'  '\\' '\n'] )+ '"' as string		{ TOK_STRING (string |> remove_quotes |> loc lexbuf) }
-| "'" ('\\' _ | [^ '\'' '\\' '\n'])* "'" as string		{ TOK_CHAR (string |> remove_quotes |> loc lexbuf) }
+| '"' ('\\' _ | [^ '"'  '\\' '\n'] )+ '"' as string		{ TOK_STRING (parse_string string |> loc lexbuf) }
+| "'" ('\\' _ | [^ '\'' '\\' '\n'])* "'" as string		{ TOK_CHAR (parse_char string |> loc lexbuf) }
 
 (* Punctuators *)
 | '{'								{ state.brace_level <- 1;

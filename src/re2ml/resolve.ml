@@ -1,6 +1,15 @@
 open Ast
 
 
+let full_chr_range =
+  OrGrouping (List.rev_map (fun c -> Char c) CharClass.full_chr_list)
+
+
+let resolve_char_class cc =
+  let cc = CharClass.to_chr_list cc in
+  OrGrouping (List.rev_map (fun c -> Char c) cc)
+
+
 let rec resolve_regexp map = function
   (* replace references by their definition *)
   | Lexeme name ->
@@ -11,20 +20,38 @@ let rec resolve_regexp map = function
       end
 
   (* recursively resolve sub-regexps *)
-  | AndGrouping list -> AndGrouping (List.map (resolve_regexp map) list)
+  | Sequence list -> Sequence (List.map (resolve_regexp map) list)
   | OrGrouping list -> OrGrouping (List.map (resolve_regexp map) list)
-  | Question re -> Question (resolve_regexp map re)
-  | Star re -> Star (resolve_regexp map re)
   | Plus re -> Plus (resolve_regexp map re)
-  | Quantified (re, low, high) -> Quantified (resolve_regexp map re, low, high)
   | Binding (re, name) -> Binding (resolve_regexp map re, name)
 
-  (* atoms need no resolution *)
+  (* a? -> (a | ε) *)
+  | Question re -> OrGrouping [epsilon; resolve_regexp map re]
+  (* a* -> (a+ | ε) *)
+  | Star re -> OrGrouping [epsilon; Plus (resolve_regexp map re)]
+
+  | Quantified (re, low, high) ->
+      failwith "unsupported: {n,m} quantifier"
+
+  (* character classes *)
+  | CharClass cc ->
+      (* no need to further resolve these *)
+      resolve_char_class cc
+
+  (* resolve "any character" as the full range *)
+  | AnyChar ->
+      resolve_regexp map full_chr_range
+  (* resolve string as a sequence of its characters *)
+  | String s ->
+      resolve_regexp map
+        (Sequence (
+          List.map (fun c -> Char (Sloc.at s c))
+            (BatString.fold_right (fun c l -> c :: l)
+              (Sloc.value s) [])))
+
+  (* single characters and EOF need no resolution *)
   | Eof
-  | AnyChar
-  | Char _
-  | String _
-  | CharClass _ as atom ->
+  | Char _ as atom ->
       atom
 
 

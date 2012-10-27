@@ -12,7 +12,7 @@
 %token <int> TOK_INTEGER
 %token <string Sloc.t> TOK_UNAME
 %token <string Sloc.t> TOK_LNAME
-%token <string Sloc.t> TOK_CHAR
+%token <char Sloc.t> TOK_CHAR
 %token <string Sloc.t> TOK_STRING
 %token <string Sloc.t> TOK_LIT_CODE
 
@@ -61,7 +61,7 @@ code
 
 
 lexeme
-	: TOK_LET TOK_LNAME TOK_EQUALS regexp		{ Alias ($2, $4) }
+	: TOK_LET TOK_LNAME TOK_EQUALS sequence		{ Alias ($2, $4) }
 
 
 regexps
@@ -69,15 +69,15 @@ regexps
 
 
 or_regexps
-	: TOK_PIPE? regexp				{ [$2] }
-	| or_regexps TOK_PIPE regexp			{ $3 :: $1 }
+	: TOK_PIPE? sequence				{ [$2] }
+	| or_regexps TOK_PIPE sequence			{ $3 :: $1 }
+
+
+sequence
+	: regexp+					{ match $1 with [a] -> a | l -> Sequence l }
 
 
 regexp
-	: full_regexp+					{ match $1 with [a] -> a | l -> AndGrouping l }
-
-
-full_regexp
 	: atom quantifier binding			{ $3 ($2 $1) }
 
 

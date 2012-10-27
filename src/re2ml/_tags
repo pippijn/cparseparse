@@ -1,2 +1,3 @@
 # sexplib
 "ast.ml":	syntax_camlp4o, pkg_sexplib.syntax
+"nfa.ml":	syntax_camlp4o, pkg_sexplib.syntax
