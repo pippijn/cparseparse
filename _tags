@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: e5d1cfd9cca63655bf107a252086ad76)
+# DO NOT EDIT (digest: ce028fdd85e7a53b1bde4072a2ab654e)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -53,6 +53,13 @@
 "src/baselib/ml_Valgrind.c": pkg_sexplib
 "src/baselib/ml_Zlib.c": pkg_batteries
 "src/baselib/ml_Zlib.c": pkg_sexplib
+# Library codegen
+"src/codegen/codegen.cmxs": use_codegen
+<src/codegen/*.ml{,i}>: use_baselib
+<src/codegen/*.ml{,i}>: pkg_batteries
+<src/codegen/*.ml{,i}>: pkg_camlp4
+<src/codegen/*.ml{,i}>: pkg_camlp4.lib
+<src/codegen/*.ml{,i}>: pkg_sexplib
 # Library glr
 "src/glr/glr.cmxs": use_glr
 "src/glr/glr_info.cmx": for-pack(Glr)
@@ -155,11 +162,8 @@
 "src/gramanl/ml/assoc.cmx": for-pack(Gramanl)
 "src/gramanl/ml/backTransform.cmx": for-pack(Gramanl)
 "src/gramanl/ml/bfsTree.cmx": for-pack(Gramanl)
-"src/gramanl/ml/camlAst.cmx": for-pack(Gramanl)
-"src/gramanl/ml/codegenHelpers.cmx": for-pack(Gramanl)
 "src/gramanl/ml/conflictResolution.cmx": for-pack(Gramanl)
 "src/gramanl/ml/derivability.cmx": for-pack(Gramanl)
-"src/gramanl/ml/diagnostics.cmx": for-pack(Gramanl)
 "src/gramanl/ml/dottedProduction.cmx": for-pack(Gramanl)
 "src/gramanl/ml/emitActions.cmx": for-pack(Gramanl)
 "src/gramanl/ml/emitCode.cmx": for-pack(Gramanl)
@@ -183,7 +187,6 @@
 "src/gramanl/ml/ids.cmx": for-pack(Gramanl)
 "src/gramanl/ml/itemList.cmx": for-pack(Gramanl)
 "src/gramanl/ml/itemSet.cmx": for-pack(Gramanl)
-"src/gramanl/ml/locStringMap.cmx": for-pack(Gramanl)
 "src/gramanl/ml/lrItem.cmx": for-pack(Gramanl)
 "src/gramanl/ml/lrItemSets.cmx": for-pack(Gramanl)
 "src/gramanl/ml/merge.cmx": for-pack(Gramanl)
@@ -205,7 +208,6 @@
 "src/gramanl/ml/sampleInput.cmx": for-pack(Gramanl)
 "src/gramanl/ml/semantic.cmx": for-pack(Gramanl)
 "src/gramanl/ml/semanticVariant.cmx": for-pack(Gramanl)
-"src/gramanl/ml/sloc.cmx": for-pack(Gramanl)
 "src/gramanl/ml/stateGraph.cmx": for-pack(Gramanl)
 "src/gramanl/ml/superSets.cmx": for-pack(Gramanl)
 "src/gramanl/ml/tableConstruction.cmx": for-pack(Gramanl)
@@ -217,41 +219,43 @@
 "src/gramanl/ml/terminalSet.cmx": for-pack(Gramanl)
 "src/gramanl/ml/warnings.cmx": for-pack(Gramanl)
 <src/gramanl/*.ml{,i}>: use_glr
+<src/gramanl/*.ml{,i}>: use_codegen
 <src/gramanl/*.ml{,i}>: use_baselib
+<src/gramanl/*.ml{,i}>: pkg_batteries
 <src/gramanl/*.ml{,i}>: pkg_camlp4
 <src/gramanl/*.ml{,i}>: pkg_camlp4.lib
-<src/gramanl/*.ml{,i}>: pkg_batteries
 <src/gramanl/*.ml{,i}>: pkg_sexplib
 <src/gramanl/*.ml{,i}>: pkg_unix
 <src/gramanl/*.ml{,i}>: pkg_ocamlgraph
 <src/gramanl/ml/*.ml{,i}>: use_glr
+<src/gramanl/ml/*.ml{,i}>: use_codegen
 <src/gramanl/ml/*.ml{,i}>: use_baselib
+<src/gramanl/ml/*.ml{,i}>: pkg_batteries
 <src/gramanl/ml/*.ml{,i}>: pkg_camlp4
 <src/gramanl/ml/*.ml{,i}>: pkg_camlp4.lib
-<src/gramanl/ml/*.ml{,i}>: pkg_batteries
 <src/gramanl/ml/*.ml{,i}>: pkg_sexplib
 <src/gramanl/ml/*.ml{,i}>: pkg_unix
 <src/gramanl/ml/*.ml{,i}>: pkg_ocamlgraph
 # Executable elkhound
 "src/elkhound/elkhound.native": use_gramanl
 "src/elkhound/elkhound.native": use_glr
+"src/elkhound/elkhound.native": use_codegen
 "src/elkhound/elkhound.native": use_baselib
+"src/elkhound/elkhound.native": pkg_batteries
 "src/elkhound/elkhound.native": pkg_camlp4
 "src/elkhound/elkhound.native": pkg_camlp4.lib
-"src/elkhound/elkhound.native": pkg_batteries
 "src/elkhound/elkhound.native": pkg_sexplib
 "src/elkhound/elkhound.native": pkg_unix
-"src/elkhound/elkhound.native": pkg_menhirLib
 "src/elkhound/elkhound.native": pkg_ocamlgraph
 <src/elkhound/*.ml{,i}>: use_gramanl
 <src/elkhound/*.ml{,i}>: use_glr
+<src/elkhound/*.ml{,i}>: use_codegen
 <src/elkhound/*.ml{,i}>: use_baselib
+<src/elkhound/*.ml{,i}>: pkg_batteries
 <src/elkhound/*.ml{,i}>: pkg_camlp4
 <src/elkhound/*.ml{,i}>: pkg_camlp4.lib
-<src/elkhound/*.ml{,i}>: pkg_batteries
 <src/elkhound/*.ml{,i}>: pkg_sexplib
 <src/elkhound/*.ml{,i}>: pkg_unix
-<src/elkhound/*.ml{,i}>: pkg_menhirLib
 <src/elkhound/*.ml{,i}>: pkg_ocamlgraph
 # Executable runtests
 "testsuite/runtests.native": use_baselib
@@ -264,15 +268,28 @@
 <testsuite/*.ml{,i}>: pkg_unix
 # Executable treematch
 "src/treematch/treematch.native": use_baselib
+"src/treematch/treematch.native": pkg_batteries
 "src/treematch/treematch.native": pkg_camlp4
 "src/treematch/treematch.native": pkg_camlp4.lib
-"src/treematch/treematch.native": pkg_batteries
 "src/treematch/treematch.native": pkg_sexplib
 <src/treematch/*.ml{,i}>: use_baselib
+<src/treematch/*.ml{,i}>: pkg_batteries
 <src/treematch/*.ml{,i}>: pkg_camlp4
 <src/treematch/*.ml{,i}>: pkg_camlp4.lib
-<src/treematch/*.ml{,i}>: pkg_batteries
 <src/treematch/*.ml{,i}>: pkg_sexplib
+# Executable re2ml
+"src/re2ml/re2ml.native": use_codegen
+"src/re2ml/re2ml.native": use_baselib
+"src/re2ml/re2ml.native": pkg_batteries
+"src/re2ml/re2ml.native": pkg_camlp4
+"src/re2ml/re2ml.native": pkg_camlp4.lib
+"src/re2ml/re2ml.native": pkg_sexplib
+<src/re2ml/*.ml{,i}>: use_codegen
+<src/re2ml/*.ml{,i}>: use_baselib
+<src/re2ml/*.ml{,i}>: pkg_batteries
+<src/re2ml/*.ml{,i}>: pkg_camlp4
+<src/re2ml/*.ml{,i}>: pkg_camlp4.lib
+<src/re2ml/*.ml{,i}>: pkg_sexplib
 # OASIS_STOP
 
 true: debug

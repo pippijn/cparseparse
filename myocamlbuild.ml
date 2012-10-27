@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: a242f21463f0bf107c7b7cc59534d88c) *)
+(* DO NOT EDIT (digest: ac189dbcaab1714f3ebf30f1a317f014) *)
 module OASISGettext = struct
 (* # 21 "/tmp/oasis-0.3.0/src/oasis/OASISGettext.ml" *)
 
@@ -482,6 +482,7 @@ let package_default =
           ("cabs", ["src/cabs"; "src/cabs/ml"]);
           ("ccabs", ["src/ccabs"; "src/ccabs/ml"]);
           ("baselib", ["src/baselib"]);
+          ("codegen", ["src/codegen"]);
           ("glr", ["src/glr"]);
           ("ccparse", ["src/ccparse"]);
           ("gramanl", ["src/gramanl"])
@@ -503,12 +504,16 @@ let package_default =
           ("testsuite/elkhound/arith", ["src/glr"]);
           ("testsuite", ["src/baselib"]);
           ("src/treematch", ["src/baselib"]);
-          ("src/gramanl/ml", ["src/baselib"; "src/glr"; "src/gramanl"]);
-          ("src/gramanl", ["src/baselib"; "src/glr"; "src/gramanl/ml"]);
+          ("src/re2ml", ["src/baselib"; "src/codegen"]);
+          ("src/gramanl/ml",
+            ["src/baselib"; "src/codegen"; "src/glr"; "src/gramanl"]);
+          ("src/gramanl",
+            ["src/baselib"; "src/codegen"; "src/glr"; "src/gramanl/ml"]);
           ("src/glr/ml", ["src/baselib"; "src/glr"]);
           ("src/glr", ["src/baselib"; "src/glr/ml"]);
           ("src/elkhound", ["src/gramanl"]);
           ("src/cpapa", ["src/ccparse"]);
+          ("src/codegen", ["src/baselib"]);
           ("src/ccparse/tok",
             [
                "src/baselib";
@@ -559,7 +564,7 @@ let package_default =
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default package_default;;
 
-# 563 "myocamlbuild.ml"
+# 568 "myocamlbuild.ml"
 (* OASIS_STOP *)
 let atomize = Command.atomize
 
