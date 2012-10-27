@@ -97,7 +97,7 @@ let lexer_from_dump input =
     BatStd.with_dispose ~dispose:close_in
       input_value (open_in_bin (input ^ ".tkd"))
   in
-  lexer_from_list tokens, BatPervasives.identity
+  lexer_from_list tokens, ignore
 
 
 let lexer_from_lexing lexbuf =
@@ -134,14 +134,14 @@ let lexer_from_file input =
     )
   in
 
-  lexer, (fun () -> ignore (Unix.close_process_in cin))
+  lexer, (fun _ -> ignore (Unix.close_process_in cin))
 
 
 let parse_file actions tables input =
   if Options._verbose () then
     print_endline ("%%% processing " ^ input);
 
-  let lexer, cleanup =
+  let lexer, dispose =
     if Options._load_toks () then
       lexer_from_dump input
     else
@@ -159,10 +159,9 @@ let parse_file actions tables input =
     if Options._tokens () then
       None
     else
-      glrparse actions tables input lexer
+      BatStd.with_dispose ~dispose (glrparse actions tables input) lexer
   in
 
-  cleanup ();
   tree
 
 
