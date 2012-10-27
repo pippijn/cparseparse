@@ -1,8 +1,5 @@
-open Camlp4.PreCast
-open GrammarType
-
-module Dumper = Printers.DumpOCamlAst
-module Printer = Printers.OCaml
+module Dumper = Camlp4.PreCast.Printers.DumpOCamlAst
+module Printer = Camlp4.PreCast.Printers.OCaml
 
 let print_interf output_file intf = Printer.print_interf ~output_file intf
 let print_implem output_file impl = Printer.print_implem ~output_file impl
@@ -108,7 +105,7 @@ let emit_tables name tables =
  ************************************************)
 
 let emit_ml dirname index verbatims ptree tables =
-  let open AnalysisEnvType in
+  let open GrammarType in
 
   let final_prod = Ids.Production.of_int tables.Glr.ParseTablesType.finalProductionIndex in
 
