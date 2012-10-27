@@ -20,6 +20,7 @@ type char_class =
 
 type regexp =
   (* atoms *)
+  | Eof                                 (* eof *)
   | AnyChar                             (* _ *)
   | Char of chr               		(* 'c' *)
   | String of str             		(* "class" *)

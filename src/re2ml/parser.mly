@@ -33,6 +33,7 @@
 %token TOK_RPAREN		/* ")"	*/
 
 /* keywords */
+%token TOK_EOF			/* "eof"	*/
 %token TOK_UNDERLINE		/* "_"		*/
 %token TOK_RULE			/* "rule"	*/
 %token TOK_LET			/* "let"	*/
@@ -73,7 +74,7 @@ or_regexps
 
 
 regexp
-	: full_regexp+					{ match $1 with [a] -> a | l -> AndGrouping (List.rev l) }
+	: full_regexp+					{ match $1 with [a] -> a | l -> AndGrouping l }
 
 
 full_regexp
@@ -101,6 +102,7 @@ atom
 	: TOK_STRING					{ String $1 }
 	| TOK_CHAR					{ Char $1 }
 	| TOK_LNAME					{ Lexeme $1 }
+	| TOK_EOF					{ Eof }
 	| TOK_UNDERLINE					{ AnyChar }
 	| TOK_LBRACK inverted char_class+ TOK_RBRACK	{ CharClass ($2 $3) }
 	| TOK_LPAREN regexps TOK_RPAREN			{ $2 }

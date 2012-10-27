@@ -9,9 +9,10 @@ let parse_channel file input =
 
   let state = Lexer.make () in
 
-  let program =
-    Parser.parse (Lexer.token state) lexbuf
-  in
+  let program = Parser.parse (Lexer.token state) lexbuf in
+  let program = Resolve.resolve program in
+
+  Nfa.construct program;
 
   Sexplib.Sexp.output_hum stdout (Ast.sexp_of_t program);
   print_newline ()

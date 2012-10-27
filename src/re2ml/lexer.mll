@@ -44,6 +44,7 @@
 
     | TOK_EQUALS -> "TOK_EQUALS"
     | TOK_UNDERLINE -> "TOK_UNDERLINE"
+    | TOK_EOF -> "TOK_EOF"
 
     | TOK_PIPE -> "TOK_PIPE"
     | TOK_CARET -> "TOK_CARET"
@@ -152,6 +153,7 @@ and normal state = parse
 (* State-switching keywords *)
 
 (* Identifier *)
+| "eof"								{ TOK_EOF }
 | '_'								{ TOK_UNDERLINE }
 | ['A'-'Z'] ['A'-'Z' 'a'-'z' '_' '0'-'9']* as name		{ TOK_UNAME (loc lexbuf name) }
 | ['a'-'z' '_'] ['A'-'Z' 'a'-'z' '_' '0'-'9']* as name		{ classify (loc lexbuf name) }
