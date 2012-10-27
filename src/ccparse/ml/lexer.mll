@@ -139,5 +139,3 @@ rule token = parse
 | eof                                                           { return lexbuf TOK_EOF }
 
 | _ as c                                                        { failwith (Char.escaped c) }
-
-(* EOF *)

@@ -17,7 +17,7 @@
     mutable in_rhs : bool;
   }
 
-  let default_state lexbuf = {
+  let make lexbuf = {
     code = Buffer.create 16;
     stack = [lexbuf];
     automaton = Normal;

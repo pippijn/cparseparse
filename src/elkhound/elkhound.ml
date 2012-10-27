@@ -27,7 +27,7 @@ let parse files =
       pos_cnum = 0;
     });
 
-    let state = GrammarLexer.default_state lexbuf in
+    let state = GrammarLexer.make lexbuf in
 
     try
       file, GrammarParser.parse (GrammarLexer.token state) lexbuf

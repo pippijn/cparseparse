@@ -19,11 +19,19 @@ SourceRepository head
         Browser:                http://xinutec.org/git/lang/cxxparse.git
 
 
+Executable re2ml
+        Path:                   src/re2ml
+        BuildTools:             ocamlbuild,camlp4o
+        BuildDepends:           baselib,codegen,                        # internal
+                                batteries                               # external
+        CompiledObject:         native
+        MainIs:                 re2ml.ml
+
 Executable elkhound
         Path:                   src/elkhound
         BuildTools:             ocamlbuild,camlp4o
         BuildDepends:           gramanl,                                # internal
-                                batteries,menhirLib                     # external
+                                batteries                               # external
         CompiledObject:         native
         MainIs:                 elkhound.ml
 

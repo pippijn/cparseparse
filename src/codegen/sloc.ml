@@ -10,6 +10,9 @@ type 'a t =
   'a * position * position
   with sexp
 
+let sexp_of_t sexp_of (t, s, e) =
+  sexp_of t
+
 let value   (t, s, e) = t
 let start_p (t, s, e) = s
 let end_p   (t, s, e) = e
