@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: 9b63f7ad4a8ef9535e584c33663086bd) *)
+(* DO NOT EDIT (digest: a242f21463f0bf107c7b7cc59534d88c) *)
 module OASISGettext = struct
 (* # 21 "/tmp/oasis-0.3.0/src/oasis/OASISGettext.ml" *)
 
@@ -479,8 +479,8 @@ let package_default =
   {
      MyOCamlbuildBase.lib_ocaml =
        [
-          ("cabs", ["src/cabs"]);
-          ("ccabs", ["src/ccabs"]);
+          ("cabs", ["src/cabs"; "src/cabs/ml"]);
+          ("ccabs", ["src/ccabs"; "src/ccabs/ml"]);
           ("baselib", ["src/baselib"]);
           ("glr", ["src/glr"]);
           ("ccparse", ["src/ccparse"]);
@@ -513,6 +513,7 @@ let package_default =
             [
                "src/baselib";
                "src/ccabs";
+               "src/ccabs/ml";
                "src/ccparse";
                "src/ccparse/gr";
                "src/ccparse/ml";
@@ -522,6 +523,7 @@ let package_default =
             [
                "src/baselib";
                "src/ccabs";
+               "src/ccabs/ml";
                "src/ccparse";
                "src/ccparse/gr";
                "src/ccparse/tok";
@@ -531,6 +533,7 @@ let package_default =
             [
                "src/baselib";
                "src/ccabs";
+               "src/ccabs/ml";
                "src/ccparse";
                "src/ccparse/ml";
                "src/ccparse/tok";
@@ -540,18 +543,23 @@ let package_default =
             [
                "src/baselib";
                "src/ccabs";
+               "src/ccabs/ml";
                "src/ccparse/gr";
                "src/ccparse/ml";
                "src/ccparse/tok";
                "src/glr"
-            ])
+            ]);
+          ("src/ccabs/ml", ["src/ccabs"]);
+          ("src/ccabs", ["src/ccabs/ml"]);
+          ("src/cabs/ml", ["src/cabs"]);
+          ("src/cabs", ["src/cabs/ml"])
        ];
      }
   ;;
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default package_default;;
 
-# 555 "myocamlbuild.ml"
+# 563 "myocamlbuild.ml"
 (* OASIS_STOP *)
 let atomize = Command.atomize
 

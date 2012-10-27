@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: cda6bf6584c3b0a1245a7e927957d2fb)
+# DO NOT EDIT (digest: e5d1cfd9cca63655bf107a252086ad76)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -15,21 +15,26 @@
 "_darcs": not_hygienic
 # Library cabs
 "src/cabs/cabs.cmxs": use_cabs
-"src/cabs/ast.cmx": for-pack(Cabs)
-"src/cabs/constant.cmx": for-pack(Cabs)
-"src/cabs/sclass.cmx": for-pack(Cabs)
-"src/cabs/tqual.cmx": for-pack(Cabs)
+"src/cabs/ml/ast.cmx": for-pack(Cabs)
+"src/cabs/ml/constant.cmx": for-pack(Cabs)
+"src/cabs/ml/sclass.cmx": for-pack(Cabs)
+"src/cabs/ml/tqual.cmx": for-pack(Cabs)
 <src/cabs/*.ml{,i}>: pkg_batteries
 <src/cabs/*.ml{,i}>: pkg_sexplib
+<src/cabs/ml/*.ml{,i}>: pkg_batteries
+<src/cabs/ml/*.ml{,i}>: pkg_sexplib
 # Library ccabs
 "src/ccabs/ccabs.cmxs": use_ccabs
-"src/ccabs/ast.cmx": for-pack(Ccabs)
-"src/ccabs/disambiguation.cmx": for-pack(Ccabs)
-"src/ccabs/flags.cmx": for-pack(Ccabs)
-"src/ccabs/query.cmx": for-pack(Ccabs)
+"src/ccabs/ml/ast.cmx": for-pack(Ccabs)
+"src/ccabs/ml/disambiguation.cmx": for-pack(Ccabs)
+"src/ccabs/ml/flags.cmx": for-pack(Ccabs)
+"src/ccabs/ml/query.cmx": for-pack(Ccabs)
 <src/ccabs/*.ml{,i}>: pkg_batteries
 <src/ccabs/*.ml{,i}>: pkg_sexplib
 <src/ccabs/*.ml{,i}>: pkg_monad-custom
+<src/ccabs/ml/*.ml{,i}>: pkg_batteries
+<src/ccabs/ml/*.ml{,i}>: pkg_sexplib
+<src/ccabs/ml/*.ml{,i}>: pkg_monad-custom
 # Library baselib
 "src/baselib/baselib.cmxs": use_baselib
 "src/baselib/baselib.cmxa": oasis_library_baselib_cclib
