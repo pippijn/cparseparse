@@ -176,10 +176,10 @@ Library cabs
         BuildDepends:           batteries,sexplib                       # external
         CompiledObject:         native
 #        NativeOpt:              -inline 999 -unsafe -noassert
-        Modules:                Ast,
-                                Constant,
-                                Sclass,
-                                Tqual
+        Modules:                ml/Ast,
+                                ml/Constant,
+                                ml/Sclass,
+                                ml/Tqual
 
 Library ccabs
         Path:                   src/ccabs
@@ -188,10 +188,10 @@ Library ccabs
         BuildDepends:           batteries,sexplib,monad-custom          # external
         CompiledObject:         native
 #        NativeOpt:              -inline 999 -unsafe -noassert
-        Modules:                Ast,
-                                Disambiguation,
-                                Flags,
-                                Query
+        Modules:                ml/Ast,
+                                ml/Disambiguation,
+                                ml/Flags,
+                                ml/Query
 
 Library glr
         Path:                   src/glr
