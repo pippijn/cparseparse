@@ -73,7 +73,7 @@ Library gramanl
         Path:                   src/gramanl
         Pack:                   true
         BuildTools:             ocamlbuild,camlp4of
-        BuildDepends:           baselib,glr,                            # internal
+        BuildDepends:           baselib,glr,codegen,                    # internal
                                 unix,camlp4,camlp4.lib,                 # core
                                 batteries,sexplib,ocamlgraph            # external
         CompiledObject:         native
@@ -84,11 +84,8 @@ Library gramanl
                                 ml/Assoc,
                                 ml/BackTransform,
                                 ml/BfsTree,
-                                ml/CamlAst,
-                                ml/CodegenHelpers,
                                 ml/ConflictResolution,
                                 ml/Derivability,
-                                ml/Diagnostics,
                                 ml/DottedProduction,
                                 ml/EmitActions,
                                 ml/EmitCode,
@@ -112,7 +109,6 @@ Library gramanl
                                 ml/Ids,
                                 ml/ItemList,
                                 ml/ItemSet,
-                                ml/LocStringMap,
                                 ml/LrItem,
                                 ml/LrItemSets,
                                 ml/Merge,
@@ -134,7 +130,6 @@ Library gramanl
                                 ml/SampleInput,
                                 ml/Semantic,
                                 ml/SemanticVariant,
-                                ml/Sloc,
                                 ml/StateGraph,
                                 ml/SuperSets,
                                 ml/TableConstruction,
@@ -215,6 +210,20 @@ Library glr
                                 ml/SourceLocation,
                                 ml/TokenInfo,
                                 ml/UserActions
+
+Library codegen
+        Path:                   src/codegen
+        BuildTools:             ocamlbuild,camlp4o
+        BuildDepends:           baselib,                                # internal
+                                camlp4,camlp4.lib,                      # core
+                                sexplib                                 # external
+        CompiledObject:         native
+#        NativeOpt:              -inline 999 -unsafe -noassert
+        Modules:                CamlAst,
+                                Classify,
+                                Diagnostics,
+                                LocStringMap,
+                                Sloc
 
 Library baselib
         Path:                   src/baselib

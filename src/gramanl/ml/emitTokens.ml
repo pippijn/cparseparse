@@ -2,7 +2,7 @@ open Camlp4.PreCast
 open GrammarType
 
 let (|>) = BatPervasives.(|>)
-let ghost = CodegenHelpers.ghost "emitTokens"
+let ghost = Sloc.ghost "emitTokens"
 
 
 (************************************************

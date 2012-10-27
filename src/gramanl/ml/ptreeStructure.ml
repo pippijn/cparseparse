@@ -135,7 +135,7 @@ let make reachable index prods_by_lhs =
             (* we do not emit code for the synthesised start rule *)
             bindings
           else (
-            assert (CodegenHelpers.is_uid name);
+            assert (Classify.is_uid name);
 
             if not (NtSet.mem reachable first.left) then
               bindings

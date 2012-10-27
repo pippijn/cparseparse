@@ -2,7 +2,7 @@ open GrammarType
 open Camlp4.PreCast
 
 let (|>) = BatPervasives.(|>)
-let ghost = CodegenHelpers.ghost "ptreeMaker"
+let ghost = Sloc.ghost "ptreeMaker"
 
 
 (* yield all tagged symbols *)

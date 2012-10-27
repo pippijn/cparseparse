@@ -2,7 +2,7 @@ open Camlp4.PreCast
 open PtreeType
 
 let (|>) = BatPervasives.(|>)
-let ghost = CodegenHelpers.ghost "emitPtree"
+let ghost = Sloc.ghost "emitPtree"
 
 
 let make_tycon_arg = function

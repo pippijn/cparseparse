@@ -1,7 +1,7 @@
 open Camlp4.PreCast
 
 let (|>) = BatPervasives.(|>)
-let ghost = CodegenHelpers.ghost "emitTables"
+let ghost = Sloc.ghost "emitTables"
 
 
 (************************************************

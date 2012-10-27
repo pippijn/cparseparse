@@ -2,7 +2,7 @@ open Camlp4.PreCast
 open GrammarType
 
 let (|>) = BatPervasives.(|>)
-let ghost = CodegenHelpers.ghost "emitNames"
+let ghost = Sloc.ghost "emitNames"
 
 
 let str str =

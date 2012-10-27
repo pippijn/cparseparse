@@ -205,7 +205,7 @@ and normal state = parse
 
 (* Identifier *)
 | ['A'-'Z'] ['A'-'Z' 'a'-'z' '_' '0'-'9']* as name		{ return lexbuf (TOK_UNAME (loc lexbuf name)) }
-| ['A'-'Z' 'a'-'z' '_'] ['A'-'Z' 'a'-'z' '_' '0'-'9']* as name	{ return lexbuf (classify (loc lexbuf name)) }
+| ['a'-'z' '_'] ['A'-'Z' 'a'-'z' '_' '0'-'9']* as name		{ return lexbuf (classify (loc lexbuf name)) }
 
 (* Integer *)
 | ['0'-'9']+ as int						{ return lexbuf (TOK_INTEGER (int_of_string int)) }
