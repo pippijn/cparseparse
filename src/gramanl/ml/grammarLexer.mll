@@ -115,16 +115,6 @@
 	output_position e
 	t;
     (t, s, e)
-
-  let return lexbuf t =
-    let s = Lexing.lexeme_start_p lexbuf in
-    let e = Lexing.lexeme_end_p lexbuf in
-    if Options._trace_lexing () then
-      Printf.printf "%a-%a: %s\n"
-	output_position s
-	output_position e
-	(to_string t);
-    (t, s, e)
 }
 
 
@@ -146,7 +136,7 @@ rule verbatim state = parse
 			    Buffer.clear state.code;
 			    state.automaton <- Normal;
 			    state.in_rhs <- false;
-			    return lexbuf (TOK_LIT_CODE (loc lexbuf (remove_braces code)))
+			    TOK_LIT_CODE (loc lexbuf (remove_braces code))
 			  else
 			    verbatim state lexbuf
 			}
@@ -169,7 +159,7 @@ and typename state = parse
 			    let code = String.copy (Buffer.contents state.code) in
 			    Buffer.clear state.code;
 			    state.automaton <- Normal;
-			    return lexbuf (TOK_LIT_CODE (loc lexbuf (remove_parens code)))
+			    TOK_LIT_CODE (loc lexbuf (remove_parens code))
 			  else
 			    typename state lexbuf
 			}
@@ -187,12 +177,12 @@ and normal state = parse
 | "(*"								{ comment 0 state lexbuf }
 
 (* State-switching keywords *)
-| "impl_verbatim"						{ state.automaton <- Verbatim; return lexbuf TOK_IMPL_VERBATIM }
-| "verbatim"							{ state.automaton <- Verbatim; return lexbuf TOK_VERBATIM }
-| "nonterm("							{ state.automaton <- Typename; state.brace_level <- 1; Buffer.add_char state.code '('; return lexbuf TOK_NONTERM }
-| "nonterm"							{ return lexbuf TOK_NONTERM }
-| "token"							{ state.automaton <- Typename; return lexbuf TOK_TOKEN }
-| "fun"								{ state.in_rhs <- true; return lexbuf TOK_FUN }
+| "impl_verbatim"						{ state.automaton <- Verbatim; TOK_IMPL_VERBATIM }
+| "verbatim"							{ state.automaton <- Verbatim; TOK_VERBATIM }
+| "nonterm("							{ state.automaton <- Typename; state.brace_level <- 1; Buffer.add_char state.code '('; TOK_NONTERM }
+| "nonterm"							{ TOK_NONTERM }
+| "token"							{ state.automaton <- Typename; TOK_TOKEN }
+| "fun"								{ state.in_rhs <- true; TOK_FUN }
 | "include" ws* "(" ws* '"' ([^ '"']+ as file) '"' ws* ")" {
     let nextbuf = Lexing.from_channel (open_in file) in
     Lexing.(nextbuf.lex_curr_p <- { Lexing.dummy_pos with pos_fname = file });
@@ -201,17 +191,17 @@ and normal state = parse
   }
 
 (* Handle this one specially, as it is a nonterminal *)
-| "empty"							{ return lexbuf (TOK_UNAME (loc lexbuf "empty")) }
+| "empty"							{ TOK_UNAME (loc lexbuf "empty") }
 
 (* Identifier *)
-| ['A'-'Z'] ['A'-'Z' 'a'-'z' '_' '0'-'9']* as name		{ return lexbuf (TOK_UNAME (loc lexbuf name)) }
-| ['a'-'z' '_'] ['A'-'Z' 'a'-'z' '_' '0'-'9']* as name		{ return lexbuf (classify (loc lexbuf name)) }
+| ['A'-'Z'] ['A'-'Z' 'a'-'z' '_' '0'-'9']* as name		{ TOK_UNAME (loc lexbuf name) }
+| ['a'-'z' '_'] ['A'-'Z' 'a'-'z' '_' '0'-'9']* as name		{ classify (loc lexbuf name) }
 
 (* Integer *)
-| ['0'-'9']+ as int						{ return lexbuf (TOK_INTEGER (int_of_string int)) }
+| ['0'-'9']+ as int						{ TOK_INTEGER (int_of_string int) }
 
 (* Integer *)
-| '"' [^ '"' '\n']+ '"' as string				{ return lexbuf (TOK_STRING (string |> remove_quotes |> loc lexbuf)) }
+| '"' [^ '"' '\n']+ '"' as string				{ TOK_STRING (string |> remove_quotes |> loc lexbuf) }
 
 (* Punctuators *)
 | "{"								{ if state.in_rhs then (
@@ -219,18 +209,18 @@ and normal state = parse
 								    Buffer.add_char state.code '{';
 								    verbatim state lexbuf
 								  ) else (
-								    return lexbuf TOK_LBRACE
+								    TOK_LBRACE
 								  )
 								}
-| "}"								{ return lexbuf TOK_RBRACE }
-| ":"								{ return lexbuf TOK_COLON }
-| ";"								{ state.in_rhs <- false; return lexbuf TOK_SEMICOLON }
-| "->"								{ state.in_rhs <- true; return lexbuf TOK_ARROW }
-| "["								{ return lexbuf TOK_LBRACK }
-| "]"								{ return lexbuf TOK_RBRACK }
-| "("								{ return lexbuf TOK_LPAREN }
-| ")"								{ return lexbuf TOK_RPAREN }
-| ","								{ return lexbuf TOK_COMMA }
+| "}"								{ TOK_RBRACE }
+| ":"								{ TOK_COLON }
+| ";"								{ state.in_rhs <- false; TOK_SEMICOLON }
+| "->"								{ state.in_rhs <- true; TOK_ARROW }
+| "["								{ TOK_LBRACK }
+| "]"								{ TOK_RBRACK }
+| "("								{ TOK_LPAREN }
+| ")"								{ TOK_RPAREN }
+| ","								{ TOK_COMMA }
 
 | eof {
     match state.stack with
@@ -238,7 +228,7 @@ and normal state = parse
 	state.stack <- stack;
 	normal state nextbuf
     | _ :: [] ->
-	return lexbuf EOF
+	EOF
     | [] -> failwith "impossible: empty lexer stack"
   }
 
@@ -252,7 +242,7 @@ and comment level state = parse
 
 
 {
-  let token state =
+  let token state _ =
     match state.stack with
     | lexbuf :: _ ->
 	let token =
@@ -263,5 +253,5 @@ and comment level state = parse
 	in
 	token state lexbuf
     | [] ->
-	EOF, Lexing.dummy_pos, Lexing.dummy_pos
+	EOF
 }

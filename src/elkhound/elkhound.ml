@@ -27,17 +27,10 @@ let parse files =
       pos_cnum = 0;
     });
 
-    let parse = MenhirLib.Convert.traditional2revised
-      (fun (t, s, e) -> t)
-      (fun (t, s, e) -> s)
-      (fun (t, s, e) -> e)
-      GrammarParser.parse
-    in
-
     let state = GrammarLexer.default_state lexbuf in
 
     try
-      file, parse (fun () -> GrammarLexer.token state)
+      file, GrammarParser.parse (GrammarLexer.token state) lexbuf
     with e ->
       Printf.printf "near position %d (\"%s\")\n"
         (Lexing.lexeme_start lexbuf)
@@ -160,5 +153,4 @@ let main inputs =
 
 
 let () =
-  Printexc.record_backtrace true;
   Cmdline.run main
