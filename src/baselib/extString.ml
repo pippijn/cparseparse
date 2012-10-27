@@ -42,3 +42,44 @@ let without_suffixes suffixes str =
     | Some _ as result -> result
     | None -> result
   ) None suffixes
+
+
+type escape_state =
+  | NoEscape
+  | Escape
+  | HexEscape of int
+
+let unescape str =
+  let state, chars =
+    BatString.fold_left (fun (state, chars) -> function
+      | '"'  when state == Escape -> NoEscape, '"'  :: chars
+      | '\'' when state == Escape -> NoEscape, '\'' :: chars
+      | '\\' when state == Escape -> NoEscape, '\\' :: chars
+      | 'n'  when state == Escape -> NoEscape, '\n' :: chars
+      | 't'  when state == Escape -> NoEscape, '\t' :: chars
+      | 'r'  when state == Escape -> NoEscape, '\r' :: chars
+
+      | 'x'  when state == Escape -> HexEscape 0, chars
+      | '0' .. '9' as c ->
+          begin match state with
+          | HexEscape i ->
+              let m = int_of_char c - int_of_char '0' in
+              HexEscape (i * 16 + m), chars
+          | _ -> state, c :: chars
+          end
+
+      | c    when state == Escape -> failwith ("Unknown escape sequence: " ^ Char.escaped c)
+
+      | '\\' -> Escape, chars
+      | c -> NoEscape, c :: chars
+    ) (NoEscape, []) str
+  in
+
+  let chars =
+    match state with
+    | NoEscape -> chars
+    | Escape -> failwith "unterminated escape sequence"
+    | HexEscape i -> char_of_int i :: chars
+  in
+
+  BatString.of_list (List.rev chars)
