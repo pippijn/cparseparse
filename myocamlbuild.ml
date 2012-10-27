@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: d5670a0368d00b357bf276436f944cf7) *)
+(* DO NOT EDIT (digest: 9b63f7ad4a8ef9535e584c33663086bd) *)
 module OASISGettext = struct
 (* # 21 "/tmp/oasis-0.3.0/src/oasis/OASISGettext.ml" *)
 
@@ -483,7 +483,7 @@ let package_default =
           ("ccabs", ["src/ccabs"]);
           ("baselib", ["src/baselib"]);
           ("glr", ["src/glr"]);
-          ("ccparse", ["src/ccparse"; "src/ccparse/gr"]);
+          ("ccparse", ["src/ccparse"]);
           ("gramanl", ["src/gramanl"])
        ];
      lib_c = [("baselib", "src/baselib", [])];
@@ -503,21 +503,55 @@ let package_default =
           ("testsuite/elkhound/arith", ["src/glr"]);
           ("testsuite", ["src/baselib"]);
           ("src/treematch", ["src/baselib"]);
-          ("src/gramanl", ["src/baselib"; "src/glr"]);
-          ("src/glr", ["src/baselib"]);
+          ("src/gramanl/ml", ["src/baselib"; "src/glr"; "src/gramanl"]);
+          ("src/gramanl", ["src/baselib"; "src/glr"; "src/gramanl/ml"]);
+          ("src/glr/ml", ["src/baselib"; "src/glr"]);
+          ("src/glr", ["src/baselib"; "src/glr/ml"]);
           ("src/elkhound", ["src/gramanl"]);
-          ("src/cpapa", ["src/ccparse"; "src/ccparse/gr"]);
+          ("src/cpapa", ["src/ccparse"]);
+          ("src/ccparse/tok",
+            [
+               "src/baselib";
+               "src/ccabs";
+               "src/ccparse";
+               "src/ccparse/gr";
+               "src/ccparse/ml";
+               "src/glr"
+            ]);
+          ("src/ccparse/ml",
+            [
+               "src/baselib";
+               "src/ccabs";
+               "src/ccparse";
+               "src/ccparse/gr";
+               "src/ccparse/tok";
+               "src/glr"
+            ]);
           ("src/ccparse/gr",
-            ["src/baselib"; "src/ccabs"; "src/ccparse"; "src/glr"]);
+            [
+               "src/baselib";
+               "src/ccabs";
+               "src/ccparse";
+               "src/ccparse/ml";
+               "src/ccparse/tok";
+               "src/glr"
+            ]);
           ("src/ccparse",
-            ["src/baselib"; "src/ccabs"; "src/ccparse/gr"; "src/glr"])
+            [
+               "src/baselib";
+               "src/ccabs";
+               "src/ccparse/gr";
+               "src/ccparse/ml";
+               "src/ccparse/tok";
+               "src/glr"
+            ])
        ];
      }
   ;;
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default package_default;;
 
-# 521 "myocamlbuild.ml"
+# 555 "myocamlbuild.ml"
 (* OASIS_STOP *)
 let atomize = Command.atomize
 
