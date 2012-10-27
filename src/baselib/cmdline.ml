@@ -13,6 +13,7 @@ let register ?action section spec =
 
 
 let run f =
+  Printexc.record_backtrace true;
   let inputs = ref [] in
 
   let specs =
