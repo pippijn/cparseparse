@@ -1,5 +1,3 @@
-open Glr
-
 let print_table ?(cols=14) out table =
   Printf.fprintf out "[| (* %d elements *)" (Array.length table);
   Array.iteri (fun i value ->
@@ -15,7 +13,7 @@ let print_table ?(cols=14) out table =
 
 
 let print_tables tables out =
-  let open ParseTablesType in
+  let open Glr.ParseTablesType in
 
   Printf.fprintf out "let parseTables = Glr.ParseTablesType.({\n";
   Printf.fprintf out "  numTerms = %d;\n" tables.numTerms;

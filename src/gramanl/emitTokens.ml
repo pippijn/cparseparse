@@ -60,10 +60,10 @@ let make_ml_token_fn ?default value terms =
 
 
 let make_ml_tokens terms =
-  let _loc = ghost 63 in
   (* emit token type declaration in both mli and ml *)
   let types = make_ml_token_type terms in
   let intf =
+    let _loc = ghost 66 in
     <:sig_item<
       type t = $types$
       include Glr.TokenInfo.S with type t := t
@@ -92,19 +92,23 @@ let make_ml_tokens terms =
 
   let index_fn =
     make_ml_token_fn (fun term ->
+      let _loc, _ = Sloc._loc term.tbase.name in
       <:expr<$int:Ids.Terminal.to_string term.tbase.index_id$>>
     ) terms
   in
 
   let sval_fn =
+    let _loc = ghost 101 in
     make_ml_token_fn (fun term ->
+      let _loc, _ = Sloc._loc term.tbase.name in
       match Semantic.semtype_of_term SemanticVariant.User term with
       | None   -> raise Exit
-      | Some _ -> <:expr<SemanticValue.repr sval>>
-    ) terms ~default:<:match_case<tok -> SemanticValue.null>>
+      | Some _ -> <:expr<Glr.SemanticValue.repr sval>>
+    ) terms ~default:<:match_case<tok -> Glr.SemanticValue.null>>
   in
 
   let impl =
+    let _loc = ghost 110 in
     <:str_item<
       type t = $types$
       let name = $name_fn$

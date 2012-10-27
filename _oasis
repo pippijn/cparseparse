@@ -153,18 +153,18 @@ Library ccparse
                                 unix                                    # core
         CompiledObject:         native
 #        NativeOpt:              -inline 999 -unsafe -noassert
-        Modules:                gr/CcActions,
+        InternalModules:        gr/CcActions,
                                 gr/CcPtree,
                                 gr/CcPtreeActions,
                                 gr/CcTables,
                                 gr/CcTokens,
                                 gr/CcTreematch,
                                 gr/CcTreematchActions,
-                                Cc_keywords,
-                                Factory,
-                                Lexer,
-                                Parser,
-                                Options
+                                priv/Cc_keywords,
+                                priv/Factory,
+                                priv/Lexer,
+                                priv/Options
+        Modules:                Parser
 
 Library cabs
         Path:                   src/cabs
@@ -197,16 +197,17 @@ Library glr
         BuildDepends:           baselib                                 # internal
         CompiledObject:         native
 #        NativeOpt:              -inline 999 -unsafe -noassert
-        Modules:                Arraystack,
-                                Easy,
-                                GlrEngine,
-                                GlrOptions,
+        InternalModules:        priv/Arraystack,
+                                priv/Objpool,
+                                priv/Options,
+                                priv/ParseTables
+        Modules:                Easy,
+                                Engine,
                                 Lexerint,
-                                Objpool,
-                                ParseTables,
                                 ParseTablesType,
                                 PtreeActions,
                                 PtreeNode,
+                                SemanticValue,
                                 SourceLocation,
                                 TokenInfo,
                                 UserActions
@@ -222,8 +223,8 @@ Library baselib
                                 ml_Sched.c,
                                 ml_Valgrind.c,
                                 ml_Zlib.c
-        Modules:                BaseOptions,
-                                Bit2d,
+        InternalModules:        priv/BaseOptions
+        Modules:                Bit2d,
                                 BitSet,
                                 Cmdline,
                                 DenseIntMap,

@@ -1,7 +1,7 @@
 open Ccabs
 open Ast
 
-let cancel = Glr.GlrEngine.cancel
+let cancel = Glr.Engine.cancel
 
 
 (* make a D_func but not if it attempts to be the return value of

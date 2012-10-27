@@ -496,7 +496,7 @@ let construct_lr_item_sets env =
     (* EOF is not added to the lookahead; we assume EOF is actually
      * mentioned in the production already, and we won't contemplate
      * executing this reduction within the normal parser core
-     * (see GlrEngine.cleanupAfterParse) *)
+     * (see Glr.Engine.cleanupAfterParse) *)
 
     item_set_closure env.env item_set;
 

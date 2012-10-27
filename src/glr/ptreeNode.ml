@@ -54,7 +54,7 @@ let add_alternative self alt =
 
 
 let cyclicSkip self indentation out path =
-  if GlrOptions._ptree_cycles () then (
+  if Options._ptree_cycles () then (
     (* does 'self' appear in 'path'? *)
     let idx = Arraystack.index self path in
     if idx >= 0 then (
@@ -88,12 +88,12 @@ let print_merged self indentation symbol =
         symbol    (* no spaces, use whole thing *)
   in
 
-  indentation + GlrOptions._ptree_indent (), lhs, alts
+  indentation + Options._ptree_indent (), lhs, alts
 
 
 let print_alt self indentation out expand alts lhs ct node =
   if alts > 1 then (
-    indent out (indentation - GlrOptions._ptree_indent ());
+    indent out (indentation - Options._ptree_indent ());
     Printf.fprintf out "------------- ambiguous %s: %d of %d ------------\n"
                         lhs ct alts
   );
@@ -138,7 +138,7 @@ let print_tree self out expand =
 
         (* iterate over children and print them *)
         Array.iter (fun c ->
-          innerPrint c (indentation + GlrOptions._ptree_indent ())
+          innerPrint c (indentation + Options._ptree_indent ())
         ) node.children;
 
         ct + 1
@@ -146,11 +146,11 @@ let print_tree self out expand =
 
       if alts > 1 then (
         (* close up ambiguity display *)
-        indent out (indentation - GlrOptions._ptree_indent ());
+        indent out (indentation - Options._ptree_indent ());
         Printf.fprintf out "----------- end of ambiguous %s -----------\n" lhs
       );
       
-      if GlrOptions._ptree_cycles () then
+      if Options._ptree_cycles () then
         (* remove myself from the path *)
         ignore (Arraystack.pop path)
     );

@@ -1,7 +1,4 @@
-open Glr
-
-
-let cc_lexer = Lexerint.({
+let cc_lexer = Glr.Lexerint.({
   token = (fun () -> CcTokens.TOK_EOF, Lexing.dummy_pos, Lexing.dummy_pos);
   index = (fun (t, s, e) -> CcTokens.index t);
   sval  = (fun (t, s, e) -> CcTokens.sval t);
@@ -25,12 +22,12 @@ let handle_return = function
 
 
 let glrparse actions tables filename lexer =
-  let glr = GlrEngine.makeGLR actions tables in
+  let glr = Glr.Engine.makeGLR actions tables in
 
   let tree =
     try
-      Some (Timing.time ~alloc:true "parsing" (GlrEngine.glrParse glr) lexer)
-    with GlrEngine.Located ((start_p, end_p), e, extra) ->
+      Some (Timing.time ~alloc:true "parsing" (Glr.Engine.glrParse glr) lexer)
+    with Glr.Engine.Located ((start_p, end_p), e, extra) ->
       let open Lexing in
       (* print source position *)
       Printf.printf "\n%s:%d:%d: "
@@ -40,7 +37,7 @@ let glrparse actions tables filename lexer =
 
       (* print exception info *)
       begin match e with
-      | GlrEngine.ParseError (state, token) ->
+      | Glr.Engine.ParseError (state, token) ->
           Printf.printf "parse error near \"%s\" (state: %d, token: %d)\n"
             extra state token
       | Failure msg ->
@@ -56,8 +53,8 @@ let glrparse actions tables filename lexer =
   in
 
   (* print accounting statistics from glr.ml *)
-  if GlrOptions._accounting () then (
-    let open GlrEngine in
+  if Glr.Options._accounting () then (
+    let open Glr.Engine in
     let stats = stats_of_glr glr in
 
     Printf.printf "stack nodes: num=%d max=%d\n"
@@ -86,7 +83,7 @@ let rec tokenise tokens token lexbuf =
 
 let lexer_from_list tokens =
   let tokens = ref tokens in
-  Lexerint.({ cc_lexer with
+  Glr.Lexerint.({ cc_lexer with
     token = (fun () ->
       let next = List.hd !tokens in
       tokens := List.tl !tokens;
@@ -104,7 +101,7 @@ let lexer_from_dump input =
 
 
 let lexer_from_lexing lexbuf =
-  Lexerint.({ cc_lexer with
+  Glr.Lexerint.({ cc_lexer with
     token = (fun () ->
       Lexer.token lexbuf
     )
@@ -153,7 +150,7 @@ let parse_file actions tables input =
 
   let lexer =
     if Options._ptree () then
-      PtreeActions.make_lexer actions lexer
+      Glr.PtreeActions.make_lexer actions lexer
     else
       lexer
   in
@@ -210,13 +207,13 @@ let elkmain inputs =
 
   if Options._ptree () then (
 
-    let actions = PtreeActions.make_actions actions tables in
+    let actions = Glr.PtreeActions.make_actions actions tables in
     let trees = parse_files actions tables inputs in
     List.iter (function
       | None -> ()
       | Some tree ->
           if Options._print () then
-            PtreeNode.print_tree tree stdout true
+            Glr.PtreeNode.print_tree tree stdout true
     ) trees
 
   ) else if Options._tptree () then (
@@ -245,7 +242,7 @@ let elkmain inputs =
 
   ) else if Options._trivial () then (
 
-    let actions = UserActions.make_trivial actions in
+    let actions = Glr.UserActions.make_trivial actions in
     let trees = parse_files actions tables inputs in
     List.iter (function None | Some () -> ()) trees
 

@@ -326,7 +326,7 @@ let reclassifiedToken userAct lexer token =
 
 let terminalName userAct tokType =
   let open UserActions in
-  if GlrOptions._terminal_names () then
+  if Options._terminal_names () then
     userAct.terminalName tokType
   else
     userAct.terminalAlias tokType
@@ -389,7 +389,7 @@ and deinitStackNode glr node =
 
   node.firstSib.sib <- cNULL_STACK_NODE;
 
-  if GlrOptions._accounting () then (
+  if Options._accounting () then (
     glr.stats.numStackNodesAllocd <- glr.stats.numStackNodesAllocd - 1;
   )
 
@@ -591,13 +591,13 @@ let ensurePathRhsLen p rhsLen =
   Array.length p.symbols  >= rhsLen
 
 
-let goesBefore glr p1 p2 =
+let compare_path glr p1 p2 =
   if p1.startColumn > p2.startColumn then (
     (* 'p1' spans fewer tokens, so it goes first *)
-    true
+    -1
   ) else if p2.startColumn > p1.startColumn then (
     (* same logic *)
-    false
+    1
   ) else (
     let tables = glr.tables in
     (* equal start columns, compare nonterm ids *)
@@ -608,13 +608,13 @@ let goesBefore glr p1 p2 =
     let ord1 = ParseTables.getNontermOrdinal tables p1NtIndex in
     let ord2 = ParseTables.getNontermOrdinal tables p2NtIndex in
 
-    ord1 < ord2
+    ord1 - ord2
   )
 
 
 let rec searchPathPos glr p prev =
   match prev.next with
-  | Some next when goesBefore glr p next ->
+  | Some next when compare_path glr p next < 0 ->
       searchPathPos glr p next
   | _ ->
       prev
@@ -644,7 +644,7 @@ let insertPathCopy glr src leftEdge =
       glr.top <- Some p;
 
   | Some top ->
-      if goesBefore glr p top then (
+      if compare_path glr p top < 0 then (
         p.next <- glr.top;
         glr.top <- Some p;
       ) else (
@@ -674,7 +674,7 @@ let detachQueue glr =
 
 
 let makeStackNode glr state =
-  if GlrOptions._accounting () then (
+  if Options._accounting () then (
     glr.stats.numStackNodesAllocd <- glr.stats.numStackNodesAllocd + 1;
     if glr.stats.numStackNodesAllocd > glr.stats.maxStackNodesAllocd then
       glr.stats.maxStackNodesAllocd <- glr.stats.numStackNodesAllocd;
@@ -813,7 +813,7 @@ let rwlShiftActive glr tokType leftSibling rightSibling lhsIndex sval start_p en
 
       (* dead tree optimisation *)
       if not (canMakeProgress glr tokType rightSibling) then (
-        if GlrOptions._trace_parse () then
+        if Options._trace_parse () then
           Printf.printf "avoided a merge by noticing the state was dead\n";
         deallocateSemanticValue glr.userAct (getNodeSymbol glr rightSibling) sval;
       ) else (
@@ -899,7 +899,7 @@ let rwlShiftNonterminal glr tokType leftSibling lhsIndex sval start_p end_p =
     ParseTables.getGoto glr.tables leftSibling.state lhsIndex
   in
 
-  if GlrOptions._trace_parse () then
+  if Options._trace_parse () then
     Printf.printf "state %d, shift nonterm %d, to state %d\n"
       leftSibling.state lhsIndex rightSiblingState;
 
@@ -917,14 +917,14 @@ let rec rwlRecursiveProcess glr tokType start_p path =
   let rhsLen   = ParseTables.getProdInfo_rhsLen   glr.tables path.prodIndex in
   let lhsIndex = ParseTables.getProdInfo_lhsIndex glr.tables path.prodIndex in
 
-  if GlrOptions._trace_parse () then
+  if Options._trace_parse () then
     Printf.printf "state %d, reducing by production %d (rhsLen=%d), back to state %d\n"
                    path.startStateId
                    path.prodIndex
                    rhsLen
                    path.leftEdgeNode.state;
 
-  if GlrOptions._accounting () then
+  if Options._accounting () then
     glr.stats.nondetReduce <- glr.stats.nondetReduce + 1;
 
   (* record location of left edge; initially is location of
@@ -1047,10 +1047,10 @@ let rwlShiftTerminals glr tokType tokSval tokSloc =
     if newState <> cSTATE_INVALID then (
       (* found a shift *)
 
-      if GlrOptions._accounting () then
+      if Options._accounting () then
         glr.stats.nondetShift <- glr.stats.nondetShift + 1;
 
-      if GlrOptions._trace_parse () then
+      if Options._trace_parse () then
         Printf.printf "state %d, shift token %s, to state %d\n"
                        state
                        (terminalName glr.userAct tokType)
@@ -1143,7 +1143,7 @@ let nondeterministicParseToken glr tokType tokSval tokSloc =
     let actions = rwlEnqueueReductions glr parsr action None(*sibLink*) in
 
     if actions = 0 then (
-      if GlrOptions._trace_parse () then
+      if Options._trace_parse () then
         Printf.printf "parser in state %d died\n" parsr.state;
       lastToDie := parsr.state
     )
@@ -1186,7 +1186,7 @@ let rec lrParseToken glr tokType tokSval tokSloc =
   if ParseTables.isReduceAction action then (
     (* can reduce unambiguously *)
     let prodIndex = ParseTables.decodeReduce action !parsr.state in
-    if GlrOptions._accounting () then
+    if Options._accounting () then
       glr.stats.detReduce <- glr.stats.detReduce + 1;
 
     let rhsLen = ParseTables.getProdInfo_rhsLen glr.tables prodIndex in
@@ -1234,7 +1234,7 @@ let rec lrParseToken glr tokType tokSval tokSloc =
 
         (* adjust a couple things about 'prev' reflecting
          * that it has been deallocated *)
-        if GlrOptions._accounting () then (
+        if Options._accounting () then (
           glr.stats.numStackNodesAllocd <- glr.stats.numStackNodesAllocd - 1;
         );
         prev.firstSib.sib <- cNULL_STACK_NODE;
@@ -1245,7 +1245,7 @@ let rec lrParseToken glr tokType tokSval tokSloc =
       (* now, do an abbreviated 'glrShiftNonterminal' *)
       let newState = ParseTables.getGoto glr.tables !parsr.state lhsIndex in
 
-      if GlrOptions._trace_parse () then (
+      if Options._trace_parse () then (
         Printf.printf "state %d, (unambig) reduce by %d (len=%d), back to %d then out to %d\n"
                       startStateId
                       prodIndex
@@ -1295,10 +1295,10 @@ let rec lrParseToken glr tokType tokSval tokSloc =
   ) else if ParseTables.isShiftAction glr.tables action then (
     (* can shift unambiguously *)
     let newState = ParseTables.decodeShift action tokType in
-    if GlrOptions._accounting () then
+    if Options._accounting () then
       glr.stats.detShift <- glr.stats.detShift + 1;
 
-    if GlrOptions._trace_parse () then (
+    if Options._trace_parse () then (
       Printf.printf "state %d, (unambig) shift token %d, to state %d\n"
                     !parsr.state
                     tokType
@@ -1407,7 +1407,7 @@ let stackSummary glr =
  * It does not actually return, but it has the same return type as
  * the main entry point. *)
 let rec main_loop (glr : 'result glr) lexer token : 'result =
-  if GlrOptions._trace_parse () then (
+  if Options._trace_parse () then (
     let open Lexerint in
     let tokType = lexer.index token in
 
@@ -1422,7 +1422,7 @@ let rec main_loop (glr : 'result glr) lexer token : 'result =
   let tokType, tokSval, tokSloc = reclassifiedToken glr.userAct lexer token in
 
   begin try
-    if GlrOptions._use_mini_lr () && Arraystack.length glr.active_parsers = 1 then
+    if Options._use_mini_lr () && Arraystack.length glr.active_parsers = 1 then
       (* try deterministic parsing *)
       lrParseToken glr tokType tokSval tokSloc
     else
@@ -1459,7 +1459,7 @@ let grabTopSval glr node =
 
 
 let cleanupAfterParse (glr : 'result glr) : 'result =
-  if GlrOptions._trace_parse () then
+  if Options._trace_parse () then
     Printf.printf "Parse succeeded!\n";
 
   if not (Arraystack.length glr.active_parsers = 1) then (

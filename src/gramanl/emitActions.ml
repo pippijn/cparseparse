@@ -40,11 +40,11 @@ let final_semtype variant nonterms final_prod =
       let nonterm = NtArray.get nonterms nt_index in
       begin match Semantic.semtype_of_nonterm variant nonterm with
       | None ->
-          failwith "final nonterminal needs defined type"
+	  failwith "final nonterminal needs defined type"
       | Some <:ctyp<'$_$>> ->
-          failwith "final nonterminal cannot be polymorphic"
+	  failwith "final nonterminal cannot be polymorphic"
       | Some semtype ->
-          semtype
+	  semtype
       end
 
   | _ ->
@@ -62,87 +62,87 @@ let make_ml_actions variant index =
     ProdArray.map (fun prod ->
       (* put the production in comments above the defn *)
       if false then (
-        Printf.printf "(*%a *)\n"
-          (PrintGrammar.print_production index.terms index.nonterms) prod
+	Printf.printf "(*%a *)\n"
+	  (PrintGrammar.print_production index.terms index.nonterms) prod
       );
 
       let make_binding tag rhs_index sym =
-        let semtype = semtype variant sym in
-        let polytype = polytype sym in
+	let semtype = semtype variant sym in
+	let polytype = polytype sym in
 
-        let _loc, tag = Sloc._loc tag in
+	let _loc, tag = Sloc._loc tag in
 
-        if semtype = polytype then
-          <:binding<
-            $lid:tag$ : $semtype$ =
-              (SemanticValue.obj svals.($int:string_of_int rhs_index$))
-          >>
-        else
-          <:binding<
-            (* explicitly state polymorphic type variable so the typing
-             * stays sound even when users specify types *)
-            $lid:tag$ : $semtype$ =
-              (SemanticValue.obj svals.($int:string_of_int rhs_index$) : $polytype$)
-          >>
+	if semtype = polytype then
+	  <:binding<
+	    $lid:tag$ : $semtype$ =
+	      (Glr.SemanticValue.obj svals.($int:string_of_int rhs_index$))
+	  >>
+	else
+	  <:binding<
+	    (* explicitly state polymorphic type variable so the typing
+	     * stays sound even when users specify types *)
+	    $lid:tag$ : $semtype$ =
+	      (Glr.SemanticValue.obj svals.($int:string_of_int rhs_index$) : $polytype$)
+	  >>
       in
 
       (* iterate over RHS elements, emitting bindings for each with a tag *)
       let bindings =
-        BatList.mapi (fun rhs_index sym ->
-          match sym with
-          | Terminal (None, _)
-          | Nonterminal (None, _) ->
-              (* only consider elements with a tag *)
-              []
+	BatList.mapi (fun rhs_index sym ->
+	  match sym with
+	  | Terminal (None, _)
+	  | Nonterminal (None, _) ->
+	      (* only consider elements with a tag *)
+	      []
 
-          | Terminal (Some tag, term) ->
-              let term = TermArray.get index.terms term in
-              [make_binding tag rhs_index term.tbase]
+	  | Terminal (Some tag, term) ->
+	      let term = TermArray.get index.terms term in
+	      [make_binding tag rhs_index term.tbase]
 
-          | Nonterminal (Some tag, nonterm) ->
-              let nonterm = NtArray.get index.nonterms nonterm in
-              [make_binding tag rhs_index nonterm.nbase]
-        ) prod.right
-        |> List.concat
+	  | Nonterminal (Some tag, nonterm) ->
+	      let nonterm = NtArray.get index.nonterms nonterm in
+	      [make_binding tag rhs_index nonterm.nbase]
+	) prod.right
+	|> List.concat
       in
 
       let action_code =
-        match Semantic.action_of_prod variant prod with
-        | None ->
-            begin match bindings with
-            | [ <:binding<$lid:first_tagged$ = $_$>> ] ->
-                let _loc = ghost 115 in
-                <:expr<$lid:first_tagged$>>
+	match Semantic.action_of_prod variant prod with
+	| None ->
+	    begin match bindings with
+	    | [ <:binding<$lid:first_tagged$ = $_$>> ] ->
+		let _loc = ghost 115 in
+		<:expr<$lid:first_tagged$>>
 
-            | [binding] ->
-                failwith "invalid name binding format"
+	    | [binding] ->
+		failwith "invalid name binding format"
 
-            | binding :: _ ->
-                (*PrintGrammar.print_production prod;*)
-                (* TODO: move this to a semantic check phase *)
-                failwith "production with more than one binding must provide action code"
+	    | binding :: _ ->
+		(*PrintGrammar.print_production prod;*)
+		(* TODO: move this to a semantic check phase *)
+		failwith "production with more than one binding must provide action code"
 
-            | [] ->
-                (*PrintGrammar.print_production prod;*)
-                (* TODO: this, too *)
-                failwith "no name bindings in production with default action"
-            end
-        | Some code ->
-            code
+	    | [] ->
+		(*PrintGrammar.print_production prod;*)
+		(* TODO: this, too *)
+		failwith "no name bindings in production with default action"
+	    end
+	| Some code ->
+	    code
       in
 
       (* give a name to the yielded value so we can ensure it conforms to
        * the declared type *)
       let result =
-        let left = NtArray.get index.nonterms prod.left in
-        let _loc = ghost 139 in
-        <:expr<
-          (* now insert the user's code, to execute in this environment of
-           * properly-typed semantic values *)
-          let __result : $semtype variant left.nbase$ = $action_code$ in
-          (* cast to SemanticValue.t *)
-          SemanticValue.repr __result
-        >>
+	let left = NtArray.get index.nonterms prod.left in
+	let _loc = ghost 139 in
+	<:expr<
+	  (* now insert the user's code, to execute in this environment of
+	   * properly-typed semantic values *)
+	  let __result : $semtype variant left.nbase$ = $action_code$ in
+	  (* cast to SemanticValue.t *)
+	  Glr.SemanticValue.repr __result
+	>>
       in
 
       let fun_body = fold_bindings result bindings in
@@ -167,42 +167,42 @@ let make_ml_spec_func default semtype rettype kind func id =
 
   | Some { params; code } ->
       let real_rettype =
-        if rettype = semtype then
-          let _loc = ghost 172 in
-          <:ctyp<SemanticValue.t>>
-        else
-          rettype
+	if rettype = semtype then
+	  let _loc = ghost 172 in
+	  <:ctyp<Glr.SemanticValue.t>>
+	else
+	  rettype
       in
 
       let untyped_params =
-        List.rev_map (fun param ->
-          let _loc, param = Sloc._loc param in
-          <:patt<($lid:"_" ^ param$ : SemanticValue.t)>>
-        ) params
+	List.rev_map (fun param ->
+	  let _loc, param = Sloc._loc param in
+	  <:patt<($lid:"_" ^ param$ : Glr.SemanticValue.t)>>
+	) params
       in
 
       let bindings =
-        let _loc = ghost 186 in
-        <:binding<__result : $rettype$ = $code$>>
-        :: List.map (fun param ->
-          let _loc, param = Sloc._loc param in
-          <:binding<($lid:param$ : $semtype$) = SemanticValue.obj $lid:"_" ^ param$>>
-        ) params
+	let _loc = ghost 186 in
+	<:binding<__result : $rettype$ = $code$>>
+	:: List.map (fun param ->
+	  let _loc, param = Sloc._loc param in
+	  <:binding<($lid:param$ : $semtype$) = Glr.SemanticValue.obj $lid:"_" ^ param$>>
+	) params
       in
 
       let result =
-        let _loc = ghost 195 in
-        if real_rettype != rettype then
-          <:expr<SemanticValue.repr __result>>
-        else
-          <:expr<__result>>
+	let _loc = ghost 195 in
+	if real_rettype != rettype then
+	  <:expr<Glr.SemanticValue.repr __result>>
+	else
+	  <:expr<__result>>
       in
 
       let fun_body = fold_bindings result bindings in
 
       let _loc = ghost 204 in
       List.fold_left (fun code param ->
-        <:expr<fun $param$ -> $code$>>
+	<:expr<fun $param$ -> $code$>>
       ) fun_body untyped_params
 
 
@@ -266,20 +266,20 @@ let make_ml_dup_del_merge variant terms nonterms =
   let _loc = ghost 267 in
   [
     (* ------------------- dup/del/merge/keep nonterminals ------------------ *)
-    make_nonterm "dup"   "duplicateNontermValue"   Semantic.dup_of_nonterm   (None);
-    make_nonterm "del"   "deallocateNontermValue"  Semantic.del_of_nonterm   (Some <:ctyp<unit>>);
-    make_nonterm "merge" "mergeAlternativeParses"  Semantic.merge_of_nonterm (None);
-    make_nonterm "keep"  "keepNontermValue"        Semantic.keep_of_nonterm  (Some <:ctyp<bool>>);
+    make_nonterm "dup"	 "duplicateNontermValue"   Semantic.dup_of_nonterm	(None);
+    make_nonterm "del"	 "deallocateNontermValue"  Semantic.del_of_nonterm	(Some <:ctyp<unit>>);
+    make_nonterm "merge" "mergeAlternativeParses"  Semantic.merge_of_nonterm	(None);
+    make_nonterm "keep"  "keepNontermValue"	   Semantic.keep_of_nonterm	(Some <:ctyp<bool>>);
 
     (* ------------------- dup/del/classify terminals ------------------ *)
-    make_term "dup"      "duplicateTerminalValue"  Semantic.dup_of_term 	(None);
-    make_term "del"      "deallocateTerminalValue" Semantic.del_of_term      (Some <:ctyp<unit>>);
-    make_term "classify" "reclassifyToken"         Semantic.classify_of_term (Some <:ctyp<int>>);
+    make_term "dup"	 "duplicateTerminalValue"  Semantic.dup_of_term		(None);
+    make_term "del"	 "deallocateTerminalValue" Semantic.del_of_term		(Some <:ctyp<unit>>);
+    make_term "classify" "reclassifyToken"	   Semantic.classify_of_term	(Some <:ctyp<int>>);
   ]
 
 
 let make_ml_action_code variant index final_prod verbatim =
-  let _loc = ghost 283 in
+  let _loc = ghost 282 in
 
   let result_type = final_semtype variant index.nonterms (ProdArray.get index.prods final_prod) in
 
@@ -303,13 +303,17 @@ let make_ml_action_code variant index final_prod verbatim =
   >>,
   <:str_item<
     (* Open module so record field labels are visible *)
-    open Glr
-    open UserActions
+    open Glr.UserActions
 
-    (* impl_verbatim sections *)
+    (* Emit verbatim sections here, so definitions from UserActions don't
+     * mess up the action code and types. *)
     $Ast.stSem_of_list impl_verbatims$
 
-    let userFunctions : UserActions.functions = { $closures$ }
+    let userFunctions : Glr.UserActions.functions = { $closures$ }
+
+    (* Open Glr after user code as not to pollute its namespace with modules
+     * internal to the engine implementation. *)
+    open Glr
 
     (* main action function; uses the array emitted above *)
     let reductionAction (productionId : int) (svals : SemanticValue.t array) (start_p : Lexing.position) (end_p : Lexing.position) : SemanticValue.t =

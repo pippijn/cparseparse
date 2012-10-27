@@ -1,4 +1,3 @@
-open Glr
 open Camlp4.PreCast
 open GrammarType
 
@@ -111,7 +110,7 @@ let emit_tables name tables =
 let emit_ml dirname index verbatims ptree tables =
   let open AnalysisEnvType in
 
-  let final_prod = Ids.Production.of_int tables.ParseTablesType.finalProductionIndex in
+  let final_prod = Ids.Production.of_int tables.Glr.ParseTablesType.finalProductionIndex in
 
   let name = dirname ^ "/" ^ String.lowercase (Options._module_prefix ()) in
 

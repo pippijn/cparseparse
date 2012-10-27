@@ -94,14 +94,13 @@ let find f rep =
 
 (* swap contents with another array stack *)
 let swap rep obj =
-  let tmpLen = rep.len in
-  let tmpArr = rep.arr in
+  let { len; arr } = rep in
 
   rep.len <- obj.len;
   rep.arr <- obj.arr;
 
-  obj.len <- tmpLen;
-  obj.arr <- tmpArr
+  obj.len <- len;
+  obj.arr <- arr
 
 
 (* the stack must be given a dummy value for unused array slots *)

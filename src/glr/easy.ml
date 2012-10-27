@@ -22,11 +22,11 @@ module Make
 = struct
 
   let parse action filename actions tables lexer =
-    let glr = GlrEngine.makeGLR actions tables in
+    let glr = Engine.makeGLR actions tables in
 
     try
-      action (GlrEngine.glrParse glr lexer)
-    with GlrEngine.Located ((start_p, end_p), e, extra) ->
+      action (Engine.glrParse glr lexer)
+    with Engine.Located ((start_p, end_p), e, extra) ->
       let open Lexing in
       (* print source position *)
       Printf.printf "\n%s:%d:%d: "
@@ -36,7 +36,7 @@ module Make
 
       (* print exception info *)
       match e with
-      | GlrEngine.ParseError (state, token) ->
+      | Engine.ParseError (state, token) ->
           Printf.printf "parse error near token \"%s\" (state: %d, token: %d)\n"
             extra
             state token

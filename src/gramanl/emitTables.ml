@@ -1,4 +1,3 @@
-open Glr
 open Camlp4.PreCast
 open GrammarType
 open CodegenHelpers
@@ -21,7 +20,7 @@ let exSem_of_int_list table =
 
 
 let make_tables tables =
-  let open ParseTablesType in
+  let open Glr.ParseTablesType in
 
   let _loc = ghost 26 in
   <:str_item<
