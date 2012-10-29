@@ -21,6 +21,7 @@ module Transition = struct
   let compare = compare
   let to_string = function
     | Eps -> "ε"
+    | Chr '"' -> "\\\""
     | Chr c -> Char.escaped c
     | Accept action -> String.escaped (Sloc.value action)
   let is_final = function

@@ -19,6 +19,7 @@ module Transition = struct
 
   let compare = compare
   let to_string = function
+    | Chr '"' -> "\\\""
     | Chr c -> Char.escaped c
     | Accept action -> String.escaped (Sloc.value action)
   let is_final = function
@@ -103,7 +104,7 @@ let rec construct_subsets nfa eclosure dfa subset =
   if Fsm.mem dfa subset then (
     dfa
   ) else (
-    if true then (
+    if false then (
       Printf.printf "--- %a ---\n"
         Sexplib.Sexp.output_hum (sexp_of_list Nfa.State.sexp_of_t subset)
     );
@@ -125,11 +126,13 @@ let rec construct_subsets nfa eclosure dfa subset =
         List.fold_left (fun (accept, map) (func, target) ->
           match func with
           | Nfa.Transition.Chr chr ->
-              Printf.printf "-> %d with %c\n" target chr;
+              if false then
+                Printf.printf "-> %d with %c\n" target chr;
               let targets = CharMap.find_default [] chr map in
               accept, CharMap.add chr (target :: targets) map
           | Nfa.Transition.Accept action ->
-              Printf.printf "-> %d [final]\n" target;
+              if false then
+                Printf.printf "-> %d [final]\n" target;
               action :: accept, map
           | Nfa.Transition.Eps ->
               accept, map
@@ -155,18 +158,16 @@ let rec construct_subsets nfa eclosure dfa subset =
 
     (* if any state in the epsilon closure is a final state, then
      * this state is also a final state *)
-    match accept with
+    match List.rev accept with
     | [] ->
         (* not a final state *)
         dfa
     | [action] ->
         (* a single accept action *)
         Fsm.add_outgoing dfa subset (Transition.Accept action) State.start
-    | actions ->
-        Printf.printf "%d accept actions\n" (List.length actions);
-        List.fold_left (fun dfa action ->
-          Fsm.add_outgoing dfa subset (Transition.Accept action) State.start
-        ) dfa actions
+    | action :: actions ->
+        (* add the first action *)
+        Fsm.add_outgoing dfa subset (Transition.Accept action) State.start
   )
 
 
@@ -176,7 +177,7 @@ let of_nfa (name, args, nfa) =
     print_newline ();
   );
 
-  if true then (
+  if Options._dot () then (
     BatStd.with_dispose ~dispose:close_out
       (fun out -> Nfa.Fsm.to_dot out nfa) (open_out "nfa.dot");
     ignore (Sys.command "dot -Tpng nfa.dot -o nfa.png");
@@ -190,9 +191,9 @@ let of_nfa (name, args, nfa) =
 
   (* start at the subset containing only the NFA's start state *)
   (*let dfa = Fsm.empty in*)
-  let dfa = construct_subsets nfa eclosure Fsm.empty State.start in
+  let dfa = Timing.progress "constructing DFA" (construct_subsets nfa eclosure Fsm.empty) State.start in
 
-  if true then (
+  if Options._dot () then (
     BatStd.with_dispose ~dispose:close_out
       (fun out -> Fsm.to_dot out dfa) (open_out "dfa.dot");
     ignore (Sys.command "dot -Tpng dfa.dot -o dfa.png");
