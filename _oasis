@@ -26,6 +26,7 @@ Executable re2ml
                                 batteries                               # external
         CompiledObject:         native
         MainIs:                 re2ml.ml
+        NativeOpt:              -inline 0
 
 Executable elkhound
         Path:                   src/elkhound
@@ -258,6 +259,7 @@ Library baselib
                                 HashStack,
                                 IntegralModule,
                                 Sched,
+                                SexpHashtbl,
                                 SexpMap,
                                 SexpSet,
                                 Sig,

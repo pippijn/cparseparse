@@ -20,7 +20,15 @@ end
 module type OrderedConvertibleType = sig
   type t
 
-  include BatInterfaces.OrderedType with type t := t
+  include Map.OrderedType with type t := t
+  include ConvertibleType with type t := t
+end
+
+
+module type HashedConvertibleType = sig
+  type t
+
+  include Hashtbl.HashedType with type t := t
   include ConvertibleType with type t := t
 end
 
