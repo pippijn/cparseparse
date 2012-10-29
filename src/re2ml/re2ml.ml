@@ -15,7 +15,7 @@ let parse_channel file input =
   let nfas = Timing.progress "constructing NFAs" Nfa.construct program in
   let dfas = List.map Dfa.of_nfa nfas in
 
-  if false then (
+  if Options._dump_automata () then (
     List.iter2 (fun (nname, nargs, nfa) (dname, dargs, dfa) ->
       assert (nname == dname);
       assert (nargs == dargs);

@@ -142,13 +142,11 @@ module Make(S : StateType)(T : TransitionType)
     in
 
     output_string out "\tnode [shape = doublecircle];";
-    let finals =
-      Set.iter (fun final ->
-        output_string out " \"";
-        output_string out (S.to_string final);
-        output_string out "\"";
-      ) finals
-    in
+    Set.iter (fun final ->
+      output_string out " \"";
+      output_string out (S.to_string final);
+      output_string out "\"";
+    ) finals;
     output_string out ";\n\tnode [shape = circle];\n";
 
     Map.iter (fun source state ->

@@ -2,12 +2,15 @@ open Ast
 open Sexplib.Conv
 
 module State = struct
-  type t = int list with sexp
+  type t = {
+    subset : int list;
+  } with sexp
 
   let compare = compare
-  let make n = [n]
-  let start = make 0
-  let to_string s = String.concat ", " (List.map string_of_int s)
+
+  let make id = failwith "cannot make new DFA state"
+  let start = { subset = [0] }
+  let to_string { subset } = "{" ^ String.concat ", " (List.map string_of_int subset) ^ "}"
 end
 
 module Transition = struct
@@ -100,14 +103,16 @@ let compute_eclosure nfa =
   estates_closure eclosure
 
 
-let rec construct_subsets nfa eclosure dfa subset =
-  if Fsm.mem dfa subset then (
-    dfa
+let construct_subsets nfa eclosure dfa state =
+  if Fsm.mem dfa state then (
+    dfa, []
   ) else (
-    if false then (
+    if true then (
       Printf.printf "--- %a ---\n"
-        Sexplib.Sexp.output_hum (sexp_of_list Nfa.State.sexp_of_t subset)
+        Sexplib.Sexp.output_hum (State.sexp_of_t state)
     );
+
+    let { State.subset } = state in
 
     (* get the epsilon closure for each state in the subset *)
     let estate_ids =
@@ -140,35 +145,51 @@ let rec construct_subsets nfa eclosure dfa subset =
       ) ([], CharMap.empty) estate_ids
     in
 
-    if false then (
+    if true then (
       Sexplib.Sexp.output_hum stdout (CharMap.sexp_of_t (sexp_of_list sexp_of_int) map);
       print_newline ();
     );
 
     (* add this subset to the automaton *)
-    let dfa = Fsm.add dfa subset in
-
-    (* each element in the map is a new state in the DFA *)
-    let dfa =
-      CharMap.fold (fun c targets dfa ->
-        let dfa = construct_subsets nfa eclosure dfa targets in
-        Fsm.add_outgoing dfa subset (Transition.Chr c) targets
-      ) map dfa
-    in
+    let dfa = Fsm.add dfa state in
 
     (* if any state in the epsilon closure is a final state, then
      * this state is also a final state *)
-    match List.rev accept with
-    | [] ->
-        (* not a final state *)
-        dfa
-    | [action] ->
-        (* a single accept action *)
-        Fsm.add_outgoing dfa subset (Transition.Accept action) State.start
-    | action :: actions ->
-        (* add the first action *)
-        Fsm.add_outgoing dfa subset (Transition.Accept action) State.start
+    let dfa =
+      match List.rev accept with
+      | [] ->
+          (* not a final state *)
+          dfa
+      | [action] ->
+          (* a single accept action *)
+          Fsm.add_outgoing dfa state (Transition.Accept action) State.start
+      | action :: actions ->
+          (* add the first action *)
+          Fsm.add_outgoing dfa state (Transition.Accept action) State.start
+    in
+
+    CharMap.fold (fun c targets (dfa, todo) ->
+      (* each element in the map is a new state in the DFA *)
+      let target_state = State.({ subset = targets }) in
+      Fsm.add_outgoing dfa state (Transition.Chr c) target_state,
+      target_state :: todo
+    ) map (dfa, [])
   )
+
+
+let rec construct_dfa nfa eclosure dfa todo =
+  if true then
+    Printf.printf "constructing for %d subsets\n" (List.length todo);
+  let dfa, todo =
+    List.fold_left (fun (dfa, todo) subset ->
+      let dfa, more = construct_subsets nfa eclosure dfa subset in
+      dfa, more @ todo
+    ) (dfa, []) todo
+  in
+
+  match todo with
+  | [] -> dfa
+  | _  -> construct_dfa nfa eclosure dfa todo
 
 
 let of_nfa (name, args, nfa) =
@@ -191,7 +212,11 @@ let of_nfa (name, args, nfa) =
 
   (* start at the subset containing only the NFA's start state *)
   (*let dfa = Fsm.empty in*)
-  let dfa = Timing.progress "constructing DFA" (construct_subsets nfa eclosure Fsm.empty) State.start in
+  let dfa =
+    Timing.progress "constructing DFA"
+    (*Valgrind.Callgrind.instrumented*)
+      (construct_dfa nfa eclosure Fsm.empty) [State.start]
+  in
 
   if Options._dot () then (
     BatStd.with_dispose ~dispose:close_out
