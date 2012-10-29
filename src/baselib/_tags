@@ -1,3 +1,4 @@
 # sexplib
 "bit2d.ml":		syntax_camlp4o, pkg_sexplib.syntax
 "denseIntMap.ml":	syntax_camlp4o, pkg_sexplib.syntax
+"integralModule.ml":	syntax_camlp4o, pkg_sexplib.syntax

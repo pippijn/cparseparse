@@ -23,7 +23,7 @@ Executable re2ml
         Path:                   src/re2ml
         BuildTools:             ocamlbuild,camlp4o
         BuildDepends:           baselib,codegen,                        # internal
-                                batteries                               # external
+                                batteries,ocamlgraph                    # external
         CompiledObject:         native
         MainIs:                 re2ml.ml
 
@@ -236,7 +236,7 @@ Library codegen
 Library baselib
         Path:                   src/baselib
         BuildTools:             ocamlbuild,camlp4o
-        BuildDepends:           batteries,sexplib                       # external
+        BuildDepends:           batteries,sexplib,ocamlgraph            # external
         CompiledObject:         native
 #        NativeOpt:              -inline 999 -unsafe -noassert
         CCLib:                  -lstdc++ -lz
@@ -247,6 +247,7 @@ Library baselib
         Modules:                BaseOptions,
                                 Bit2d,
                                 BitSet,
+                                CharMap,
                                 Cmdline,
                                 DenseIntMap,
                                 ExtArray,
@@ -254,6 +255,7 @@ Library baselib
                                 ExtList,
                                 ExtString,
                                 HashStack,
+                                IntegralModule,
                                 Sched,
                                 SexpMap,
                                 SexpSet,
