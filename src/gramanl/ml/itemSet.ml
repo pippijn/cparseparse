@@ -4,7 +4,7 @@ open AnalysisEnvType
  * :: Structure defining operations
  ************************************************************)
 
-module M : GrammarSig.S with type t = item_set = struct
+module M : Sig.FullType with type t = item_set = struct
 
   type t = item_set
 
