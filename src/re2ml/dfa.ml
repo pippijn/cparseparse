@@ -162,9 +162,11 @@ let rec construct_subsets nfa eclosure dfa subset =
     | [action] ->
         (* a single accept action *)
         Fsm.add_outgoing dfa subset (Transition.Accept action) State.start
-    | _ ->
-        Printf.printf "%d accept actions\n" (List.length accept);
-        dfa
+    | actions ->
+        Printf.printf "%d accept actions\n" (List.length actions);
+        List.fold_left (fun dfa action ->
+          Fsm.add_outgoing dfa subset (Transition.Accept action) State.start
+        ) dfa actions
   )
 
 

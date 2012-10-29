@@ -144,8 +144,9 @@ module Make(S : StateType)(T : TransitionType)
     output_string out "\tnode [shape = doublecircle];";
     let finals =
       Set.iter (fun final ->
-        output_char out ' ';
+        output_string out " \"";
         output_string out (S.to_string final);
+        output_string out "\"";
       ) finals
     in
     output_string out ";\n\tnode [shape = circle];\n";
