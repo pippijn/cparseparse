@@ -74,3 +74,6 @@ profile-elkhound: build
 
 profile-cpapa: build
 	$(CALLGRIND) ./cpapa.native -pp -trivial testsuite/profile.cc
+
+profile-re2ml: build
+	$(CALLGRIND) ./re2ml.native src/ccparse/ml/lexer.mll
