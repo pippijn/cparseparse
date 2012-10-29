@@ -12,6 +12,7 @@ let parse_channel file input =
   let program = Parser.parse (Lexer.token state) lexbuf in
   let program = Resolve.resolve program in
 
+  let nfas = Timing.progress "constructing eNFAs" Enfa.construct program in
   let nfas = Timing.progress "constructing NFAs" Nfa.construct program in
   let dfas = List.map Dfa.of_nfa nfas in
 

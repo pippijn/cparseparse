@@ -30,7 +30,7 @@ module Transition = struct
 end
 
 module Map = SexpMap.Make(State)
-module Fsm = Automaton.Make(State)(Transition)
+module Fsm = Automaton.Persistent.Make(State)(Transition)
 
 
 let rec construct_regexp (nfa, state_id) regexp =
