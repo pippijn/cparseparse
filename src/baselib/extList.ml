@@ -68,13 +68,27 @@ let rec nth_tl l i =
     nth_tl (List.tl l) (i - 1)
 
 
-let foldl_until f x l =
-  List.fold_left (fun r e ->
-    if r <> x then
-      r
-    else
-      f e
-  ) x l
+let rec foldl_until f x l =
+  match l with
+  | [] -> x
+  | hd :: tl ->
+      let r = f hd in
+      if r <> x then
+        r
+      else
+        foldl_until f r tl
+
+let rec foldl_until2 f x l1 l2 =
+  match l1, l2 with
+  | [], [] -> x
+  | hd1 :: tl1, hd2 :: tl2 ->
+      let r = f hd1 hd2 in
+      if r <> x then
+        r
+      else
+        foldl_until2 f r tl1 tl2
+  | _ ->
+      failwith "unequal list lengths"
 
 
 let count f l =
