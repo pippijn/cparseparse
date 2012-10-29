@@ -126,6 +126,12 @@
 }
 
 
+let uident = ['A'-'Z'] ['A'-'Z' 'a'-'z' '_' '0'-'9']*
+let lident = ['a'-'z' '_'] ['A'-'Z' 'a'-'z' '_' '0'-'9']*
+
+let dstring = '"' ('\\' _ | [^ '"'  '\\' '\n'] )+ '"'
+let sstring = "'" ('\\' _ | [^ '\'' '\\' '\n'])* "'"
+
 let ws = [' ' '\t' '\r']
 
 
@@ -149,61 +155,63 @@ rule verbatim state = parse
 			}
 
 | '\n' as c		{ Buffer.add_char state.code c; Lexing.new_line lexbuf; verbatim state lexbuf }
-| [^'{''}''\n']+ as s	{ Buffer.add_string state.code s; verbatim state lexbuf }
+| [^ '{' '}' '\n' '\'' '"']+
+| sstring
+| dstring as s		{ Buffer.add_string state.code s; verbatim state lexbuf }
 
 
 and normal state = parse
 (* Whitespace *)
-| '\n'								{ Lexing.new_line lexbuf; normal state lexbuf }
-| ws+								{ normal state lexbuf }
+| '\n'					{ Lexing.new_line lexbuf; normal state lexbuf }
+| ws+					{ normal state lexbuf }
 
 (* Comments *)
-| "(*"								{ comment 0 state lexbuf }
+| "(*"					{ comment 0 state lexbuf }
 
 (* State-switching keywords *)
 
 (* Identifier *)
-| "eof"								{ TOK_EOF }
-| '_'								{ TOK_UNDERLINE }
-| ['A'-'Z'] ['A'-'Z' 'a'-'z' '_' '0'-'9']* as name		{ TOK_UNAME (loc lexbuf name) }
-| ['a'-'z' '_'] ['A'-'Z' 'a'-'z' '_' '0'-'9']* as name		{ classify (loc lexbuf name) }
+| "eof"					{ TOK_EOF }
+| '_'					{ TOK_UNDERLINE }
+| uident as name			{ TOK_UNAME (loc lexbuf name) }
+| lident as name			{ classify (loc lexbuf name) }
 
 (* Integer *)
-| ['0'-'9']+ as int						{ TOK_INTEGER (int_of_string int) }
+| ['0'-'9']+ as int			{ TOK_INTEGER (int_of_string int) }
 
-(* Integer *)
-| '"' ('\\' _ | [^ '"'  '\\' '\n'] )+ '"' as string		{ TOK_STRING (parse_string string |> loc lexbuf) }
-| "'" ('\\' _ | [^ '\'' '\\' '\n'])* "'" as string		{ TOK_CHAR (parse_char string |> loc lexbuf) }
+(* String/character *)
+| dstring as string			{ TOK_STRING (parse_string string |> loc lexbuf) }
+| sstring as string			{ TOK_CHAR (parse_char string |> loc lexbuf) }
 
 (* Punctuators *)
-| '{'								{ state.brace_level <- 1;
-								  Buffer.add_char state.code '{';
-								  verbatim state lexbuf
-								}
-| '^'								{ TOK_CARET }
-| '?'								{ TOK_QUESTION }
-| '*'								{ TOK_STAR }
-| '+'								{ TOK_PLUS }
-| '|'								{ TOK_PIPE }
-| '-'								{ TOK_MINUS }
-| '='								{ TOK_EQUALS }
-| ','								{ TOK_COMMA }
-| '['								{ TOK_LBRACK }
-| ']'								{ TOK_RBRACK }
-| '('								{ TOK_LPAREN }
-| ')'								{ TOK_RPAREN }
+| '{'					{ state.brace_level <- 1;
+					  Buffer.add_char state.code '{';
+					  verbatim state lexbuf
+					}
+| '^'					{ TOK_CARET }
+| '?'					{ TOK_QUESTION }
+| '*'					{ TOK_STAR }
+| '+'					{ TOK_PLUS }
+| '|'					{ TOK_PIPE }
+| '-'					{ TOK_MINUS }
+| '='					{ TOK_EQUALS }
+| ','					{ TOK_COMMA }
+| '['					{ TOK_LBRACK }
+| ']'					{ TOK_RBRACK }
+| '('					{ TOK_LPAREN }
+| ')'					{ TOK_RPAREN }
 
-| _ as c							{ TOK_ERROR c }
+| _ as c				{ TOK_ERROR c }
 
-| eof								{ EOF }
+| eof					{ EOF }
 
 
 and comment level state = parse
-| [^ '(' '*' ')' '\n']+						{ comment level state lexbuf }
-| "(*"								{ comment (level + 1) state lexbuf }
-| "*)"								{ if level > 0 then comment (level - 1) state lexbuf else normal state lexbuf }
-| '\n'								{ Lexing.new_line lexbuf; comment level state lexbuf }
-| _								{ comment level state lexbuf }
+| [^ '(' '*' ')' '\n']+			{ comment level state lexbuf }
+| "(*"					{ comment (level + 1) state lexbuf }
+| "*)"					{ if level > 0 then comment (level - 1) state lexbuf else normal state lexbuf }
+| '\n'					{ Lexing.new_line lexbuf; comment level state lexbuf }
+| _					{ comment level state lexbuf }
 
 
 {

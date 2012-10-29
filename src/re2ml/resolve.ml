@@ -20,6 +20,9 @@ let rec resolve_regexp map = function
       end
 
   (* recursively resolve sub-regexps *)
+  | Sequence [regexp]
+  | OrGrouping [regexp] -> resolve_regexp map regexp
+
   | Sequence list -> Sequence (List.map (resolve_regexp map) list)
   | OrGrouping list -> OrGrouping (List.map (resolve_regexp map) list)
   | Plus re -> Plus (resolve_regexp map re)
