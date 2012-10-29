@@ -4,7 +4,7 @@ open GrammarType
  * :: Structure defining operations
  ************************************************************)
 
-module M : Sig.FullType with type t = nonterminal = struct
+module M : GrammarSig.FullType with type t = nonterminal = struct
 
   type t = nonterminal
 

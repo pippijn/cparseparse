@@ -23,7 +23,7 @@ Executable re2ml
         Path:                   src/re2ml
         BuildTools:             ocamlbuild,camlp4o
         BuildDepends:           baselib,codegen,                        # internal
-                                batteries,ocamlgraph                    # external
+                                batteries                               # external
         CompiledObject:         native
         MainIs:                 re2ml.ml
 
@@ -110,6 +110,7 @@ Library gramanl
                                 ml/GrammarIndex,
                                 ml/GrammarLexer,
                                 ml/GrammarParser,
+                                ml/GrammarSig,
                                 ml/GrammarStructure,
                                 ml/GrammarTreeParser,
                                 ml/GrammarType,
@@ -236,7 +237,7 @@ Library codegen
 Library baselib
         Path:                   src/baselib
         BuildTools:             ocamlbuild,camlp4o
-        BuildDepends:           batteries,sexplib,ocamlgraph            # external
+        BuildDepends:           batteries,sexplib                       # external
         CompiledObject:         native
 #        NativeOpt:              -inline 999 -unsafe -noassert
         CCLib:                  -lstdc++ -lz

@@ -92,13 +92,3 @@ module type DenseIntMapType = sig
   val sum : ('a -> int) -> ('a, 'm) t -> int
   val count : ('a -> bool) -> ('a, 'm) t -> int
 end
-
-
-module type FullType = sig
-  type t
-
-  include Hashtbl.HashedType            with type t := t
-  include OrderedConvertibleType        with type t := t
-  include Graph.Sig.COMPARABLE          with type t := t
-  include Graph.Sig.ORDERED_TYPE_DFT    with type t := t
-end

@@ -4,7 +4,7 @@ open GrammarType
  * :: Structure defining operations
  ************************************************************)
 
-module M : Sig.FullType with type t = terminal = struct
+module M : GrammarSig.FullType with type t = terminal = struct
 
   type t = terminal
 

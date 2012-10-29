@@ -4,7 +4,7 @@ open AnalysisEnvType
  * :: Structure defining operations
  ************************************************************)
 
-module M : Sig.FullType with type t = item_list = struct
+module M : GrammarSig.FullType with type t = item_list = struct
 
   type t = item_list
 

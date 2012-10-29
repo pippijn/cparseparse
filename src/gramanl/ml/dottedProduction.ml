@@ -4,7 +4,7 @@ open AnalysisEnvType
  * :: Structure defining operations
  ************************************************************)
 
-module M : Sig.FullType with type t = dotted_production = struct
+module M : GrammarSig.FullType with type t = dotted_production = struct
   type t = dotted_production
 
   let hash a =
