@@ -77,3 +77,9 @@ profile-cpapa: build
 
 profile-re2ml: build
 	$(CALLGRIND) ./re2ml.native src/ccparse/ml/lexer.mll
+
+
+update-treematch-tests:
+	for i in testsuite/treematch/*.tm; do			\
+	  ./treematch.native -special $i >| ${i%.tm}.ref;	\
+	done
