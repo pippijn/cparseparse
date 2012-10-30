@@ -15,7 +15,7 @@ module Transition = struct
   type t =
     | Eps (* epsilon transition *)
     | Chr of char (* transition on a character *)
-    | Accept of Ast.code (* transition from end to start, executing code *)
+    | Accept of int (* transition from end to start, executing code *)
     with sexp
 
   let compare = compare
@@ -23,7 +23,7 @@ module Transition = struct
     | Eps -> "ε"
     | Chr '"' -> "\\\""
     | Chr c -> Char.escaped c
-    | Accept action -> String.escaped (Sloc.value action)
+    | Accept action -> "action " ^ string_of_int action
   let is_final = function
     | Accept _ -> true
     | _ -> false
@@ -82,7 +82,7 @@ let rec construct_regexp (nfa, state_id) regexp =
       failwith ("unresolved regexp: " ^ Sexplib.Sexp.to_string_hum (sexp_of_regexp regexp))
 
 
-let construct_rule nfa (Rule (regexp, code)) =
+let construct_rule (nfa, actions) (Rule (regexp, code)) =
   (* create a local start state for this rule and an epsilon transition
    * from the global start state *)
   let nfa, start_state = Fsm.add_transition nfa State.start Transition.Eps in
@@ -91,11 +91,13 @@ let construct_rule nfa (Rule (regexp, code)) =
   let nfa, end_state = construct_regexp (nfa, start_state) regexp in
 
   (* make the final accept-transition back to 0 via code *)
-  Fsm.add_outgoing nfa end_state (Transition.Accept code) State.start
+  let action = BatDynArray.length actions in
+  BatDynArray.add actions code;
+  Fsm.add_outgoing nfa end_state (Transition.Accept action) State.start, actions
 
 
 let construct_lexer (Lexer (name, args, rules)) =
-  name, args, List.fold_left construct_rule Fsm.start rules
+  name, args, List.fold_left construct_rule (Fsm.start, BatDynArray.create ()) rules
 
 
 let construct (Program (pre, aliases, lexers, post)) =

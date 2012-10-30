@@ -2,16 +2,12 @@ open Ast
 open Sexplib.Conv
 
 module State = struct
-  type t = int with sexp
+  type t = int
 
   let states = Hashtbl.create 13
   let subsets = Hashtbl.create 13
 
   let subset id = Hashtbl.find subsets id
-
-  let compare a b = a - b
-  let hash a = a
-  let equal a b = a == b
 
   let of_list subset =
     try
@@ -28,15 +24,13 @@ module State = struct
 end
 
 module Transition = struct
-  type t = int with sexp
+  type t = int
 
   let encode_char c = Char.code c
-  let encode_accept actions action =
-    BatDynArray.add actions action;
-    BatDynArray.length actions + 256
+  let encode_accept action = action + 256
 
   let decode_char t = Char.chr t
-  let decode_accept actions t = BatDynArray.get actions (t - 256)
+  let decode_accept t = t - 256
 
   let is_char t = t < 256
   let is_accept t = t >= 256
@@ -167,7 +161,7 @@ let add_transition state dfa todo c targets =
       target_state :: todo
 
 
-let add_dfa_state dfa actions accept map state =
+let add_dfa_state dfa accept map state =
   (* add this subset-state to the automaton *)
   Fsm.add dfa state;
 
@@ -179,22 +173,22 @@ let add_dfa_state dfa actions accept map state =
       ()
   | [action] ->
       (* a single accept action *)
-      Fsm.add_outgoing dfa state (Transition.encode_accept actions action) State.start
+      Fsm.add_outgoing dfa state (Transition.encode_accept action) State.start
   | action :: _ ->
       (* add the first action *)
-      Fsm.add_outgoing dfa state (Transition.encode_accept actions action) State.start
+      Fsm.add_outgoing dfa state (Transition.encode_accept action) State.start
   end;
 
   BatArray.fold_lefti (add_transition state dfa) [] map
 
 
-let construct_subsets nfa map eclosure dfa actions state =
+let construct_subsets nfa map eclosure dfa state =
   if Fsm.mem dfa state then (
     []
   ) else (
     if false then (
-      Printf.printf "--- %a ---\n"
-        Sexplib.Sexp.output_hum (State.sexp_of_t state)
+      Printf.printf "--- %s ---\n"
+        (State.to_string state)
     );
 
     let subset = State.subset state in
@@ -213,26 +207,26 @@ let construct_subsets nfa map eclosure dfa actions state =
     (* make a map from input symbol to a set of states *)
     let accept = next_dfa_state nfa map estate_ids in
 
-    add_dfa_state dfa actions accept map state
+    add_dfa_state dfa accept map state
   )
 
 
-let rec construct_dfa nfa map eclosure dfa actions todo =
+let rec construct_dfa nfa map eclosure dfa todo =
   if false then
     Printf.printf "constructing for %d subsets\n" (List.length todo);
   let todo =
     List.fold_left (fun todo subset ->
-      construct_subsets nfa map eclosure dfa actions subset
+      construct_subsets nfa map eclosure dfa subset
       @ todo
     ) [] todo
   in
 
   match todo with
   | [] -> ()
-  | _  -> construct_dfa nfa map eclosure dfa actions todo
+  | _  -> construct_dfa nfa map eclosure dfa todo
 
 
-let of_nfa (name, args, nfa) =
+let of_nfa (name, args, (nfa, actions)) =
   if false then (
     Sexplib.Sexp.output_hum stdout (Nfa.Fsm.sexp_of_t nfa);
     print_newline ();
@@ -251,15 +245,13 @@ let of_nfa (name, args, nfa) =
   );
 
   (* start at the subset containing only the NFA's start state *)
-  (*let dfa = Fsm.empty in*)
   let dfa =
-    let actions = BatDynArray.create () in
     let map = Array.make 256 [] in
     let dfa = Fsm.empty () in
 
     Timing.progress "constructing DFA"
       (Valgrind.Callgrind.instrumented
-        (construct_dfa nfa map eclosure dfa actions)) [State.start];
+        (construct_dfa nfa map eclosure dfa)) [State.start];
 
     dfa
   in
@@ -270,4 +262,4 @@ let of_nfa (name, args, nfa) =
     ignore (Sys.command "dot -Tpng dfa.dot -o dfa.png");
   );
 
-  name, args, dfa
+  name, args, (dfa, actions)

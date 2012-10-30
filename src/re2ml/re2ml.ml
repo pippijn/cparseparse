@@ -12,14 +12,14 @@ let parse_channel file input =
   let program = Parser.parse (Lexer.token state) lexbuf in
   let program = Resolve.resolve program in
 
-  let nfas = Timing.progress "constructing eNFAs" Enfa.construct program in
   let nfas = Timing.progress "constructing NFAs" Nfa.construct program in
   let dfas = List.map Dfa.of_nfa nfas in
 
   if Options._dump_automata () then (
-    List.iter2 (fun (nname, nargs, nfa) (dname, dargs, dfa) ->
+    List.iter2 (fun (nname, nargs, (nfa, nactions)) (dname, dargs, (dfa, dactions)) ->
       assert (nname == dname);
       assert (nargs == dargs);
+      assert (nactions == dactions);
       Printf.printf "NFA %a:\n%a\nDFA =>\n%a\n"
         Sloc.print_string nname
         Sexplib.Sexp.output_hum (Nfa.Fsm.sexp_of_t nfa)

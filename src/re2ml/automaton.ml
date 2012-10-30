@@ -169,18 +169,16 @@ end
 module Imperative = struct
 
   module type StateType = sig
-    include Sig.HashedConvertibleType
+    type t = int
 
     (* the local start state for an automaton *)
     val start : t
-    (* create a new state *)
-    val make : int -> t
 
     val to_string : t -> string
   end
 
   module type TransitionType = sig
-    include Sig.ConvertibleType
+    type t = int
 
     val is_final : t -> bool
     val to_string : t -> string
@@ -196,18 +194,10 @@ module Imperative = struct
     module T : TransitionType
     type transition = T.t
 
-    type edge = transition * state with sexp
-
     val mem : t -> state -> bool
 
     val add : t -> state -> unit
-    val add_state : t -> state
     val add_outgoing : t -> state -> transition -> state -> unit
-    val add_transition : t -> state -> transition -> state
-
-    val fold_states : (state -> 'a -> 'a) -> t -> 'a -> 'a
-
-    val outgoing : t -> state -> edge list
 
     val empty : unit -> t
     val start : unit -> t
@@ -222,84 +212,70 @@ module Imperative = struct
   = struct
 
     module S = S
-    type state = S.t with sexp
+    type state = int with sexp
 
     module T = T
-    type transition = T.t with sexp
-
-    module Map = SexpHashtbl.Make(S)
-
-    type edge = transition * state with sexp
+    type transition = int with sexp
 
     type vertex = {
-      state_id : S.t;
-      outgoing : edge list;
+      state_id : state;
+      mutable outgoing : state array;
     } with sexp
 
     type t = {
-      states : vertex Map.t;
+      mutable states : vertex array;
     } with sexp
 
 
+    let null : vertex = Obj.magic ()
+
     let mem nfa state =
-      Map.mem nfa.states state
+      Array.length nfa.states > state &&
+      nfa.states.(state) != null
 
 
     (* add a new empty state *)
     let add nfa state_id =
       if mem nfa state_id then
         invalid_arg "can not replace existing state";
-      let state = { state_id; outgoing = [] } in
-      Map.add nfa.states state_id state
-
-
-    (* add a new state and return its id *)
-    let add_state nfa =
-      let state_id = S.make (Map.length nfa.states) in
-      add nfa state_id;
-      state_id
-
-
-    (* replace a state in the NFA *)
-    let update_state nfa state =
-      Map.replace nfa.states state.state_id state
+      let state = { state_id; outgoing = Array.make 128 (-1) } in
+      if Array.length nfa.states <= state_id then
+        nfa.states <- Array.init (state_id * 2 + 1) (fun i ->
+          if i < Array.length nfa.states then
+            nfa.states.(i)
+          else
+            null
+        );
+      nfa.states.(state_id) <- state
 
 
     (* add transition on c from a to b *)
     let add_outgoing nfa a c b =
-      let a = Map.find nfa.states a in
-      update_state nfa { a with outgoing = (c, b) :: a.outgoing }
-
-
-    (* add new state with transition on c from a to the new state *)
-    let add_transition nfa a c =
-      let next_id = add_state nfa in
-      add_outgoing nfa a c next_id;
-      next_id
-
-
-    let fold_states f nfa x =
-      Map.fold (fun state_id state x ->
-        f state_id x
-      ) nfa.states x
-
-
-    let outgoing nfa state_id =
-      (Map.find nfa.states state_id).outgoing
+      let a = nfa.states.(a) in
+      if Array.length a.outgoing <= c then
+        a.outgoing <- Array.init (c * 2 + 1) (fun i ->
+          if i < Array.length a.outgoing then
+            a.outgoing.(i)
+          else
+            -1
+        );
+      a.outgoing.(c) <- b
 
 
     (* empty automaton *)
-    let empty () = { states = Map.create 13 }
+    let empty () = { states = Array.make 10000 null }
     (* automaton with only a start state *)
     let start () = let fsm = empty () in add fsm S.start; fsm
 
     let to_dot out nfa =
       output_string out "digraph G {\n";
 
+      (*
       let finals = Map.create 13 in
-      Map.iter (fun state_id state ->
-        if List.exists (fun (func, target) -> T.is_final func) state.outgoing then
-          Map.add finals state_id ()
+      Array.iter (fun state ->
+        if state != null then
+          if List.exists (fun (func, target) -> T.is_final func) state.outgoing then
+            Map.add finals state.state_id ()
       ) nfa.states;
 
       output_string out "\tnode [shape = doublecircle];";
@@ -310,14 +286,16 @@ module Imperative = struct
       ) finals;
       output_string out ";\n\tnode [shape = circle];\n";
 
-      Map.iter (fun source state ->
-        List.iter (fun (func, target) ->
-          Printf.fprintf out "\t\"%s\" -> \"%s\" [ label = \"%s\" ];\n"
-            (S.to_string source)
-            (S.to_string target)
-            (T.to_string func)
-        ) state.outgoing
+      Array.iter (fun state ->
+        if state != null then
+          List.iter (fun (func, target) ->
+            Printf.fprintf out "\t\"%s\" -> \"%s\" [ label = \"%s\" ];\n"
+              (S.to_string state.state_id)
+              (S.to_string target)
+              (T.to_string func)
+          ) state.outgoing
       ) nfa.states;
+      *)
       output_string out "}\n"
 
   end
