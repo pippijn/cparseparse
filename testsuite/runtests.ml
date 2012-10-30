@@ -1,17 +1,58 @@
-module Options = struct
-  let test_suffixes = [".cc"; ".c"; ".ii"; ".i"; ".tm"]
-  let tool_opts = StringMap.of_list [
-    "cpapa", "-trivial";
-    "treematch", "-special";
-  ]
-  let dirs = [
-    "arith", "testsuite/elkhound/arith/tests";
-    "sless", "testsuite/elkhound/scannerless/tests";
-    "treematch", "testsuite/treematch";
-    "cpapa", "testsuite/ccparse";
-    "cpapa", "testsuite/in";
-  ]
-end
+(* +=====~~~-------------------------------------------------------~~~=====+ *)
+(* |                          Test suite description                       | *)
+(* +=====~~~-------------------------------------------------------~~~=====+ *)
+
+type section = {
+  tool     : string;
+  suffixes : string list;
+  options  : string option;
+  dirs     : string list;
+}
+
+let testsuite = "testsuite", [
+  {
+    tool = "arith";
+    suffixes = [".c"];
+    options = None;
+    dirs = [
+      "testsuite/elkhound/arith/tests";
+    ];
+  };
+  {
+    tool = "sless";
+    suffixes = [".c"];
+    options = None;
+    dirs = [
+      "testsuite/elkhound/scannerless/tests";
+    ];
+  };
+  {
+    tool = "re2ml";
+    suffixes = [".mll"];
+    options = None;
+    dirs = [
+      "src/gramanl/ml";
+      "testsuite/re2ml";
+    ];
+  };
+  {
+    tool = "treematch";
+    suffixes = [".tm"];
+    options = Some "-special";
+    dirs = [
+      "testsuite/treematch";
+    ];
+  };
+  {
+    tool = "cpapa";
+    suffixes = [".cc"; ".c"; ".ii"; ".i"];
+    options = Some "-trivial";
+    dirs = [
+      "testsuite/ccparse";
+      "testsuite/in";
+    ];
+  };
+]
 
 
 (* +=====~~~-------------------------------------------------------~~~=====+ *)
@@ -95,10 +136,10 @@ let string_of_process_status = let open Unix in function
 (* |                             Execute tests                             | *)
 (* +=====~~~-------------------------------------------------------~~~=====+ *)
 
-let run_test error_log tool (pass, fail, total_time) source reference =
+let run_test error_log section (pass, fail, total_time) source reference =
   (* Retrieve common command line options *)
   let tool_opts =
-    StringMap.find_default "" tool Options.tool_opts
+    BatOption.default "" section.options
   in
 
   (* Retrieve command line options from file *)
@@ -119,7 +160,7 @@ let run_test error_log tool (pass, fail, total_time) source reference =
   (* Parse the file *)
   let start = Unix.gettimeofday () in
 
-  let cmd = Printf.sprintf "./%s.native %s %s %s 2>&1" tool tool_opts opts source in
+  let cmd = Printf.sprintf "./%s.native %s %s %s 2>&1" section.tool tool_opts opts source in
   let stream = Unix.open_process_in cmd in
   let produced = read_all stream in
   let status = Unix.close_process_in stream in
@@ -169,21 +210,22 @@ let run_test error_log tool (pass, fail, total_time) source reference =
   )
 
 
-let run error_log tool base_dir result test =
-  match ExtString.without_suffixes Options.test_suffixes test with
+let run error_log section base_dir result testfile =
+  match ExtString.without_suffixes section.suffixes testfile with
   | Some basename ->
-      let source    = base_dir / test in
+      let source    = base_dir / testfile in
       let reference = base_dir / basename ^ ".ref" in
 
-      let result = run_test error_log tool result source reference in
+      let result = run_test error_log section result source reference in
       flush stdout;
+      flush error_log;
       result
 
   | None ->
       result
 
 
-let rec run_tests error_log result (tool, base_dir) =
+let rec run_tests_dir error_log section result base_dir =
   let contents = Sys.readdir base_dir in
   (* Sort the tests lexicograpically *)
   Array.sort String.compare contents;
@@ -201,19 +243,24 @@ let rec run_tests error_log result (tool, base_dir) =
     ) contents
   in
   (* Run the tests from this dir *)
-  let result = Array.fold_left (run error_log tool base_dir) result files in
+  let result = Array.fold_left (run error_log section base_dir) result files in
   (* Run the tests from each subdir *)
   let result =
     Array.fold_left (fun result dir ->
-      run_tests error_log result (tool, base_dir / dir)
+      run_tests_dir error_log section result (base_dir / dir)
     ) result dirs
   in
 
   result
 
 
+let run_tests error_log result section =
+  List.fold_left (run_tests_dir error_log section) result section.dirs
+
+
 let main () =
-  with_out "testsuite.rst" (fun error_log ->
+  let name, testsuite = testsuite in
+  with_out (name ^ ".rst") (fun error_log ->
     begin
       let open Unix in
       let { tm_min; tm_hour; tm_mday; tm_mon; tm_year; } = localtime (time ()) in
@@ -228,7 +275,7 @@ let main () =
     end;
 
     let pass, fail, time =
-      List.fold_left (run_tests error_log) (0, 0, 0.0) Options.dirs
+      List.fold_left (run_tests error_log) (0, 0, 0.0) testsuite
     in
 
     output_string error_log "\nSummary";
