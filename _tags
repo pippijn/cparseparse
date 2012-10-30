@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 5331636c1e36a772bbeaf62ae63aadbf)
+# DO NOT EDIT (digest: 4fa6bfdb7d58ed37705dd3567b82e341)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -279,6 +279,8 @@
 <src/treematch/*.ml{,i}>: pkg_camlp4.lib
 <src/treematch/*.ml{,i}>: pkg_sexplib
 # Executable re2ml
+"src/re2ml/re2ml.native": oasis_executable_re2ml_native
+<src/re2ml/*.ml{,i}>: oasis_executable_re2ml_native
 "src/re2ml/re2ml.native": use_codegen
 "src/re2ml/re2ml.native": use_baselib
 "src/re2ml/re2ml.native": pkg_batteries

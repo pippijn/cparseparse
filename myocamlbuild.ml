@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: ac189dbcaab1714f3ebf30f1a317f014) *)
+(* DO NOT EDIT (digest: 9bead844351433a120d7b297e81c2bbd) *)
 module OASISGettext = struct
 (* # 21 "/tmp/oasis-0.3.0/src/oasis/OASISGettext.ml" *)
 
@@ -496,7 +496,13 @@ let package_default =
                  S [A "-cclib"; A "-lstdc++"; A "-cclib"; A "-lz"])
             ]);
           (["oasis_library_baselib_cclib"; "ocamlmklib"; "c"],
-            [(OASISExpr.EBool true, S [A "-lstdc++"; A "-lz"])])
+            [(OASISExpr.EBool true, S [A "-lstdc++"; A "-lz"])]);
+          (["oasis_executable_re2ml_native"; "ocaml"; "link"; "native"],
+            [(OASISExpr.EBool true, S [A "-inline"; A "0"])]);
+          (["oasis_executable_re2ml_native"; "ocaml"; "ocamldep"; "native"],
+            [(OASISExpr.EBool true, S [A "-inline"; A "0"])]);
+          (["oasis_executable_re2ml_native"; "ocaml"; "compile"; "native"],
+            [(OASISExpr.EBool true, S [A "-inline"; A "0"])])
        ];
      includes =
        [
@@ -564,7 +570,7 @@ let package_default =
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default package_default;;
 
-# 568 "myocamlbuild.ml"
+# 574 "myocamlbuild.ml"
 (* OASIS_STOP *)
 let atomize = Command.atomize
 
