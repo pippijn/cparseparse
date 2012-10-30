@@ -1,6 +1,16 @@
 open Sexplib.Conv;;
 module Program =
   struct
+    module SourceLocation =
+      struct
+        module Lexing =
+          struct
+            include Lexing;;
+            let sexp_of_position _ = sexp_of_int 0;;
+            let position_of_sexp _ = Lexing.dummy_pos;;
+          end;;
+        type t = (Lexing.position * Lexing.position);;
+      end;;
     module rec Program :
                  sig
                    type t = | Program of Definition.t list | End | SEXP;;
