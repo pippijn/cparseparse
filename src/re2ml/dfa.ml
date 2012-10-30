@@ -43,6 +43,10 @@ end
 
 module Transition = struct
   type t = int
+  type func =
+    | Char of char
+    | Accept of int
+  type decode_env = Ast.code array
 
   let encode_char c = Char.code c
   let encode_accept action = action + 256
@@ -62,6 +66,13 @@ module Transition = struct
       "A" ^ string_of_int (a - 256)
 
   let is_final = is_accept
+
+
+  let decode t =
+    if is_char t then
+      Char (decode_char t)
+    else
+      Accept (decode_accept t)
 end
 
 module Fsm = Automaton.Imperative.Make(State)(Transition)
@@ -158,7 +169,7 @@ let next_dfa_state nfa map estate_ids =
 
       | Nfa.Transition.Accept action ->
           if false then
-            Printf.printf "-> %d [final]\n" target;
+            Printf.printf "-> %d action %d [final]\n" target action;
           action :: accept
 
       | Nfa.Transition.Eps ->

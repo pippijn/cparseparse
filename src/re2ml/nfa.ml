@@ -126,4 +126,4 @@ let construct_lexer (Lexer (name, args, rules)) =
 let construct (Program (pre, aliases, lexers, post)) =
   assert (aliases == []);
   (* first, construct eNFAs (epsilon NFA) for each lexer *)
-  List.rev_map construct_lexer lexers
+  pre, post, List.rev_map construct_lexer lexers

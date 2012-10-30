@@ -12,7 +12,7 @@ let parse_channel file input =
   let program = Parser.parse (Lexer.token state) lexbuf in
   let program = Resolve.resolve program in
 
-  let nfas = Timing.progress "constructing NFAs" Nfa.construct program in
+  let pre, post, nfas = Timing.progress "constructing NFAs" Nfa.construct program in
   let dfas = List.map Dfa.of_nfa nfas in
 
   if Options._dump_automata () then (
@@ -26,6 +26,8 @@ let parse_channel file input =
         Sexplib.Sexp.output_hum (Dfa.Fsm.sexp_of_t dfa)
     ) nfas dfas
   );
+
+  EmitCode.emit pre post dfas;
 
   ()
 

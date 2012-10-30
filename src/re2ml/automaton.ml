@@ -201,6 +201,11 @@ module Imperative = struct
     val add : t -> state -> unit
     val add_outgoing : t -> state -> transition -> state -> unit
 
+    val fold : ('a -> state -> (transition * state) list -> 'a) -> 'a -> t -> 'a
+    val iter : (state -> (transition * state) list -> unit) -> t -> unit
+
+    val is_final : t -> state -> bool
+
     val empty : S.store -> t
     val start : S.store -> t
 
@@ -264,6 +269,39 @@ module Imperative = struct
       a.outgoing.(c) <- b
 
 
+    let outgoing nfa state =
+      BatArray.fold_lefti (fun outgoing transition target ->
+        if target != -1 then
+          (transition, target) :: outgoing
+        else
+          outgoing
+      ) [] state.outgoing
+
+
+    let fold f x nfa =
+      Array.fold_left (fun x state ->
+        if state == null then
+          x
+        else
+          f x state.state_id (List.rev (outgoing nfa state))
+      ) x nfa.states
+
+
+    let iter f nfa =
+      Array.iter (fun state ->
+        if state != null then
+          f state.state_id (List.rev (outgoing nfa state))
+      ) nfa.states
+
+
+    let is_final nfa state =
+      let state = nfa.states.(state) in
+      state != null &&
+      BatArray.fold_lefti (fun is_final func target ->
+        is_final || T.is_final func
+      ) false state.outgoing
+
+
     (* empty automaton *)
     let empty store = { states = Array.make 10000 null }
     (* automaton with only a start state *)
@@ -273,13 +311,7 @@ module Imperative = struct
       output_string out "digraph G {\n";
 
       let finals =
-        Array.init (Array.length nfa.states) (fun state ->
-          let state = nfa.states.(state) in
-          state != null &&
-          BatArray.fold_lefti (fun is_final func target ->
-            is_final || T.is_final func
-          ) false state.outgoing
-        )
+        Array.init (Array.length nfa.states) (is_final nfa)
       in
 
       output_string out "\tnode [shape = doublecircle];";
