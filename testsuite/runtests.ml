@@ -31,7 +31,7 @@ let testsuite = "testsuite", [
     suffixes = [".mll"];
     options = None;
     dirs = [
-      "src/gramanl/ml";
+      "src";
       "testsuite/re2ml";
     ];
   };
