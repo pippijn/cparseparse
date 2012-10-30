@@ -42,8 +42,29 @@ let rec construct_regexp (nfa, state_id) regexp =
       (* on a character, simply make a transition to the next state *)
       Fsm.add_transition nfa state_id (Transition.Chr (Sloc.value c))
 
+  | String s ->
+      BatString.fold_left (fun (nfa, state_id) c ->
+        Fsm.add_transition nfa state_id (Transition.Chr c)
+      ) (nfa, state_id) (Sloc.value s)
+
   | Sequence seq ->
       List.fold_left construct_regexp (nfa, state_id) seq
+
+  | CharClass (Positive list) ->
+      (* make a new state *)
+      let nfa, common_target = Fsm.add_state nfa in
+
+      (* make a transition on each character in the list to the new state *)
+      let nfa =
+        List.fold_left (fun nfa -> function
+          | Range _ -> failwith "unresolved range"
+          | Single c ->
+              Fsm.add_outgoing nfa state_id (Transition.Chr (Sloc.value c)) common_target
+        ) nfa list
+      in
+
+      nfa, common_target
+
 
   | OrGrouping group ->
       (* in a list of alternatives, make a transition from the current
@@ -78,7 +99,7 @@ let rec construct_regexp (nfa, state_id) regexp =
       let nfa, end_state = construct_regexp (nfa, state_id) regexp in
       Fsm.add_outgoing nfa end_state Transition.Eps state_id, end_state
 
-  | AnyChar | String _ | Lexeme _ | CharClass _ | Question _ | Star _ | Quantified _ ->
+  | AnyChar | Lexeme _ | CharClass _ | Question _ | Star _ | Quantified _ ->
       failwith ("unresolved regexp: " ^ Sexplib.Sexp.to_string_hum (sexp_of_regexp regexp))
 
 
@@ -90,14 +111,16 @@ let construct_rule (nfa, actions) (Rule (regexp, code)) =
   (* construct one NFA for this rule's regexp *)
   let nfa, end_state = construct_regexp (nfa, start_state) regexp in
 
-  (* make the final accept-transition back to 0 via code *)
+  (* make the final accept-transition back to 0 via semantic action *)
   let action = BatDynArray.length actions in
   BatDynArray.add actions code;
   Fsm.add_outgoing nfa end_state (Transition.Accept action) State.start, actions
 
 
 let construct_lexer (Lexer (name, args, rules)) =
-  name, args, List.fold_left construct_rule (Fsm.start, BatDynArray.create ()) rules
+  let nfa, actions = List.fold_left construct_rule (Fsm.start, BatDynArray.create ()) rules in
+
+  name, args, (nfa, BatDynArray.to_array actions)
 
 
 let construct (Program (pre, aliases, lexers, post)) =

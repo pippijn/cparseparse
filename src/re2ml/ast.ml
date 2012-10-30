@@ -1,7 +1,7 @@
 open Sexplib.Conv
 
 
-type chr  = char Sloc.t with sexp
+type chr  = char   Sloc.t with sexp
 type str  = string Sloc.t with sexp
 type name = string Sloc.t with sexp
 type code = string Sloc.t with sexp

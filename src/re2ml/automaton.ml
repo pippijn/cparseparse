@@ -171,10 +171,12 @@ module Imperative = struct
   module type StateType = sig
     type t = int
 
-    (* the local start state for an automaton *)
-    val start : t
+    type store
 
-    val to_string : t -> string
+    (* the local start state for an automaton *)
+    val start : store -> t
+
+    val to_string : store -> t -> string
   end
 
   module type TransitionType = sig
@@ -199,10 +201,10 @@ module Imperative = struct
     val add : t -> state -> unit
     val add_outgoing : t -> state -> transition -> state -> unit
 
-    val empty : unit -> t
-    val start : unit -> t
+    val empty : S.store -> t
+    val start : S.store -> t
 
-    val to_dot : out_channel -> t -> unit
+    val to_dot : S.store -> out_channel -> t -> unit
   end
 
 
@@ -263,41 +265,45 @@ module Imperative = struct
 
 
     (* empty automaton *)
-    let empty () = { states = Array.make 10000 null }
+    let empty store = { states = Array.make 10000 null }
     (* automaton with only a start state *)
-    let start () = let fsm = empty () in add fsm S.start; fsm
+    let start store = let fsm = empty store in add fsm (S.start store); fsm
 
-    let to_dot out nfa =
+    let to_dot store out nfa =
       output_string out "digraph G {\n";
 
-      (*
-      let finals = Map.create 13 in
-      Array.iter (fun state ->
-        if state != null then
-          if List.exists (fun (func, target) -> T.is_final func) state.outgoing then
-            Map.add finals state.state_id ()
-      ) nfa.states;
+      let finals =
+        Array.init (Array.length nfa.states) (fun state ->
+          let state = nfa.states.(state) in
+          state != null &&
+          BatArray.fold_lefti (fun is_final func target ->
+            is_final || T.is_final func
+          ) false state.outgoing
+        )
+      in
 
       output_string out "\tnode [shape = doublecircle];";
-      Map.iter (fun final () ->
-        output_string out " \"";
-        output_string out (S.to_string final);
-        output_string out "\"";
+      Array.iteri (fun state is_final ->
+        if is_final then (
+          output_string out " \"";
+          output_string out (S.to_string store state);
+          output_string out "\"";
+        )
       ) finals;
       output_string out ";\n\tnode [shape = circle];\n";
 
       Array.iter (fun state ->
         if state != null then
-          List.iter (fun (func, target) ->
-            Printf.fprintf out "\t\"%s\" -> \"%s\" [ label = \"%s\" ];\n"
-              (S.to_string state.state_id)
-              (S.to_string target)
-              (T.to_string func)
+          Array.iteri (fun func target ->
+            if target != -1 then
+              Printf.fprintf out "\t\"%s\" -> \"%s\" [ label = \"%s\" ];\n"
+                (S.to_string store state.state_id)
+                (S.to_string store target)
+                (T.to_string func)
           ) state.outgoing
       ) nfa.states;
-      *)
       output_string out "}\n"
 
   end
 
-  end
+end

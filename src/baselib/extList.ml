@@ -95,3 +95,10 @@ let count f l =
   List.fold_left (fun count e ->
     count + if f e then 1 else 0
   ) 0 l
+
+
+let unordered_append l1 l2 =
+  if List.length l1 <= List.length l2 then
+    l1 @ l2
+  else
+    l2 @ l1

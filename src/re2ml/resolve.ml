@@ -2,12 +2,12 @@ open Ast
 
 
 let full_chr_range =
-  OrGrouping (List.rev_map (fun c -> Char c) CharClass.full_chr_list)
+  CharClass (Positive (List.rev_map (fun c -> Single c) CharClass.full_chr_list))
 
 
 let resolve_char_class cc =
   let cc = CharClass.to_chr_list cc in
-  OrGrouping (List.rev_map (fun c -> Char c) cc)
+  CharClass (Positive (List.rev_map (fun c -> Single c) cc))
 
 
 let rec resolve_regexp map = function
@@ -43,17 +43,11 @@ let rec resolve_regexp map = function
 
   (* resolve "any character" as the full range *)
   | AnyChar ->
-      resolve_regexp map full_chr_range
-  (* resolve string as a sequence of its characters *)
-  | String s ->
-      resolve_regexp map
-        (Sequence (
-          List.map (fun c -> Char (Sloc.at s c))
-            (BatString.fold_right (fun c l -> c :: l)
-              (Sloc.value s) [])))
+      full_chr_range
 
-  (* single characters and EOF need no resolution *)
+  (* these atoms need no resolution *)
   | Eof
+  | String _
   | Char _ as atom ->
       atom
 
