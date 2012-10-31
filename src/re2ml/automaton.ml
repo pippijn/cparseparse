@@ -201,7 +201,7 @@ module Imperative = struct
     val add : t -> state -> unit
     val add_outgoing : t -> state -> transition -> state -> unit
 
-    val fold : ('a -> state -> (transition * state) list -> 'a) -> 'a -> t -> 'a
+    val fold : (state -> (transition * state) list -> 'a -> 'a) -> t -> 'a -> 'a
     val iter : (state -> (transition * state) list -> unit) -> t -> unit
 
     val is_final : t -> state -> bool
@@ -278,12 +278,12 @@ module Imperative = struct
       ) [] state.outgoing
 
 
-    let fold f x nfa =
+    let fold f nfa x =
       Array.fold_left (fun x state ->
         if state == null then
           x
         else
-          f x state.state_id (List.rev (outgoing nfa state))
+          f state.state_id (List.rev (outgoing nfa state)) x
       ) x nfa.states
 
 

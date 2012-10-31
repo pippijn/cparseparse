@@ -1,8 +1,12 @@
 # sexplib
-"ast.ml":	syntax_camlp4o, pkg_sexplib.syntax
-"automaton.ml":	syntax_camlp4o, pkg_sexplib.syntax
-"dfa.ml":	syntax_camlp4o, pkg_sexplib.syntax
-"nfa.ml":	syntax_camlp4o, pkg_sexplib.syntax
+"ast.ml":		syntax_camlp4o, pkg_sexplib.syntax
+"automaton.ml":		syntax_camlp4o, pkg_sexplib.syntax
+"dfa.ml":		syntax_camlp4o, pkg_sexplib.syntax
+"nfa.ml":		syntax_camlp4o, pkg_sexplib.syntax
+
+# ML code parsing
+"re2ml.native":		use_camlp4_full
+"emitCode.ml":		use_camlp4_full
 
 # ML code generation
-#"emitCode.ml":	camlp4of
+"emitCode.ml":		camlp4of

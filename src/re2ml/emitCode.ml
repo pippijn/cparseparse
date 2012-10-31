@@ -1,134 +1,126 @@
-    (*
-    let spans, _, _, _ =
-      List.fold_left (fun (spans, goto, lo, hi) (transition, target) ->
-        if Dfa.Transition.is_accept transition then (
-          let spans =
-            if goto != -1 then
-              ([lo; hi], goto) :: spans
-            else
-              spans
-          in
-          ([transition], target) :: spans, -1, -1, -1
-        ) else if goto == -1 then
-          spans, target, transition, transition
-        else if goto == target && transition == hi + 1 then
-          spans, target, lo, transition
-        else
-          ([lo; hi], target) :: spans, target, transition, transition
-      ) ([], -1, -1, -1) outgoing
-    in
+open Camlp4.PreCast
+module Printer = Printers.OCaml
 
-    let spans_by_target =
-      List.fold_left (fun spans_by_target (span, target) ->
-        let spans = IntMap.find_default [] target spans_by_target in
-        IntMap.add target (span :: spans) spans_by_target
-      ) IntMap.empty spans
-    in
+let (|>) = BatPervasives.(|>)
 
-    let print_span out = function
-      | [lo; hi] when lo == hi ->
-          Printf.fprintf out "'%s'"
-            (Char.escaped (Dfa.Transition.decode_char lo))
-      | [lo; hi] ->
-          Printf.fprintf out "'%s' .. '%s'"
-            (Char.escaped (Dfa.Transition.decode_char lo))
-            (Char.escaped (Dfa.Transition.decode_char hi))
-      | _ -> ()
-    in
 
-    IntMap.iter (fun target spans ->
-      if target != 0 then (
-        print_string "  ";
-        List.iter (Printf.printf "| %a" print_span) spans;
-        print_string " -> ";
-        match spans with
-        | [lo; hi] :: _ ->
-            Printf.printf "state_%d (input_char s)\n" target
-        | _ -> ()
-      )
-    ) spans_by_target;
+let print_implem output_file impl =
+  Printer.print_implem ~output_file impl
 
-    try
-      match IntMap.find 0 spans_by_target with
-      | [[action]] ->
-          Printf.printf "  | c -> c, (%s)\n"
-            (Sloc.value actions.(Dfa.Transition.decode_accept action))
-      | _ ->
-          failwith "invalid"
-    with Not_found ->
-      Printf.printf "  | c -> error c\n"
-    *)
+
+let paOrp_of_list =
+  let _loc = Loc.ghost in
+  BatList.reduce (fun orp patt ->
+    <:patt<$orp$ | $patt$>>
+  )
 
 
 let emit_automaton (name, args, (dfa, actions)) =
   let args = List.map Sloc.value (name :: args) in
 
-  Printf.printf "let error la = exit 0\n\n";
+  let _loc, name = Sloc._loc name in
 
-  Printf.printf "let rec %s la s =" (String.concat " " args);
-  print_string "
-  let la, action =
-    match la with
-    | Some la -> state_0 la s
-    | None -> state_0 (input_char s) s
-  in
-  la, match action with
-";
-  Array.iteri (fun action code ->
-    Printf.printf "  | %d -> (%s)\n" action (Sloc.value code);
-  ) actions;
-  Printf.printf "  | _ -> error la\n";
-
-  Dfa.Fsm.iter (fun state outgoing ->
-    Printf.printf "\nand state_%d la s =\n" state;
-    Printf.printf "  match la with\n";
-
-    let targets =
-      List.fold_left (fun targets (transition, target) ->
-        let transitions = IntMap.find_default [] target targets in
-        IntMap.add target (transition :: transitions) targets
-      ) IntMap.empty outgoing
+  let action_func =
+    let cases =
+      BatArray.fold_lefti (fun cases action code ->
+        <:match_case<$int:string_of_int action$ -> $CamlAst.expr_of_loc_string code$>> :: cases
+      ) [] actions
+      |> Ast.mcOr_of_list
     in
 
-    IntMap.iter (fun target transitions ->
-      if target != 0 then
-        print_string "  ";
-      List.iter (fun transition ->
-        match Dfa.Transition.decode transition with
-        | Dfa.Transition.Char c ->
-            Printf.printf "| '%s' " (Char.escaped c)
-        | _ ->
-            ()
-      ) (List.rev transitions);
+    <:binding<
+      $lid:name ^ "_action"$ la action =
+        match action with
+        $cases$ | _ -> error la
+    >>
+  in
 
-      if target != 0 then
-        Printf.printf "->\n      state_%d (input_char s) s\n" target
-    ) targets;
+  let funcs = <:binding<
+    $lid:name$ la s =
+      let la, action =
+        match la with
+        | Some la -> state_0 la s
+        | None -> state_0 (input_char s) s
+      in
+      la, $lid:name ^ "_action"$ la action
+  >> in
 
-    IntMap.iter (fun target transitions ->
-      List.iter (fun transition ->
-        match Dfa.Transition.decode transition with
-        | Dfa.Transition.Accept action ->
-            Printf.printf "  | la -> la, %d\n" action
-        | _ ->
-            ()
-      ) transitions;
-    ) targets;
+  let funcs =
+    Dfa.Fsm.fold (fun state outgoing funcs ->
+      let targets =
+        List.fold_left (fun targets (transition, target) ->
+          let transitions = IntMap.find_default [] target targets in
+          IntMap.add target (transition :: transitions) targets
+        ) IntMap.empty outgoing
+      in
 
-    if not (Dfa.Fsm.is_final dfa state) then
-      Printf.printf "  | la -> la, -1\n"
-  ) dfa;
+      let cases =
+        IntMap.fold (fun target transitions cases ->
+          let case =
+            List.rev_map (fun transition ->
+              match Dfa.Transition.decode transition with
+              | Dfa.Transition.Char c ->
+                  [ <:patt<$chr:Char.escaped c$>> ]
+              | _ ->
+                  []
+            ) transitions
+            |> List.concat
+          in
 
-  print_string "
+          match case with
+          | [] ->
+              cases
+          | _::_ ->
+              let case = paOrp_of_list case in
+              <:match_case<$case$ -> $lid:"state_" ^ string_of_int target$ (input_char s) s>> :: cases
+        ) targets []
+      in
 
+      let cases = Ast.mcOr_of_list (List.rev cases) in
 
-let rec loop la s =
-  let la, _ = token la s in
-  loop (Some la) s
+      let default_case =
+        IntMap.fold (fun target transitions case ->
+          List.fold_left (fun case transition ->
+            match Dfa.Transition.decode transition with
+            | Dfa.Transition.Accept action ->
+                assert (case == None);
+                Some <:match_case<la -> la, $int:string_of_int action$>>
+            | _ ->
+                case
+          ) case transitions
+        ) targets None
+      in
 
-let () = loop None stdin
-"
+      let default_case =
+        (* non-final state returns error on unexpected input *)
+        BatOption.default <:match_case<la -> la, -1>> default_case
+      in
+
+      <:binding<
+        $lid:"state_" ^ string_of_int state$ la s =
+          match la with $cases$ | $default_case$
+      >> :: funcs
+    ) dfa [funcs]
+  in
+
+  <:str_item<
+    let error la = exit 0
+
+    let $action_func$
+
+    let rec $Ast.biAnd_of_list funcs$
+
+    let rec loop la s =
+      let la, _ = token la s in
+      loop (Some la) s
+
+    let () = loop None stdin
+  >>
 
 
 let emit pre post dfas =
-  List.iter emit_automaton dfas
+  let automata = List.map emit_automaton dfas in
+
+  List.iter (print_implem "/dev/stdout") automata;
+
+  ()
