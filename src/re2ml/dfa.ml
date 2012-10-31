@@ -2,7 +2,7 @@ open Ast
 open Sexplib.Conv
 
 module State = struct
-  type t = int
+  type t = int with sexp
 
   module IntListMap = Hashtbl.Make(struct
     type t = int list
@@ -26,6 +26,13 @@ module State = struct
     subsets = BatDynArray.create ();
   }
 
+  let sexp_of_store s = Sexplib.Sexp.List []
+  let store_of_sexp s = make_store ()
+
+  let id_of store id = id
+  let of_id store id = id
+  let invalid = -1
+
   let subset { subsets } id = BatDynArray.get subsets id
 
   let of_list { states; subsets } subset =
@@ -42,36 +49,28 @@ module State = struct
 end
 
 module Transition = struct
-  type t = int
-  type func =
-    | Char of char
-    | Accept of int
-  type decode_env = Ast.code array
+  type t = int with sexp
+
+  let id_of id = id
+  let of_id id = id
+  let invalid = -1
 
   let encode_char c = Char.code c
-  let encode_accept action = action + 256
+  let encode_accept action = action + 257
 
   let decode_char t = Char.chr t
-  let decode_accept t = t - 256
+  let decode_accept t = t - 257
 
   let is_char t = t < 256
-  let is_accept t = t >= 256
+  let is_accept t = t > 256
 
   let to_string a =
-    if a < 256 then
-      match Char.chr a with
-      | c -> Char.escaped c
+    if is_char a then
+      Char.escaped (decode_char a)
     else
-      "A" ^ string_of_int (a - 256)
+      "A" ^ string_of_int (decode_accept a)
 
   let is_final = is_accept
-
-
-  let decode t =
-    if is_char t then
-      Char (decode_char t)
-    else
-      Accept (decode_accept t)
 end
 
 module Fsm = Automaton.Imperative.Make(State)(Transition)
@@ -264,7 +263,7 @@ let of_nfa (name, args, (nfa, actions)) =
 
     if Options._dot () then (
       BatStd.with_dispose ~dispose:close_out
-        (fun out -> Fsm.to_dot store out dfa) (open_out "dfa.dot");
+        (fun out -> Fsm.to_dot out dfa) (open_out "dfa.dot");
       ignore (Sys.command "dot -Tpng dfa.dot -o dfa.png");
     );
 

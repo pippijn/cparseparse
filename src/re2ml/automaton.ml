@@ -169,9 +169,16 @@ end
 module Imperative = struct
 
   module type StateType = sig
-    type t = int
+    include Sig.ConvertibleType
 
     type store
+
+    val store_of_sexp : Sexplib.Sexp.t -> store
+    val sexp_of_store : store -> Sexplib.Sexp.t
+
+    val id_of : store -> t -> int
+    val of_id : store -> int -> t
+    val invalid : t
 
     (* the local start state for an automaton *)
     val start : store -> t
@@ -180,7 +187,11 @@ module Imperative = struct
   end
 
   module type TransitionType = sig
-    type t = int
+    include Sig.ConvertibleType
+
+    val id_of : t -> int
+    val of_id : int -> t
+    val invalid : t
 
     val is_final : t -> bool
     val to_string : t -> string
@@ -209,7 +220,7 @@ module Imperative = struct
     val empty : S.store -> t
     val start : S.store -> t
 
-    val to_dot : S.store -> out_channel -> t -> unit
+    val to_dot : out_channel -> t -> unit
   end
 
 
@@ -219,10 +230,10 @@ module Imperative = struct
   = struct
 
     module S = S
-    type state = int with sexp
+    type state = S.t with sexp
 
     module T = T
-    type transition = int with sexp
+    type transition = T.t with sexp
 
     type vertex = {
       state_id : state;
@@ -230,52 +241,56 @@ module Imperative = struct
     } with sexp
 
     type t = {
+      store : S.store;
       mutable states : vertex array;
     } with sexp
 
 
-    let null = {
-      state_id = -1;
+    let invalid = {
+      state_id = S.invalid;
       outgoing = [||];
     }
 
-    let mem nfa state =
-      Array.length nfa.states > state &&
-      nfa.states.(state) != null
+    let mem nfa state_id =
+      let state_id = S.id_of nfa.store state_id in
+      Array.length nfa.states > state_id &&
+      nfa.states.(state_id) != invalid
 
 
     (* add a new empty state *)
     let add nfa state_id =
       if mem nfa state_id then
         invalid_arg "can not replace existing state";
-      let state = { state_id; outgoing = Array.make 128 (-1) } in
+      let state = { state_id; outgoing = Array.make 128 S.invalid } in
+      let state_id = S.id_of nfa.store state_id in
       if Array.length nfa.states <= state_id then
         nfa.states <- Array.init (state_id * 2 + 1) (fun i ->
           if i < Array.length nfa.states then
             nfa.states.(i)
           else
-            null
+            invalid
         );
       nfa.states.(state_id) <- state
 
 
     (* add transition on c from a to b *)
     let add_outgoing nfa a c b =
-      let a = nfa.states.(a) in
+      let c = T.id_of c in
+      let a = nfa.states.(S.id_of nfa.store a) in
       if Array.length a.outgoing <= c then
         a.outgoing <- Array.init (c * 2 + 1) (fun i ->
           if i < Array.length a.outgoing then
             a.outgoing.(i)
           else
-            -1
+            S.invalid
         );
       a.outgoing.(c) <- b
 
 
     let outgoing nfa state =
       BatArray.fold_lefti (fun outgoing transition target ->
-        if target != -1 then
-          (transition, target) :: outgoing
+        if target != S.invalid then
+          (T.of_id transition, target) :: outgoing
         else
           outgoing
       ) [] state.outgoing
@@ -283,7 +298,7 @@ module Imperative = struct
 
     let fold f nfa x =
       Array.fold_left (fun x state ->
-        if state == null then
+        if state == invalid then
           x
         else
           f state.state_id (List.rev (outgoing nfa state)) x
@@ -292,21 +307,13 @@ module Imperative = struct
 
     let iter f nfa =
       Array.iter (fun state ->
-        if state != null then
+        if state != invalid then
           f state.state_id (List.rev (outgoing nfa state))
       ) nfa.states
 
 
-    let is_final nfa state =
-      let state = nfa.states.(state) in
-      state != null &&
-      BatArray.fold_lefti (fun is_final func target ->
-        is_final || T.is_final func
-      ) false state.outgoing
-
-
     (* empty automaton *)
-    let empty store = { states = Array.make 1 null }
+    let empty store = { store; states = Array.make 1 invalid }
     (* automaton with only a start state *)
     let start store = let fsm = empty store in add fsm (S.start store); fsm
 
@@ -314,12 +321,6 @@ module Imperative = struct
     let rec inverted_ranges invs ranges =
       match ranges with
       | (lo1, hi1) :: ((lo2, hi2) :: _ as tl) ->
-          (* there is no user-defined transition to state 0 *)
-          assert (not (T.is_final lo1));
-          assert (not (T.is_final hi1));
-          assert (not (T.is_final lo2));
-          assert (not (T.is_final hi2));
-
           let inv = (hi1 + 1, lo2 - 1) in
           inverted_ranges (inv :: invs) tl
       | [] | [(_, _)] ->
@@ -327,7 +328,7 @@ module Imperative = struct
 
 
     let string_of_transition c =
-      String.escaped (T.to_string c)
+      String.escaped (T.to_string (T.of_id c))
 
     let string_of_range (lo, hi) =
       if lo == hi then
@@ -367,30 +368,42 @@ module Imperative = struct
       print_ranges is_inv out ranges
 
 
-    let to_dot store out nfa =
-      output_string out "digraph G {\n";
+    let is_final_id nfa state =
+      let state = nfa.states.(state) in
+      state != invalid &&
+      BatArray.fold_lefti (fun is_final func target ->
+        is_final || (target != S.invalid && T.is_final (T.of_id func))
+      ) false state.outgoing
 
-      let finals =
-        Array.init (Array.length nfa.states) (is_final nfa)
-      in
+
+    let is_final nfa state =
+      is_final_id nfa (S.id_of nfa.store state)
+
+
+    let to_dot out nfa =
+      output_string out "digraph G {\n";
+      output_string out "\trankdir = LR;\n";
+
+      let finals = Array.init (Array.length nfa.states) (is_final_id nfa) in
 
       output_string out "\tnode [shape = doublecircle];";
       Array.iteri (fun state is_final ->
         if is_final then (
           output_string out " \"";
-          output_string out (S.to_string store state);
+          output_string out (S.to_string nfa.store (S.of_id nfa.store state));
           output_string out "\"";
         )
       ) finals;
       output_string out ";\n\tnode [shape = circle];\n";
 
       Array.iter (fun state ->
-        if state != null then (
+        if state != invalid then (
           (* construct inverse map: target -> transition list *)
           let outgoing = Array.make (Array.length nfa.states) [] in
           Array.iteri (fun func target ->
-            if target != -1 then
-              outgoing.(target) <- func :: outgoing.(target);
+            if target != S.invalid then
+              let target = S.id_of nfa.store target in
+              outgoing.(target) <- func :: outgoing.(target)
           ) state.outgoing;
 
           Array.iteri (fun target funcs ->
@@ -409,8 +422,8 @@ module Imperative = struct
                 let ranges = wip :: ranges in
 
                 Printf.fprintf out "\t\"%s\" -> \"%s\" [ label = \"%a\" ];\n"
-                  (S.to_string store state.state_id)
-                  (S.to_string store target)
+                  (S.to_string nfa.store state.state_id)
+                  (S.to_string nfa.store (S.of_id nfa.store target))
                   print_ranges ranges
           ) outgoing
         )
