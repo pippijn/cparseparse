@@ -60,7 +60,6 @@ module Transition = struct
   let to_string a =
     if a < 256 then
       match Char.chr a with
-      | '"' -> "\\\""
       | c -> Char.escaped c
     else
       "A" ^ string_of_int (a - 256)
@@ -241,7 +240,7 @@ let of_nfa (name, args, (nfa, actions)) =
     print_newline ();
   );
 
-  if Options._dot () then (
+  if false && Options._dot () then (
     BatStd.with_dispose ~dispose:close_out
       (fun out -> Nfa.Fsm.to_dot out nfa) (open_out "nfa.dot");
     ignore (Sys.command "dot -Tpng nfa.dot -o nfa.png");

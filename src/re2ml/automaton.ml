@@ -234,7 +234,10 @@ module Imperative = struct
     } with sexp
 
 
-    let null : vertex = Obj.magic ()
+    let null = {
+      state_id = -1;
+      outgoing = [||];
+    }
 
     let mem nfa state =
       Array.length nfa.states > state &&
@@ -303,9 +306,66 @@ module Imperative = struct
 
 
     (* empty automaton *)
-    let empty store = { states = Array.make 10000 null }
+    let empty store = { states = Array.make 1 null }
     (* automaton with only a start state *)
     let start store = let fsm = empty store in add fsm (S.start store); fsm
+
+
+    let rec inverted_ranges invs ranges =
+      match ranges with
+      | (lo1, hi1) :: ((lo2, hi2) :: _ as tl) ->
+          (* there is no user-defined transition to state 0 *)
+          assert (not (T.is_final lo1));
+          assert (not (T.is_final hi1));
+          assert (not (T.is_final lo2));
+          assert (not (T.is_final hi2));
+
+          let inv = (hi1 + 1, lo2 - 1) in
+          inverted_ranges (inv :: invs) tl
+      | [] | [(_, _)] ->
+          invs
+
+
+    let string_of_transition c =
+      String.escaped (T.to_string c)
+
+    let string_of_range (lo, hi) =
+      if lo == hi then
+        Printf.sprintf "'%s'" (string_of_transition lo)
+      else
+        Printf.sprintf "'%s'-'%s'" (string_of_transition lo) (string_of_transition hi)
+
+    let print_ranges is_inv out = function
+      | [(lo, hi)] when lo == hi ->
+          Printf.fprintf out "'%s'" (string_of_transition lo)
+      | ranges ->
+          Printf.fprintf out "[%s%s]"
+            (if is_inv then "^" else "")
+            (String.concat " " (List.rev_map string_of_range ranges))
+
+
+    let print_ranges out ranges =
+      let is_inv =
+        let width =
+          List.fold_left (fun width (lo, hi) ->
+            width + (hi - lo)
+          ) 0 ranges
+        in
+
+        (* if the ranges cover more than half of the total character
+         * range, then this is probably an inverted range *)
+        width > 128
+      in
+
+      let ranges =
+        if is_inv then
+          inverted_ranges [] (List.rev ranges)
+        else
+          ranges
+      in
+
+      print_ranges is_inv out ranges
+
 
     let to_dot store out nfa =
       output_string out "digraph G {\n";
@@ -325,16 +385,38 @@ module Imperative = struct
       output_string out ";\n\tnode [shape = circle];\n";
 
       Array.iter (fun state ->
-        if state != null then
+        if state != null then (
+          (* construct inverse map: target -> transition list *)
+          let outgoing = Array.make (Array.length nfa.states) [] in
           Array.iteri (fun func target ->
             if target != -1 then
-              Printf.fprintf out "\t\"%s\" -> \"%s\" [ label = \"%s\" ];\n"
-                (S.to_string store state.state_id)
-                (S.to_string store target)
-                (T.to_string func)
-          ) state.outgoing
+              outgoing.(target) <- func :: outgoing.(target);
+          ) state.outgoing;
+
+          Array.iteri (fun target funcs ->
+            match List.rev funcs with
+            | [] -> ()
+            | hd :: tl ->
+                let ranges, wip =
+                  List.fold_left (fun (ranges, (lo, hi as wip)) func ->
+                    if hi + 1 == func then
+                      (ranges, (lo, func))
+                    else
+                      (wip :: ranges, (func, func))
+                  ) ([], (hd, hd)) tl
+                in
+
+                let ranges = wip :: ranges in
+
+                Printf.fprintf out "\t\"%s\" -> \"%s\" [ label = \"%a\" ];\n"
+                  (S.to_string store state.state_id)
+                  (S.to_string store target)
+                  print_ranges ranges
+          ) outgoing
+        )
       ) nfa.states;
-      output_string out "}\n"
+      output_string out "}\n";
+      flush out
 
   end
 

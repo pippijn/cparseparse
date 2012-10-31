@@ -279,4 +279,4 @@ let emit pre post dfas =
     >>
   in
 
-  print_implem "/dev/stdout" impl
+  print_implem "dfa.ml" impl
