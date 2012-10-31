@@ -15,35 +15,30 @@ let paOrp_of_list =
   )
 
 
-let emit_automaton (name, args, (dfa, actions)) =
-  let args = List.map Sloc.value (name :: args) in
-
+let emit_action_func name actions =
   let _loc, name = Sloc._loc name in
 
-  let action_func =
-    let cases =
-      BatArray.fold_lefti (fun cases action code ->
-        <:match_case<$int:string_of_int action$ -> $CamlAst.expr_of_loc_string code$>> :: cases
-      ) [] actions
-      |> Ast.mcOr_of_list
-    in
-
-    <:binding<
-      $lid:name ^ "_action"$ la action =
-        match action with
-        $cases$ | _ -> error la
-    >>
+  let cases =
+    BatArray.fold_lefti (fun cases action code ->
+      <:match_case<$int:string_of_int action$ -> $CamlAst.expr_of_loc_string code$>> :: cases
+    ) [] actions
+    |> List.rev
+    |> Ast.mcOr_of_list
   in
 
-  let funcs = <:binding<
-    $lid:name$ la s =
-      let la, action =
-        match la with
-        | Some la -> state_0 la s
-        | None -> state_0 (input_char s) s
-      in
-      la, $lid:name ^ "_action"$ la action
-  >> in
+  <:binding<
+    $lid:name ^ "_action"$ la action =
+      match action with
+      $cases$ | _ -> error la
+  >>
+
+
+let emit_automaton (action_funcs, automata) (name, args, (dfa, actions)) =
+  let args = List.map Sloc.value (name :: args) in
+
+  let action_func = emit_action_func name actions in
+
+  let _loc, name = Sloc._loc name in
 
   let funcs =
     Dfa.Fsm.fold (fun state outgoing funcs ->
@@ -100,27 +95,63 @@ let emit_automaton (name, args, (dfa, actions)) =
         $lid:"state_" ^ string_of_int state$ la s =
           match la with $cases$ | $default_case$
       >> :: funcs
-    ) dfa [funcs]
+    ) dfa []
+    |> List.rev
   in
 
-  <:str_item<
-    let error la = exit 0
+  let automaton =
+    <:str_item<
+      module $uid:"Dfa_" ^ name$ = struct
+        let rec $Ast.biAnd_of_list funcs$
+      end
+    >>
+  in
 
-    let $action_func$
+  let entry_func = <:binding<
+    $lid:name$ la s =
+      let la, action =
+        match la with
+        | Some la -> state_0 la s
+        | None -> state_0 (input_char s) s
+      in
+      la, $lid:name ^ "_action"$ la action
+  >> in
 
-    let rec $Ast.biAnd_of_list funcs$
-
-    let rec loop la s =
-      let la, _ = token la s in
-      loop (Some la) s
-
-    let () = loop None stdin
-  >>
+  action_func :: entry_func :: action_funcs,
+  automaton :: automata
 
 
 let emit pre post dfas =
-  let automata = List.map emit_automaton dfas in
+  let (action_funcs, items) = List.fold_left emit_automaton ([], []) dfas in
 
-  List.iter (print_implem "/dev/stdout") automata;
+  let impl =
+    let _loc = Loc.ghost in
 
-  ()
+    let items =
+      match pre with
+      | None -> items
+      | Some pre ->
+          CamlAst.str_items_of_loc_string pre :: items
+    in
+
+    let items = <:str_item<let rec $Ast.biAnd_of_list action_funcs$>> :: items in
+
+    let items =
+      match post with
+      | None -> items
+      | Some post ->
+          CamlAst.str_items_of_loc_string post :: items
+    in
+
+    <:str_item<
+      $Ast.stSem_of_list (List.rev items)$
+
+      let rec loop la s =
+        let la, _ = token la s in
+        loop (Some la) s
+
+      let () = loop None stdin
+    >>
+  in
+
+  print_implem "/dev/stdout" impl
