@@ -47,6 +47,107 @@ let emit_action_func name params actions =
   <:binding<$lid:name ^ "_action"$ = $defn$>>
 
 
+let compute_spans acceptance transitions =
+  let spans, last =
+    List.fold_left (fun (spans, wip) transition ->
+      if not (Dfa.Transition.is_char transition) then
+        spans, wip
+      else (
+        acceptance.(transition) <- true;
+        match wip with
+        | None ->
+            spans, Some (Range (transition, transition))
+        | Some (Range (lo, hi) as wip) ->
+            if hi + 1 == transition then
+              spans, Some (Range (lo, transition))
+            else
+              (wip :: spans), Some (Range (transition, transition))
+      )
+    ) ([], None) (List.rev transitions)
+  in
+
+  match last with
+  | None -> spans
+  | Some span -> span :: spans
+
+
+let build_pattern _loc spans =
+  List.rev_map (fun (Range (lo, hi)) ->
+    let a = Char.escaped (Char.chr lo) in
+    let b = Char.escaped (Char.chr hi) in
+
+    if lo == hi then [
+      (* single character *)
+      <:patt<$chr:a$>>;
+    ] else if lo == hi - 1 then [
+      (* only two characters in the range; we produce
+       * separate patterns *)
+      <:patt<$chr:a$>>;
+      <:patt<$chr:b$>>;
+    ] else [
+      (* a range with three or more characters; we
+       * produce a range-pattern *)
+      <:patt<$chr:a$ .. $chr:b$>>
+    ]
+  ) spans
+  |> List.concat
+
+
+let add_case _loc cases target pattern =
+  match pattern with
+  | [] ->
+      cases
+  | _::_ ->
+      <:match_case<
+        $paOrp_of_list pattern$ ->
+          $lid:"state_" ^ string_of_int target$ (advance lexbuf)
+      >>
+      :: cases
+
+
+let build_cases _loc targets =
+  let acceptance = Array.make 256 false in
+
+  let cases =
+    IntMap.fold (fun target transitions cases ->
+      compute_spans acceptance transitions
+      |> build_pattern _loc
+      |> add_case _loc cases target
+    ) targets []
+  in
+
+  (* cases *)
+  Ast.mcOr_of_list (List.rev cases),
+  (* accepts_full_range *)
+  BatArray.for_all BatPervasives.identity acceptance
+
+
+let accept_case _loc targets =
+  IntMap.fold (fun target transitions case ->
+    List.fold_left (fun case transition ->
+      if Dfa.Transition.is_accept transition then
+        let action = Dfa.Transition.decode_accept transition in
+          Some <:match_case<_ -> accept lexbuf $int:string_of_int action$>>
+      else
+        case
+    ) case transitions
+  ) targets None
+
+
+let default_case _loc targets accepts_full_range =
+  match accept_case _loc targets with
+  | None ->
+      if accepts_full_range then
+        (* no need for a default case; the full character
+         * range is covered *)
+        None
+      else
+        (* non-final state returns error on unexpected input *)
+        Some <:match_case<_ -> reject lexbuf>>
+  | Some _ as accept ->
+      accept
+
+
 let emit_automaton (action_funcs, automata) (name, args, (dfa, actions)) =
   let params = List.map CamlAst.patt_of_loc_string args in
   let args   = List.map CamlAst.expr_of_loc_string args in
@@ -64,100 +165,10 @@ let emit_automaton (action_funcs, automata) (name, args, (dfa, actions)) =
         ) IntMap.empty outgoing
       in
 
-      let acceptance = Array.make 256 false in
-
       let cases =
-        IntMap.fold (fun target transitions cases ->
-          let spans, last =
-            List.fold_left (fun (spans, wip) transition ->
-              if not (Dfa.Transition.is_char transition) then
-                spans, wip
-              else (
-                acceptance.(transition) <- true;
-                match wip with
-                | None ->
-                    spans, Some (Range (transition, transition))
-                | Some (Range (lo, hi) as wip) ->
-                    if hi + 1 == transition then
-                      spans, Some (Range (lo, transition))
-                    else
-                      (wip :: spans), Some (Range (transition, transition))
-              )
-            ) ([], None) (List.rev transitions)
-          in
-          let spans =
-            match last with
-            | None -> spans
-            | Some span -> span :: spans
-          in
+        let cases, accepts_full_range = build_cases _loc targets in
 
-          let case =
-            List.rev_map (fun (Range (lo, hi)) ->
-              let a = Char.escaped (Char.chr lo) in
-              let b = Char.escaped (Char.chr hi) in
-
-              if lo == hi then [
-                (* single character *)
-                <:patt<$chr:a$>>;
-              ] else if lo == hi - 1 then [
-                (* only two characters in the range; we produce
-                 * separate patterns *)
-                <:patt<$chr:a$>>;
-                <:patt<$chr:b$>>;
-              ] else [
-                (* a range with three or more characters; we
-                 * produce a range-pattern *)
-                <:patt<$chr:a$ .. $chr:b$>>
-              ]
-            ) spans
-            |> List.concat
-          in
-
-          let cases =
-            match case with
-            | [] ->
-                cases
-            | _::_ ->
-                let case = paOrp_of_list case in
-                <:match_case<$case$ -> $lid:"state_" ^ string_of_int target$ (advance lexbuf)>> :: cases
-          in
-
-          cases
-        ) targets []
-      in
-
-      let accepts_full_range = BatArray.for_all BatPervasives.identity acceptance in
-
-      let cases = Ast.mcOr_of_list (List.rev cases) in
-
-      let default_case =
-        IntMap.fold (fun target transitions case ->
-          List.fold_left (fun case transition ->
-            if Dfa.Transition.is_accept transition then
-              let action = Dfa.Transition.decode_accept transition in
-                Some <:match_case<_ -> accept lexbuf $int:string_of_int action$>>
-            else
-              case
-          ) case transitions
-        ) targets None
-      in
-
-      let default_case =
-        match default_case with
-        | None ->
-            if accepts_full_range then
-              (* no need for a default case; the full character
-               * range is covered *)
-              None
-            else
-              (* non-final state returns error on unexpected input *)
-              Some <:match_case<_ -> reject lexbuf>>
-        | Some _ ->
-            default_case
-      in
-
-      let cases =
-        match default_case with
+        match default_case _loc targets accepts_full_range with
         | None -> cases
         | Some default -> <:match_case<$cases$ | $default$>>
       in
