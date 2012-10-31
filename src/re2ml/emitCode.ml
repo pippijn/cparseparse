@@ -4,6 +4,10 @@ module Printer = Printers.OCaml
 let (|>) = BatPervasives.(|>)
 
 
+type span =
+  | Range of int * int
+
+
 let print_implem output_file impl =
   Printer.print_implem ~output_file impl
 
@@ -15,7 +19,7 @@ let paOrp_of_list =
   )
 
 
-let emit_action_func name actions =
+let emit_action_func name params actions =
   let _loc, name = Sloc._loc name in
 
   let cases =
@@ -26,17 +30,28 @@ let emit_action_func name actions =
     |> Ast.mcOr_of_list
   in
 
-  <:binding<
-    $lid:name ^ "_action"$ la action =
-      match action with
-      $cases$ | _ -> error la
-  >>
+  let code =
+    <:expr<
+      fun lexbuf action ->
+        match action with
+        $cases$ | _ -> error lexbuf
+    >>
+  in
+
+  let defn =
+    List.fold_right (fun param defn ->
+      <:expr<fun $param$ -> $defn$>>
+    ) params code
+  in
+
+  <:binding<$lid:name ^ "_action"$ = $defn$>>
 
 
 let emit_automaton (action_funcs, automata) (name, args, (dfa, actions)) =
-  let args = List.map Sloc.value (name :: args) in
+  let params = List.map CamlAst.patt_of_loc_string args in
+  let args   = List.map CamlAst.expr_of_loc_string args in
 
-  let action_func = emit_action_func name actions in
+  let action_func = emit_action_func name params actions in
 
   let _loc, name = Sloc._loc name in
 
@@ -49,51 +64,109 @@ let emit_automaton (action_funcs, automata) (name, args, (dfa, actions)) =
         ) IntMap.empty outgoing
       in
 
+      let acceptance = Array.make 256 false in
+
       let cases =
         IntMap.fold (fun target transitions cases ->
+          let spans, last =
+            List.fold_left (fun (spans, wip) transition ->
+              if not (Dfa.Transition.is_char transition) then
+                spans, wip
+              else (
+                acceptance.(transition) <- true;
+                match wip with
+                | None ->
+                    spans, Some (Range (transition, transition))
+                | Some (Range (lo, hi) as wip) ->
+                    if hi + 1 == transition then
+                      spans, Some (Range (lo, transition))
+                    else
+                      (wip :: spans), Some (Range (transition, transition))
+              )
+            ) ([], None) (List.rev transitions)
+          in
+          let spans =
+            match last with
+            | None -> spans
+            | Some span -> span :: spans
+          in
+
           let case =
-            List.rev_map (fun transition ->
-              match Dfa.Transition.decode transition with
-              | Dfa.Transition.Char c ->
-                  [ <:patt<$chr:Char.escaped c$>> ]
-              | _ ->
-                  []
-            ) transitions
+            List.rev_map (fun (Range (lo, hi)) ->
+              let a = Char.escaped (Char.chr lo) in
+              let b = Char.escaped (Char.chr hi) in
+
+              if lo == hi then [
+                (* single character *)
+                <:patt<$chr:a$>>;
+              ] else if lo == hi - 1 then [
+                (* only two characters in the range; we produce
+                 * separate patterns *)
+                <:patt<$chr:a$>>;
+                <:patt<$chr:b$>>;
+              ] else [
+                (* a range with three or more characters; we
+                 * produce a range-pattern *)
+                <:patt<$chr:a$ .. $chr:b$>>
+              ]
+            ) spans
             |> List.concat
           in
 
-          match case with
-          | [] ->
-              cases
-          | _::_ ->
-              let case = paOrp_of_list case in
-              <:match_case<$case$ -> $lid:"state_" ^ string_of_int target$ (input_char s) s>> :: cases
+          let cases =
+            match case with
+            | [] ->
+                cases
+            | _::_ ->
+                let case = paOrp_of_list case in
+                <:match_case<$case$ -> $lid:"state_" ^ string_of_int target$ (advance lexbuf)>> :: cases
+          in
+
+          cases
         ) targets []
       in
+
+      let accepts_full_range = BatArray.for_all BatPervasives.identity acceptance in
 
       let cases = Ast.mcOr_of_list (List.rev cases) in
 
       let default_case =
         IntMap.fold (fun target transitions case ->
           List.fold_left (fun case transition ->
-            match Dfa.Transition.decode transition with
-            | Dfa.Transition.Accept action ->
-                assert (case == None);
-                Some <:match_case<la -> la, $int:string_of_int action$>>
-            | _ ->
-                case
+            if Dfa.Transition.is_accept transition then
+              let action = Dfa.Transition.decode_accept transition in
+                Some <:match_case<_ -> accept lexbuf $int:string_of_int action$>>
+            else
+              case
           ) case transitions
         ) targets None
       in
 
       let default_case =
-        (* non-final state returns error on unexpected input *)
-        BatOption.default <:match_case<la -> la, -1>> default_case
+        match default_case with
+        | None ->
+            if accepts_full_range then
+              (* no need for a default case; the full character
+               * range is covered *)
+              None
+            else
+              (* non-final state returns error on unexpected input *)
+              Some <:match_case<_ -> reject lexbuf>>
+        | Some _ ->
+            default_case
+      in
+
+      let cases =
+        match default_case with
+        | None -> cases
+        | Some default -> <:match_case<$cases$ | $default$>>
       in
 
       <:binding<
-        $lid:"state_" ^ string_of_int state$ la s =
-          match la with $cases$ | $default_case$
+        $lid:"state_" ^ string_of_int state$ lexbuf =
+          trace_state lexbuf $int:string_of_int state$;
+          match curr_char lexbuf with
+          $cases$
       >> :: funcs
     ) dfa []
     |> List.rev
@@ -107,14 +180,17 @@ let emit_automaton (action_funcs, automata) (name, args, (dfa, actions)) =
     >>
   in
 
+  let action_call =
+    List.fold_left (fun call arg ->
+      <:expr<$call$ $arg$>>
+    ) <:expr<$lid:name ^ "_action"$>> args
+  in
+
   let entry_func = <:binding<
-    $lid:name$ la s =
-      let la, action =
-        match la with
-        | Some la -> state_0 la s
-        | None -> state_0 (input_char s) s
-      in
-      la, $lid:name ^ "_action"$ la action
+    $lid:name$ lexbuf =
+      Lexing.(lexbuf.lex_start_pos <- lexbuf.lex_curr_pos);
+      let action = $uid:"Dfa_" ^ name$.state_0 (advance lexbuf) in
+      $action_call$ lexbuf action
   >> in
 
   action_func :: entry_func :: action_funcs,
@@ -126,6 +202,12 @@ let emit pre post dfas =
 
   let impl =
     let _loc = Loc.ghost in
+
+    let items =
+      <:str_item<
+        let error lexbuf = failwith (Lexing.lexeme lexbuf)
+      >> :: items
+    in
 
     let items =
       match pre with
@@ -144,13 +226,56 @@ let emit pre post dfas =
     in
 
     <:str_item<
+      let advance lexbuf =
+        let open Lexing in
+        if lexbuf.lex_eof_reached then (
+          raise End_of_file
+        ) else if lexbuf.lex_curr_pos = lexbuf.lex_buffer_len then (
+          print_endline "refill";
+          lexbuf.refill_buff lexbuf;
+        ) else (
+          lexbuf.lex_curr_pos <- lexbuf.lex_curr_pos + 1;
+        );
+
+        lexbuf
+      ;;
+
+      let curr_char lexbuf =
+        let open Lexing in
+        lexbuf.lex_buffer.[lexbuf.lex_curr_pos]
+      ;;
+
+      let accept lexbuf action =
+        let open Lexing in
+        assert (lexbuf.lex_curr_pos > 0);
+        lexbuf.lex_curr_pos <- lexbuf.lex_curr_pos - 1;
+        action
+      ;;
+
+      let reject lexbuf =
+        -1
+      ;;
+
+
+      let trace_state lexbuf state =
+        Printf.printf "state %d on '%s'\n" state (Char.escaped (curr_char lexbuf))
+      ;;
+
       $Ast.stSem_of_list (List.rev items)$
 
-      let rec loop la s =
-        let la, _ = token la s in
-        loop (Some la) s
+      let rec loop lexbuf =
+        print_endline "getting next token";
+        let _ = token lexbuf in
+        loop lexbuf
 
-      let () = loop None stdin
+      let () =
+        try
+          let lexbuf = Lexing.from_channel stdin in
+          String.fill lexbuf.Lexing.lex_buffer 0 (String.length lexbuf.Lexing.lex_buffer - 1) '\000';
+          loop lexbuf
+        with e ->
+          flush stdout;
+          raise e
     >>
   in
 
