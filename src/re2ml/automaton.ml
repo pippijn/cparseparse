@@ -1,409 +1,282 @@
 open Sexplib.Conv
 
-
-module Persistent = struct
-
-  module type StateType = sig
-    include Sig.OrderedConvertibleType
-
-    (* the local start state for an automaton *)
-    val start : t
-    (* create a new state *)
-    val make : int -> t
-
-    val to_string : t -> string
-  end
-
-  module type TransitionType = sig
-    include Sig.OrderedConvertibleType
-
-    val is_final : t -> bool
-    val to_string : t -> string
-  end
+let (=)  : int -> int -> bool = (==)
+let (<>) : int -> int -> bool = (!=)
 
 
-  module type S = sig
-    type t
+module type StateType = sig
+  include Sig.ConvertibleType
 
-    val sexp_of_t : t -> Sexplib.Sexp.t
-    val t_of_sexp : Sexplib.Sexp.t -> t
+  type store
 
-    module S : StateType
-    type state = S.t
+  val store_of_sexp : Sexplib.Sexp.t -> store
+  val sexp_of_store : store -> Sexplib.Sexp.t
 
-    module T : TransitionType
-    type transition = T.t
+  val id_of : store -> t -> int
+  val of_id : store -> int -> t
 
-    type edge = transition * state with sexp
+  val make : store -> int -> t
 
-    val mem : t -> state -> bool
+  (* the local start state for an automaton *)
+  val start : store -> t
 
-    val add : t -> state -> t
-    val add_state : t -> t * state
-    val add_outgoing : t -> state -> transition -> state -> t
-    val add_transition : t -> state -> transition -> t * state
+  val to_string : store -> t -> string
+end
 
-    val fold_states : (state -> 'a -> 'a) -> t -> 'a -> 'a
+module type TransitionType = sig
+  include Sig.ConvertibleType
 
-    val outgoing : t -> state -> edge list
+  val id_of : t -> int
+  val of_id : int -> t
 
-    val empty : t
-    val start : t
-
-    val to_dot : out_channel -> t -> unit
-  end
-
-
-  module Make(S : StateType)(T : TransitionType)
-  : S with module S = S
-       and module T = T
-  = struct
-
-    module S = S
-    type state = S.t with sexp
-
-    module T = T
-    type transition = T.t with sexp
-
-    module Map = SexpMap.Make(S)
-    module Set = SexpSet.Make(S)
-
-    type edge = transition * state with sexp
-
-    type vertex = {
-      state_id : S.t;
-      outgoing : edge list;
-    } with sexp
-
-    type t = {
-      size : int;
-      states : vertex Map.t;
-    } with sexp
-
-
-    let mem nfa state =
-      Map.mem state nfa.states
-
-
-    (* add a new empty state *)
-    let add nfa state_id =
-      if mem nfa state_id then
-        invalid_arg "can not replace existing state";
-      let state = { state_id; outgoing = [] } in
-      { states = Map.add state_id state nfa.states; size = nfa.size + 1 }
-
-
-    (* add a new state and return its id *)
-    let add_state nfa =
-      let state_id = S.make nfa.size in
-      add nfa state_id, state_id
-
-
-    (* replace a state in the NFA *)
-    let update_state nfa state =
-      { nfa with states = Map.add state.state_id state nfa.states }
-
-
-    (* add transition on c from a to b *)
-    let add_outgoing nfa a c b =
-      let a = Map.find a nfa.states in
-      update_state nfa { a with outgoing = (c, b) :: a.outgoing }
-
-
-    (* add new state with transition on c from a to the new state *)
-    let add_transition nfa a c =
-      let nfa, next_id = add_state nfa in
-      add_outgoing nfa a c next_id, next_id
-
-
-    let fold_states f nfa x =
-      Map.fold (fun state_id state x ->
-        f state_id x
-      ) nfa.states x
-
-
-    let outgoing nfa state_id =
-      (Map.find state_id nfa.states).outgoing
-
-
-    (* empty automaton *)
-    let empty = { size = 0; states = Map.empty; }
-    (* automaton with only a start state *)
-    let start = add empty S.start
-
-    let to_dot out nfa =
-      output_string out "digraph G {\n";
-
-      let finals =
-        Map.fold (fun state_id state finals ->
-          if List.exists (fun (func, target) -> T.is_final func) state.outgoing then
-            Set.add state_id finals
-          else
-            finals
-        ) nfa.states Set.empty
-      in
-
-      output_string out "\tnode [shape = doublecircle];";
-      Set.iter (fun final ->
-        output_string out " \"";
-        output_string out (S.to_string final);
-        output_string out "\"";
-      ) finals;
-      output_string out ";\n\tnode [shape = circle];\n";
-
-      Map.iter (fun source state ->
-        List.iter (fun (func, target) ->
-          Printf.fprintf out "\t\"%s\" -> \"%s\" [ label = \"%s\" ];\n"
-            (S.to_string source)
-            (S.to_string target)
-            (T.to_string func)
-        ) state.outgoing
-      ) nfa.states;
-      output_string out "}\n"
-
-  end
-
+  val is_final : t -> bool
+  val to_string : t -> string option
 end
 
 
-module Imperative = struct
+module type S = sig
+  include Sig.ConvertibleType
 
-  module type StateType = sig
-    include Sig.ConvertibleType
+  module S : StateType
+  type state = S.t
 
-    type store
+  module T : TransitionType
+  type transition = T.t
 
-    val store_of_sexp : Sexplib.Sexp.t -> store
-    val sexp_of_store : store -> Sexplib.Sexp.t
+  type edge = transition * state with sexp
 
-    val id_of : store -> t -> int
-    val of_id : store -> int -> t
-    val invalid : t
+  val mem : t -> state -> bool
 
-    (* the local start state for an automaton *)
-    val start : store -> t
+  val add : t -> state -> unit
+  val add_state : t -> state
+  val add_outgoing : t -> state -> transition -> state -> unit
+  val add_transition : t -> state -> transition -> state
 
-    val to_string : store -> t -> string
-  end
+  val outgoing : t -> state -> edge list
 
-  module type TransitionType = sig
-    include Sig.ConvertibleType
+  val fold : (state -> edge list -> 'a -> 'a) -> t -> 'a -> 'a
+  val iter : (state -> edge list -> unit) -> t -> unit
 
-    val id_of : t -> int
-    val of_id : int -> t
-    val invalid : t
+  val is_final : t -> state -> bool
 
-    val is_final : t -> bool
-    val to_string : t -> string
-  end
+  val empty : S.store -> t
+  val start : S.store -> t
 
-
-  module type S = sig
-    include Sig.ConvertibleType
-
-    module S : StateType
-    type state = S.t
-
-    module T : TransitionType
-    type transition = T.t
-
-    val mem : t -> state -> bool
-
-    val add : t -> state -> unit
-    val add_outgoing : t -> state -> transition -> state -> unit
-
-    val fold : (state -> (transition * state) list -> 'a -> 'a) -> t -> 'a -> 'a
-    val iter : (state -> (transition * state) list -> unit) -> t -> unit
-
-    val is_final : t -> state -> bool
-
-    val empty : S.store -> t
-    val start : S.store -> t
-
-    val to_dot : out_channel -> t -> unit
-  end
+  val to_dot : lr:bool -> ?final:bool -> out_channel -> t -> unit
+end
 
 
-  module Make(S : StateType)(T : TransitionType)
-  : S with module S = S
-       and module T = T
-  = struct
+module Make(S : StateType)(T : TransitionType)
+: S with module S = S
+     and module T = T
+= struct
 
-    module S = S
-    type state = S.t with sexp
+  type 'a dyn_array = 'a BatDynArray.t
+  let dyn_array_of_sexp of_sexp sx = BatDynArray.of_array (array_of_sexp of_sexp sx)
+  let sexp_of_dyn_array sexp_of ar = sexp_of_array sexp_of (BatDynArray.to_array ar)
 
-    module T = T
-    type transition = T.t with sexp
+  module S = S
+  type state = S.t with sexp
 
-    type vertex = {
-      state_id : state;
-      mutable outgoing : state array;
-    } with sexp
+  module T = T
+  type transition = T.t with sexp
 
-    type t = {
-      store : S.store;
-      mutable states : vertex array;
-    } with sexp
+  type edge = transition * state with sexp
 
+  type vertex = {
+    state_id : state;
+    mutable outgoing : state list array;
+  } with sexp
 
-    let invalid = {
-      state_id = S.invalid;
-      outgoing = [||];
-    }
-
-    let mem nfa state_id =
-      let state_id = S.id_of nfa.store state_id in
-      Array.length nfa.states > state_id &&
-      nfa.states.(state_id) != invalid
+  type t = {
+    store : S.store;
+    mutable states : vertex option dyn_array;
+  } with sexp
 
 
-    (* add a new empty state *)
-    let add nfa state_id =
-      if mem nfa state_id then
-        invalid_arg "can not replace existing state";
-      let state = { state_id; outgoing = Array.make 128 S.invalid } in
-      let state_id = S.id_of nfa.store state_id in
-      if Array.length nfa.states <= state_id then
-        nfa.states <- Array.init (state_id * 2 + 1) (fun i ->
-          if i < Array.length nfa.states then
-            nfa.states.(i)
-          else
-            invalid
-        );
-      nfa.states.(state_id) <- state
+  let mem fsm state_id =
+    let state_id = S.id_of fsm.store state_id in
+    BatDynArray.length fsm.states > state_id &&
+    BatDynArray.get fsm.states state_id  != None
 
 
-    (* add transition on c from a to b *)
-    let add_outgoing nfa a c b =
-      let c = T.id_of c in
-      let a = nfa.states.(S.id_of nfa.store a) in
-      if Array.length a.outgoing <= c then
-        a.outgoing <- Array.init (c * 2 + 1) (fun i ->
-          if i < Array.length a.outgoing then
-            a.outgoing.(i)
-          else
-            S.invalid
-        );
-      a.outgoing.(c) <- b
+  (* add a new empty state *)
+  let add fsm state_id =
+    if mem fsm state_id then
+      invalid_arg "can not replace existing state";
+    let state = { state_id; outgoing = Array.make (CharClass.set_end / 2) [] } in
+    let state_id = S.id_of fsm.store state_id in
+    if state_id == BatDynArray.length fsm.states - 1 then (
+      BatDynArray.add fsm.states (Some state)
+    ) else (
+      while BatDynArray.length fsm.states <= state_id do
+        BatDynArray.add fsm.states None
+      done;
+      BatDynArray.set fsm.states state_id (Some state)
+    )
 
 
-    let outgoing nfa state =
-      BatArray.fold_lefti (fun outgoing transition target ->
-        if target != S.invalid then
-          (T.of_id transition, target) :: outgoing
+  let next_state_id fsm =
+    BatDynArray.length fsm.states
+
+
+  let add_state fsm =
+    let b = S.make fsm.store (next_state_id fsm) in
+    add fsm b;
+    b
+
+
+  (* add transition on c from a to b *)
+  let add_outgoing fsm a c b =
+    let c = T.id_of c in
+    let a = BatOption.get (BatDynArray.get fsm.states (S.id_of fsm.store a)) in
+    if Array.length a.outgoing <= c then
+      a.outgoing <- Array.init (c * 2 + 1) (fun i ->
+        if i < Array.length a.outgoing then
+          a.outgoing.(i)
         else
-          outgoing
-      ) [] state.outgoing
+          []
+      );
+    a.outgoing.(c) <- b :: a.outgoing.(c)
 
 
-    let fold f nfa x =
-      Array.fold_left (fun x state ->
-        if state == invalid then
-          x
-        else
-          f state.state_id (List.rev (outgoing nfa state)) x
-      ) x nfa.states
+  let add_transition fsm a c =
+    let b = add_state fsm in
+    add_outgoing fsm a c b;
+    b
 
 
-    let iter f nfa =
-      Array.iter (fun state ->
-        if state != invalid then
-          f state.state_id (List.rev (outgoing nfa state))
-      ) nfa.states
+  let outgoing state =
+    BatArray.fold_lefti (fun outgoing transition targets ->
+      List.map (fun target -> T.of_id transition, target) targets
+      @ outgoing
+    ) [] state.outgoing
 
 
-    (* empty automaton *)
-    let empty store = { store; states = Array.make 1 invalid }
-    (* automaton with only a start state *)
-    let start store = let fsm = empty store in add fsm (S.start store); fsm
+  let fold f fsm x =
+    BatDynArray.fold_left (fun x state ->
+      match state with
+      | None -> x
+      | Some state ->
+          f state.state_id (List.rev (outgoing state)) x
+    ) x fsm.states
 
 
-    let rec inverted_ranges invs ranges =
-      match ranges with
-      | (lo1, hi1) :: ((lo2, hi2) :: _ as tl) ->
-          let inv = (hi1 + 1, lo2 - 1) in
-          inverted_ranges (inv :: invs) tl
-      | [] | [(_, _)] ->
-          invs
+  let iter f fsm =
+    BatDynArray.iter (function
+      | None -> ()
+      | Some state ->
+          f state.state_id (List.rev (outgoing state))
+    ) fsm.states
 
 
-    let string_of_transition c =
-      String.escaped (T.to_string (T.of_id c))
-
-    let string_of_range (lo, hi) =
-      if lo == hi then
-        Printf.sprintf "'%s'" (string_of_transition lo)
-      else
-        Printf.sprintf "'%s'-'%s'" (string_of_transition lo) (string_of_transition hi)
-
-    let print_ranges is_inv out = function
-      | [(lo, hi)] when lo == hi ->
-          Printf.fprintf out "'%s'" (string_of_transition lo)
-      | ranges ->
-          Printf.fprintf out "[%s%s]"
-            (if is_inv then "^" else "")
-            (String.concat " " (List.rev_map string_of_range ranges))
+  let outgoing fsm state_id =
+    outgoing (BatOption.get (BatDynArray.get fsm.states (S.id_of fsm.store state_id)))
 
 
-    let print_ranges out ranges =
-      let is_inv =
-        let width =
-          List.fold_left (fun width (lo, hi) ->
-            width + (hi - lo)
-          ) 0 ranges
-        in
+  (* empty automaton *)
+  let empty store = { store; states = BatDynArray.create () }
+  (* automaton with only a start state *)
+  let start store = let fsm = empty store in add fsm (S.start store); fsm
 
-        (* if the ranges cover more than half of the total character
-         * range, then this is probably an inverted range *)
-        width > 128
-      in
 
-      let ranges =
+  let rec inverted_ranges invs ranges =
+    match ranges with
+    | (lo1, hi1) :: ((lo2, hi2) :: _ as tl) ->
+        let inv = (hi1 + 1, lo2 - 1) in
+        inverted_ranges (inv :: invs) tl
+    | [] | [(_, _)] ->
+        invs
+
+
+  let string_of_transition c =
+    match T.to_string (T.of_id c) with
+    | None -> ""
+    | Some s ->
+        "'" ^ String.escaped s ^ "'"
+
+  let string_of_range (lo, hi) =
+    if lo = hi then
+      string_of_transition lo
+    else
+      string_of_transition lo ^ "-" ^ string_of_transition hi
+
+  let print_ranges is_inv = function
+    | [(lo, hi)] when lo = hi ->
         if is_inv then
-          inverted_ranges [] (List.rev ranges)
+          "[^" ^ string_of_transition lo ^ "]"
         else
-          ranges
+          string_of_transition lo
+    | ranges ->
+        Printf.sprintf "[%s%s]"
+          (if is_inv then "^" else "")
+          (String.concat " " (List.rev_map string_of_range ranges))
+
+
+  let print_ranges ranges =
+    let is_inv =
+      let width =
+        List.fold_left (fun width (lo, hi) ->
+          width + (hi - lo)
+        ) 0 ranges
       in
 
-      print_ranges is_inv out ranges
+      (* if the ranges cover more than half of the total character
+       * range, then this is probably an inverted range *)
+      width > CharClass.set_end / 2
+    in
+
+    let ranges =
+      if is_inv then
+        inverted_ranges [] (List.rev ranges)
+      else
+        ranges
+    in
+
+    print_ranges is_inv ranges
 
 
-    let is_final_id nfa state =
-      let state = nfa.states.(state) in
-      state != invalid &&
-      BatArray.fold_lefti (fun is_final func target ->
-        is_final || (target != S.invalid && T.is_final (T.of_id func))
-      ) false state.outgoing
+  let is_final_id fsm state =
+    match BatDynArray.get fsm.states state with
+    | None -> false
+    | Some state ->
+        BatArray.fold_lefti (fun is_final func target ->
+          is_final || (target != [] && T.is_final (T.of_id func))
+        ) false state.outgoing
 
 
-    let is_final nfa state =
-      is_final_id nfa (S.id_of nfa.store state)
+  let is_final fsm state =
+    is_final_id fsm (S.id_of fsm.store state)
 
 
-    let to_dot out nfa =
-      output_string out "digraph G {\n";
+  let to_dot ~lr ?(final=true) out fsm =
+    output_string out "digraph G {\n";
+    if lr then
       output_string out "\trankdir = LR;\n";
 
-      let finals = Array.init (Array.length nfa.states) (is_final_id nfa) in
+    let finals = Array.init (BatDynArray.length fsm.states) (is_final_id fsm) in
 
-      output_string out "\tnode [shape = doublecircle];";
-      Array.iteri (fun state is_final ->
-        if is_final then (
-          output_string out " \"";
-          output_string out (S.to_string nfa.store (S.of_id nfa.store state));
-          output_string out "\"";
-        )
-      ) finals;
-      output_string out ";\n\tnode [shape = circle];\n";
+    output_string out "\tnode [shape = doublecircle];";
+    Array.iteri (fun state is_final ->
+      if is_final then (
+        output_string out " \"";
+        output_string out (S.to_string fsm.store (S.of_id fsm.store state));
+        output_string out "\"";
+      )
+    ) finals;
+    output_string out ";\n\tnode [shape = circle];\n";
 
-      Array.iter (fun state ->
-        if state != invalid then (
+    BatDynArray.iter (function
+      | None -> ()
+      | Some state ->
           (* construct inverse map: target -> transition list *)
-          let outgoing = Array.make (Array.length nfa.states) [] in
-          Array.iteri (fun func target ->
-            if target != S.invalid then
-              let target = S.id_of nfa.store target in
-              outgoing.(target) <- func :: outgoing.(target)
+          let outgoing = Array.make (BatDynArray.length fsm.states) [] in
+          Array.iteri (fun func targets ->
+            if final || not (T.is_final (T.of_id func)) then
+              List.iter (fun target ->
+                let target = S.id_of fsm.store target in
+                outgoing.(target) <- func :: outgoing.(target)
+              ) targets
           ) state.outgoing;
 
           Array.iteri (fun target funcs ->
@@ -412,25 +285,26 @@ module Imperative = struct
             | hd :: tl ->
                 let ranges, wip =
                   List.fold_left (fun (ranges, (lo, hi as wip)) func ->
-                    if hi + 1 == func then
+                    if hi + 1 = func then
                       (ranges, (lo, func))
                     else
                       (wip :: ranges, (func, func))
                   ) ([], (hd, hd)) tl
                 in
 
-                let ranges = wip :: ranges in
+                let label =
+                  match print_ranges (wip :: ranges) with
+                  | "" -> " [ label = \"ε\" ]"
+                  | s  -> " [ label = \"" ^ s ^ "\" ]"
+                in
 
-                Printf.fprintf out "\t\"%s\" -> \"%s\" [ label = \"%a\" ];\n"
-                  (S.to_string nfa.store state.state_id)
-                  (S.to_string nfa.store (S.of_id nfa.store target))
-                  print_ranges ranges
+                Printf.fprintf out "\t\"%s\" -> \"%s\"%s;\n"
+                  (S.to_string fsm.store state.state_id)
+                  (S.to_string fsm.store (S.of_id fsm.store target))
+                  label
           ) outgoing
-        )
-      ) nfa.states;
-      output_string out "}\n";
-      flush out
-
-  end
+    ) fsm.states;
+    output_string out "}\n";
+    flush out
 
 end

@@ -3,11 +3,13 @@ open Sexplib.Conv
 
 module State = struct
   type t = int with sexp
+  type store = unit with sexp
 
-  let compare a b = a - b
-  let make n = n
-  let start = make 0
-  let to_string = string_of_int
+  let id_of () id = id
+  let of_id () id = id
+  let make () n = n
+  let start () = make () 0
+  let to_string () = string_of_int
 end
 
 module Transition = struct
@@ -18,107 +20,119 @@ module Transition = struct
     | Accept of int (* transition from end to start, executing code *)
     with sexp
 
-  let compare = compare
+  let id_of = function
+    | Eps -> CharClass.set_end + 1
+    | Chr c -> Char.code c
+    | Accept a -> a + (CharClass.set_end + 2)
+  let of_id = function
+    | c when c == CharClass.set_end + 1 -> Eps
+    | c when c < CharClass.set_end -> Chr (Char.chr c)
+    | a -> Accept (a - (CharClass.set_end + 2))
+
   let to_string = function
-    | Eps -> "ε"
-    | Chr '"' -> "\\\""
-    | Chr c -> Char.escaped c
-    | Accept action -> "action " ^ string_of_int action
+    | Eps -> None
+    | Chr c -> Some (Char.escaped c)
+    | Accept action -> Some ("A" ^ string_of_int action)
   let is_final = function
     | Accept _ -> true
     | _ -> false
 end
 
-module Map = SexpMap.Make(State)
-module Fsm = Automaton.Persistent.Make(State)(Transition)
+module Fsm = Automaton.Make(State)(Transition)
 
 
-let rec construct_regexp (nfa, state_id) regexp =
+let rec construct_regexp nfa state_id regexp =
   match regexp with
   | Eof ->
-      nfa, state_id
+      (* eof is signalled by NUL *)
+      Fsm.add_transition nfa state_id (Transition.Chr '\000')
 
   | Char c ->
       (* on a character, simply make a transition to the next state *)
       Fsm.add_transition nfa state_id (Transition.Chr (Sloc.value c))
 
   | String s ->
-      BatString.fold_left (fun (nfa, state_id) c ->
+      BatString.fold_left (fun state_id c ->
         Fsm.add_transition nfa state_id (Transition.Chr c)
-      ) (nfa, state_id) (Sloc.value s)
+      ) state_id (Sloc.value s)
 
   | Sequence seq ->
-      List.fold_left construct_regexp (nfa, state_id) seq
+      List.fold_left (construct_regexp nfa) state_id seq
 
   | CharClass (Positive list) ->
       (* make a new state *)
-      let nfa, common_target = Fsm.add_state nfa in
+      let common_target = Fsm.add_state nfa in
 
       (* make a transition on each character in the list to the new state *)
-      let nfa =
-        List.fold_left (fun nfa -> function
-          | Range _ -> failwith "unresolved range"
-          | Single c ->
-              Fsm.add_outgoing nfa state_id (Transition.Chr (Sloc.value c)) common_target
-        ) nfa list
-      in
+      List.iter (function
+        | Range _ -> failwith "unresolved range"
+        | Single c ->
+            Fsm.add_outgoing nfa state_id (Transition.Chr (Sloc.value c)) common_target
+      ) list;
 
-      nfa, common_target
+      common_target
 
 
   | OrGrouping group ->
+      (* make a common start state *)
+      let common_start = Fsm.add_state nfa in
+
+      (* and transition from the current state to that state *)
+      Fsm.add_outgoing nfa state_id Transition.Eps common_start;
+
       (* in a list of alternatives, make a transition from the current
        * state to all alternatives and a transition to a common target
        * state from each alternative end-state *)
-      let nfa, end_states =
-        List.fold_left (fun (nfa, end_states) regexp ->
-          let nfa, end_state = construct_regexp (nfa, state_id) regexp in
-          nfa, end_state :: end_states
-        ) (nfa, []) group
+      let end_states =
+        List.fold_left (fun end_states regexp ->
+          let end_state = construct_regexp nfa common_start regexp in
+          end_state :: end_states
+        ) [] group
       in
 
       (* make a new state *)
-      let nfa, common_end = Fsm.add_state nfa in
+      let common_end = Fsm.add_state nfa in
 
       (* add an epsilon transition from all end states to the common end *)
-      let nfa =
-        List.fold_left (fun nfa end_state ->
-          Fsm.add_outgoing nfa end_state Transition.Eps common_end
-        ) nfa end_states
-      in
+      List.iter (fun end_state ->
+        Fsm.add_outgoing nfa end_state Transition.Eps common_end
+      ) end_states;
 
       (* the common end is our new state *)
-      nfa, common_end
+      common_end
 
   | Binding (regexp, name) ->
-      construct_regexp (nfa, state_id) regexp
+      construct_regexp nfa state_id regexp
 
   | Plus (regexp) ->
       (* a+ makes an epsilon transition from the end of 'a' back
        * to this state *)
-      let nfa, end_state = construct_regexp (nfa, state_id) regexp in
-      Fsm.add_outgoing nfa end_state Transition.Eps state_id, end_state
+      let end_state = construct_regexp nfa state_id regexp in
+      Fsm.add_outgoing nfa end_state Transition.Eps state_id;
+      end_state
 
   | AnyChar | Lexeme _ | CharClass _ | Question _ | Star _ | Quantified _ ->
       failwith ("unresolved regexp: " ^ Sexplib.Sexp.to_string_hum (sexp_of_regexp regexp))
 
 
-let construct_rule (nfa, actions) (Rule (regexp, code)) =
+let construct_rule nfa actions (Rule (regexp, code)) =
   (* create a local start state for this rule and an epsilon transition
    * from the global start state *)
-  let nfa, start_state = Fsm.add_transition nfa State.start Transition.Eps in
+  let start_state = Fsm.add_transition nfa (State.start ()) Transition.Eps in
 
   (* construct one NFA for this rule's regexp *)
-  let nfa, end_state = construct_regexp (nfa, start_state) regexp in
+  let end_state = construct_regexp nfa start_state regexp in
 
   (* make the final accept-transition back to 0 via semantic action *)
   let action = BatDynArray.length actions in
   BatDynArray.add actions code;
-  Fsm.add_outgoing nfa end_state (Transition.Accept action) State.start, actions
+  Fsm.add_outgoing nfa end_state (Transition.Accept action) (State.start ())
 
 
 let construct_lexer (Lexer (name, args, rules)) =
-  let nfa, actions = List.fold_left construct_rule (Fsm.start, BatDynArray.create ()) rules in
+  let nfa = Fsm.start () in
+  let actions = BatDynArray.create () in
+  List.iter (construct_rule nfa actions) rules;
 
   name, args, (nfa, BatDynArray.to_array actions)
 

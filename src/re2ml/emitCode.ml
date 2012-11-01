@@ -19,12 +19,23 @@ let paOrp_of_list =
   )
 
 
+let make_binding _loc name params code =
+  let defn =
+    List.fold_right (fun param defn ->
+      <:expr<fun $param$ -> $defn$>>
+    ) params code
+  in
+
+  <:binding<$lid:name$ = $defn$>>
+
+
 let emit_action_func name params actions =
   let _loc, name = Sloc._loc name in
 
   let cases =
     BatArray.fold_lefti (fun cases action code ->
-      <:match_case<$int:string_of_int action$ -> $CamlAst.expr_of_loc_string code$>> :: cases
+      <:match_case<$int:string_of_int action$ -> $CamlAst.expr_of_loc_string code$>>
+      :: cases
     ) [] actions
     |> List.rev
     |> Ast.mcOr_of_list
@@ -38,31 +49,26 @@ let emit_action_func name params actions =
     >>
   in
 
-  let defn =
-    List.fold_right (fun param defn ->
-      <:expr<fun $param$ -> $defn$>>
-    ) params code
-  in
-
-  <:binding<$lid:name ^ "_action"$ = $defn$>>
+  make_binding _loc (name ^ "_action") params code
 
 
 let compute_spans acceptance transitions =
   let spans, last =
     List.fold_left (fun (spans, wip) transition ->
-      if not (Dfa.Transition.is_char transition) then
-        spans, wip
-      else (
-        acceptance.(transition) <- true;
-        match wip with
-        | None ->
-            spans, Some (Range (transition, transition))
-        | Some (Range (lo, hi) as wip) ->
-            if hi + 1 == transition then
-              spans, Some (Range (lo, transition))
-            else
-              (wip :: spans), Some (Range (transition, transition))
-      )
+      match transition with
+      | Dfa.Transition.Accept _ ->
+          spans, wip
+      | Dfa.Transition.Chr c ->
+          let c = Char.code c in
+          acceptance.(c) <- true;
+          match wip with
+          | None ->
+              spans, Some (Range (c, c))
+          | Some (Range (lo, hi) as wip) ->
+              if hi + 1 == c then
+                spans, Some (Range (lo, c))
+              else
+                (wip :: spans), Some (Range (c, c))
     ) ([], None) (List.rev transitions)
   in
 
@@ -106,7 +112,7 @@ let add_case _loc cases target pattern =
 
 
 let build_cases _loc targets =
-  let acceptance = Array.make 256 false in
+  let acceptance = Array.make CharClass.set_end false in
 
   let cases =
     IntMap.fold (fun target transitions cases ->
@@ -125,11 +131,11 @@ let build_cases _loc targets =
 let accept_case _loc targets =
   IntMap.fold (fun target transitions case ->
     List.fold_left (fun case transition ->
-      if Dfa.Transition.is_accept transition then
-        let action = Dfa.Transition.decode_accept transition in
+      match transition with
+      | Dfa.Transition.Accept action ->
           Some <:match_case<_ -> accept lexbuf $int:string_of_int action$>>
-      else
-        case
+      | Dfa.Transition.Chr _ ->
+          case
     ) case transitions
   ) targets None
 
@@ -175,8 +181,7 @@ let emit_automaton (action_funcs, automata) (name, args, (dfa, actions)) =
 
       <:binding<
         $lid:"state_" ^ string_of_int state$ lexbuf =
-          trace_state lexbuf $int:string_of_int state$;
-          match curr_char lexbuf with
+          match curr_char lexbuf $int:string_of_int state$ with
           $cases$
       >> :: funcs
     ) dfa []
@@ -197,12 +202,15 @@ let emit_automaton (action_funcs, automata) (name, args, (dfa, actions)) =
     ) <:expr<$lid:name ^ "_action"$>> args
   in
 
-  let entry_func = <:binding<
-    $lid:name$ lexbuf =
-      Lexing.(lexbuf.lex_start_pos <- lexbuf.lex_curr_pos);
-      let action = $uid:"Dfa_" ^ name$.state_0 (advance lexbuf) in
-      $action_call$ lexbuf action
-  >> in
+  let entry_func =
+    make_binding _loc name params
+      <:expr<
+        fun lexbuf ->
+          Lexing.(lexbuf.lex_start_pos <- lexbuf.lex_curr_pos);
+          let action = $uid:"Dfa_" ^ name$.state_0 lexbuf in
+          $action_call$ lexbuf action
+       >>
+  in
 
   action_func :: entry_func :: action_funcs,
   automaton :: automata
@@ -216,77 +224,133 @@ let emit pre post dfas =
 
     let items =
       <:str_item<
-        let error lexbuf = failwith (Lexing.lexeme lexbuf)
-      >> :: items
+        let error lexbuf =
+          if lexbuf.Lexing.lex_eof_reached then
+            raise End_of_file
+          else
+            failwith (Lexing.lexeme lexbuf)
+        ;;
+      >>
+      :: items
     in
 
     let items =
       match pre with
       | None -> items
       | Some pre ->
-          CamlAst.str_items_of_loc_string pre :: items
+          CamlAst.str_items_of_loc_string pre
+          :: items
     in
 
-    let items = <:str_item<let rec $Ast.biAnd_of_list action_funcs$>> :: items in
+    let items =
+      <:str_item<let rec $Ast.biAnd_of_list action_funcs$;;>>
+      :: items
+    in
 
     let items =
       match post with
       | None -> items
       | Some post ->
-          CamlAst.str_items_of_loc_string post :: items
+          CamlAst.str_items_of_loc_string post
+          :: items
     in
 
     <:str_item<
+      let trace_lexing = false;;
+
       let advance lexbuf =
         let open Lexing in
         if lexbuf.lex_eof_reached then (
-          raise End_of_file
-        ) else if lexbuf.lex_curr_pos = lexbuf.lex_buffer_len then (
-          print_endline "refill";
-          lexbuf.refill_buff lexbuf;
+          (* on EOF, do nothing (yywrap?) *)
+          lexbuf
         ) else (
           lexbuf.lex_curr_pos <- lexbuf.lex_curr_pos + 1;
-        );
-
-        lexbuf
+          lexbuf
+        )
       ;;
 
-      let curr_char lexbuf =
+      let curr_char lexbuf state =
         let open Lexing in
-        lexbuf.lex_buffer.[lexbuf.lex_curr_pos]
+        if lexbuf.lex_eof_reached then (
+          '\000'
+        ) else (
+          if trace_lexing then (
+            Printf.printf "state %3d: process char %d (%d-%d / %d) '%s'\n"
+              state
+              lexbuf.lex_abs_pos
+              lexbuf.lex_start_pos
+              lexbuf.lex_curr_pos
+              lexbuf.lex_buffer_len
+              (Char.escaped lexbuf.lex_buffer.[lexbuf.lex_curr_pos]);
+          );
+
+          lexbuf.lex_buffer.[lexbuf.lex_curr_pos]
+        )
+      ;;
+
+      let curr_char lexbuf state =
+        let open Lexing in
+        if lexbuf.lex_curr_pos = lexbuf.lex_buffer_len then (
+          if trace_lexing then (
+            print_endline "[1;33mrefill[0m";
+          );
+          lexbuf.refill_buff lexbuf;
+        );
+
+        curr_char lexbuf state
       ;;
 
       let accept lexbuf action =
         let open Lexing in
-        assert (lexbuf.lex_curr_pos > 0);
-        lexbuf.lex_curr_pos <- lexbuf.lex_curr_pos - 1;
+        if trace_lexing then (
+          if lexbuf.lex_eof_reached then (
+            Printf.printf "[1;32maccept at eof: %d[0m\n" action;
+          ) else (
+            Printf.printf "[1;32maccept %d-%d '%s': %d[0m\n"
+              lexbuf.lex_start_pos
+              (lexbuf.lex_curr_pos - 1)
+              (Lexing.lexeme lexbuf)
+              action;
+          );
+        );
         action
       ;;
 
       let reject lexbuf =
+        let open Lexing in
+        if trace_lexing then (
+          Printf.printf "[1;31mreject at %d[0m\n" lexbuf.lex_curr_pos;
+        );
         -1
       ;;
 
-
-      let trace_state lexbuf state =
-        Printf.printf "state %d on '%s'\n" state (Char.escaped (curr_char lexbuf))
-      ;;
-
+      (* DFA modules and user functions *)
       $Ast.stSem_of_list (List.rev items)$
 
+      (* sample function tokenising the entire lexbuf *)
       let rec loop lexbuf =
-        print_endline "getting next token";
-        let _ = token lexbuf in
+        let t = token lexbuf in
+        if trace_lexing then (
+          print_endline "getting next token";
+          Printf.printf "position %d\n"
+            (lexbuf.Lexing.lex_abs_pos);
+          print_token t;
+        );
         loop lexbuf
+      ;;
 
       let () =
+        Printexc.record_backtrace true;
         try
-          let lexbuf = Lexing.from_channel stdin in
-          String.fill lexbuf.Lexing.lex_buffer 0 (String.length lexbuf.Lexing.lex_buffer - 1) '\000';
+          let open Lexing in
+          let lexbuf = from_channel stdin in
+          String.fill lexbuf.lex_buffer 0 (String.length lexbuf.lex_buffer) '\255';
           loop lexbuf
         with e ->
           flush stdout;
-          raise e
+          Printf.printf "\nException:\n  %s\n" (Printexc.to_string e);
+          Printexc.print_backtrace stdout;
+      ;;
     >>
   in
 

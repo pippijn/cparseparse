@@ -31,7 +31,8 @@ module State = struct
 
   let id_of store id = id
   let of_id store id = id
-  let invalid = -1
+
+  let make store = failwith "Dfa.State.make called"
 
   let subset { subsets } id = BatDynArray.get subsets id
 
@@ -49,46 +50,44 @@ module State = struct
 end
 
 module Transition = struct
-  type t = int with sexp
+  (* DFA transition functions *)
+  type t =
+    | Chr of char (* transition on a character *)
+    | Accept of int (* transition from end to start, executing code *)
+    with sexp
 
-  let id_of id = id
-  let of_id id = id
-  let invalid = -1
+  let id_of = function
+    | Chr c -> Char.code c
+    | Accept a -> a + (CharClass.set_end + 1)
+  let of_id = function
+    | c when c < CharClass.set_end -> Chr (Char.chr c)
+    | a -> Accept (a - (CharClass.set_end + 1))
 
-  let encode_char c = Char.code c
-  let encode_accept action = action + 257
+  let to_string = function
+    | Chr c -> Some (Char.escaped c)
+    | Accept action -> Some ("A" ^ string_of_int action)
+  let is_final = function
+    | Accept _ -> true
+    | _ -> false
 
-  let decode_char t = Char.chr t
-  let decode_accept t = t - 257
-
-  let is_char t = t < 256
-  let is_accept t = t > 256
-
-  let to_string a =
-    if is_char a then
-      Char.escaped (decode_char a)
-    else
-      "A" ^ string_of_int (decode_accept a)
-
-  let is_final = is_accept
 end
 
-module Fsm = Automaton.Imperative.Make(State)(Transition)
+module Fsm = Automaton.Make(State)(Transition)
 
 
 (* epsilon closure: a list of epsilon-reachable states for each state *)
-type eclosure = Nfa.State.t list Nfa.Map.t with sexp
+type eclosure = Nfa.State.t list IntMap.t with sexp
 
 
 let uniq estates =
-  BatList.sort_unique Nfa.State.compare estates
+  BatList.sort_unique (-) estates
 
 
 let get_e_closure eclosure state =
-  Nfa.Map.find_default [] state eclosure
+  IntMap.find_default [] state eclosure
 
 (* compute epsilon-accessible states for a state *)
-let compute_estates nfa state eclosure =
+let compute_estates nfa state outgoing eclosure =
   let estates =
     List.fold_left (fun estates (func, target) ->
       match func with
@@ -97,15 +96,15 @@ let compute_estates nfa state eclosure =
           target :: estates
       | _ ->
           estates
-    ) (get_e_closure eclosure state) (Nfa.Fsm.outgoing nfa state)
+    ) (get_e_closure eclosure state) outgoing
   in
 
   (* add this state's estates to the closure *)
-  Nfa.Map.add state (uniq estates) eclosure
+  IntMap.add state (uniq estates) eclosure
 
 
 let get_e_closure eclosure state =
-  Nfa.Map.find state eclosure
+  IntMap.find state eclosure
 
 let e_closure eclosure estates =
   (* add all epsilon-accessible states from other epsilon-accessible
@@ -116,7 +115,7 @@ let e_closure eclosure estates =
 
 let rec estates_closure eclosure =
   let closure =
-    Nfa.Map.fold (fun state estates closure ->
+    IntMap.fold (fun state estates closure ->
       let combined_estates = e_closure closure estates in
 
       (* eliminate duplicates *)
@@ -125,7 +124,7 @@ let rec estates_closure eclosure =
       (* if anything changed *)
       if combined_estates <> estates then
         (* update the map *)
-        Nfa.Map.add state combined_estates closure
+        IntMap.add state combined_estates closure
       else
         (* otherwise, don't change anything *)
         closure
@@ -141,16 +140,16 @@ let rec estates_closure eclosure =
 
 let compute_eclosure nfa =
   (* first step: compute directly epsilon-accessible states *)
-  let eclosure = Nfa.Fsm.fold_states (compute_estates nfa) nfa Nfa.Map.empty in
+  let eclosure = Nfa.Fsm.fold (compute_estates nfa) nfa IntMap.empty in
 
   (* second step: closure *)
   estates_closure eclosure
 
 
-let next_dfa_state nfa map estate_ids =
+let next_dfa_state nfa subset_map estate_ids =
   (* clear map *)
-  for i = 0 to Array.length map - 1 do
-    map.(i) <- [];
+  for i = 0 to Array.length subset_map - 1 do
+    subset_map.(i) <- [];
   done;
 
   List.fold_left (fun accept state_id ->
@@ -158,10 +157,10 @@ let next_dfa_state nfa map estate_ids =
       match func with
       | Nfa.Transition.Chr chr ->
           if false then
-            Printf.printf "-> %d with %c\n" target chr;
+            Printf.printf "-> %d with %s\n" target (Char.escaped chr);
 
           let chr = Char.code chr in
-          map.(chr) <- target :: map.(chr);
+          subset_map.(chr) <- target :: subset_map.(chr);
 
           accept
 
@@ -177,19 +176,19 @@ let next_dfa_state nfa map estate_ids =
   ) [] estate_ids
 
 
-let add_transition store state dfa todo c targets =
+let add_transition state_store state dfa todo c targets =
   match targets with
   | [] ->
       todo
 
   | _  ->
       (* each element in the map is a new state in the DFA *)
-      let target_state = State.of_list store targets in
-      Fsm.add_outgoing dfa state c target_state;
+      let target_state = State.of_list state_store targets in
+      Fsm.add_outgoing dfa state (Transition.Chr (Char.chr c)) target_state;
       target_state :: todo
 
 
-let add_dfa_state store dfa accept map state =
+let add_dfa_state state_store dfa accept subset_map state =
   (* add this subset-state to the automaton *)
   Fsm.add dfa state;
 
@@ -201,23 +200,23 @@ let add_dfa_state store dfa accept map state =
       ()
   | [action] ->
       (* a single accept action *)
-      Fsm.add_outgoing dfa state (Transition.encode_accept action) (State.start store)
+      Fsm.add_outgoing dfa state (Transition.Accept action) (State.start state_store)
   | action :: _ ->
       (* add the first action *)
-      Fsm.add_outgoing dfa state (Transition.encode_accept action) (State.start store)
+      Fsm.add_outgoing dfa state (Transition.Accept action) (State.start state_store)
   end;
 
-  BatArray.fold_lefti (add_transition store state dfa) [] map
+  BatArray.fold_lefti (add_transition state_store state dfa) [] subset_map
 
 
-let rec construct_subsets nfa store map eclosure dfa state =
+let rec construct_subsets nfa state_store subset_map eclosure dfa state =
   if not (Fsm.mem dfa state) then (
     if false then (
       Printf.printf "--- %s ---\n"
-        (State.to_string store state)
+        (State.to_string state_store state)
     );
 
-    let subset = State.subset store state in
+    let subset = State.subset state_store state in
 
     (* get the epsilon closure for each state in the subset *)
     let estate_ids = e_closure eclosure subset in
@@ -226,10 +225,10 @@ let rec construct_subsets nfa store map eclosure dfa state =
     let estate_ids = uniq estate_ids in
 
     (* make a map from input symbol to a set of states *)
-    let accept = next_dfa_state nfa map estate_ids in
+    let accept = next_dfa_state nfa subset_map estate_ids in
 
-    let todo = add_dfa_state store dfa accept map state in
-    List.iter (construct_subsets nfa store map eclosure dfa) todo
+    let todo = add_dfa_state state_store dfa accept subset_map state in
+    List.iter (construct_subsets nfa state_store subset_map eclosure dfa) todo
   )
 
 
@@ -239,9 +238,9 @@ let of_nfa (name, args, (nfa, actions)) =
     print_newline ();
   );
 
-  if false && Options._dot () then (
+  if Options._dot () then (
     BatStd.with_dispose ~dispose:close_out
-      (fun out -> Nfa.Fsm.to_dot out nfa) (open_out "nfa.dot");
+      (fun out -> Nfa.Fsm.to_dot ~lr:true ~final:false out nfa) (open_out "nfa.dot");
     ignore (Sys.command "dot -Tpng nfa.dot -o nfa.png");
   );
 
@@ -253,17 +252,17 @@ let of_nfa (name, args, (nfa, actions)) =
 
   (* start at the subset containing only the NFA's start state *)
   let dfa =
-    let store = State.make_store () in
-    let map = Array.make 256 [] in
-    let dfa = Fsm.empty store in
+    let state_store = State.make_store () in
+    let subset_map = Array.make CharClass.set_end [] in
+    let dfa = Fsm.empty state_store in
 
     Timing.progress "constructing DFA"
       (Valgrind.Callgrind.instrumented
-        (construct_subsets nfa store map eclosure dfa)) (State.start store);
+        (construct_subsets nfa state_store subset_map eclosure dfa)) (State.start state_store);
 
     if Options._dot () then (
       BatStd.with_dispose ~dispose:close_out
-        (fun out -> Fsm.to_dot out dfa) (open_out "dfa.dot");
+        (fun out -> Fsm.to_dot ~lr:true ~final:false out dfa) (open_out "dfa.dot");
       ignore (Sys.command "dot -Tpng dfa.dot -o dfa.png");
     );
 
