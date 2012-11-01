@@ -110,8 +110,7 @@ rule token = parse
 | "//" [^ '\n']*                                                { token lexbuf }
 
 (* C comments *)
-| "/*" ([^ '*']| "*"* [^ '*' '/'])* "*"+ "/"                    { token lexbuf }
-| "/*" ([^ '*']| "*"* [^ '*' '/'])* "*"*                        { failwith "unterminated comment" }
+| "/*" ([^ '*'] | "*" [^ '/'])* "*/"                            { token lexbuf }
 
 (* identifier *)
 | identifier as id                                              { return lexbuf (classify id) }
