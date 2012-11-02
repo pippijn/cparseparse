@@ -38,7 +38,7 @@ module Transition = struct
     | _ -> false
 end
 
-module Fsm = Automaton.Make(State)(Transition)
+module Fsm = Automaton.NFA(State)(Transition)
 
 
 let rec construct_regexp nfa state_id regexp =

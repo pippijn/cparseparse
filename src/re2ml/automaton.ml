@@ -83,7 +83,20 @@ module type S = sig
 end
 
 
-module Make(S : StateType)(T : TransitionType)
+module type Determinism = sig
+  val deterministic : bool
+end
+
+module Deterministic : Determinism = struct
+  let deterministic = true
+end
+
+module Nondeterministic : Determinism = struct
+  let deterministic = false
+end
+
+
+module Make(D : Determinism)(S : StateType)(T : TransitionType)
 : S with module S = S
      and module T = T
 = struct
@@ -166,7 +179,12 @@ module Make(S : StateType)(T : TransitionType)
     let a = BatOption.get (fsm.states.(a)) in
 
     a.outgoing <- resize_array a.outgoing t [];
-    a.outgoing.(t) <- b :: a.outgoing.(t)
+    if D.deterministic then (
+      assert (a.outgoing.(t) == []);
+      a.outgoing.(t) <- [b]
+    ) else (
+      a.outgoing.(t) <- b :: a.outgoing.(t)
+    )
 
 
   let add_transition fsm a c =
@@ -411,3 +429,7 @@ module Make(S : StateType)(T : TransitionType)
     flush out
 
 end
+
+
+module DFA = Make(Deterministic)
+module NFA = Make(Nondeterministic)

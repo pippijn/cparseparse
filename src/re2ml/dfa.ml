@@ -2,6 +2,7 @@ open Ast
 open Sexplib.Conv
 
 module State = struct
+
   type state_id = int with sexp
   type subset = Nfa.State.t list with sexp
 
@@ -55,9 +56,12 @@ module State = struct
 
   let start store = of_list store [0]
   let to_string { subset } = String.concat ", " (List.map string_of_int subset)
+
 end
 
+
 module Transition = struct
+
   (* DFA transition functions *)
   type t =
     | Chr of char (* transition on a character *)
@@ -80,7 +84,8 @@ module Transition = struct
 
 end
 
-module Fsm = Automaton.Make(State)(Transition)
+
+module Fsm = Automaton.DFA(State)(Transition)
 
 
 (* epsilon closure: a list of epsilon-reachable states for each state *)
