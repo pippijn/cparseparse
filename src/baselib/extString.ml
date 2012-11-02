@@ -49,7 +49,7 @@ type escape_state =
   | Escape
   | HexEscape of int
 
-let unescape str =
+let unescaped str =
   let state, chars =
     BatString.fold_left (fun (state, chars) -> function
       | '"'  when state == Escape -> NoEscape, '"'    :: chars
@@ -62,10 +62,27 @@ let unescape str =
       | 'f'  when state == Escape -> NoEscape, '\x0b' :: chars
 
       | 'x'  when state == Escape -> HexEscape 0, chars
+
       | '0' .. '9' as c ->
           begin match state with
           | HexEscape i ->
               let m = int_of_char c - int_of_char '0' in
+              HexEscape (i * 16 + m), chars
+          | _ -> state, c :: chars
+          end
+
+      | 'a' .. 'f' as c ->
+          begin match state with
+          | HexEscape i ->
+              let m = int_of_char c - int_of_char 'a' in
+              HexEscape (i * 16 + m), chars
+          | _ -> state, c :: chars
+          end
+
+      | 'A' .. 'F' as c ->
+          begin match state with
+          | HexEscape i ->
+              let m = int_of_char c - int_of_char 'A' in
               HexEscape (i * 16 + m), chars
           | _ -> state, c :: chars
           end

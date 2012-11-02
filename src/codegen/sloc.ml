@@ -39,23 +39,33 @@ let of_loc _loc t =
 
 let _loc (t, s, e) =
   let open Lexing in
+  let open Camlp4.PreCast in
 
-  Camlp4.PreCast.Loc.of_tuple (
-    (* file name *)
-    s.pos_fname,
+  let _loc =
+    if s == dummy_pos && e == dummy_pos then
+      Loc.ghost
+    else if s == generated_pos && e == generated_pos then
+      Loc.mk "<generated>"
+    else
+      Loc.of_tuple (
+        (* file name *)
+        s.pos_fname,
 
-    (* start *)
-    s.pos_lnum,
-    s.pos_bol,
-    s.pos_cnum,
+        (* start *)
+        s.pos_lnum,
+        s.pos_bol,
+        s.pos_cnum,
 
-    (* end *)
-    e.pos_lnum,
-    e.pos_bol,
-    e.pos_cnum,
+        (* end *)
+        e.pos_lnum,
+        e.pos_bol,
+        e.pos_cnum,
 
-    false
-  ), t
+        false
+      )
+  in
+
+  _loc, t
 
 
 let empty_string = dummy ""

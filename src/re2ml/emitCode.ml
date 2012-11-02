@@ -155,9 +155,9 @@ let add_case _loc cases target (pattern, matches_newline) =
               case
           | Contains ->
               Diagnostics.warning (Sloc.of_loc _loc ())
-                ("Transition to state " ^ string_of_int target ^ " on a strict superset of ['\\n']
+                "Transition to state %d on a strict superset of ['\\n']
          Source locations may not be tracked correctly in this rule
-         Consider using the -auto-loc option");
+         Consider using the -auto-loc option" target;
               case
         else
           match matches_newline with

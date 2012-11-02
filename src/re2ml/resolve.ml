@@ -30,8 +30,9 @@ let rec resolve_regexp map = function
           else
             "regex alias"
         in
-        Diagnostics.error name
-          ("No such " ^ what ^ ": '" ^ alias ^ "'")
+        Diagnostics.error name "No such %s: '%s'" what alias;
+        (* error recovery *)
+        epsilon
       end
 
   (* recursively resolve sub-regexps *)
@@ -149,5 +150,7 @@ let resolve_aliases aliases =
 let resolve (Program (pre, aliases, lexers, post)) =
   let map = resolve_aliases aliases in
   let lexers = List.map (resolve_lexer map) lexers in
+
+  Diagnostics.exit_on_error ();
 
   Program (pre, [], lexers, post)

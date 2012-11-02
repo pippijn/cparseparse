@@ -7,8 +7,11 @@
 %token EOF
 
 /* ===================== tokens ============================ */
+
+/* the error token */
+%token <char Sloc.t>	TOK_ERROR
+
 /* tokens that have many lexical spellings */
-%token <char>		TOK_ERROR
 %token <int>		TOK_INTEGER
 
 %token <string Sloc.t>	TOK_UNAME

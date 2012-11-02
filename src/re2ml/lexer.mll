@@ -74,7 +74,7 @@
     | TOK_PARSE -> "TOK_PARSE"
     | TOK_RULE -> "TOK_RULE"
 
-    | TOK_ERROR c -> "TOK_ERROR " ^ Char.escaped c
+    | TOK_ERROR c -> "TOK_ERROR " ^ Char.escaped (Sloc.value c)
 
     | EOF -> "EOF"
 
@@ -104,11 +104,16 @@
 
 
   let parse_string str =
-    str |> remove_quotes |> ExtString.unescape
+    Sloc.at str (Sloc.value str |> remove_quotes |> ExtString.unescaped)
 
   let parse_char str =
-    let unesaped = parse_string str in
-    unesaped.[0]
+    let unesaped = Sloc.value (parse_string str) in
+    if String.length unesaped != 1 then (
+      Diagnostics.error str "invalid character literal: %s (%s)"
+	(Sloc.value str)
+	(String.escaped unesaped)
+    );
+    Sloc.at str unesaped.[0]
 
 
   let output_position out p =
@@ -188,8 +193,8 @@ and normal state = parse
 | ['0'-'9']+ as int			{ TOK_INTEGER (int_of_string int) }
 
 (* String/character *)
-| dstring as string			{ TOK_STRING (parse_string string |> loc lexbuf) }
-| sstring as string			{ TOK_CHAR (parse_char string |> loc lexbuf) }
+| dstring as string			{ TOK_STRING (loc lexbuf string |> parse_string) }
+| sstring as string			{ TOK_CHAR (loc lexbuf string |> parse_char) }
 
 (* Punctuators *)
 | '{'					{ state.brace_level <- 1;
@@ -210,7 +215,7 @@ and normal state = parse
 | '('					{ TOK_LPAREN }
 | ')'					{ TOK_RPAREN }
 
-| _ as c				{ TOK_ERROR c }
+| _ as c				{ TOK_ERROR (loc lexbuf c) }
 
 | eof					{ EOF }
 

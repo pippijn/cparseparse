@@ -50,11 +50,41 @@ let parse file =
 
 
 let main files =
-  List.iter parse files
+  try
+    List.iter parse files
+  with Parser.StateError (token, state) ->
+    let open Parser in
+    let open Diagnostics in
+    begin match token with
+    | TOK_ERROR c ->
+        error c "invalid input character: %s" (Char.escaped (Sloc.value c));
+
+    | TOK_UNAME s ->
+        error s "parse error near property name '%s'" (Sloc.value s);
+    | TOK_LNAME s ->
+        error s "parse error near identifier '%s'" (Sloc.value s);
+    | TOK_BUILTIN s ->
+        error s "parse error near built-in '%s'" (Sloc.value s);
+    | TOK_STRING s ->
+        error s "parse error near string \"%s\"" (Sloc.value s);
+
+    | TOK_LIT_CODE s ->
+        error s "parse error near user code";
+
+    | TOK_CHAR c ->
+        error c "parse error near character '%s'" (Char.escaped (Sloc.value c));
+
+    | token ->
+        error Sloc.empty_string "parse error near token %s" (Lexer.to_string token);
+    end;
+
+    raise Diagnostics.Exit
 
 
 let () =
   try
-    Cmdline.run main
+    Cmdline.run main;
+    Diagnostics.print ();
   with Diagnostics.Exit ->
+    Diagnostics.print ();
     exit 1
