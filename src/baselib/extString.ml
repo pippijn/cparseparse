@@ -52,12 +52,14 @@ type escape_state =
 let unescape str =
   let state, chars =
     BatString.fold_left (fun (state, chars) -> function
-      | '"'  when state == Escape -> NoEscape, '"'  :: chars
-      | '\'' when state == Escape -> NoEscape, '\'' :: chars
-      | '\\' when state == Escape -> NoEscape, '\\' :: chars
-      | 'n'  when state == Escape -> NoEscape, '\n' :: chars
-      | 't'  when state == Escape -> NoEscape, '\t' :: chars
-      | 'r'  when state == Escape -> NoEscape, '\r' :: chars
+      | '"'  when state == Escape -> NoEscape, '"'    :: chars
+      | '\'' when state == Escape -> NoEscape, '\''   :: chars
+      | '\\' when state == Escape -> NoEscape, '\\'   :: chars
+      | 't'  when state == Escape -> NoEscape, '\t'   :: chars
+      | 'r'  when state == Escape -> NoEscape, '\r'   :: chars
+      | 'n'  when state == Escape -> NoEscape, '\n'   :: chars
+      | 'v'  when state == Escape -> NoEscape, '\x0c' :: chars
+      | 'f'  when state == Escape -> NoEscape, '\x0b' :: chars
 
       | 'x'  when state == Escape -> HexEscape 0, chars
       | '0' .. '9' as c ->
