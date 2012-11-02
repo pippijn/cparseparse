@@ -1,3 +1,5 @@
+(*+ -auto-loc
+ *)
 {
   type token =
     | TOK_IGNORE
@@ -71,9 +73,9 @@ let alnum = (alpha | digit)
 
 let identifier = (alpha | '_')(alnum | '_')*
 
-let bstring = '`'  ('\\' _ | [^ '\n' '\\' '`' ])* '`'
-let dstring = '"'  ('\\' _ | [^ '\n' '\\' '"' ])* '"'
-let sstring = '\'' ('\\' _ | [^ '\n' '\\' '\''])* '\''
+let bstring = '`' ('\\' _ | [^ '\n' '\\' '`' ])* '`'
+let dstring = '"' ('\\' _ | [^ '\n' '\\' '"' ])* '"'
+let sstring = "'" ('\\' _ | [^ '\n' '\\' '\''])* "'"
 
 
 let d = digit
@@ -94,8 +96,7 @@ let u = ['\x80'-'\xbf']
 
 rule token = parse
 (* whitespace *)
-| '\n'                                                          { Lexing.new_line lexbuf; TOK_IGNORE }
-| [' ' '\t' '\r']+                                              { TOK_IGNORE }
+| [' ' '\t' '\r' '\n']+                                         { TOK_IGNORE }
 
 (* keywords, operators *)
 | "__extension__"                                               { TOK_IGNORE }
@@ -181,7 +182,7 @@ rule token = parse
 
 | "#pragma" [^ '\n']+                                           { TOK_IGNORE }
 
-| [^ '\n']							{ failwith "error" }
+| _								{ failwith "error" }
 | eof								{ exit 0 }
 
 
