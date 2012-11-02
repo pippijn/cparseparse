@@ -9,7 +9,7 @@ let ends_with suffix str =
 let starts_with prefix str =
   let plen = String.length prefix in
   let nlen = String.length str in
-  plen <= nlen && String.sub str 0 (nlen - plen) = prefix
+  plen <= nlen && String.sub str 0 plen = prefix
 
 
 let without_prefix prefix str =
