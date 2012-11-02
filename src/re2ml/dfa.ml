@@ -2,10 +2,16 @@ open Ast
 open Sexplib.Conv
 
 module State = struct
-  type t = int with sexp
+  type state_id = int with sexp
+  type subset = Nfa.State.t list with sexp
 
-  module IntListMap = Hashtbl.Make(struct
-    type t = int list
+  type t = {
+    id : state_id;
+    subset : subset;
+  } with sexp
+
+  module SubsetMap = Hashtbl.Make(struct
+    type t = subset
 
     let hash l = List.fold_left ( * ) 1 l
     let rec equal a b =
@@ -17,36 +23,38 @@ module State = struct
   end)
 
   type store = {
-    states  : int IntListMap.t;
-    subsets : int list BatDynArray.t;
+    states  : state_id SubsetMap.t;
+    subsets : subset BatDynArray.t;
   }
 
   let make_store () = {
-    states = IntListMap.create 13;
+    states = SubsetMap.create 13;
     subsets = BatDynArray.create ();
   }
 
   let sexp_of_store s = Sexplib.Sexp.List []
   let store_of_sexp s = make_store ()
 
-  let id_of store id = id
-  let of_id store id = id
+  let encode { id } = id
+  let decode store id = { id; subset = BatDynArray.get store.subsets id }
 
   let make store = failwith "Dfa.State.make called"
 
-  let subset { subsets } id = BatDynArray.get subsets id
-
   let of_list { states; subsets } subset =
-    try
-      IntListMap.find states subset
-    with Not_found ->
-      let id = IntListMap.length states in
-      IntListMap.add states subset id;
-      BatDynArray.add subsets subset;
-      id
+    let id =
+      try
+        SubsetMap.find states subset
+      with Not_found ->
+        let id = SubsetMap.length states in
+        assert (id == BatDynArray.length subsets);
+        SubsetMap.add states subset id;
+        BatDynArray.add subsets subset;
+        id
+    in
+    { id; subset }
 
   let start store = of_list store [0]
-  let to_string store id = String.concat ", " (List.map string_of_int (subset store id))
+  let to_string { subset } = String.concat ", " (List.map string_of_int subset)
 end
 
 module Transition = struct
@@ -56,10 +64,10 @@ module Transition = struct
     | Accept of int (* transition from end to start, executing code *)
     with sexp
 
-  let id_of = function
+  let encode = function
     | Chr c -> Char.code c
     | Accept a -> a + (CharClass.set_end + 1)
-  let of_id = function
+  let decode = function
     | c when c < CharClass.set_end -> Chr (Char.chr c)
     | a -> Accept (a - (CharClass.set_end + 1))
 
@@ -207,14 +215,22 @@ let add_dfa_state state_store dfa accept subset_map state =
   BatArray.fold_lefti (add_transition state_store state dfa) [] subset_map
 
 
+let set_dfa_markers nfa dfa state estate_ids =
+  List.iter (fun nfa_state ->
+    List.iter (fun marker ->
+      Fsm.set_mark dfa state marker
+    ) (Nfa.Fsm.marks nfa nfa_state)
+  ) estate_ids
+
+
 let rec construct_subsets nfa state_store subset_map eclosure dfa state =
   if not (Fsm.mem dfa state) then (
     if false then (
       Printf.printf "--- %s ---\n"
-        (State.to_string state_store state)
+        (State.to_string state)
     );
 
-    let subset = State.subset state_store state in
+    let subset = state.State.subset in
 
     (* get the epsilon closure for each state in the subset *)
     let estate_ids = e_closure eclosure subset in
@@ -226,6 +242,7 @@ let rec construct_subsets nfa state_store subset_map eclosure dfa state =
     let accept = next_dfa_state nfa subset_map estate_ids in
 
     let todo = add_dfa_state state_store dfa accept subset_map state in
+    set_dfa_markers nfa dfa state estate_ids;
     List.iter (construct_subsets nfa state_store subset_map eclosure dfa) todo
   )
 

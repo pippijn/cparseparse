@@ -31,6 +31,15 @@ let parse_channel file input =
     ) nfas dfas
   );
 
+  let state_count =
+    List.fold_left (fun count (_, _, (dfa, actions)) ->
+      count + Dfa.Fsm.cardinal dfa
+    ) 0 dfas
+  in
+
+  if false then
+    Printf.printf "finished dfa construction with %d states\n" state_count;
+
   Timing.progress "emitting ML code" (EmitCode.emit pre post) dfas;
 
   ()

@@ -5,11 +5,11 @@ module State = struct
   type t = int with sexp
   type store = unit with sexp
 
-  let id_of () id = id
-  let of_id () id = id
+  let encode id = id
+  let decode () id = id
   let make () n = n
   let start () = make () 0
-  let to_string () = string_of_int
+  let to_string = string_of_int
 end
 
 module Transition = struct
@@ -20,11 +20,11 @@ module Transition = struct
     | Accept of int (* transition from end to start, executing code *)
     with sexp
 
-  let id_of = function
+  let encode = function
     | Eps -> CharClass.set_end + 1
     | Chr c -> Char.code c
     | Accept a -> a + (CharClass.set_end + 2)
-  let of_id = function
+  let decode = function
     | c when c == CharClass.set_end + 1 -> Eps
     | c when c < CharClass.set_end -> Chr (Char.chr c)
     | a -> Accept (a - (CharClass.set_end + 2))

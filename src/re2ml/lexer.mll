@@ -1,3 +1,5 @@
+(*+ -auto-loc
+ *)
 {
   open Parser
 
@@ -12,12 +14,14 @@
     code : Buffer.t;
     mutable automaton : automaton;
     mutable brace_level : int;
+    mutable start_p : Lexing.position;
   }
 
   let make () = {
     code = Buffer.create 16;
     automaton = Normal;
     brace_level = 0;
+    start_p = Lexing.dummy_pos;
   }
 
   let keywords = [
@@ -112,8 +116,7 @@
       p.pos_lnum
       (p.pos_cnum - p.pos_bol)
 
-  let loc lexbuf t =
-    let s = Lexing.lexeme_start_p lexbuf in
+  let loc lexbuf ?(s=Lexing.lexeme_start_p lexbuf) t =
     let e = Lexing.lexeme_end_p lexbuf in
     (*
     if Options._trace_srcloc () then
@@ -149,7 +152,7 @@ rule verbatim state = parse
 			    let code = Buffer.contents state.code in
 			    Buffer.clear state.code;
 			    state.automaton <- Normal;
-			    TOK_LIT_CODE (loc lexbuf (remove_braces code))
+			    TOK_LIT_CODE (loc ~s:state.start_p lexbuf (remove_braces code))
 			  else
 			    verbatim state lexbuf
 			}
@@ -185,6 +188,7 @@ and normal state = parse
 
 (* Punctuators *)
 | '{'					{ state.brace_level <- 1;
+					  state.start_p <- Lexing.lexeme_start_p lexbuf;
 					  Buffer.add_char state.code '{';
 					  verbatim state lexbuf
 					}

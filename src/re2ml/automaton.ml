@@ -1,7 +1,17 @@
 open Sexplib.Conv
 
-let (=)  : int -> int -> bool = (==)
-let (<>) : int -> int -> bool = (!=)
+(* resize array if necessary *)
+let resize_array arr index default =
+  if Array.length arr <= index then (
+    let resized = Array.make (index * 2 + 1) default in
+    Array.blit
+      arr 0
+      resized 0
+      (Array.length arr);
+    resized
+  ) else (
+    arr
+  )
 
 
 module type StateType = sig
@@ -12,22 +22,22 @@ module type StateType = sig
   val store_of_sexp : Sexplib.Sexp.t -> store
   val sexp_of_store : store -> Sexplib.Sexp.t
 
-  val id_of : store -> t -> int
-  val of_id : store -> int -> t
+  val encode : t -> int
+  val decode : store -> int -> t
 
   val make : store -> int -> t
 
   (* the local start state for an automaton *)
   val start : store -> t
 
-  val to_string : store -> t -> string
+  val to_string : t -> string
 end
 
 module type TransitionType = sig
   include Sig.ConvertibleType
 
-  val id_of : t -> int
-  val of_id : int -> t
+  val encode : t -> int
+  val decode : int -> t
 
   val is_final : t -> bool
   val to_string : t -> string option
@@ -46,17 +56,20 @@ module type S = sig
   type edge = transition * state with sexp
 
   val mem : t -> state -> bool
+  val cardinal : t -> int
 
   val add : t -> state -> unit
   val add_state : t -> state
   val add_outgoing : t -> state -> transition -> state -> unit
   val add_transition : t -> state -> transition -> state
 
+  val set_mark : t -> state -> string -> unit
   val mark : t -> state -> string -> ('a -> state) -> 'a -> state
+  val marks : t -> state -> string list
 
   val outgoing : t -> state -> edge list
 
-  val fold_outgoing : ('a -> T.t -> state -> 'a) -> 'a -> t -> state -> 'a
+  val fold_outgoing : ('a -> transition -> state -> 'a) -> 'a -> t -> state -> 'a
 
   val fold : (state -> edge list -> 'a -> 'a) -> t -> 'a -> 'a
   val iter : (state -> edge list -> unit) -> t -> unit
@@ -75,8 +88,6 @@ module Make(S : StateType)(T : TransitionType)
      and module T = T
 = struct
 
-  type marker = string option with sexp
-
   module S = S
   type state = S.t with sexp
 
@@ -93,36 +104,35 @@ module Make(S : StateType)(T : TransitionType)
   type t = {
     store : S.store;
     mutable states : vertex option array;
-    mutable markers : marker array;
+    mutable markers : string list array;
   } with sexp
 
 
-  let mem fsm state_id =
-    let state_id = S.id_of fsm.store state_id in
+  let state_invariants fsm state =
+    state = S.decode fsm.store (S.encode state)
+
+  let transition_invariants fsm transition =
+    transition = T.decode (T.encode transition)
+
+
+  let mem fsm state =
+    assert (state_invariants fsm state);
+    let state_id = S.encode state in
     Array.length fsm.states > state_id &&
     fsm.states.(state_id) != None
 
 
-  (* resize array if necessary *)
-  let resize_array arr index default =
-    if Array.length arr <= index then (
-      let resized = Array.make (index * 2 + 1) default in
-      Array.blit
-        arr 0
-        resized 0
-        (Array.length arr);
-      resized
-    ) else (
-      arr
-    )
+  let cardinal fsm =
+    ExtArray.count BatOption.is_some fsm.states
 
 
   (* add a new empty state *)
   let add fsm state_id =
+    assert (state_invariants fsm state_id);
     if mem fsm state_id then
       invalid_arg "can not replace existing state";
     let state = { state_id; outgoing = Array.make (CharClass.set_end / 2) [] } in
-    let state_id = S.id_of fsm.store state_id in
+    let state_id = S.encode state_id in
 
     fsm.states <- resize_array fsm.states state_id None;
     fsm.states.(state_id) <- Some state
@@ -130,7 +140,9 @@ module Make(S : StateType)(T : TransitionType)
 
   let next_state_id fsm =
     try
-      (* XXX: this makes adding new states an O(n log n) operation *)
+      (* XXX: this makes adding new states an O(n log n) operation,
+       * but it only happens during NFA construction, which is fast
+       * enough (0.003 seconds for the C++ lexer) *)
       BatArray.findi BatOption.is_none fsm.states
     with Not_found ->
       Array.length fsm.states
@@ -141,13 +153,20 @@ module Make(S : StateType)(T : TransitionType)
     add fsm b;
     b
 
-  (* add transition on c from a to b *)
-  let add_outgoing fsm a c b =
-    let c = T.id_of c in
-    let a = BatOption.get (fsm.states.(S.id_of fsm.store a)) in
 
-    a.outgoing <- resize_array a.outgoing c [];
-    a.outgoing.(c) <- b :: a.outgoing.(c)
+  (* add transition on c from a to b *)
+  let add_outgoing fsm a t b =
+    assert (state_invariants fsm a);
+    assert (transition_invariants fsm t);
+    assert (state_invariants fsm b);
+
+    let a = S.encode a in
+    let t = T.encode t in
+
+    let a = BatOption.get (fsm.states.(a)) in
+
+    a.outgoing <- resize_array a.outgoing t [];
+    a.outgoing.(t) <- b :: a.outgoing.(t)
 
 
   let add_transition fsm a c =
@@ -156,32 +175,39 @@ module Make(S : StateType)(T : TransitionType)
     b
 
 
-  let mark_begin fsm state name =
-    let state_id = S.id_of fsm.store state in
-    (* create a new marker *)
-    let marker = Some name in
-    (* set this state's marker *)
-    fsm.markers <- resize_array fsm.markers state_id None;
-    fsm.markers.(state_id) <- marker;
-    marker
-
-  let mark_end fsm state marker =
-    let state_id = S.id_of fsm.store state in
-    (* set the end state's marker to the physically identical marker
-     * of the marker's start state *)
-    fsm.markers <- resize_array fsm.markers state_id None;
-    fsm.markers.(state_id) <- marker
+  let set_mark fsm state marker =
+    assert (state_invariants fsm state);
+    let state_id = S.encode state in
+    fsm.markers <- resize_array fsm.markers state_id [];
+    fsm.markers.(state_id) <-
+      BatList.sort_unique (fun a b ->
+        if a == b then
+          0
+        else
+          match String.compare a b with
+          | 0 -> -1
+          | o -> o
+      ) (marker :: fsm.markers.(state_id))
 
   let mark fsm start_id name f x =
-    let marker = mark_begin fsm start_id name in
+    set_mark fsm start_id name;
     let end_state = f x in
-    mark_end fsm end_state marker;
+    set_mark fsm end_state name;
     end_state
+
+
+  let marks fsm state =
+    assert (state_invariants fsm state);
+    let state_id = S.encode state in
+    if state_id >= Array.length fsm.markers then
+      []
+    else
+      fsm.markers.(state_id)
 
 
   let outgoing state =
     BatArray.fold_lefti (fun outgoing transition targets ->
-      List.fold_right (fun target outgoing -> (T.of_id transition, target) :: outgoing) targets outgoing
+      List.fold_right (fun target outgoing -> (T.decode transition, target) :: outgoing) targets outgoing
     ) [] state.outgoing
 
 
@@ -203,15 +229,17 @@ module Make(S : StateType)(T : TransitionType)
 
 
   let fold_outgoing f x fsm state_id =
+    assert (state_invariants fsm state_id);
     BatArray.fold_lefti (fun x transition targets ->
       List.fold_left (fun x target ->
-        f x (T.of_id transition) target
+        f x (T.decode transition) target
       ) x targets
-    ) x (BatOption.get fsm.states.(S.id_of fsm.store state_id)).outgoing
+    ) x (BatOption.get fsm.states.(S.encode state_id)).outgoing
 
 
   let outgoing fsm state_id =
-    outgoing (BatOption.get (fsm.states.(S.id_of fsm.store state_id)))
+    assert (state_invariants fsm state_id);
+    outgoing (BatOption.get (fsm.states.(S.encode state_id)))
 
 
   (* empty automaton *)
@@ -230,7 +258,7 @@ module Make(S : StateType)(T : TransitionType)
 
 
   let string_of_transition c =
-    match T.to_string (T.of_id c) with
+    match T.to_string (T.decode c) with
     | None -> ""
     | Some s ->
         "'" ^ String.escaped s ^ "'"
@@ -281,26 +309,28 @@ module Make(S : StateType)(T : TransitionType)
     | None -> false
     | Some state ->
         BatArray.fold_lefti (fun is_final func target ->
-          is_final || (target != [] && T.is_final (T.of_id func))
+          is_final || (target != [] && T.is_final (T.decode func))
         ) false state.outgoing
 
 
   let is_final fsm state =
-    is_final_id fsm (S.id_of fsm.store state)
+    assert (state_invariants fsm state);
+    is_final_id fsm (S.encode state)
 
 
   let marker fsm state_id =
     let marker =
-      let id = S.id_of fsm.store state_id in
+      assert (state_invariants fsm state_id);
+      let id = S.encode state_id in
       if id < Array.length fsm.markers then
         fsm.markers.(id)
       else
-        None
+        []
     in
 
     match marker with
-    | None -> ""
-    | Some marker -> " [" ^ marker ^ "]"
+    | [] -> ""
+    | markers -> " [" ^ String.concat ", " marker ^ "]"
 
 
   let to_dot ~lr ?(final=true) out fsm =
@@ -313,11 +343,11 @@ module Make(S : StateType)(T : TransitionType)
     output_string out "\tnode [shape = doublecircle];";
     Array.iteri (fun state is_final ->
       if is_final then (
-        let state_id = S.of_id fsm.store state in
+        let state_id = S.decode fsm.store state in
         let marker = marker fsm state_id in
 
         Printf.fprintf out " \"%s%s\""
-          (S.to_string fsm.store state_id)
+          (S.to_string state_id)
           marker
       )
     ) finals;
@@ -331,9 +361,10 @@ module Make(S : StateType)(T : TransitionType)
           (* construct inverse map: target -> transition list *)
           let outgoing = Array.make (Array.length fsm.states) [] in
           Array.iteri (fun func targets ->
-            if final || not (T.is_final (T.of_id func)) then
+            if final || not (T.is_final (T.decode func)) then
               List.iter (fun target ->
-                let target = S.id_of fsm.store target in
+                assert (state_invariants fsm target);
+                let target = S.encode target in
                 outgoing.(target) <- func :: outgoing.(target)
               ) targets
           ) state.outgoing;
@@ -341,11 +372,11 @@ module Make(S : StateType)(T : TransitionType)
           let source_marker = marker fsm source_id in
 
           Array.iteri (fun target funcs ->
-            let target_id = S.of_id fsm.store target in
-
             match List.rev funcs with
             | [] -> ()
             | hd :: tl ->
+                let target_id = S.decode fsm.store target in
+
                 let ranges, wip =
                   List.fold_left (fun (ranges, (lo, hi as wip)) func ->
                     if hi + 1 = func then
@@ -369,9 +400,9 @@ module Make(S : StateType)(T : TransitionType)
                 let target_marker = marker fsm target_id in
 
                 Printf.fprintf out "\t\"%s%s\" -> \"%s%s\"%s;\n"
-                  (S.to_string fsm.store source_id)
+                  (S.to_string source_id)
                   source_marker
-                  (S.to_string fsm.store target_id)
+                  (S.to_string target_id)
                   target_marker
                   label
           ) outgoing

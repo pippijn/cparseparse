@@ -77,6 +77,45 @@ let compute_spans acceptance transitions =
   | Some span -> span :: spans
 
 
+type containment =
+  | Disjunct
+  | Contains
+  | Is
+
+
+let span_contains code (Range (lo, hi)) =
+  lo <= code && code <= hi
+
+
+let range_contains code = function
+  | [Range (lo, hi)] when lo == code && hi == code ->
+      Is
+  | spans when List.exists (span_contains code) spans ->
+      Contains
+  | _ ->
+      Disjunct
+
+
+let break_spans_on code spans =
+  List.fold_left (fun spans (Range (lo, hi) as span) ->
+    if lo < code && code < hi then
+      (* code is between lo and hi *)
+      Range (code + 1, hi) :: Range (code, code) :: Range (lo, code - 1) :: spans
+    else if lo < code && code == hi then
+      (* code is hi and span contains more than just code *)
+      Range (code, code) :: Range (lo, code - 1) :: spans
+    else if lo == code && code < hi then
+      (* code is lo and span contains more than just code *)
+      Range (code + 1, hi) :: Range (code, code) :: spans
+    else if lo == code && code == hi then
+      (* span is exactly code *)
+      span :: spans
+    else
+      failwith "unhandled case"
+  ) [] spans
+  |> List.rev
+
+
 let build_pattern _loc spans =
   List.rev_map (fun (Range (lo, hi)) ->
     let a = Char.escaped (Char.chr lo) in
@@ -96,19 +135,54 @@ let build_pattern _loc spans =
       <:patt<$chr:a$ .. $chr:b$>>
     ]
   ) spans
-  |> List.concat
+  |> List.concat, range_contains (Char.code '\n') spans
 
 
-let add_case _loc cases target pattern =
+let add_case _loc cases target (pattern, matches_newline) =
   match pattern with
   | [] ->
       cases
   | _::_ ->
-      <:match_case<
-        $paOrp_of_list pattern$ ->
-          $lid:"state_" ^ string_of_int target$ (advance lexbuf)
-      >>
-      :: cases
+      let pattern = paOrp_of_list pattern in
+      let code = <:expr<$lid:"state_" ^ string_of_int target$ (advance lexbuf)>> in
+
+      let case = <:match_case<$pattern$ -> $code$>> in
+
+      let case =
+        if not (Options._auto_loc ()) then
+          match matches_newline with
+          | Is | Disjunct ->
+              case
+          | Contains ->
+              Printf.printf "%s:
+Warning: Transition to state %d on a strict superset of ['\\n']
+         Source locations may not be tracked correctly in this rule
+         Consider using the -auto-loc option
+"
+                (Loc.to_string _loc)
+                target;
+              case
+        else
+          match matches_newline with
+          | Disjunct ->
+              (* new-line can not be matched by this pattern *)
+              case
+          | Contains ->
+              <:match_case<($pattern$ as c) ->
+                (* new-line can be matched *)
+                if c == $chr:"\\n"$ then
+                  Lexing.new_line lexbuf;
+                $code$
+              >>
+          | Is ->
+              <:match_case<$pattern$ ->
+                (* new-line is the only pattern *)
+                Lexing.new_line lexbuf;
+                $code$
+              >>
+      in
+
+      case :: cases
 
 
 let build_cases _loc targets =
@@ -154,6 +228,21 @@ let default_case _loc targets accepts_full_range =
       accept
 
 
+let find_action outgoing actions =
+  try
+    let action = List.find (function
+      | Dfa.Transition.Accept _, _ -> true
+      | Dfa.Transition.Chr    _, _ -> false
+    ) outgoing in
+    match action with
+    | Dfa.Transition.Accept action, _ ->
+        let _loc, _ = Sloc._loc actions.(action) in
+        Some _loc
+    | _ -> assert false
+  with Not_found ->
+    None
+
+
 let emit_automaton (action_funcs, automata) (name, args, (dfa, actions)) =
   let params = List.map CamlAst.patt_of_loc_string args in
   let args   = List.map CamlAst.expr_of_loc_string args in
@@ -163,9 +252,11 @@ let emit_automaton (action_funcs, automata) (name, args, (dfa, actions)) =
   let _loc, name = Sloc._loc name in
 
   let funcs =
-    Dfa.Fsm.fold (fun state outgoing funcs ->
+    Dfa.Fsm.fold (fun { Dfa.State.id = state } outgoing (_loc, funcs) ->
+      let _loc = BatOption.default _loc (find_action outgoing actions) in
+
       let targets =
-        List.fold_left (fun targets (transition, target) ->
+        List.fold_left (fun targets (transition, { Dfa.State.id = target }) ->
           let transitions = IntMap.find_default [] target targets in
           IntMap.add target (transition :: transitions) targets
         ) IntMap.empty outgoing
@@ -179,13 +270,17 @@ let emit_automaton (action_funcs, automata) (name, args, (dfa, actions)) =
         | Some default -> <:match_case<$cases$ | $default$>>
       in
 
-      <:binding<
-        $lid:"state_" ^ string_of_int state$ lexbuf =
-          match curr_char lexbuf $int:string_of_int state$ with
-          $cases$
-      >> :: funcs
-    ) dfa []
-    |> List.rev
+      let func =
+        <:binding<
+          $lid:"state_" ^ string_of_int state$ lexbuf =
+            match curr_char lexbuf $int:string_of_int state$ with
+            $cases$
+        >>
+      in
+      
+      _loc, func :: funcs
+    ) dfa (_loc, [])
+    |> snd |> List.rev
   in
 
   let automaton =
@@ -272,7 +367,7 @@ let emit pre post dfas =
       let curr_char lexbuf state =
         let open Lexing in
         if lexbuf.lex_eof_reached then (
-          '\000'
+          $chr:"\\000"$
         ) else (
           if trace_lexing then (
             Printf.printf "state %3d: process char %d (%d-%d / %d) '%s'\n"
