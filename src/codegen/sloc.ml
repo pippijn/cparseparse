@@ -33,6 +33,10 @@ let generated t =
   t, generated_pos, generated_pos
 
 
+let of_loc _loc t =
+  let open Camlp4.PreCast in
+  t, Loc.start_pos _loc, Loc.stop_pos _loc
+
 let _loc (t, s, e) =
   let open Lexing in
 

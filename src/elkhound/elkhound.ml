@@ -147,8 +147,8 @@ let main inputs =
     |> optional Options._graph_automaton (state_graph dirname)
     |> optional Options._dump_automaton (dump_automaton dirname)
     |> Valgrind.Callgrind.instrumented (emit_code dirname)
-  with Diagnostics.Diagnostic (severity, msg) ->
-    Printf.printf "%s: %s\n" (Diagnostics.string_of_severity severity) msg;
+  with Diagnostics.Exit ->
+    Printf.printf "Exiting on error\n";
     exit 1
 
 
