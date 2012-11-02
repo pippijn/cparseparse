@@ -59,12 +59,12 @@ let testsuite = "testsuite", [
 (* |                          Colours for terminal output                  | *)
 (* +=====~~~-------------------------------------------------------~~~=====+ *)
 
-let colourise = not (BatArray.mem "--no-colour" Sys.argv)
+let colourise = not (BatArray.mem "-no-colour" Sys.argv)
 let if_colour s = if colourise then s else ""
 
-let green = if_colour "[1;32m"
-let red   = if_colour "[1;31m"
-let reset = if_colour "[0m"
+let green = if_colour TermColour.ANSI.bgreen
+let red   = if_colour TermColour.ANSI.bred
+let reset = if_colour TermColour.ANSI.reset
 
 
 (* +=====~~~-------------------------------------------------------~~~=====+ *)

@@ -269,6 +269,7 @@ Library baselib
                                 SparseBitSet,
                                 StringMap,
                                 StringSet,
+                                TermColour,
                                 Timing,
                                 Valgrind,
                                 Zlib
