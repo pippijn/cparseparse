@@ -8,13 +8,16 @@
 
 /* ===================== tokens ============================ */
 /* tokens that have many lexical spellings */
-%token <char> TOK_ERROR
-%token <int> TOK_INTEGER
-%token <string Sloc.t> TOK_UNAME
-%token <string Sloc.t> TOK_LNAME
-%token <char Sloc.t> TOK_CHAR
-%token <string Sloc.t> TOK_STRING
-%token <string Sloc.t> TOK_LIT_CODE
+%token <char>		TOK_ERROR
+%token <int>		TOK_INTEGER
+
+%token <string Sloc.t>	TOK_UNAME
+%token <string Sloc.t>	TOK_LNAME
+%token <string Sloc.t>	TOK_BUILTIN
+
+%token <char Sloc.t>	TOK_CHAR
+%token <string Sloc.t>	TOK_STRING
+%token <string Sloc.t>	TOK_LIT_CODE
 
 /* punctuators */
 %token TOK_CARET		/* "^"	*/
@@ -33,6 +36,7 @@
 %token TOK_RPAREN		/* ")"	*/
 
 /* keywords */
+%token TOK_PROPERTY		/* "\p"		*/
 %token TOK_EOF			/* "eof"	*/
 %token TOK_UNDERLINE		/* "_"		*/
 %token TOK_RULE			/* "rule"	*/
@@ -45,6 +49,7 @@
 /* ===================== productions ======================= */
 
 %start <Ast.t> parse
+%start <Ast.regexp> parse_regexp
 %%
 
 /* The actions in this file simply build an Abstract Syntax Tree (AST)
@@ -54,6 +59,10 @@
 /* start symbol */
 parse
 	: code? lexeme* lexers code? EOF		{ Program ($1, $2, $3, $4) }
+
+
+parse_regexp
+	: sequence EOF					{ $1 }
 
 
 code
@@ -102,10 +111,18 @@ atom
 	: TOK_STRING					{ String $1 }
 	| TOK_CHAR					{ Char $1 }
 	| TOK_LNAME					{ Lexeme $1 }
+	| TOK_BUILTIN					{ Lexeme $1 }
 	| TOK_EOF					{ Eof }
 	| TOK_UNDERLINE					{ AnyChar }
 	| TOK_LBRACK inverted char_class+ TOK_RBRACK	{ CharClass ($2 $3) }
 	| TOK_LPAREN regexps TOK_RPAREN			{ $2 }
+	| TOK_PROPERTY property TOK_RBRACE		{ CharProperty $2 }
+
+
+property
+	: TOK_UNAME					{ NameProperty (None, $1) }
+	| TOK_UNAME TOK_EQUALS TOK_UNAME		{ NameProperty (Some $1, $3) }
+	| TOK_UNAME TOK_EQUALS TOK_INTEGER		{ IntProperty ($1, $3) }
 
 
 inverted

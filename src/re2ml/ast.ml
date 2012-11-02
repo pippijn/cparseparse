@@ -7,6 +7,12 @@ type name = string Sloc.t with sexp
 type code = string Sloc.t with sexp
 
 
+type property =
+  | NameProperty of name option * name
+  | IntProperty of name * int
+  with sexp
+
+
 type range =
   | Single of chr             		(* ['a'] *)
   | Range of chr * chr           	(* ['a'-'z'] *)
@@ -28,6 +34,7 @@ type regexp =
   | Sequence of regexp list             (* sub-regexps in parenthesis *)
   | OrGrouping of regexp list		(* sub-regexps separated by "|" *)
   | CharClass of char_class	        (* character class *)
+  | CharProperty of property		(* unicode property *)
   (* modifiers *)
   | Question of regexp                  (* regexp? *)
   | Star of regexp                      (* regexp* *)

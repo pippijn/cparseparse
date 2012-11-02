@@ -42,6 +42,7 @@
     | TOK_INTEGER i -> Printf.sprintf "TOK_INTEGER %d" i
     | TOK_UNAME id -> "TOK_UNAME " ^ Sloc.value id
     | TOK_LNAME id -> "TOK_LNAME " ^ Sloc.value id
+    | TOK_BUILTIN id -> "TOK_BUILTIN " ^ Sloc.value id
     | TOK_CHAR id -> "TOK_CHAR " ^ Char.escaped (Sloc.value id)
     | TOK_STRING id -> "TOK_STRING " ^ Sloc.value id
     | TOK_LIT_CODE id -> "TOK_LIT_CODE " ^ Sloc.value id
@@ -66,6 +67,7 @@
     | TOK_LPAREN -> "TOK_LPAREN"
     | TOK_RPAREN -> "TOK_RPAREN"
 
+    | TOK_PROPERTY -> "TOK_PROPERTY"
     | TOK_AND -> "TOK_AND"
     | TOK_AS -> "TOK_AS"
     | TOK_LET -> "TOK_LET"
@@ -176,6 +178,9 @@ and normal state = parse
 (* Identifier *)
 | "eof"					{ TOK_EOF }
 | '_'					{ TOK_UNDERLINE }
+| "\\p{"				{ TOK_PROPERTY }
+| '\\' (uident | lident) as name	{ TOK_BUILTIN (loc lexbuf name) }
+| "[:" lident ":]" as name		{ TOK_BUILTIN (loc lexbuf name) }
 | uident as name			{ TOK_UNAME (loc lexbuf name) }
 | lident as name			{ classify (loc lexbuf name) }
 

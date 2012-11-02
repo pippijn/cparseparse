@@ -10,13 +10,28 @@ let resolve_char_class cc =
   CharClass (Positive (List.rev_map (fun c -> Single c) cc))
 
 
+let resolve_property = function
+  | NameProperty (prop, value) ->
+      failwith "unsupported: name-property"
+  | IntProperty (prop, value) ->
+      failwith "unsupported: int-property"
+
+
 let rec resolve_regexp map = function
   (* replace references by their definition *)
   | Lexeme name ->
       begin try
         LocStringMap.find name map
       with Not_found ->
-        failwith (Sloc.value name)
+        let alias = Sloc.value name in
+        let what =
+          if alias.[0] == '\\' then
+            "builtin regex"
+          else
+            "regex alias"
+        in
+        Diagnostics.error name
+          ("No such " ^ what ^ ": '" ^ alias ^ "'")
       end
 
   (* recursively resolve sub-regexps *)
@@ -35,6 +50,8 @@ let rec resolve_regexp map = function
 
   | Quantified (re, low, high) ->
       failwith "unsupported: {n,m} quantifier"
+  | CharProperty prop ->
+      resolve_regexp map (resolve_property prop)
 
   (* character classes *)
   | CharClass cc ->
@@ -60,13 +77,70 @@ let resolve_lexer map (Lexer (name, args, rules)) =
   Lexer (name, args, List.rev (List.rev_map (resolve_rule map) rules))
 
 
+let resolve_list =
+  List.fold_left (fun map (name, regexp) ->
+    LocStringMap.add
+      (Sloc.generated name)
+      (resolve_regexp map (StringParser.regexp regexp))
+      map
+  )
+
+
+let classes = resolve_list LocStringMap.empty [
+  (* Digits *)
+  "[:digit:]",	"['0'-'9']";
+  (* Hexadecimal digits *)
+  "[:xdigit:]",	"['A'-'F' 'a'-'f' '0'-'9']";
+  (* Lowercase letters *)
+  "[:lower:]",	"['a'-'z']";
+  (* Uppercase letters *)
+  "[:upper:]",	"['A'-'Z']";
+  (* Visible characters *)
+  "[:graph:]",	"['\\x21'-'\\x7e']";
+  (* Control characters *)
+  "[:cntrl:]",	"['\\x00'-'\\x1f' '\\x7f']";
+  (* Visible characters and the space character *)
+  "[:print:]",	"['\\x20'-'\\x7e']";
+  (* Alphanumeric characters plus "_" *)
+  "[:word:]",	"['a'-'z' 'A'-'Z' '0'-'9' '_']";
+  (* Whitespace characters *)
+  "[:space:]",	"[' ' '\\t' '\\r' '\\n' '\\v' '\\f']";
+  (* Punctuation characters *)
+  "[:punct:]",	"[']' '[' '!' '\"' '#' '$' '%' '&' '\\'' '(' ')' '*' '+' ',' '.' '/' ':' ';' '<' '=' '>' '?' '@' '^' '_' '`' '{' '|' '}' '~' '-']";
+]
+
+
+let builtins = resolve_list classes [
+  (* Digits *)
+  "\\d",	"[:digit:]";
+  (* Non-digits *)
+  "\\D",	"[^'0'-'9']";
+  (* Hexadecimal digits *)
+  "\\x",	"[:xdigit:]";
+  (* Lowercase letters *)
+  "\\l",	"[:lower:]";
+  (* Uppercase letters *)
+  "\\u",	"[:upper:]";
+  (* Visible characters and the space character *)
+  "\\p",	"[:print:]";
+  (* Alphanumeric characters plus "_" *)
+  "\\w",	"[:word:]";
+  (* Non-word characters *)
+  "\\W",	"[^'a'-'z' 'A'-'Z' '0'-'9' '_']";
+  (* Whitespace characters *)
+  "\\s",	"[:space:]";
+  (* Non-whitespace characters *)
+  "\\S",	"[^' ' '\\t' '\\r' '\\n' '\\v' '\\f']";
+]
+
+
 let resolve_aliases aliases =
   let map =
     List.fold_left (fun map (Alias (name, regexp)) ->
       let regexp = resolve_regexp map regexp in
 
       LocStringMap.add name regexp map
-    ) LocStringMap.empty aliases
+    ) builtins aliases
   in
 
   map

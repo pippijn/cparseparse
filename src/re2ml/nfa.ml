@@ -112,7 +112,7 @@ let rec construct_regexp nfa state_id regexp =
       Fsm.add_outgoing nfa end_state Transition.Eps state_id;
       end_state
 
-  | AnyChar | Lexeme _ | CharClass _ | Question _ | Star _ | Quantified _ ->
+  | AnyChar | Lexeme _ | CharClass _ | Question _ | Star _ | Quantified _ | CharProperty _ ->
       failwith ("unresolved regexp: " ^ Sexplib.Sexp.to_string_hum (sexp_of_regexp regexp))
 
 

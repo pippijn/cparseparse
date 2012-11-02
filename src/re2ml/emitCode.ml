@@ -154,13 +154,10 @@ let add_case _loc cases target (pattern, matches_newline) =
           | Is | Disjunct ->
               case
           | Contains ->
-              Printf.printf "%s:
-Warning: Transition to state %d on a strict superset of ['\\n']
+              Diagnostics.warning (Sloc.of_loc _loc ())
+                ("Transition to state " ^ string_of_int target ^ " on a strict superset of ['\\n']
          Source locations may not be tracked correctly in this rule
-         Consider using the -auto-loc option
-"
-                (Loc.to_string _loc)
-                target;
+         Consider using the -auto-loc option");
               case
         else
           match matches_newline with

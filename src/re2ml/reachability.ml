@@ -13,10 +13,7 @@ let check_reachable dfa actions =
 
   Array.iteri (fun action reachable ->
     if not reachable then
-      let _loc, _ = Sloc._loc actions.(action) in
-      Printf.printf "%s:
-Warning: This action will never be executed, as earlier rules hide it
-         Consider reordering rules
-"
-        (Camlp4.PreCast.Loc.to_string _loc);
+      Diagnostics.warning actions.(action)
+        "This action will never be executed, as earlier rules hide it
+         Consider reordering rules";
   ) reachable

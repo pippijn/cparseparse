@@ -54,4 +54,7 @@ let main files =
 
 
 let () =
-  Cmdline.run main
+  try
+    Cmdline.run main
+  with Diagnostics.Exit ->
+    exit 1
