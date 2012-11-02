@@ -233,7 +233,8 @@ Library codegen
                                 Classify,
                                 Diagnostics,
                                 LocStringMap,
-                                Sloc
+                                Sloc,
+                                SlocMap
 
 Library baselib
         Path:                   src/baselib
@@ -259,9 +260,11 @@ Library baselib
                                 HashStack,
                                 IntegralModule,
                                 Sched,
+                                SexpChar,
                                 SexpHashtbl,
                                 SexpMap,
                                 SexpSet,
+                                SexpString,
                                 Sig,
                                 SparseBitSet,
                                 StringMap,
