@@ -9,11 +9,15 @@ let parse_channel file input =
 
   let state = Lexer.make () in
 
-  let program = Parser.parse (Lexer.token state) lexbuf in
-  let program = Resolve.resolve program in
+  let program = Timing.progress "parsing" (Parser.parse (Lexer.token state)) lexbuf in
+  let program = Timing.progress "expanding aliases" Resolve.resolve program in
 
   let pre, post, nfas = Timing.progress "constructing NFAs" Nfa.construct program in
   let dfas = List.map Dfa.of_nfa nfas in
+
+  List.iter (fun (_, _, (dfa, actions)) ->
+    Reachability.check_reachable dfa actions
+  ) dfas;
 
   if Options._dump_automata () then (
     List.iter2 (fun (nname, nargs, (nfa, nactions)) (dname, dargs, (dfa, dactions)) ->
@@ -27,7 +31,7 @@ let parse_channel file input =
     ) nfas dfas
   );
 
-  EmitCode.emit pre post dfas;
+  Timing.progress "emitting ML code" (EmitCode.emit pre post) dfas;
 
   ()
 

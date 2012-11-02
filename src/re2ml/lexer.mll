@@ -129,8 +129,8 @@
 let uident = ['A'-'Z'] ['A'-'Z' 'a'-'z' '_' '0'-'9']*
 let lident = ['a'-'z' '_'] ['A'-'Z' 'a'-'z' '_' '0'-'9']*
 
-let dstring = '"' ('\\' _ | [^ '"'  '\\' '\n'] )+ '"'
-let sstring = "'" ('\\' _ | [^ '\'' '\\' '\n'])* "'"
+let dstring = '"' ('\\' _ | [^ '"'  '\\' '\n'])* '"'
+let sstring = "'" ('\\' _ | [^ '\'' '\\' '\n'])+ "'"
 
 let ws = [' ' '\t' '\r']
 
@@ -146,7 +146,7 @@ rule verbatim state = parse
 			  state.brace_level <- state.brace_level - 1;
 			  Buffer.add_char state.code '}';
 			  if state.brace_level = 0 then
-			    let code = String.copy (Buffer.contents state.code) in
+			    let code = Buffer.contents state.code in
 			    Buffer.clear state.code;
 			    state.automaton <- Normal;
 			    TOK_LIT_CODE (loc lexbuf (remove_braces code))

@@ -54,6 +54,8 @@ module type S = sig
 
   val outgoing : t -> state -> edge list
 
+  val fold_outgoing : ('a -> T.t -> state -> 'a) -> 'a -> t -> state -> 'a
+
   val fold : (state -> edge list -> 'a -> 'a) -> t -> 'a -> 'a
   val iter : (state -> edge list -> unit) -> t -> unit
 
@@ -71,10 +73,6 @@ module Make(S : StateType)(T : TransitionType)
      and module T = T
 = struct
 
-  type 'a dyn_array = 'a BatDynArray.t
-  let dyn_array_of_sexp of_sexp sx = BatDynArray.of_array (array_of_sexp of_sexp sx)
-  let sexp_of_dyn_array sexp_of ar = sexp_of_array sexp_of (BatDynArray.to_array ar)
-
   module S = S
   type state = S.t with sexp
 
@@ -90,14 +88,14 @@ module Make(S : StateType)(T : TransitionType)
 
   type t = {
     store : S.store;
-    mutable states : vertex option dyn_array;
+    mutable states : vertex option array;
   } with sexp
 
 
   let mem fsm state_id =
     let state_id = S.id_of fsm.store state_id in
-    BatDynArray.length fsm.states > state_id &&
-    BatDynArray.get fsm.states state_id  != None
+    Array.length fsm.states > state_id &&
+    fsm.states.(state_id) != None
 
 
   (* add a new empty state *)
@@ -106,18 +104,26 @@ module Make(S : StateType)(T : TransitionType)
       invalid_arg "can not replace existing state";
     let state = { state_id; outgoing = Array.make (CharClass.set_end / 2) [] } in
     let state_id = S.id_of fsm.store state_id in
-    if state_id == BatDynArray.length fsm.states - 1 then (
-      BatDynArray.add fsm.states (Some state)
-    ) else (
-      while BatDynArray.length fsm.states <= state_id do
-        BatDynArray.add fsm.states None
-      done;
-      BatDynArray.set fsm.states state_id (Some state)
-    )
+
+    (* resize array if necessary *)
+    if Array.length fsm.states <= state_id then (
+      let states = fsm.states in
+      fsm.states <- Array.make (state_id * 2 + 1) None;
+      Array.blit
+        states 0
+        fsm.states 0
+        (Array.length states)
+    );
+
+    fsm.states.(state_id) <- Some state
 
 
   let next_state_id fsm =
-    BatDynArray.length fsm.states
+    try
+      (* XXX: this makes adding new states an O(n log n) operation *)
+      BatArray.findi BatOption.is_none fsm.states
+    with Not_found ->
+      Array.length fsm.states
 
 
   let add_state fsm =
@@ -129,14 +135,18 @@ module Make(S : StateType)(T : TransitionType)
   (* add transition on c from a to b *)
   let add_outgoing fsm a c b =
     let c = T.id_of c in
-    let a = BatOption.get (BatDynArray.get fsm.states (S.id_of fsm.store a)) in
-    if Array.length a.outgoing <= c then
-      a.outgoing <- Array.init (c * 2 + 1) (fun i ->
-        if i < Array.length a.outgoing then
-          a.outgoing.(i)
-        else
-          []
-      );
+    let a = BatOption.get (fsm.states.(S.id_of fsm.store a)) in
+
+    (* resize array if necessary *)
+    if Array.length a.outgoing <= c then (
+      let outgoing = a.outgoing in
+      a.outgoing <- Array.make (c * 2 + 1) [];
+      Array.blit
+        outgoing 0
+        a.outgoing 0
+        (Array.length outgoing)
+    );
+
     a.outgoing.(c) <- b :: a.outgoing.(c)
 
 
@@ -148,13 +158,12 @@ module Make(S : StateType)(T : TransitionType)
 
   let outgoing state =
     BatArray.fold_lefti (fun outgoing transition targets ->
-      List.map (fun target -> T.of_id transition, target) targets
-      @ outgoing
+      List.fold_right (fun target outgoing -> (T.of_id transition, target) :: outgoing) targets outgoing
     ) [] state.outgoing
 
 
   let fold f fsm x =
-    BatDynArray.fold_left (fun x state ->
+    Array.fold_left (fun x state ->
       match state with
       | None -> x
       | Some state ->
@@ -163,19 +172,27 @@ module Make(S : StateType)(T : TransitionType)
 
 
   let iter f fsm =
-    BatDynArray.iter (function
+    Array.iter (function
       | None -> ()
       | Some state ->
           f state.state_id (List.rev (outgoing state))
     ) fsm.states
 
 
+  let fold_outgoing f x fsm state_id =
+    BatArray.fold_lefti (fun x transition targets ->
+      List.fold_left (fun x target ->
+        f x (T.of_id transition) target
+      ) x targets
+    ) x (BatOption.get fsm.states.(S.id_of fsm.store state_id)).outgoing
+
+
   let outgoing fsm state_id =
-    outgoing (BatOption.get (BatDynArray.get fsm.states (S.id_of fsm.store state_id)))
+    outgoing (BatOption.get (fsm.states.(S.id_of fsm.store state_id)))
 
 
   (* empty automaton *)
-  let empty store = { store; states = BatDynArray.create () }
+  let empty store = { store; states = [||] }
   (* automaton with only a start state *)
   let start store = let fsm = empty store in add fsm (S.start store); fsm
 
@@ -237,7 +254,7 @@ module Make(S : StateType)(T : TransitionType)
 
 
   let is_final_id fsm state =
-    match BatDynArray.get fsm.states state with
+    match fsm.states.(state) with
     | None -> false
     | Some state ->
         BatArray.fold_lefti (fun is_final func target ->
@@ -254,7 +271,7 @@ module Make(S : StateType)(T : TransitionType)
     if lr then
       output_string out "\trankdir = LR;\n";
 
-    let finals = Array.init (BatDynArray.length fsm.states) (is_final_id fsm) in
+    let finals = Array.init (Array.length fsm.states) (is_final_id fsm) in
 
     output_string out "\tnode [shape = doublecircle];";
     Array.iteri (fun state is_final ->
@@ -266,11 +283,11 @@ module Make(S : StateType)(T : TransitionType)
     ) finals;
     output_string out ";\n\tnode [shape = circle];\n";
 
-    BatDynArray.iter (function
+    Array.iter (function
       | None -> ()
       | Some state ->
           (* construct inverse map: target -> transition list *)
-          let outgoing = Array.make (BatDynArray.length fsm.states) [] in
+          let outgoing = Array.make (Array.length fsm.states) [] in
           Array.iteri (fun func targets ->
             if final || not (T.is_final (T.of_id func)) then
               List.iter (fun target ->

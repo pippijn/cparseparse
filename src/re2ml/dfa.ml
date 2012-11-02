@@ -148,9 +148,7 @@ let compute_eclosure nfa =
 
 let next_dfa_state nfa subset_map estate_ids =
   (* clear map *)
-  for i = 0 to Array.length subset_map - 1 do
-    subset_map.(i) <- [];
-  done;
+  Array.fill subset_map 0 (Array.length subset_map) [];
 
   List.fold_left (fun accept state_id ->
     List.fold_left (fun accept (func, target) ->

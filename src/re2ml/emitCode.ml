@@ -284,13 +284,13 @@ let emit pre post dfas =
               (Char.escaped lexbuf.lex_buffer.[lexbuf.lex_curr_pos]);
           );
 
-          lexbuf.lex_buffer.[lexbuf.lex_curr_pos]
+          String.unsafe_get lexbuf.lex_buffer lexbuf.lex_curr_pos
         )
       ;;
 
       let curr_char lexbuf state =
         let open Lexing in
-        if lexbuf.lex_curr_pos = lexbuf.lex_buffer_len then (
+        if lexbuf.lex_curr_pos == lexbuf.lex_buffer_len then (
           if trace_lexing then (
             print_endline "[1;33mrefill[0m";
           );
@@ -328,6 +328,7 @@ let emit pre post dfas =
       $Ast.stSem_of_list (List.rev items)$
 
       (* sample function tokenising the entire lexbuf *)
+      (*
       let rec loop lexbuf =
         let t = token lexbuf in
         if trace_lexing then (
@@ -351,6 +352,7 @@ let emit pre post dfas =
           Printf.printf "\nException:\n  %s\n" (Printexc.to_string e);
           Printexc.print_backtrace stdout;
       ;;
+      *)
     >>
   in
 
