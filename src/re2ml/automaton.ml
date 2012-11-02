@@ -52,6 +52,8 @@ module type S = sig
   val add_outgoing : t -> state -> transition -> state -> unit
   val add_transition : t -> state -> transition -> state
 
+  val mark : t -> state -> string -> ('a -> state) -> 'a -> state
+
   val outgoing : t -> state -> edge list
 
   val fold_outgoing : ('a -> T.t -> state -> 'a) -> 'a -> t -> state -> 'a
@@ -73,6 +75,8 @@ module Make(S : StateType)(T : TransitionType)
      and module T = T
 = struct
 
+  type marker = string option with sexp
+
   module S = S
   type state = S.t with sexp
 
@@ -89,6 +93,7 @@ module Make(S : StateType)(T : TransitionType)
   type t = {
     store : S.store;
     mutable states : vertex option array;
+    mutable markers : marker array;
   } with sexp
 
 
@@ -98,6 +103,20 @@ module Make(S : StateType)(T : TransitionType)
     fsm.states.(state_id) != None
 
 
+  (* resize array if necessary *)
+  let resize_array arr index default =
+    if Array.length arr <= index then (
+      let resized = Array.make (index * 2 + 1) default in
+      Array.blit
+        arr 0
+        resized 0
+        (Array.length arr);
+      resized
+    ) else (
+      arr
+    )
+
+
   (* add a new empty state *)
   let add fsm state_id =
     if mem fsm state_id then
@@ -105,16 +124,7 @@ module Make(S : StateType)(T : TransitionType)
     let state = { state_id; outgoing = Array.make (CharClass.set_end / 2) [] } in
     let state_id = S.id_of fsm.store state_id in
 
-    (* resize array if necessary *)
-    if Array.length fsm.states <= state_id then (
-      let states = fsm.states in
-      fsm.states <- Array.make (state_id * 2 + 1) None;
-      Array.blit
-        states 0
-        fsm.states 0
-        (Array.length states)
-    );
-
+    fsm.states <- resize_array fsm.states state_id None;
     fsm.states.(state_id) <- Some state
 
 
@@ -131,22 +141,12 @@ module Make(S : StateType)(T : TransitionType)
     add fsm b;
     b
 
-
   (* add transition on c from a to b *)
   let add_outgoing fsm a c b =
     let c = T.id_of c in
     let a = BatOption.get (fsm.states.(S.id_of fsm.store a)) in
 
-    (* resize array if necessary *)
-    if Array.length a.outgoing <= c then (
-      let outgoing = a.outgoing in
-      a.outgoing <- Array.make (c * 2 + 1) [];
-      Array.blit
-        outgoing 0
-        a.outgoing 0
-        (Array.length outgoing)
-    );
-
+    a.outgoing <- resize_array a.outgoing c [];
     a.outgoing.(c) <- b :: a.outgoing.(c)
 
 
@@ -154,6 +154,29 @@ module Make(S : StateType)(T : TransitionType)
     let b = add_state fsm in
     add_outgoing fsm a c b;
     b
+
+
+  let mark_begin fsm state name =
+    let state_id = S.id_of fsm.store state in
+    (* create a new marker *)
+    let marker = Some name in
+    (* set this state's marker *)
+    fsm.markers <- resize_array fsm.markers state_id None;
+    fsm.markers.(state_id) <- marker;
+    marker
+
+  let mark_end fsm state marker =
+    let state_id = S.id_of fsm.store state in
+    (* set the end state's marker to the physically identical marker
+     * of the marker's start state *)
+    fsm.markers <- resize_array fsm.markers state_id None;
+    fsm.markers.(state_id) <- marker
+
+  let mark fsm start_id name f x =
+    let marker = mark_begin fsm start_id name in
+    let end_state = f x in
+    mark_end fsm end_state marker;
+    end_state
 
 
   let outgoing state =
@@ -192,7 +215,7 @@ module Make(S : StateType)(T : TransitionType)
 
 
   (* empty automaton *)
-  let empty store = { store; states = [||] }
+  let empty store = { store; states = [||]; markers = [||] }
   (* automaton with only a start state *)
   let start store = let fsm = empty store in add fsm (S.start store); fsm
 
@@ -266,6 +289,20 @@ module Make(S : StateType)(T : TransitionType)
     is_final_id fsm (S.id_of fsm.store state)
 
 
+  let marker fsm state_id =
+    let marker =
+      let id = S.id_of fsm.store state_id in
+      if id < Array.length fsm.markers then
+        fsm.markers.(id)
+      else
+        None
+    in
+
+    match marker with
+    | None -> ""
+    | Some marker -> " [" ^ marker ^ "]"
+
+
   let to_dot ~lr ?(final=true) out fsm =
     output_string out "digraph G {\n";
     if lr then
@@ -276,9 +313,12 @@ module Make(S : StateType)(T : TransitionType)
     output_string out "\tnode [shape = doublecircle];";
     Array.iteri (fun state is_final ->
       if is_final then (
-        output_string out " \"";
-        output_string out (S.to_string fsm.store (S.of_id fsm.store state));
-        output_string out "\"";
+        let state_id = S.of_id fsm.store state in
+        let marker = marker fsm state_id in
+
+        Printf.fprintf out " \"%s%s\""
+          (S.to_string fsm.store state_id)
+          marker
       )
     ) finals;
     output_string out ";\n\tnode [shape = circle];\n";
@@ -286,6 +326,8 @@ module Make(S : StateType)(T : TransitionType)
     Array.iter (function
       | None -> ()
       | Some state ->
+          let source_id = state.state_id in
+
           (* construct inverse map: target -> transition list *)
           let outgoing = Array.make (Array.length fsm.states) [] in
           Array.iteri (fun func targets ->
@@ -296,7 +338,11 @@ module Make(S : StateType)(T : TransitionType)
               ) targets
           ) state.outgoing;
 
+          let source_marker = marker fsm source_id in
+
           Array.iteri (fun target funcs ->
+            let target_id = S.of_id fsm.store target in
+
             match List.rev funcs with
             | [] -> ()
             | hd :: tl ->
@@ -311,13 +357,22 @@ module Make(S : StateType)(T : TransitionType)
 
                 let label =
                   match print_ranges (wip :: ranges) with
-                  | "" -> " [ label = \"ε\" ]"
-                  | s  -> " [ label = \"" ^ s ^ "\" ]"
+                  | "" -> "ε"
+                  | s  -> s
                 in
 
-                Printf.fprintf out "\t\"%s\" -> \"%s\"%s;\n"
-                  (S.to_string fsm.store state.state_id)
-                  (S.to_string fsm.store (S.of_id fsm.store target))
+                let label =
+                  Printf.sprintf " [ label = \"%s\" ]"
+                    label
+                in
+
+                let target_marker = marker fsm target_id in
+
+                Printf.fprintf out "\t\"%s%s\" -> \"%s%s\"%s;\n"
+                  (S.to_string fsm.store source_id)
+                  source_marker
+                  (S.to_string fsm.store target_id)
+                  target_marker
                   label
           ) outgoing
     ) fsm.states;

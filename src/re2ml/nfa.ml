@@ -102,7 +102,8 @@ let rec construct_regexp nfa state_id regexp =
       common_end
 
   | Binding (regexp, name) ->
-      construct_regexp nfa state_id regexp
+      Fsm.mark nfa state_id (Sloc.value name)
+        (construct_regexp nfa state_id) regexp
 
   | Plus (regexp) ->
       (* a+ makes an epsilon transition from the end of 'a' back
