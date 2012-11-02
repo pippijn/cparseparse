@@ -1,3 +1,5 @@
+(*+ -auto-loc
+ *)
 {
   open GrammarParser
 

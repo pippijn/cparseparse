@@ -1,3 +1,5 @@
+(*+ -auto-loc
+ *)
 {
   open Parser
   let line = ref 1
