@@ -1,4 +1,3 @@
-(* lexer.mll *)
 (* simple lexer for C++ *)
 
 {
@@ -24,9 +23,9 @@ let alnum = (alpha | digit)
 
 let identifier = (alpha | '_')(alnum | '_')*
 
-let bstring = '`'  ('\\' _ | [^ '\\' '`' ])* '`'
-let dstring = '"'  ('\\' _ | [^ '\\' '"' ])* '"'
-let sstring = '\'' ('\\' _ | [^ '\\' '\''])* '\''
+let bstring = '`' ('\\' _ | [^ '\n' '\\' '`' ])* '`'
+let dstring = '"' ('\\' _ | [^ '\n' '\\' '"' ])* '"'
+let sstring = "'" ('\\' _ | [^ '\n' '\\' '\''])* "'"
 
 
 let d = digit
