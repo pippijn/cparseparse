@@ -137,7 +137,7 @@ let make reachable index prods_by_lhs =
           else (
             assert (Classify.is_uid name);
 
-            if not (NtSet.mem reachable first.left) then
+            if not (NtSet.mem first.left reachable) then
               bindings
             else
               let has_merge = Semantic.merge_of_nonterm SemanticVariant.User nonterm != None in

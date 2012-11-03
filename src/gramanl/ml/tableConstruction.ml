@@ -1,7 +1,5 @@
 open AnalysisEnvType
 
-module NonterminalSet = BitSet.Make(Ids.Nonterminal)
-
 
 (* this is a depth-first traversal of the 'derivable' relation;
  * when we reach a nonterminal that can't derive any others not
@@ -14,12 +12,12 @@ let rec topological_sort nonterms (* number of nonterminals in the grammar *)
                          next_ordinal (* latest ordinal not yet used *)
                          current (* current nonterminal to expand *)
                          =
-  if NonterminalSet.mem seen current then (
+  if NtSet.mem current seen then (
     (* already expanded this one *)
     next_ordinal
   ) else (
     (* don't expand this one again *)
-    NonterminalSet.add seen current;
+    NtSet.add current seen;
 
     (* look at all nonterminals this one can derive *)
     let next_ordinal =
@@ -46,7 +44,7 @@ let topological_order derivable nonterms =
   let open GrammarType in
 
   let nonterm_count = NtArray.length nonterms in
-  let seen = NonterminalSet.create (NtArray.last_index nonterms) in
+  let seen = NtSet.create (NtArray.last_index nonterms) in
 
   let order = NtArray.make nonterm_count 0 in
   ignore (NtArray.fold_left (fun next_ordinal nonterm ->

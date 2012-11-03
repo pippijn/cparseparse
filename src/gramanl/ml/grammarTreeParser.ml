@@ -139,7 +139,7 @@ let collect_terminals decls types precs =
         failwith "token already declared";
 
       (* annotate with declared type *)
-      let semtype, funcs =
+      let styp, funcs =
         try
           let (TermType (_, termtype, funcs)) = LocStringMap.find name types in
           Some termtype, funcs
@@ -158,7 +158,7 @@ let collect_terminals decls types precs =
 
       let semantic =
         SemanticVariant.(of_list User [
-          BatOption.map (fun semtype -> `SEM_TYPE (CamlAst.ctyp_of_loc_string semtype)) semtype;
+          BatOption.map (fun styp -> `SEM_TYPE (CamlAst.ctyp_of_loc_string styp)) styp;
           BatOption.map (fun func -> `SEM_DUP func) (spec_func funcs "dup" 1);
           BatOption.map (fun func -> `SEM_DEL func) (spec_func funcs "del" 1);
           BatOption.map (fun func -> `SEM_CLASSIFY func) (spec_func funcs "classify" 1);
@@ -185,18 +185,17 @@ let collect_terminals decls types precs =
   in
 
   (* track what terminals have codes *)
-  let module TerminalSet = BitSet.Make(Ids.Terminal) in
-  let has_code = TerminalSet.create max_index in
+  let has_code = TermSet.create max_index in
   List.iter (fun (TermDecl (code, _, _)) ->
     let code = Ids.Terminal.of_int code in
-    TerminalSet.add has_code code;
+    TermSet.add code has_code;
   ) decls;
 
   let terminals =
     (* fill in any gaps in the code space; this is required because
      * later analyses assume the terminal code space is dense *)
     Ids.Terminal.fold_left (fun terminals i ->
-      if TerminalSet.mem has_code i then
+      if TermSet.mem i has_code then
         terminals
       else
         let dummy_name = Sloc.generated ("Dummy_filler_token" ^ Ids.Terminal.to_string i) in
@@ -225,7 +224,7 @@ let collect_nonterminals nonterms term_count =
   let nonterminals =
     LocStringMap.fold (fun _ (nterm, index_id) nonterminals ->
       match nterm with
-      | TF_nonterm (name, semtype, funcs, prods, subsets) ->
+      | TF_nonterm (name, styp, funcs, prods, subsets) ->
           (* record subsets *)
           List.iter (fun subset ->
             if not (LocStringMap.mem subset nonterms) then
@@ -237,7 +236,7 @@ let collect_nonterminals nonterms term_count =
 
           let semantic =
             SemanticVariant.(of_list User [
-              BatOption.map (fun semtype -> `SEM_TYPE (CamlAst.ctyp_of_loc_string semtype)) semtype;
+              BatOption.map (fun styp -> `SEM_TYPE (CamlAst.ctyp_of_loc_string styp)) styp;
               BatOption.map (fun func -> `SEM_DUP func) (spec_func funcs "dup" 1);
               BatOption.map (fun func -> `SEM_DEL func) (spec_func funcs "del" 1);
               BatOption.map (fun func -> `SEM_MERGE func) (spec_func funcs "merge" 2);

@@ -51,14 +51,7 @@ ml_BitSet_create (value size)
 
 
 CAMLprim value
-ml_BitSet_copy (value self)
-{
-  return copy_bitset (*get_bitset (self));
-}
-
-
-CAMLprim value
-ml_BitSet_count (value self)
+ml_BitSet_cardinal (value self)
 {
   int count = 0;
 #ifdef HAS_OLD_CXX
@@ -72,7 +65,7 @@ ml_BitSet_count (value self)
 
 
 CAMLprim value
-ml_BitSet_set (value self, value bit_val)
+ml_BitSet_add (value bit_val, value self)
 {
   bitset &set = *get_bitset (self);
   int bit = Int_val (bit_val);
@@ -83,74 +76,13 @@ ml_BitSet_set (value self, value bit_val)
 
 
 CAMLprim value
-ml_BitSet_is_set (value self, value bit_val)
+ml_BitSet_mem (value bit_val, value self)
 {
   bitset &set = *get_bitset (self);
   int bit = Int_val (bit_val);
   if (set.size () <= bit / word_size)
     return Val_bool (false);
   return Val_bool (set[bit / word_size] & 1 << (bit % word_size));
-}
-
-
-CAMLprim value
-ml_BitSet_unite (value dest, value source)
-{
-  bitset &dst = *get_bitset (dest);
-  bitset &src = *get_bitset (source);
-  assert (dst.size () >= src.size ());
-  for (size_t i = 0; i < src.size (); i++)
-    dst[i] |= src[i];
-  return Val_unit;
-}
-
-
-CAMLprim value
-ml_BitSet_differentiate (value dest, value source)
-{
-  bitset &dst = *get_bitset (dest);
-  bitset &src = *get_bitset (source);
-  assert (dst.size () >= src.size ());
-  for (size_t i = 0; i < src.size (); i++)
-    dst[i] &= ~src[i];
-  return Val_unit;
-}
-
-
-CAMLprim value
-ml_BitSet_merge (value dest, value source)
-{
-  bool changed = false;
-  bitset &dst = *get_bitset (dest);
-  bitset &src = *get_bitset (source);
-  assert (dst.size () >= src.size ());
-  for (size_t i = 0; i < src.size (); i++)
-    if ((dst[i] | src[i]) != dst[i])
-      {
-        dst[i] |= src[i];
-        changed = true;
-      }
-  return Val_bool (changed);
-}
-
-
-CAMLprim value
-ml_BitSet_clear (value self)
-{
-  bitset &set = *get_bitset (self);
-  std::memset (set.data (), 0, set.size ());
-  return Val_unit;
-}
-
-
-CAMLprim value
-ml_BitSet_assign (value dest, value source)
-{
-  bitset &dst = *get_bitset (dest);
-  bitset &src = *get_bitset (source);
-  assert (dst.size () == src.size ());
-  dst = src;
-  return Val_unit;
 }
 
 

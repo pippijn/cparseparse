@@ -2,7 +2,7 @@ module Make : functor (T : Sig.IntegralType) -> sig
   open Sig
 
   type integer = T.t
-  type 'm t
+  type 'mutability t
 
   val create : integer -> integer -> 'm t
   val empty : readonly t

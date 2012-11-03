@@ -33,7 +33,7 @@ let compute_prods_by_lhs nonterms prods =
 
 
 let make grammar =
-  let { terms; nonterms; prods } as index = GrammarIndex.compute_indices grammar in
+  let { terms; nonterms; prods } = GrammarIndex.compute_indices grammar in
 
   let prods_by_lhs = compute_prods_by_lhs nonterms prods in
 
@@ -42,27 +42,29 @@ let make grammar =
   (* construct parse tree variants *)
   let nonterms =
     nonterms
-    |> PtreeMaker.nonterms SemanticVariant.Ptree reachable
+    |> PtreeMaker.nonterms SemanticVariant.Ptree     reachable
     |> PtreeMaker.nonterms SemanticVariant.Treematch reachable
   in
 
   let prods =
     prods
-    |> PtreeMaker.prods SemanticVariant.Ptree reachable nonterms prods_by_lhs
+    |> PtreeMaker.prods SemanticVariant.Ptree     reachable nonterms prods_by_lhs
     |> PtreeMaker.prods SemanticVariant.Treematch reachable nonterms prods_by_lhs
   in
 
   let verbatims =
     grammar.verbatim
-    |> SemanticVariant.combine (PtreeMaker.verbatims SemanticVariant.Ptree)
+    |> SemanticVariant.combine (PtreeMaker.verbatims SemanticVariant.Ptree    )
     |> SemanticVariant.combine (PtreeMaker.verbatims SemanticVariant.Treematch)
   in
 
+  let index = { terms; nonterms; prods } in
+
   {
-    gram_index = { terms; nonterms; prods };
-    gram_start_nt = (LocStringMap.find grammar.start_symbol grammar.nonterminals).nbase.index_id;
-    gram_ptree = PtreeStructure.make reachable index prods_by_lhs;
-    gram_prods_by_lhs = prods_by_lhs;
-    gram_options = grammar.config;
-    gram_verbatims = verbatims;
+    gram_index		= index;
+    gram_start_nt	= (LocStringMap.find grammar.start_symbol grammar.nonterminals).nbase.index_id;
+    gram_ptree		= PtreeStructure.make reachable index prods_by_lhs;
+    gram_prods_by_lhs	= prods_by_lhs;
+    gram_options	= grammar.config;
+    gram_verbatims	= verbatims;
   }

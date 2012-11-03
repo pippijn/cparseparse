@@ -1,10 +1,10 @@
-module Dumper = Camlp4.PreCast.Printers.DumpOCamlAst
+module Dumper  = Camlp4.PreCast.Printers.DumpOCamlAst
 module Printer = Camlp4.PreCast.Printers.OCaml
 
-let print_interf output_file intf = Printer.print_interf ~output_file intf
-let print_implem output_file impl = Printer.print_implem ~output_file impl
-let dump_interf output_file intf = Dumper.print_interf ~output_file intf
-let dump_implem output_file impl = Dumper.print_implem ~output_file impl
+let print_interf output_file = Printer.print_interf ~output_file
+let print_implem output_file = Printer.print_implem ~output_file
+let  dump_interf output_file = Dumper. print_interf ~output_file
+let  dump_implem output_file = Dumper. print_implem ~output_file
 
 
 (************************************************

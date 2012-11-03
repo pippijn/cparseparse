@@ -9,9 +9,3 @@ make_bitset (int size)
 {
   return Val_bp (new bitset (size / word_size + !!(size % word_size)));
 }
-
-static inline value
-copy_bitset (bitset &other)
-{
-  return Val_bp (new bitset (other));
-}

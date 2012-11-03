@@ -6,21 +6,21 @@ module Make(T : Sig.IntegralType) = struct
   type bitset = {
     width  : int;
     height : int;
-    bitset : Sig.writable BitSet.Set.t;
+    bitset : Sig.writable BitSet.Internal.t;
   } with sexp
 
   type 'm t = bitset with sexp
 
 
   let create width height =
-    let width = T.to_int width + 1 in
+    let width  = T.to_int width  + 1 in
     let height = T.to_int height + 1 in
-    { width; height; bitset = BitSet.Set.create (width * height); }
+    { width; height; bitset = BitSet.Internal.create (width * height); }
 
   let empty = {
     width  = 0;
     height = 0;
-    bitset = BitSet.Set.create 0;
+    bitset = BitSet.Internal.create 0;
   }
 
 
@@ -40,16 +40,16 @@ module Make(T : Sig.IntegralType) = struct
 
   let set matrix x y =
     let n = bit_position matrix x y in
-    BitSet.Set.add matrix.bitset n
+    BitSet.Internal.add n matrix.bitset
 
 
   let is_set_i matrix x y =
     let n = bit_position_i matrix x y in
-    BitSet.Set.mem matrix.bitset n
+    BitSet.Internal.mem n matrix.bitset
 
   let is_set matrix x y =
     let n = bit_position matrix x y in
-    BitSet.Set.mem matrix.bitset n
+    BitSet.Internal.mem n matrix.bitset
 
 
   let test_and_set matrix x y =

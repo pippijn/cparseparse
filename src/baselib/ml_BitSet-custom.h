@@ -94,16 +94,3 @@ make_bitset (int size)
 
   CAMLreturn (v);
 }
-
-static inline value
-copy_bitset (bitset const &other)
-{
-  CAMLparam0 ();
-  CAMLlocal1 (v);
-
-  v = caml_alloc_custom (&bitset_custom_ops, sizeof (bitset), 0, 1);
-
-  new (Data_custom_val (v)) bitset (other);
-
-  CAMLreturn (v);
-}

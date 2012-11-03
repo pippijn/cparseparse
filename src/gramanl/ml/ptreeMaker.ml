@@ -83,7 +83,7 @@ let merge name = function
 
 
 let nonterminal variant reachable nonterm =
-  let is_reachable = NtSet.mem reachable nonterm.nbase.index_id in
+  let is_reachable = NtSet.mem nonterm.nbase.index_id reachable in
 
   let semtype =
     if not is_reachable then
@@ -270,7 +270,7 @@ let prods variant reachable nonterms prods_by_lhs prods =
 
       let is_reachable =
         match prods with
-        | { left } :: _ -> NtSet.mem reachable left
+        | { left } :: _ -> NtSet.mem left reachable
         | _ -> false
       in
 
