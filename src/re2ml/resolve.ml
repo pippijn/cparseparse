@@ -1,24 +1,9 @@
 open Ast
 
 
-let full_chr_range =
-  CharClass (Positive (List.rev_map (fun c -> Single c) CharClass.full_chr_list))
-
-
-let resolve_char_class cc =
-  let cc = CharClass.to_chr_list cc in
-  CharClass (Positive (List.rev_map (fun c -> Single c) cc))
-
-
-let resolve_property = function
-  | NameProperty (prop, value) ->
-      failwith "unsupported: name-property"
-  | IntProperty (prop, value) ->
-      failwith "unsupported: int-property"
-
-
+(* Recursively resolve aliases in all sub-expressions. *)
 let rec resolve_regexp map = function
-  (* replace references by their definition *)
+  (* Replace references by their definition. *)
   | Lexeme name ->
       begin try
         LocStringMap.find name map
@@ -31,54 +16,48 @@ let rec resolve_regexp map = function
             "regex alias"
         in
         Diagnostics.error name "No such %s: '%s'" what alias;
-        (* error recovery *)
+        (* We just return the empty sentence here, so
+         * we can catch more undefined alias errors. *)
         epsilon
       end
 
-  (* recursively resolve sub-regexps *)
-  | Sequence [regexp]
-  | OrGrouping [regexp] -> resolve_regexp map regexp
-
-  | Sequence list -> Sequence (List.map (resolve_regexp map) list)
-  | OrGrouping list -> OrGrouping (List.map (resolve_regexp map) list)
+  (* a b *)
+  | Sequence    list -> Sequence    (List.map (resolve_regexp map) list)
+  (* a | b *)
+  | Alternation list -> Alternation (List.map (resolve_regexp map) list)
+  (* a? *)
+  | Question re -> Question (resolve_regexp map re)
+  (* a{n,m} *)
+  | Quantified (re, lo, hi) -> Quantified (resolve_regexp map re, lo, hi)
+  (* a+ *)
   | Plus re -> Plus (resolve_regexp map re)
+  (* a* *)
+  | Star re -> Star (resolve_regexp map re)
+
+  (* a as name *)
   | Binding (re, name) -> Binding (resolve_regexp map re, name)
 
-  (* a? -> (a | ε) *)
-  | Question re -> OrGrouping [epsilon; resolve_regexp map re]
-  (* a* -> (a+ | ε) *)
-  | Star re -> OrGrouping [epsilon; Plus (resolve_regexp map re)]
-
-  | Quantified (re, low, high) ->
-      failwith "unsupported: {n,m} quantifier"
-  | CharProperty prop ->
-      resolve_regexp map (resolve_property prop)
-
-  (* character classes *)
-  | CharClass cc ->
-      (* no need to further resolve these *)
-      resolve_char_class cc
-
-  (* resolve "any character" as the full range *)
-  | AnyChar ->
-      full_chr_range
-
-  (* these atoms need no resolution *)
-  | Eof
-  | String _
-  | Char _ as atom ->
+  (* These expressions do not contain sub-expressions, so they require
+   * no name resolution. *)
+  | AnyChar | Eof | CharClass _ | CharProperty _ | String _ | Char _ as atom ->
       atom
 
 
-let resolve_rule map (Rule (regexp, code)) =
-  Rule (resolve_regexp map regexp, code)
-
-
+(* Resolve aliases in all rules of a lexer function. *)
 let resolve_lexer map (Lexer (name, args, rules)) =
-  Lexer (name, args, List.rev (List.rev_map (resolve_rule map) rules))
+  let rules =
+    List.map (fun (Rule (regexp, code)) ->
+      Rule (resolve_regexp map regexp, code)
+    ) rules
+  in
+
+  Lexer (name, args, rules)
 
 
-let resolve_list =
+(* [add_builtins map list] adds a list pre-defined aliases to the passed
+ * map. It takes a list of pairs (name, code) and parses the code into
+ * a regexp object. *)
+let add_builtins =
   List.fold_left (fun map (name, regexp) ->
     LocStringMap.add
       (Sloc.generated name)
@@ -87,7 +66,8 @@ let resolve_list =
   )
 
 
-let classes = resolve_list LocStringMap.empty [
+(* POSIX character classes *)
+let classes = add_builtins LocStringMap.empty [
   (* Digits *)
   "[:digit:]",	"['0'-'9']";
   (* Hexadecimal digits *)
@@ -111,7 +91,8 @@ let classes = resolve_list LocStringMap.empty [
 ]
 
 
-let builtins = resolve_list classes [
+(* Some common short-cuts for the above character classes. *)
+let builtins = add_builtins classes [
   (* Digits *)
   "\\d",	"[:digit:]";
   (* Non-digits *)
@@ -135,22 +116,29 @@ let builtins = resolve_list classes [
 ]
 
 
-let resolve_aliases aliases =
-  let map =
-    List.fold_left (fun map (Alias (name, regexp)) ->
-      let regexp = resolve_regexp map regexp in
+(* Collect regexp aliases and resolve them using the ones already seen.
+ * If an alias is defined twice, replace it in the map and emit a warning.
+ * This function returns a map of built-in and user-defined aliases to
+ * their regexp objects. *)
+let resolve_aliases =
+  List.fold_left (fun map (Alias (name, regexp)) ->
+    let regexp = resolve_regexp map regexp in
 
-      LocStringMap.add name regexp map
-    ) builtins aliases
-  in
+    (* We allow redefinition as in ML, but warn about it, since it is
+     * probably not what the user wants. *)
+    if LocStringMap.mem name map then
+      Diagnostics.warning name "regexp name %a already defined" Sloc.pp_print_string name;
+    LocStringMap.add name regexp map
+  ) builtins
 
-  map
 
-
+(* Produce a program with resolved aliases and an empty aliases list. *)
 let resolve (Program (pre, aliases, lexers, post)) =
   let map = resolve_aliases aliases in
   let lexers = List.map (resolve_lexer map) lexers in
 
+  (* If there was an error resolving an alias, raise 
+   * the Diagnostics.Exit exception. *)
   Diagnostics.exit_on_error ();
 
   Program (pre, [], lexers, post)

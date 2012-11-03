@@ -48,6 +48,10 @@ let full_chr_list = chrs_of_range (Range (
 let empty_chr_list = []
 
 
+let of_list chars =
+  Positive (List.rev_map (fun c -> Single c) chars)
+
+
 let difference (a : char Sloc.t list) (b : char Sloc.t list) =
   let chars = Array.make set_end None in
   List.iter (fun c ->

@@ -77,7 +77,7 @@ lexeme
 
 
 regexps
-	: or_regexps					{ match $1 with [a] -> a | l -> OrGrouping (List.rev l) }
+	: or_regexps					{ match $1 with [a] -> a | l -> Alternation (List.rev l) }
 
 
 or_regexps

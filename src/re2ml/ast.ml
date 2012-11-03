@@ -32,7 +32,7 @@ type regexp =
   | String of str             		(* "class" *)
   | Lexeme of name                      (* reference to let-defined lexeme *)
   | Sequence of regexp list             (* sub-regexps in parenthesis *)
-  | OrGrouping of regexp list		(* sub-regexps separated by "|" *)
+  | Alternation of regexp list		(* sub-regexps separated by "|" *)
   | CharClass of char_class	        (* character class *)
   | CharProperty of property		(* unicode property *)
   (* modifiers *)

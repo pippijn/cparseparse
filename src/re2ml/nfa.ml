@@ -51,11 +51,6 @@ let rec construct_regexp nfa state_id regexp =
       (* on a character, simply make a transition to the next state *)
       Fsm.add_transition nfa state_id (Transition.Chr (Sloc.value c))
 
-  | String s ->
-      BatString.fold_left (fun state_id c ->
-        Fsm.add_transition nfa state_id (Transition.Chr c)
-      ) state_id (Sloc.value s)
-
   | Sequence seq ->
       List.fold_left (construct_regexp nfa) state_id seq
 
@@ -73,7 +68,7 @@ let rec construct_regexp nfa state_id regexp =
       common_target
 
 
-  | OrGrouping group ->
+  | Alternation group ->
       (* make a common start state *)
       let common_start = Fsm.add_state nfa in
 
@@ -112,7 +107,7 @@ let rec construct_regexp nfa state_id regexp =
       Fsm.add_outgoing nfa end_state Transition.Eps state_id;
       end_state
 
-  | AnyChar | Lexeme _ | CharClass _ | Question _ | Star _ | Quantified _ | CharProperty _ ->
+  | AnyChar | Lexeme _ | CharClass _ | Question _ | Star _ | Quantified _ | CharProperty _ | String _ ->
       failwith ("unresolved regexp: " ^ Sexplib.Sexp.to_string_hum (sexp_of_regexp regexp))
 
 

@@ -1,3 +1,9 @@
+let state_count =
+  List.fold_left (fun count (_, _, (dfa, actions)) ->
+    count + Dfa.Fsm.cardinal dfa
+  ) 0
+
+
 let parse_channel file input =
   let lexbuf = Lexing.from_channel input in
   Lexing.(lexbuf.lex_curr_p <- {
@@ -11,6 +17,7 @@ let parse_channel file input =
 
   let program = Timing.progress "parsing" (Parser.parse (Lexer.token state)) lexbuf in
   let program = Timing.progress "expanding aliases" Resolve.resolve program in
+  let program = Timing.progress "desugaring" Simplify.simplify program in
 
   let pre, post, nfas = Timing.progress "constructing NFAs" Nfa.construct program in
   let dfas = List.map Dfa.of_nfa nfas in
@@ -31,14 +38,17 @@ let parse_channel file input =
     ) nfas dfas
   );
 
-  let state_count =
-    List.fold_left (fun count (_, _, (dfa, actions)) ->
-      count + Dfa.Fsm.cardinal dfa
-    ) 0 dfas
+  if false then
+    Printf.printf "finished dfa construction with %d states\n" (state_count dfas);
+
+  let dfas =
+    List.rev_map (fun (name, args, (dfa, actions)) ->
+      name, args, (Minimisation.minimise dfa, actions)
+    ) dfas
   in
 
   if false then
-    Printf.printf "finished dfa construction with %d states\n" state_count;
+    Printf.printf "finished minimisation with %d states\n" (state_count dfas);
 
   Timing.progress "emitting ML code" (EmitCode.emit pre post) dfas;
 
