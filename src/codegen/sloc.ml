@@ -38,7 +38,6 @@ let of_loc _loc t =
   t, Loc.start_pos _loc, Loc.stop_pos _loc
 
 let _loc (t, s, e) =
-  let open Lexing in
   let open Camlp4.PreCast in
 
   let _loc =
@@ -47,6 +46,7 @@ let _loc (t, s, e) =
     else if s == generated_pos && e == generated_pos then
       Loc.mk "<generated>"
     else
+      let open Lexing in
       Loc.of_tuple (
         (* file name *)
         s.pos_fname,
@@ -72,6 +72,9 @@ let empty_string = dummy ""
 
 let print_string out (t, s, e) =
   output_string out t
+
+let pp_print_string fmt (t, s, e) =
+  Format.pp_print_string fmt t
 
 
 let exLid sloc =
