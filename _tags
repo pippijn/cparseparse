@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 4fa6bfdb7d58ed37705dd3567b82e341)
+# DO NOT EDIT (digest: 285c1c9ad0a7f3fbc3d76dd1c84aa230)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -112,47 +112,47 @@
 <src/ccparse/*.ml{,i}>: use_ccabs
 <src/ccparse/*.ml{,i}>: use_glr
 <src/ccparse/*.ml{,i}>: use_baselib
+<src/ccparse/*.ml{,i}>: pkg_unix
 <src/ccparse/*.ml{,i}>: pkg_batteries
 <src/ccparse/*.ml{,i}>: pkg_sexplib
-<src/ccparse/*.ml{,i}>: pkg_unix
 <src/ccparse/*.ml{,i}>: pkg_monad-custom
 <src/ccparse/gr/*.ml{,i}>: use_ccabs
 <src/ccparse/gr/*.ml{,i}>: use_glr
 <src/ccparse/gr/*.ml{,i}>: use_baselib
+<src/ccparse/gr/*.ml{,i}>: pkg_unix
 <src/ccparse/gr/*.ml{,i}>: pkg_batteries
 <src/ccparse/gr/*.ml{,i}>: pkg_sexplib
-<src/ccparse/gr/*.ml{,i}>: pkg_unix
 <src/ccparse/gr/*.ml{,i}>: pkg_monad-custom
 <src/ccparse/ml/*.ml{,i}>: use_ccabs
 <src/ccparse/ml/*.ml{,i}>: use_glr
 <src/ccparse/ml/*.ml{,i}>: use_baselib
+<src/ccparse/ml/*.ml{,i}>: pkg_unix
 <src/ccparse/ml/*.ml{,i}>: pkg_batteries
 <src/ccparse/ml/*.ml{,i}>: pkg_sexplib
-<src/ccparse/ml/*.ml{,i}>: pkg_unix
 <src/ccparse/ml/*.ml{,i}>: pkg_monad-custom
 <src/ccparse/tok/*.ml{,i}>: use_ccabs
 <src/ccparse/tok/*.ml{,i}>: use_glr
 <src/ccparse/tok/*.ml{,i}>: use_baselib
+<src/ccparse/tok/*.ml{,i}>: pkg_unix
 <src/ccparse/tok/*.ml{,i}>: pkg_batteries
 <src/ccparse/tok/*.ml{,i}>: pkg_sexplib
-<src/ccparse/tok/*.ml{,i}>: pkg_unix
 <src/ccparse/tok/*.ml{,i}>: pkg_monad-custom
 # Executable cpapa
 "src/cpapa/cpapa.native": use_ccparse
 "src/cpapa/cpapa.native": use_ccabs
 "src/cpapa/cpapa.native": use_glr
 "src/cpapa/cpapa.native": use_baselib
+"src/cpapa/cpapa.native": pkg_unix
 "src/cpapa/cpapa.native": pkg_batteries
 "src/cpapa/cpapa.native": pkg_sexplib
-"src/cpapa/cpapa.native": pkg_unix
 "src/cpapa/cpapa.native": pkg_monad-custom
 <src/cpapa/*.ml{,i}>: use_ccparse
 <src/cpapa/*.ml{,i}>: use_ccabs
 <src/cpapa/*.ml{,i}>: use_glr
 <src/cpapa/*.ml{,i}>: use_baselib
+<src/cpapa/*.ml{,i}>: pkg_unix
 <src/cpapa/*.ml{,i}>: pkg_batteries
 <src/cpapa/*.ml{,i}>: pkg_sexplib
-<src/cpapa/*.ml{,i}>: pkg_unix
 <src/cpapa/*.ml{,i}>: pkg_monad-custom
 # Library gramanl
 "src/gramanl/gramanl.cmxs": use_gramanl
@@ -222,51 +222,42 @@
 <src/gramanl/*.ml{,i}>: use_glr
 <src/gramanl/*.ml{,i}>: use_codegen
 <src/gramanl/*.ml{,i}>: use_baselib
+<src/gramanl/*.ml{,i}>: pkg_unix
 <src/gramanl/*.ml{,i}>: pkg_batteries
 <src/gramanl/*.ml{,i}>: pkg_camlp4
 <src/gramanl/*.ml{,i}>: pkg_camlp4.lib
 <src/gramanl/*.ml{,i}>: pkg_sexplib
-<src/gramanl/*.ml{,i}>: pkg_unix
 <src/gramanl/*.ml{,i}>: pkg_ocamlgraph
 <src/gramanl/ml/*.ml{,i}>: use_glr
 <src/gramanl/ml/*.ml{,i}>: use_codegen
 <src/gramanl/ml/*.ml{,i}>: use_baselib
+<src/gramanl/ml/*.ml{,i}>: pkg_unix
 <src/gramanl/ml/*.ml{,i}>: pkg_batteries
 <src/gramanl/ml/*.ml{,i}>: pkg_camlp4
 <src/gramanl/ml/*.ml{,i}>: pkg_camlp4.lib
 <src/gramanl/ml/*.ml{,i}>: pkg_sexplib
-<src/gramanl/ml/*.ml{,i}>: pkg_unix
 <src/gramanl/ml/*.ml{,i}>: pkg_ocamlgraph
 # Executable elkhound
 "src/elkhound/elkhound.native": use_gramanl
 "src/elkhound/elkhound.native": use_glr
 "src/elkhound/elkhound.native": use_codegen
 "src/elkhound/elkhound.native": use_baselib
+"src/elkhound/elkhound.native": pkg_unix
 "src/elkhound/elkhound.native": pkg_batteries
 "src/elkhound/elkhound.native": pkg_camlp4
 "src/elkhound/elkhound.native": pkg_camlp4.lib
 "src/elkhound/elkhound.native": pkg_sexplib
-"src/elkhound/elkhound.native": pkg_unix
 "src/elkhound/elkhound.native": pkg_ocamlgraph
 <src/elkhound/*.ml{,i}>: use_gramanl
 <src/elkhound/*.ml{,i}>: use_glr
 <src/elkhound/*.ml{,i}>: use_codegen
 <src/elkhound/*.ml{,i}>: use_baselib
+<src/elkhound/*.ml{,i}>: pkg_unix
 <src/elkhound/*.ml{,i}>: pkg_batteries
 <src/elkhound/*.ml{,i}>: pkg_camlp4
 <src/elkhound/*.ml{,i}>: pkg_camlp4.lib
 <src/elkhound/*.ml{,i}>: pkg_sexplib
-<src/elkhound/*.ml{,i}>: pkg_unix
 <src/elkhound/*.ml{,i}>: pkg_ocamlgraph
-# Executable runtests
-"testsuite/runtests.native": use_baselib
-"testsuite/runtests.native": pkg_batteries
-"testsuite/runtests.native": pkg_sexplib
-"testsuite/runtests.native": pkg_unix
-<testsuite/*.ml{,i}>: use_baselib
-<testsuite/*.ml{,i}>: pkg_batteries
-<testsuite/*.ml{,i}>: pkg_sexplib
-<testsuite/*.ml{,i}>: pkg_unix
 # Executable treematch
 "src/treematch/treematch.native": use_baselib
 "src/treematch/treematch.native": pkg_batteries
@@ -293,6 +284,23 @@
 <src/re2ml/*.ml{,i}>: pkg_camlp4
 <src/re2ml/*.ml{,i}>: pkg_camlp4.lib
 <src/re2ml/*.ml{,i}>: pkg_sexplib
+# Library testing
+"src/testing/testing.cmxs": use_testing
+<src/testing/*.ml{,i}>: use_baselib
+<src/testing/*.ml{,i}>: pkg_unix
+<src/testing/*.ml{,i}>: pkg_batteries
+<src/testing/*.ml{,i}>: pkg_sexplib
+# Executable runtests
+"testsuite/runtests.native": use_testing
+"testsuite/runtests.native": use_baselib
+"testsuite/runtests.native": pkg_unix
+"testsuite/runtests.native": pkg_batteries
+"testsuite/runtests.native": pkg_sexplib
+<testsuite/*.ml{,i}>: use_testing
+<testsuite/*.ml{,i}>: use_baselib
+<testsuite/*.ml{,i}>: pkg_unix
+<testsuite/*.ml{,i}>: pkg_batteries
+<testsuite/*.ml{,i}>: pkg_sexplib
 # OASIS_STOP
 
 true: debug

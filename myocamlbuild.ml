@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: 9bead844351433a120d7b297e81c2bbd) *)
+(* DO NOT EDIT (digest: cb812948a8ed59dd64a57d3ecda6c58a) *)
 module OASISGettext = struct
 (* # 21 "/tmp/oasis-0.3.0/src/oasis/OASISGettext.ml" *)
 
@@ -485,7 +485,8 @@ let package_default =
           ("codegen", ["src/codegen"]);
           ("glr", ["src/glr"]);
           ("ccparse", ["src/ccparse"]);
-          ("gramanl", ["src/gramanl"])
+          ("gramanl", ["src/gramanl"]);
+          ("testing", ["src/testing"])
        ];
      lib_c = [("baselib", "src/baselib", [])];
      flags =
@@ -508,8 +509,9 @@ let package_default =
        [
           ("testsuite/elkhound/scannerless", ["src/glr"]);
           ("testsuite/elkhound/arith", ["src/glr"]);
-          ("testsuite", ["src/baselib"]);
+          ("testsuite", ["src/baselib"; "src/testing"]);
           ("src/treematch", ["src/baselib"]);
+          ("src/testing", ["src/baselib"]);
           ("src/re2ml", ["src/baselib"; "src/codegen"]);
           ("src/gramanl/ml",
             ["src/baselib"; "src/codegen"; "src/glr"; "src/gramanl"]);
@@ -570,7 +572,7 @@ let package_default =
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default package_default;;
 
-# 574 "myocamlbuild.ml"
+# 576 "myocamlbuild.ml"
 (* OASIS_STOP *)
 let atomize = Command.atomize
 
