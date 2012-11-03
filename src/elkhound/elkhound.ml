@@ -120,8 +120,15 @@ let emit_code dirname (env, states, tables) =
   let ptree = env.ptree in
   let verbatims = env.verbatims in
 
-  Timing.progress "emitting ML code"
-    (EmitCode.emit_ml dirname index verbatims ptree) tables
+  try
+    Timing.progress "emitting ML code"
+      (EmitCode.emit_ml dirname index verbatims ptree) tables
+  with Camlp4.PreCast.Loc.Exc_located (loc, e) ->
+    Printf.printf "%s: Exception caught:\n  %s"
+      (Camlp4.PreCast.Loc.to_string loc)
+      (Printexc.to_string e);
+    Printexc.print_backtrace stdout;
+    exit 1
 
 
 let optional enabled f x = if enabled () then f x else x
