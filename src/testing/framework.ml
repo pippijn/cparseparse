@@ -233,7 +233,7 @@ let run_testsuite testsuite filters =
       List.fold_left (run_tests filters error_log) (0, 0, 0.0) testsuite
     in
 
-    output_string error_log "\nSummary";
+    output_string error_log "\n\nSummary";
     output_string error_log "\n-------\n";
 
     let msg =
