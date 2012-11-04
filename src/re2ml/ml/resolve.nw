@@ -1,9 +1,15 @@
+\subsection{Symbol resolution}
+
+<<ml>>=
 open Ast
+@
 
-
-(* Recursively resolve aliases in all sub-expressions. *)
+Recursively resolve aliases in all sub-expressions.
+<<ml>>=
 let rec resolve_regexp map = function
-  (* Replace references by their definition. *)
+@
+  Replace references by their definition.
+<<ml>>=
   | Lexeme name ->
       begin try
         LocStringMap.find name map
@@ -20,7 +26,9 @@ let rec resolve_regexp map = function
          * we can catch more undefined alias errors. *)
         epsilon
       end
+@
 
+<<ml>>=
   (* a b *)
   | Sequence    list -> Sequence    (List.map (resolve_regexp map) list)
   (* a | b *)
@@ -33,17 +41,21 @@ let rec resolve_regexp map = function
   | Plus re -> Plus (resolve_regexp map re)
   (* a* *)
   | Star re -> Star (resolve_regexp map re)
-
   (* a as name *)
   | Binding (re, name) -> Binding (resolve_regexp map re, name)
+@
 
-  (* These expressions do not contain sub-expressions, so they require
-   * no name resolution. *)
-  | AnyChar | Eof | CharClass _ | CharProperty _ | String _ | Char _ as atom ->
+  These expressions do not contain sub-expressions, so they require
+  no name resolution.
+<<ml>>=
+  | AnyChar | Eof | CharClass _ | CharProperty _
+  | String _ | Char _ as atom ->
       atom
+@
 
 
-(* Resolve aliases in all rules of a lexer function. *)
+Resolve aliases in all rules of a lexer function.
+<<ml>>=
 let resolve_lexer map (Lexer (name, args, rules)) =
   let rules =
     List.map (fun (Rule (regexp, code)) ->
@@ -52,21 +64,25 @@ let resolve_lexer map (Lexer (name, args, rules)) =
   in
 
   Lexer (name, args, rules)
+@
 
 
-(* [add_builtins map list] adds a list pre-defined aliases to the passed
- * map. It takes a list of pairs (name, code) and parses the code into
- * a regexp object. *)
+[[add_builtins map list]] adds a list pre-defined aliases to the passed
+map. It takes a list of pairs (name, code) and parses the code into
+a regexp object.
+<<ml>>=
 let add_builtins =
   List.fold_left (fun map (name, regexp) ->
     LocStringMap.add
       (Sloc.generated name)
-      (resolve_regexp map (StringParser.regexp regexp))
+      (resolve_regexp map (Parse.regexp_of_string regexp))
       map
   )
+@
 
 
-(* POSIX character classes *)
+POSIX character classes
+<<ml>>=
 let classes = add_builtins LocStringMap.empty [
   (* Digits *)
   "[:digit:]",	"['0'-'9']";
@@ -87,11 +103,15 @@ let classes = add_builtins LocStringMap.empty [
   (* Whitespace characters *)
   "[:space:]",	"[' ' '\\t' '\\r' '\\n' '\\v' '\\f']";
   (* Punctuation characters *)
-  "[:punct:]",	"[']' '[' '!' '\"' '#' '$' '%' '&' '\\'' '(' ')' '*' '+' ',' '.' '/' ':' ';' '<' '=' '>' '?' '@' '^' '_' '`' '{' '|' '}' '~' '-']";
+  "[:punct:]",	"[']' '[' '!' '\"' '#' '$' '%' '&' '\\'' '(' ')'
+  		 '*' '+' ',' '.' '/' ':' ';' '<' '=' '>' '?' '@'
+                 '^' '_' '`' '{' '|' '}' '~' '-']";
 ]
+@
 
 
-(* Some common short-cuts for the above character classes. *)
+Some common short-cuts for the above character classes.
+<<ml>>=
 let builtins = add_builtins classes [
   (* Digits *)
   "\\d",	"[:digit:]";
@@ -114,12 +134,14 @@ let builtins = add_builtins classes [
   (* Non-whitespace characters *)
   "\\S",	"[^' ' '\\t' '\\r' '\\n' '\\v' '\\f']";
 ]
+@
 
 
-(* Collect regexp aliases and resolve them using the ones already seen.
- * If an alias is defined twice, replace it in the map and emit a warning.
- * This function returns a map of built-in and user-defined aliases to
- * their regexp objects. *)
+Collect regexp aliases and resolve them using the ones already seen.
+If an alias is defined twice, replace it in the map and emit a warning.
+This function returns a map of built-in and user-defined aliases to
+their regexp objects.
+<<ml>>=
 let resolve_aliases =
   List.fold_left (fun map (Alias (name, regexp)) ->
     let regexp = resolve_regexp map regexp in
@@ -127,12 +149,15 @@ let resolve_aliases =
     (* We allow redefinition as in ML, but warn about it, since it is
      * probably not what the user wants. *)
     if LocStringMap.mem name map then
-      Diagnostics.warning name "regexp name %a already defined" Sloc.pp_print_string name;
+      Diagnostics.warning name "regexp name %a already defined"
+        Sloc.pp_print_string name;
     LocStringMap.add name regexp map
   ) builtins
+@
 
 
-(* Produce a program with resolved aliases and an empty aliases list. *)
+Produce a program with resolved aliases and an empty aliases list.
+<<ml>>=
 let resolve (Program (pre, aliases, lexers, post)) =
   let map = resolve_aliases aliases in
   let lexers = List.map (resolve_lexer map) lexers in
@@ -142,3 +167,4 @@ let resolve (Program (pre, aliases, lexers, post)) =
   Diagnostics.exit_on_error ();
 
   Program (pre, [], lexers, post)
+@

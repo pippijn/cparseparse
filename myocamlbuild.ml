@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: cb812948a8ed59dd64a57d3ecda6c58a) *)
+(* DO NOT EDIT (digest: 510e8bb8a416a9c3baadbba6d3ca8d75) *)
 module OASISGettext = struct
 (* # 21 "/tmp/oasis-0.3.0/src/oasis/OASISGettext.ml" *)
 
@@ -512,7 +512,8 @@ let package_default =
           ("testsuite", ["src/baselib"; "src/testing"]);
           ("src/treematch", ["src/baselib"]);
           ("src/testing", ["src/baselib"]);
-          ("src/re2ml", ["src/baselib"; "src/codegen"]);
+          ("src/re2ml/ml", ["src/baselib"; "src/codegen"; "src/re2ml"]);
+          ("src/re2ml", ["src/baselib"; "src/codegen"; "src/re2ml/ml"]);
           ("src/gramanl/ml",
             ["src/baselib"; "src/codegen"; "src/glr"; "src/gramanl"]);
           ("src/gramanl",
@@ -572,7 +573,7 @@ let package_default =
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default package_default;;
 
-# 576 "myocamlbuild.ml"
+# 577 "myocamlbuild.ml"
 (* OASIS_STOP *)
 let atomize = Command.atomize
 
@@ -588,6 +589,35 @@ let grammars = [
   "src/ccparse/gr/gnu.gr";
 ]
 
+
+let rec extract_latex_deps dir fh deps =
+  try
+    let line = input_line fh in
+    let linelen = String.length line in
+
+    let deps =
+      if linelen > 8 && String.sub line 0 6 = "\\input" then
+        let dep =
+          dir ^
+          String.sub line 7 (linelen - 8) ^ ".tex"
+        in
+        [dep] :: deps
+      else
+        deps
+    in
+
+    extract_latex_deps dir fh deps
+  with End_of_file ->
+    deps
+
+
+let latex_deps dir tex =
+  let fh = open_in tex in
+  let deps = extract_latex_deps dir fh [] in
+  close_in fh;
+  deps
+
+
 let configure fl =
   let cmd = Printf.sprintf "../script/check_%s.sh" (String.lowercase fl) in
   if Sys.command cmd = 0 then
@@ -597,58 +627,39 @@ let configure fl =
 
 let dispatch_mine = function
   | After_rules ->
-      rule "Compile C++ source file"
-        ~prod:"%.o"
-        ~dep:"%.cpp"
+      (* +=====~~~-------------------------------------------------------~~~=====+ *)
+      (* |                          Generic pattern rules                        | *)
+      (* +=====~~~-------------------------------------------------------~~~=====+ *)
+
+      rule "Extract code from literate file"
+        ~prod:"%.ml"
+        ~dep:"%.nw"
         begin fun env build ->
-          Cmd(atomize (["g++"; env "%.cpp"; "-c"; "-o"; env "%.o";
-            "-fPIC";
-            "-O3";
-            "-ggdb3";
-            "-std=c++0x";
-            "-I../src/baselib";
-          ] @ configure "OLD_CXX"))
+          Cmd(S[A"notangle"; A"-L# %L \"%F\"%N"; A"-Rml"; A(env "%.nw"); Sh">"; A(env "%.ml")])
         end;
 
 
-      rule "Generate token files"
-        ~prods:[
-          "src/ccparse/tok/cc_tokens.ids";
-          "src/ccparse/tok/cc_tokens.ml";
-        ]
-        ~deps:([
-          "src/ccparse/tok/make-token-files";
-        ] @ tokens)
+      rule "Extract documentation from literate file"
+        ~prod:"%.tex"
+        ~dep:"%.nw"
         begin fun env build ->
-          Cmd(atomize (["perl"; "src/ccparse/tok/make-token-files"; "-o"; "src/ccparse/tok/cc_tokens"] @ tokens))
+          Cmd(S[A"noweave"; A"-delay"; A(env "%.nw"); Sh">"; A(env "%.tex")])
         end;
 
 
-      rule "Compile C++ grammar to ML"
-        ~prods:[
-          "src/ccparse/gr/ccPtree.ml";
-          "src/ccparse/gr/ccPtreeActions.mli";
-          "src/ccparse/gr/ccPtreeActions.ml";
-          "src/ccparse/gr/ccTreematch.tm";
-          "src/ccparse/gr/ccTreematchActions.mli";
-          "src/ccparse/gr/ccTreematchActions.ml";
-
-          "src/ccparse/gr/ccActions.mli";
-          "src/ccparse/gr/ccActions.ml";
-          "src/ccparse/gr/ccNames.mli";
-          "src/ccparse/gr/ccNames.ml";
-          "src/ccparse/gr/ccTables.dat";
-          "src/ccparse/gr/ccTables.mli";
-          "src/ccparse/gr/ccTables.ml";
-          "src/ccparse/gr/ccTokens.mli";
-          "src/ccparse/gr/ccTokens.ml";
-        ]
-        ~deps:([
-          "src/ccparse/tok/cc_tokens.ids";
-          "src/elkhound/elkhound.native";
-        ] @ grammars)
+      rule "Generate literate documentation"
+        ~prod:"%.pdf"
+        ~dep:"%.tex"
         begin fun env build ->
-          Cmd(atomize (["src/elkhound/elkhound.native"; "-timing"; "-module-prefix"; "Cc"] @ grammars))
+          let tex = env "%.tex" in
+          (* get the directory including trailing slash *)
+          let dir = String.sub tex 0 (String.rindex tex '/' + 1) in
+          let deps = latex_deps dir tex in
+          List.iter (function
+            | Outcome.Good _  -> ()
+            | Outcome.Bad exn -> raise exn
+          ) (build deps);
+          Cmd(S[A"texi2pdf"; A"-I"; A dir; A"-o"; A(env "%.pdf"); A"-q"; A"-b"; A tex])
         end;
 
 
@@ -698,6 +709,65 @@ let dispatch_mine = function
         ]
         begin fun env build ->
           Cmd(atomize ["src/elkhound/elkhound.native"; "-timing"; env "%.gr"])
+        end;
+
+
+      rule "Compile C++ source file"
+        ~prod:"%.o"
+        ~dep:"%.cpp"
+        begin fun env build ->
+          Cmd(atomize (["g++"; env "%.cpp"; "-c"; "-o"; env "%.o";
+            "-fPIC";
+            "-O3";
+            "-ggdb3";
+            "-std=c++0x";
+            "-I../src/baselib";
+          ] @ configure "OLD_CXX"))
+        end;
+
+
+      (* +=====~~~-------------------------------------------------------~~~=====+ *)
+      (* |                          Specific custom rules                        | *)
+      (* +=====~~~-------------------------------------------------------~~~=====+ *)
+
+      rule "Generate token files"
+        ~prods:[
+          "src/ccparse/tok/cc_tokens.ids";
+          "src/ccparse/tok/cc_tokens.ml";
+        ]
+        ~deps:([
+          "src/ccparse/tok/make-token-files";
+        ] @ tokens)
+        begin fun env build ->
+          Cmd(atomize (["perl"; "src/ccparse/tok/make-token-files"; "-o"; "src/ccparse/tok/cc_tokens"] @ tokens))
+        end;
+
+
+      rule "Compile C++ grammar to ML"
+        ~prods:[
+          "src/ccparse/gr/ccPtree.ml";
+          "src/ccparse/gr/ccPtreeActions.mli";
+          "src/ccparse/gr/ccPtreeActions.ml";
+          "src/ccparse/gr/ccTreematch.tm";
+          "src/ccparse/gr/ccTreematchActions.mli";
+          "src/ccparse/gr/ccTreematchActions.ml";
+
+          "src/ccparse/gr/ccActions.mli";
+          "src/ccparse/gr/ccActions.ml";
+          "src/ccparse/gr/ccNames.mli";
+          "src/ccparse/gr/ccNames.ml";
+          "src/ccparse/gr/ccTables.dat";
+          "src/ccparse/gr/ccTables.mli";
+          "src/ccparse/gr/ccTables.ml";
+          "src/ccparse/gr/ccTokens.mli";
+          "src/ccparse/gr/ccTokens.ml";
+        ]
+        ~deps:([
+          "src/ccparse/tok/cc_tokens.ids";
+          "src/elkhound/elkhound.native";
+        ] @ grammars)
+        begin fun env build ->
+          Cmd(atomize (["src/elkhound/elkhound.native"; "-timing"; "-module-prefix"; "Cc"] @ grammars))
         end;
 
   | _ ->

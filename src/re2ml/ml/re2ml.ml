@@ -4,18 +4,8 @@ let state_count =
   ) 0
 
 
-let parse_channel file input =
-  let lexbuf = Lexing.from_channel input in
-  Lexing.(lexbuf.lex_curr_p <- {
-    pos_fname = file;
-    pos_lnum = 1;
-    pos_bol = 0;
-    pos_cnum = 0;
-  });
-
-  let state = Lexer.make () in
-
-  let program = Timing.progress "parsing" (Parser.parse (Lexer.token state)) lexbuf in
+let parse file =
+  let program = Timing.progress "parsing" Parse.program_from_file file in
   let program = Timing.progress "expanding aliases" Resolve.resolve program in
   let program = Timing.progress "desugaring" Simplify.simplify program in
 
@@ -53,10 +43,6 @@ let parse_channel file input =
   Timing.progress "emitting ML code" (EmitCode.emit pre post) dfas;
 
   ()
-
-
-let parse file =
-  BatStd.with_dispose ~dispose:close_in (parse_channel file) (open_in file)
 
 
 let main files =

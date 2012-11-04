@@ -25,7 +25,7 @@ Executable re2ml
         BuildDepends:           baselib,codegen,                        # internal
                                 batteries                               # external
         CompiledObject:         native
-        MainIs:                 re2ml.ml
+        MainIs:                 ml/re2ml.ml
         NativeOpt:              -inline 0
 
 Executable elkhound
