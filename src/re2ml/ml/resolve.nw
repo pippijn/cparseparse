@@ -1,14 +1,27 @@
 \subsection{Symbol resolution}
+\label{resolve}
 
+The [[Resolve]] module implements a simple kind of macro expansion. Macros are
+user-defined abbreviations or aliases for regular expressions. These aliases can
+reference other, previously defined aliases. It is possible to redefine an
+existing alias, hiding its definition. This only affects the expansion of
+aliases in subsequently defined aliases and in rules. In particular, previously
+defined aliases are not affected.
 <<ml>>=
 open Ast
 @
 
-Recursively resolve aliases in all sub-expressions.
+Recursively resolve aliases in all sub-expressions. The map passed to this
+function is one from alias name to the regexp object of its definition. It also
+contains pre-defined abbreviations and character classes.
 <<ml>>=
 let rec resolve_regexp map = function
 @
-  Replace references by their definition.
+  References are replaced by their definition. If an alias cannot be resolved,
+  an error is emitted, but the program is not aborted. The expression tree does
+  not distinguish between built-in and user-defined aliases, but we know that
+  built-ins begin with [[']] or [['[']], so we can use this knowledge in error
+  messages.
 <<ml>>=
   | Lexeme name ->
       begin try
@@ -16,10 +29,11 @@ let rec resolve_regexp map = function
       with Not_found ->
         let alias = Sloc.value name in
         let what =
-          if alias.[0] == '\\' then
-            "builtin regex"
-          else
-            "regex alias"
+          match alias.[0] with
+          | '\\' | '[' ->
+              "built-in regexp"
+          | _ ->
+              "regexp alias"
         in
         Diagnostics.error name "No such %s: '%s'" what alias;
         (* We just return the empty sentence here, so
@@ -28,6 +42,8 @@ let rec resolve_regexp map = function
       end
 @
 
+  All other expressions are structurally preserved, but aliases in
+  sub-expressions are recursively resolved.
 <<ml>>=
   (* a b *)
   | Sequence    list -> Sequence    (List.map (resolve_regexp map) list)
@@ -45,8 +61,8 @@ let rec resolve_regexp map = function
   | Binding (re, name) -> Binding (resolve_regexp map re, name)
 @
 
-  These expressions do not contain sub-expressions, so they require
-  no name resolution.
+  These expressions are atomic and do not contain sub-expressions, so they
+  require no name resolution.
 <<ml>>=
   | AnyChar | Eof | CharClass _ | CharProperty _
   | String _ | Char _ as atom ->
@@ -54,7 +70,8 @@ let rec resolve_regexp map = function
 @
 
 
-Resolve aliases in all rules of a lexer function.
+Resolve aliases in all rules of a scanner function definition. Semantic action
+code is not touched by symbol resolution.
 <<ml>>=
 let resolve_lexer map (Lexer (name, args, rules)) =
   let rules =
@@ -67,9 +84,10 @@ let resolve_lexer map (Lexer (name, args, rules)) =
 @
 
 
-[[add_builtins map list]] adds a list pre-defined aliases to the passed
-map. It takes a list of pairs (name, code) and parses the code into
-a regexp object.
+The function [[add_builtins map list]] takes a list of name/code pairs and adds
+them to the passed map. The code is passed as string and is parsed into an
+expression tree by this function. It is mostly used to define built-in character
+classes, but any regular expression can be used.
 <<ml>>=
 let add_builtins =
   List.fold_left (fun map (name, regexp) ->
@@ -81,7 +99,9 @@ let add_builtins =
 @
 
 
-POSIX character classes
+POSIX defines some common character classes. Unlike POSIX, we handle these as
+regular expression atoms instead of character ranges. In particular, this means
+that they cannot be used inside character class literals.
 <<ml>>=
 let classes = add_builtins LocStringMap.empty [
   (* Digits *)
@@ -110,7 +130,8 @@ let classes = add_builtins LocStringMap.empty [
 @
 
 
-Some common short-cuts for the above character classes.
+Apart from the above character classes, we also support some common short-cuts
+for a subset of the above in addition to some for which there is no class name.
 <<ml>>=
 let builtins = add_builtins classes [
   (* Digits *)
@@ -139,8 +160,12 @@ let builtins = add_builtins classes [
 
 Collect regexp aliases and resolve them using the ones already seen.
 If an alias is defined twice, replace it in the map and emit a warning.
+User-defined aliases can use pre-defined ones and ones that appear lexically
+before the alias being defined.
+
 This function returns a map of built-in and user-defined aliases to
-their regexp objects.
+their fully resolved regexp objects. In other words, the objects in the map are
+guaranteed not to contain unresolved aliases.
 <<ml>>=
 let resolve_aliases =
   List.fold_left (fun map (Alias (name, regexp)) ->
