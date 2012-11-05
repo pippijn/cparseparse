@@ -124,7 +124,7 @@ let emit_code dirname (env, states, tables) =
     Timing.progress "emitting ML code"
       (EmitCode.emit_ml dirname index verbatims ptree) tables
   with Camlp4.PreCast.Loc.Exc_located (loc, e) ->
-    Printf.printf "%s: Exception caught:\n  %s"
+    Printf.printf "%s: Exception caught:\n  %s\n\n"
       (Camlp4.PreCast.Loc.to_string loc)
       (Printexc.to_string e);
     Printexc.print_backtrace stdout;
