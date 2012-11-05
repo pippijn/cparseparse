@@ -9,7 +9,10 @@ module Make(T : Sig.IntegralType) = struct
     bitset : Sig.writable BitSet.Internal.t;
   } with sexp
 
-  type 'm t = bitset with sexp
+  type 'm t = bitset
+
+  let sexp_of_t () bs = sexp_of_bitset bs
+  let t_of_sexp () sx = bitset_of_sexp sx
 
 
   let create width height =
