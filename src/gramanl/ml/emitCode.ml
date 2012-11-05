@@ -111,20 +111,13 @@ let emit_ml dirname index verbatims ptree tables =
 
   let name = dirname ^ "/" ^ String.lowercase (Options._module_prefix ()) in
 
-  print_endline "br1";
   emit_tokens name index.terms;
-  print_endline "br2";
   emit_parse_tree name ptree;
-  print_endline "br3";
   emit_treematch name ptree;
-  print_endline "br4";
   emit_symbol_names name index.terms index.nonterms;
-  print_endline "br5";
 
   SemanticVariant.iter (fun variant ->
-    print_endline "br6";
     emit_user_actions name variant index final_prod verbatims
   );
 
-  print_endline "br7";
   emit_tables name tables
