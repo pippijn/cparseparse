@@ -257,6 +257,7 @@ Library baselib
                                 ExtString,
                                 HashStack,
                                 IntegralModule,
+                                Levenshtein,
                                 Sched,
                                 SexpChar,
                                 SexpHashtbl,
