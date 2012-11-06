@@ -40,12 +40,15 @@ setup.data:
 # OASIS_STOP
 SETUP = _build/setup.native
 
-setup.native: setup.ml
-	ocamlbuild $@
+myocamlbuild: myocamlbuild.ml
+	@-pbuildise
+
+setup.native: setup.ml myocamlbuild
+	@ocamlbuild $@
 
 setup.data: setup.native
 setup.ml: _oasis
-	oasis setup
+	@oasis setup
 
 check: test
 

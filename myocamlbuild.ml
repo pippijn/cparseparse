@@ -575,6 +575,168 @@ let dispatch_default = MyOCamlbuildBase.dispatch_default package_default;;
 
 # 577 "myocamlbuild.ml"
 (* OASIS_STOP *)
+(* PBUILD_START *)
+module Pbuild = struct
+# 1 "/usr/local/lib/ocaml/3.12.1/pbuild/pbuild.ml"
+  open Ocamlbuild_plugin
+  
+  let atomize = Command.atomize
+  
+  
+  (****************************************************************************
+   * :: Noweb/LaTeX rules
+   ***************************************************************************)
+  
+  let rec extract_latex_deps dir fh deps =
+    try
+      let line = input_line fh in
+      let linelen = String.length line in
+  
+      let deps =
+        if linelen > 8 && String.sub line 0 6 = "\\input" then
+          let dep =
+            dir ^
+            String.sub line 7 (linelen - 8) ^ ".tex"
+          in
+          [dep] :: deps
+        else
+          deps
+      in
+  
+      extract_latex_deps dir fh deps
+    with End_of_file ->
+      deps
+  
+  
+  let latex_deps dir tex =
+    let fh = open_in tex in
+    let deps = extract_latex_deps dir fh [] in
+    close_in fh;
+    deps
+  
+  
+  let noweb () =
+    rule "Extract code from literate file"
+      ~prod:"%.ml"
+      ~dep:"%.nw"
+      begin fun env build ->
+        Cmd(S[A"notangle"; A"-L# %L \"%F\"%N"; A"-Rml"; A(env "%.nw"); Sh">"; A(env "%.ml")])
+      end;
+  
+  
+    rule "Extract definitions from literate file"
+      ~prod:"%.defs"
+      ~dep:"%.nw"
+      begin fun env build ->
+        Cmd(S[A"nodefs"; A(env "%.nw"); Sh">"; A(env "%.defs")])
+      end;
+  
+  
+    rule "Extract documentation from literate file"
+      ~prod:"%.tex"
+      ~dep:"%.nw"
+      begin fun env build ->
+        Cmd(S[A"noweave"; A"-delay"; A(env "%.nw"); Sh">"; A(env "%.tex")])
+      end;
+  
+  
+    rule "Generate literate documentation"
+      ~prod:"%.pdf"
+      ~dep:"%.tex"
+      begin fun env build ->
+        let tex = env "%.tex" in
+        (* get the directory including trailing slash *)
+        let dir = String.sub tex 0 (String.rindex tex '/' + 1) in
+        let deps = latex_deps dir tex in
+        List.iter (function
+          | Outcome.Good _  -> ()
+          | Outcome.Bad exn -> raise exn
+        ) (build deps);
+        Cmd(S[A"texi2pdf"; A"-I"; A dir; A"-o"; A(env "%.pdf"); A"-q"; A"-b"; A tex])
+      end;
+  ;;
+  
+  
+  (****************************************************************************
+   * :: Treematch rules
+   ***************************************************************************)
+  
+  let treematch treematch =
+    rule "Compile Treematch specification to ML"
+      ~prod:"%.ml"
+      ~deps:[
+        "%.tm";
+        treematch;
+      ]
+      begin fun env build ->
+        let sed o n = [Sh"|"; A"sed"; A"-e"; A ("s$" ^ o ^ "$" ^ n ^ "$g")] in
+  
+        Cmd(S([A treematch; A"-special"; A(env "%.tm")]
+          @ sed "type t = \\([^;|]*\\);;"
+                "type t = \\1 with sexp;;"
+          @ sed " | SEXP;;"
+                " with sexp;;"
+          @ sed "\\.true" ".True"
+          @ sed "\\.false" ".False"
+          @ [Sh">"; A(env "%.ml")]
+        ))
+      end;
+  ;;
+  
+  
+  (****************************************************************************
+   * :: Elkhound rules
+   ***************************************************************************)
+  
+  let elkhound elkhound =
+    rule "Compile grammar to ML"
+      ~prods:[
+        "%Ptree.ml";
+        "%PtreeActions.mli";
+        "%PtreeActions.ml";
+        "%Treematch.tm";
+        "%TreematchActions.mli";
+        "%TreematchActions.ml";
+  
+        "%Actions.mli";
+        "%Actions.ml";
+        "%Names.mli";
+        "%Names.ml";
+        "%Tables.dat";
+        "%Tables.mli";
+        "%Tables.ml";
+        "%Tokens.mli";
+        "%Tokens.ml";
+      ]
+      ~deps:[
+        "%.gr";
+        elkhound;
+      ]
+      begin fun env build ->
+        Cmd(S[A elkhound; A"-timing"; A(env "%.gr")])
+      end;
+  ;;
+  
+  (****************************************************************************
+   * :: Elkhound rules
+   ***************************************************************************)
+  
+  let cxx args =
+    rule "Compile C++ source file"
+      ~prod:"%.o"
+      ~dep:"%.cpp"
+      begin fun env build ->
+        Cmd(atomize (["g++"; env "%.cpp"; "-c"; "-o"; env "%.o";
+          "-fPIC";
+          "-O3";
+          "-ggdb3";
+          "-std=c++0x";
+        ] @ args))
+      end;
+  ;;
+end
+# 739 "/usr/local/lib/ocaml/3.12.1/pbuild/pbuild.ml"
+(* PBUILD_STOP *)
 let atomize = Command.atomize
 
 let tokens = [
@@ -590,40 +752,16 @@ let grammars = [
 ]
 
 
-let rec extract_latex_deps dir fh deps =
-  try
-    let line = input_line fh in
-    let linelen = String.length line in
-
-    let deps =
-      if linelen > 8 && String.sub line 0 6 = "\\input" then
-        let dep =
-          dir ^
-          String.sub line 7 (linelen - 8) ^ ".tex"
-        in
-        [dep] :: deps
-      else
-        deps
-    in
-
-    extract_latex_deps dir fh deps
-  with End_of_file ->
-    deps
-
-
-let latex_deps dir tex =
-  let fh = open_in tex in
-  let deps = extract_latex_deps dir fh [] in
-  close_in fh;
-  deps
-
-
 let configure fl =
   let cmd = Printf.sprintf "../script/check_%s.sh" (String.lowercase fl) in
-  if Sys.command cmd = 0 then
+  try
+    ignore (Unix.stat cmd);
+    if Sys.command cmd = 0 then
+      []
+    else
+      ["-DHAS_" ^ fl]
+  with _ ->
     []
-  else
-    ["-DHAS_" ^ fl]
 
 let dispatch_mine = function
   | After_rules ->
@@ -631,99 +769,10 @@ let dispatch_mine = function
       (* |                          Generic pattern rules                        | *)
       (* +=====~~~-------------------------------------------------------~~~=====+ *)
 
-      rule "Extract code from literate file"
-        ~prod:"%.ml"
-        ~dep:"%.nw"
-        begin fun env build ->
-          Cmd(S[A"notangle"; A"-L# %L \"%F\"%N"; A"-Rml"; A(env "%.nw"); Sh">"; A(env "%.ml")])
-        end;
-
-
-      rule "Extract documentation from literate file"
-        ~prod:"%.tex"
-        ~dep:"%.nw"
-        begin fun env build ->
-          Cmd(S[A"noweave"; A"-delay"; A(env "%.nw"); Sh">"; A(env "%.tex")])
-        end;
-
-
-      rule "Generate literate documentation"
-        ~prod:"%.pdf"
-        ~dep:"%.tex"
-        begin fun env build ->
-          let tex = env "%.tex" in
-          (* get the directory including trailing slash *)
-          let dir = String.sub tex 0 (String.rindex tex '/' + 1) in
-          let deps = latex_deps dir tex in
-          List.iter (function
-            | Outcome.Good _  -> ()
-            | Outcome.Bad exn -> raise exn
-          ) (build deps);
-          Cmd(S[A"texi2pdf"; A"-I"; A dir; A"-o"; A(env "%.pdf"); A"-q"; A"-b"; A tex])
-        end;
-
-
-      rule "Compile Treematch specification to ML"
-        ~prod:"%.ml"
-        ~deps:[
-          "%.tm";
-          "src/treematch/treematch.native";
-        ]
-        begin fun env build ->
-          let sed o n = [Sh"|"; A"sed"; A"-e"; A ("s$" ^ o ^ "$" ^ n ^ "$g")] in
-
-          Cmd(S([A"src/treematch/treematch.native"; A"-special"; A(env "%.tm")]
-            @ sed "type t = \\([^;|]*\\);;"
-            	  "type t = \\1 with sexp;;"
-            @ sed " | SEXP;;"
-            	  " with sexp;;"
-            @ sed "\\.true" ".True"
-            @ sed "\\.false" ".False"
-            @ [Sh">"; A(env "%.ml")]
-          ))
-        end;
-
-
-      rule "Compile grammar to ML"
-        ~prods:[
-          "%Ptree.ml";
-          "%PtreeActions.mli";
-          "%PtreeActions.ml";
-          "%Treematch.tm";
-          "%TreematchActions.mli";
-          "%TreematchActions.ml";
-
-          "%Actions.mli";
-          "%Actions.ml";
-          "%Names.mli";
-          "%Names.ml";
-          "%Tables.dat";
-          "%Tables.mli";
-          "%Tables.ml";
-          "%Tokens.mli";
-          "%Tokens.ml";
-        ]
-        ~deps:[
-          "%.gr";
-          "src/elkhound/elkhound.native";
-        ]
-        begin fun env build ->
-          Cmd(atomize ["src/elkhound/elkhound.native"; "-timing"; env "%.gr"])
-        end;
-
-
-      rule "Compile C++ source file"
-        ~prod:"%.o"
-        ~dep:"%.cpp"
-        begin fun env build ->
-          Cmd(atomize (["g++"; env "%.cpp"; "-c"; "-o"; env "%.o";
-            "-fPIC";
-            "-O3";
-            "-ggdb3";
-            "-std=c++0x";
-            "-I../src/baselib";
-          ] @ configure "OLD_CXX"))
-        end;
+      Pbuild.noweb ();
+      Pbuild.treematch "src/treematch/treematch.native";
+      Pbuild.elkhound "src/elkhound/elkhound.native";
+      Pbuild.cxx ("-I../src/baselib" :: configure "OLD_CXX");
 
 
       (* +=====~~~-------------------------------------------------------~~~=====+ *)
