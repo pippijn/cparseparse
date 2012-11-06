@@ -14,6 +14,6 @@ module Make : functor (T : Sig.IntegralType) -> sig
   val print : 'm t -> unit
   val readonly : writable t -> readonly t
 
-  val t_of_sexp : (Sexplib.Sexp.t -> 'm) -> Sexplib.Sexp.t -> 'm t
-  val sexp_of_t : ('m -> Sexplib.Sexp.t) -> 'm t -> Sexplib.Sexp.t
+  val t_of_sexp : unit -> Sexplib.Sexp.t -> 'm t
+  val sexp_of_t : unit -> 'm t -> Sexplib.Sexp.t
 end
