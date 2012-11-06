@@ -1,0 +1,35 @@
+OASISFormat:                    0.3
+OCamlVersion:                   >= 3.12
+Name:                           codegen
+Version:                        0.1
+Synopsis:                       Code Generation Library
+Authors:                        Pippijn van Steenhoven
+License:                        GPL
+LicenseFile:                    COPYING
+Plugins:                        META (0.3),
+                                StdFiles (0.3),
+                                DevFiles (0.3)
+XStdFilesAUTHORS:               false
+XStdFilesINSTALLFilename:       INSTALL
+XStdFilesREADME:                false
+
+SourceRepository head
+        Type:                   git
+        Location:               git://git.xinutec.org/devel/codegen.git
+        Browser:                http://xinutec.org/git/devel/codegen.git
+
+
+Library codegen
+        Path:                   src/codegen
+        BuildTools:             ocamlbuild,camlp4o
+        BuildDepends:           baselib,                                # internal
+                                camlp4,camlp4.fulllib,                  # core
+                                sexplib                                 # external
+        CompiledObject:         native
+#        NativeOpt:              -inline 999 -unsafe -noassert
+        Modules:                CamlAst,
+                                Classify,
+                                Diagnostics,
+                                LocStringMap,
+                                Sloc,
+                                SlocMap

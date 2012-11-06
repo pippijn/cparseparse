@@ -1,0 +1,102 @@
+OASISFormat:                    0.3
+OCamlVersion:                   >= 3.12
+Name:                           ccparse
+Version:                        0.1
+Synopsis:                       C++ parser library
+Authors:                        Pippijn van Steenhoven
+License:                        GPL
+LicenseFile:                    COPYING
+Plugins:                        META (0.3),
+                                StdFiles (0.3),
+                                DevFiles (0.3)
+XStdFilesAUTHORS:               false
+XStdFilesINSTALLFilename:       INSTALL
+XStdFilesREADME:                false
+
+SourceRepository head
+        Type:                   git
+        Location:               git://git.xinutec.org/devel/codegen.git
+        Browser:                http://xinutec.org/git/devel/codegen.git
+
+
+########################################################################
+## :: Tools
+########################################################################
+
+Executable cpapa
+        Path:                   src/cpapa
+        BuildTools:             ocamlbuild
+        BuildDepends:           ccparse
+        CompiledObject:         native
+        MainIs:                 cpapa.ml
+
+
+########################################################################
+## :: Libraries
+########################################################################
+
+Library ccparse
+        Path:                   src/ccparse
+        Pack:                   true
+        BuildTools:             ocamlbuild,ocamllex
+        BuildDepends:           baselib,glr,ccabs,                      # internal
+                                unix                                    # core
+        CompiledObject:         native
+#        NativeOpt:              -inline 999 -unsafe -noassert
+        Modules:                Ccparse_info
+        InternalModules:        gr/CcActions,
+                                gr/CcPtree,
+                                gr/CcPtreeActions,
+                                gr/CcTables,
+                                gr/CcTokens,
+                                gr/CcTreematch,
+                                gr/CcTreematchActions,
+                                ml/Cc_keywords,
+                                ml/Factory,
+                                ml/Lexer,
+                                ml/Options,
+                                ml/Parser,
+                                tok/Cc_tokens
+
+Library cabs
+        Path:                   src/cabs
+        Pack:                   true
+        BuildTools:             ocamlbuild,camlp4o
+        BuildDepends:           batteries,sexplib                       # external
+        CompiledObject:         native
+#        NativeOpt:              -inline 999 -unsafe -noassert
+        Modules:                Cabs_info
+        InternalModules:        ml/Ast,
+                                ml/Constant,
+                                ml/Sclass,
+                                ml/Tqual
+
+Library ccabs
+        Path:                   src/ccabs
+        Pack:                   true
+        BuildTools:             ocamlbuild,camlp4o
+        BuildDepends:           batteries,sexplib,monad-custom          # external
+        CompiledObject:         native
+#        NativeOpt:              -inline 999 -unsafe -noassert
+        Modules:                Ccabs_info
+        InternalModules:        ml/Ast,
+                                ml/Disambiguation,
+                                ml/Flags,
+                                ml/Query
+
+
+########################################################################
+## :: Testsuite
+########################################################################
+
+Executable runtests
+        Path:                   testsuite
+        BuildTools:             ocamlbuild
+        BuildDepends:           baselib                                 # internal
+        CompiledObject:         native
+        Install:		false
+        MainIs:                 runtests.ml
+
+Test runtests
+        TestTools:              runtests
+        Command:                _build/testsuite/runtests.native

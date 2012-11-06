@@ -1,0 +1,11 @@
+# sexplib
+"ast.ml":		syntax_camlp4o, pkg_sexplib.syntax
+"automaton.ml":		syntax_camlp4o, pkg_sexplib.syntax
+"dfa.ml":		syntax_camlp4o, pkg_sexplib.syntax
+"nfa.ml":		syntax_camlp4o, pkg_sexplib.syntax
+
+# ML code parsing
+"emitCode.ml":		use_camlp4_full
+
+# ML code generation
+"emitCode.ml":		camlp4of

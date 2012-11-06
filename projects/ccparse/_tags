@@ -1,0 +1,101 @@
+# OASIS_START
+# DO NOT EDIT (digest: 08680dec40120123566ba38d795a78a3)
+# Ignore VCS directories, you can use the same kind of rule outside 
+# OASIS_START/STOP if you want to exclude directories that contains 
+# useless stuff for the build process
+<**/.svn>: -traverse
+<**/.svn>: not_hygienic
+".bzr": -traverse
+".bzr": not_hygienic
+".hg": -traverse
+".hg": not_hygienic
+".git": -traverse
+".git": not_hygienic
+"_darcs": -traverse
+"_darcs": not_hygienic
+# Library cabs
+"src/cabs/cabs.cmxs": use_cabs
+"src/cabs/cabs_info.cmx": for-pack(Cabs)
+"src/cabs/ml/ast.cmx": for-pack(Cabs)
+"src/cabs/ml/constant.cmx": for-pack(Cabs)
+"src/cabs/ml/sclass.cmx": for-pack(Cabs)
+"src/cabs/ml/tqual.cmx": for-pack(Cabs)
+<src/cabs/*.ml{,i}>: pkg_batteries
+<src/cabs/*.ml{,i}>: pkg_sexplib
+<src/cabs/ml/*.ml{,i}>: pkg_batteries
+<src/cabs/ml/*.ml{,i}>: pkg_sexplib
+# Library ccabs
+"src/ccabs/ccabs.cmxs": use_ccabs
+"src/ccabs/ccabs_info.cmx": for-pack(Ccabs)
+"src/ccabs/ml/ast.cmx": for-pack(Ccabs)
+"src/ccabs/ml/disambiguation.cmx": for-pack(Ccabs)
+"src/ccabs/ml/flags.cmx": for-pack(Ccabs)
+"src/ccabs/ml/query.cmx": for-pack(Ccabs)
+<src/ccabs/*.ml{,i}>: pkg_batteries
+<src/ccabs/*.ml{,i}>: pkg_sexplib
+<src/ccabs/*.ml{,i}>: pkg_monad-custom
+<src/ccabs/ml/*.ml{,i}>: pkg_batteries
+<src/ccabs/ml/*.ml{,i}>: pkg_sexplib
+<src/ccabs/ml/*.ml{,i}>: pkg_monad-custom
+# Library ccparse
+"src/ccparse/ccparse.cmxs": use_ccparse
+"src/ccparse/ccparse_info.cmx": for-pack(Ccparse)
+"src/ccparse/ml/cc_keywords.cmx": for-pack(Ccparse)
+"src/ccparse/ml/factory.cmx": for-pack(Ccparse)
+"src/ccparse/ml/lexer.cmx": for-pack(Ccparse)
+"src/ccparse/ml/options.cmx": for-pack(Ccparse)
+"src/ccparse/ml/parser.cmx": for-pack(Ccparse)
+<src/ccparse/*.ml{,i}>: use_ccabs
+<src/ccparse/*.ml{,i}>: pkg_baselib
+<src/ccparse/*.ml{,i}>: pkg_glr
+<src/ccparse/*.ml{,i}>: pkg_unix
+<src/ccparse/*.ml{,i}>: pkg_batteries
+<src/ccparse/*.ml{,i}>: pkg_sexplib
+<src/ccparse/*.ml{,i}>: pkg_monad-custom
+<src/ccparse/gr/*.ml{,i}>: use_ccabs
+<src/ccparse/gr/*.ml{,i}>: pkg_baselib
+<src/ccparse/gr/*.ml{,i}>: pkg_glr
+<src/ccparse/gr/*.ml{,i}>: pkg_unix
+<src/ccparse/gr/*.ml{,i}>: pkg_batteries
+<src/ccparse/gr/*.ml{,i}>: pkg_sexplib
+<src/ccparse/gr/*.ml{,i}>: pkg_monad-custom
+<src/ccparse/ml/*.ml{,i}>: use_ccabs
+<src/ccparse/ml/*.ml{,i}>: pkg_baselib
+<src/ccparse/ml/*.ml{,i}>: pkg_glr
+<src/ccparse/ml/*.ml{,i}>: pkg_unix
+<src/ccparse/ml/*.ml{,i}>: pkg_batteries
+<src/ccparse/ml/*.ml{,i}>: pkg_sexplib
+<src/ccparse/ml/*.ml{,i}>: pkg_monad-custom
+<src/ccparse/tok/*.ml{,i}>: use_ccabs
+<src/ccparse/tok/*.ml{,i}>: pkg_baselib
+<src/ccparse/tok/*.ml{,i}>: pkg_glr
+<src/ccparse/tok/*.ml{,i}>: pkg_unix
+<src/ccparse/tok/*.ml{,i}>: pkg_batteries
+<src/ccparse/tok/*.ml{,i}>: pkg_sexplib
+<src/ccparse/tok/*.ml{,i}>: pkg_monad-custom
+# Executable cpapa
+"src/cpapa/cpapa.native": use_ccparse
+"src/cpapa/cpapa.native": use_ccabs
+"src/cpapa/cpapa.native": pkg_baselib
+"src/cpapa/cpapa.native": pkg_glr
+"src/cpapa/cpapa.native": pkg_unix
+"src/cpapa/cpapa.native": pkg_batteries
+"src/cpapa/cpapa.native": pkg_sexplib
+"src/cpapa/cpapa.native": pkg_monad-custom
+<src/cpapa/*.ml{,i}>: use_ccparse
+<src/cpapa/*.ml{,i}>: use_ccabs
+<src/cpapa/*.ml{,i}>: pkg_baselib
+<src/cpapa/*.ml{,i}>: pkg_glr
+<src/cpapa/*.ml{,i}>: pkg_unix
+<src/cpapa/*.ml{,i}>: pkg_batteries
+<src/cpapa/*.ml{,i}>: pkg_sexplib
+<src/cpapa/*.ml{,i}>: pkg_monad-custom
+# Executable runtests
+"testsuite/runtests.native": pkg_baselib
+<testsuite/*.ml{,i}>: pkg_baselib
+# OASIS_STOP
+
+true:		debug
+true:		annot
+"testsuite":	-traverse
+"wip":		-traverse
