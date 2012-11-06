@@ -615,45 +615,48 @@ module Pbuild = struct
     deps
   
   
-  let noweb () =
-    rule "Extract code from literate file"
-      ~prod:"%.ml"
-      ~dep:"%.nw"
-      begin fun env build ->
-        Cmd(S[A"notangle"; A"-L# %L \"%F\"%N"; A"-Rml"; A(env "%.nw"); Sh">"; A(env "%.ml")])
-      end;
+  let noweb = function
+    | After_rules ->
+        rule "Extract code from literate file"
+          ~prod:"%.ml"
+          ~dep:"%.nw"
+          begin fun env build ->
+            Cmd(S[A"notangle"; A"-L# %L \"%F\"%N"; A"-Rml"; A(env "%.nw"); Sh">"; A(env "%.ml")])
+          end;
   
   
-    rule "Extract definitions from literate file"
-      ~prod:"%.defs"
-      ~dep:"%.nw"
-      begin fun env build ->
-        Cmd(S[A"nodefs"; A(env "%.nw"); Sh">"; A(env "%.defs")])
-      end;
+        rule "Extract definitions from literate file"
+          ~prod:"%.defs"
+          ~dep:"%.nw"
+          begin fun env build ->
+            Cmd(S[A"nodefs"; A(env "%.nw"); Sh">"; A(env "%.defs")])
+          end;
   
   
-    rule "Extract documentation from literate file"
-      ~prod:"%.tex"
-      ~dep:"%.nw"
-      begin fun env build ->
-        Cmd(S[A"noweave"; A"-delay"; A(env "%.nw"); Sh">"; A(env "%.tex")])
-      end;
+        rule "Extract documentation from literate file"
+          ~prod:"%.tex"
+          ~dep:"%.nw"
+          begin fun env build ->
+            Cmd(S[A"noweave"; A"-delay"; A(env "%.nw"); Sh">"; A(env "%.tex")])
+          end;
   
   
-    rule "Generate literate documentation"
-      ~prod:"%.pdf"
-      ~dep:"%.tex"
-      begin fun env build ->
-        let tex = env "%.tex" in
-        (* get the directory including trailing slash *)
-        let dir = String.sub tex 0 (String.rindex tex '/' + 1) in
-        let deps = latex_deps dir tex in
-        List.iter (function
-          | Outcome.Good _  -> ()
-          | Outcome.Bad exn -> raise exn
-        ) (build deps);
-        Cmd(S[A"texi2pdf"; A"-I"; A dir; A"-o"; A(env "%.pdf"); A"-q"; A"-b"; A tex])
-      end;
+        rule "Generate literate documentation"
+          ~prod:"%.pdf"
+          ~dep:"%.tex"
+          begin fun env build ->
+            let tex = env "%.tex" in
+            (* get the directory including trailing slash *)
+            let dir = String.sub tex 0 (String.rindex tex '/' + 1) in
+            let deps = latex_deps dir tex in
+            List.iter (function
+              | Outcome.Good _  -> ()
+              | Outcome.Bad exn -> raise exn
+            ) (build deps);
+            Cmd(S[A"texi2pdf"; A"-I"; A dir; A"-o"; A(env "%.pdf"); A"-q"; A"-b"; A tex])
+          end;
+  
+    | _ -> ()
   ;;
   
   
@@ -661,26 +664,29 @@ module Pbuild = struct
    * :: Treematch rules
    ***************************************************************************)
   
-  let treematch treematch =
-    rule "Compile Treematch specification to ML"
-      ~prod:"%.ml"
-      ~deps:[
-        "%.tm";
-        treematch;
-      ]
-      begin fun env build ->
-        let sed o n = [Sh"|"; A"sed"; A"-e"; A ("s$" ^ o ^ "$" ^ n ^ "$g")] in
+  let treematch treematch = function
+    | After_rules ->
+        rule "Compile Treematch specification to ML"
+          ~prod:"%.ml"
+          ~deps:[
+            "%.tm";
+            treematch;
+          ]
+          begin fun env build ->
+            let sed o n = [Sh"|"; A"sed"; A"-e"; A ("s$" ^ o ^ "$" ^ n ^ "$g")] in
   
-        Cmd(S([A treematch; A"-special"; A(env "%.tm")]
-          @ sed "type t = \\([^;|]*\\);;"
-                "type t = \\1 with sexp;;"
-          @ sed " | SEXP;;"
-                " with sexp;;"
-          @ sed "\\.true" ".True"
-          @ sed "\\.false" ".False"
-          @ [Sh">"; A(env "%.ml")]
-        ))
-      end;
+            Cmd(S([A treematch; A"-special"; A(env "%.tm")]
+              @ sed "type t = \\([^;|]*\\);;"
+                    "type t = \\1 with sexp;;"
+              @ sed " | SEXP;;"
+                    " with sexp;;"
+              @ sed "\\.true" ".True"
+              @ sed "\\.false" ".False"
+              @ [Sh">"; A(env "%.ml")]
+            ))
+          end;
+  
+    | _ -> ()
   ;;
   
   
@@ -688,54 +694,60 @@ module Pbuild = struct
    * :: Elkhound rules
    ***************************************************************************)
   
-  let elkhound elkhound =
-    rule "Compile grammar to ML"
-      ~prods:[
-        "%Ptree.ml";
-        "%PtreeActions.mli";
-        "%PtreeActions.ml";
-        "%Treematch.tm";
-        "%TreematchActions.mli";
-        "%TreematchActions.ml";
+  let elkhound elkhound = function
+    | After_rules ->
+        rule "Compile grammar to ML"
+          ~prods:[
+            "%Ptree.ml";
+            "%PtreeActions.mli";
+            "%PtreeActions.ml";
+            "%Treematch.tm";
+            "%TreematchActions.mli";
+            "%TreematchActions.ml";
   
-        "%Actions.mli";
-        "%Actions.ml";
-        "%Names.mli";
-        "%Names.ml";
-        "%Tables.dat";
-        "%Tables.mli";
-        "%Tables.ml";
-        "%Tokens.mli";
-        "%Tokens.ml";
-      ]
-      ~deps:[
-        "%.gr";
-        elkhound;
-      ]
-      begin fun env build ->
-        Cmd(S[A elkhound; A"-timing"; A(env "%.gr")])
-      end;
+            "%Actions.mli";
+            "%Actions.ml";
+            "%Names.mli";
+            "%Names.ml";
+            "%Tables.dat";
+            "%Tables.mli";
+            "%Tables.ml";
+            "%Tokens.mli";
+            "%Tokens.ml";
+          ]
+          ~deps:[
+            "%.gr";
+            elkhound;
+          ]
+          begin fun env build ->
+            Cmd(S[A elkhound; A"-timing"; A(env "%.gr")])
+          end;
+  
+    | _ -> ()
   ;;
   
   (****************************************************************************
    * :: Elkhound rules
    ***************************************************************************)
   
-  let cxx args =
-    rule "Compile C++ source file"
-      ~prod:"%.o"
-      ~dep:"%.cpp"
-      begin fun env build ->
-        Cmd(atomize (["g++"; env "%.cpp"; "-c"; "-o"; env "%.o";
-          "-fPIC";
-          "-O3";
-          "-ggdb3";
-          "-std=c++0x";
-        ] @ args))
-      end;
+  let cxx args = function
+    | After_rules ->
+        rule "Compile C++ source file"
+          ~prod:"%.o"
+          ~dep:"%.cpp"
+          begin fun env build ->
+            Cmd(atomize (["g++"; env "%.cpp"; "-c"; "-o"; env "%.o";
+              "-fPIC";
+              "-O3";
+              "-ggdb3";
+              "-std=c++0x";
+            ] @ args))
+          end;
+  
+    | _ -> ()
   ;;
 end
-# 739 "/usr/local/lib/ocaml/3.12.1/pbuild/pbuild.ml"
+# 751 "myocamlbuild.ml"
 (* PBUILD_STOP *)
 let atomize = Command.atomize
 
@@ -765,16 +777,6 @@ let configure fl =
 
 let dispatch_mine = function
   | After_rules ->
-      (* +=====~~~-------------------------------------------------------~~~=====+ *)
-      (* |                          Generic pattern rules                        | *)
-      (* +=====~~~-------------------------------------------------------~~~=====+ *)
-
-      Pbuild.noweb ();
-      Pbuild.treematch "src/treematch/treematch.native";
-      Pbuild.elkhound "src/elkhound/elkhound.native";
-      Pbuild.cxx ("-I../src/baselib" :: configure "OLD_CXX");
-
-
       (* +=====~~~-------------------------------------------------------~~~=====+ *)
       (* |                          Specific custom rules                        | *)
       (* +=====~~~-------------------------------------------------------~~~=====+ *)
@@ -822,4 +824,11 @@ let dispatch_mine = function
   | _ ->
       ()
 
-let _ = Ocamlbuild_plugin.dispatch (MyOCamlbuildBase.dispatch_combine [dispatch_mine; dispatch_default])
+let _ = Ocamlbuild_plugin.dispatch (MyOCamlbuildBase.dispatch_combine [
+  Pbuild.noweb;
+  Pbuild.treematch "src/treematch/treematch.native";
+  Pbuild.elkhound "src/elkhound/elkhound.native";
+  Pbuild.cxx ("-I../src/baselib" :: configure "OLD_CXX");
+  dispatch_mine;
+  dispatch_default;
+])
