@@ -125,13 +125,6 @@
 
   let loc lexbuf ?(s=Lexing.lexeme_start_p lexbuf) t =
     let e = Lexing.lexeme_end_p lexbuf in
-    (*
-    if Options._trace_srcloc () then
-      Printf.printf "%a-%a: %s\n"
-	output_position s
-	output_position e
-	t;
-    *)
     (t, s, e)
 }
 

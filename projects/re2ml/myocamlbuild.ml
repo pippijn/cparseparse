@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: bc2afcf190639b464ae38c7bbe941939) *)
+(* DO NOT EDIT (digest: 378c0c4b52601cf52e3a7135e5291fe6) *)
 module OASISGettext = struct
 # 21 "/home/pippijn/code/wip/oasis/src/oasis/OASISGettext.ml"
 
@@ -481,15 +481,28 @@ let package_default =
   {
      MyOCamlbuildBase.lib_ocaml = [];
      lib_c = [];
-     flags = [];
+     flags =
+       [
+          (["oasis_executable_json_native"; "ocaml"; "link"; "native"],
+            [(OASISExpr.EBool true, S [A "-inline"; A "999"])]);
+          (["oasis_executable_json_native"; "ocaml"; "ocamldep"; "native"],
+            [(OASISExpr.EBool true, S [A "-inline"; A "999"])]);
+          (["oasis_executable_json_native"; "ocaml"; "compile"; "native"],
+            [(OASISExpr.EBool true, S [A "-inline"; A "999"])])
+       ];
      includes =
-       [("src/re2ml/ml", ["src/re2ml"]); ("src/re2ml", ["src/re2ml/ml"])];
+       [
+          ("src/re2ml/ml", ["src/re2ml"]);
+          ("src/re2ml", ["src/re2ml/ml"]);
+          ("src/json/ml", ["src/json"]);
+          ("src/json", ["src/json/ml"])
+       ];
      }
   ;;
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default package_default;;
 
-# 493 "myocamlbuild.ml"
+# 506 "myocamlbuild.ml"
 (* OASIS_STOP *)
 (* PBUILD_START *)
 module Pbuild = struct
@@ -583,6 +596,23 @@ module Pbuild = struct
   
   
   (****************************************************************************
+   * :: Re2ml rules
+   ***************************************************************************)
+  
+  let re2ml re2ml = function
+    | After_rules ->
+        rule "Compile re2ml specification to ML"
+          ~prod:"%.ml"
+          ~deps:("%.mlr" :: re2ml)
+          begin fun env build ->
+            Cmd(S[A(tool re2ml "re2ml"); A"-auto-loc"; A(env "%.mlr")])
+          end;
+  
+    | _ -> ()
+  ;;
+  
+  
+  (****************************************************************************
    * :: Treematch rules
    ***************************************************************************)
   
@@ -643,7 +673,7 @@ module Pbuild = struct
   ;;
   
   (****************************************************************************
-   * :: Elkhound rules
+   * :: C++ rules
    ***************************************************************************)
   
   let cxx args = function
@@ -663,10 +693,11 @@ module Pbuild = struct
     | _ -> ()
   ;;
 end
-# 667 "myocamlbuild.ml"
+# 697 "myocamlbuild.ml"
 (* PBUILD_STOP *)
 
 let _ = Ocamlbuild_plugin.dispatch (MyOCamlbuildBase.dispatch_combine [
   Pbuild.noweb;
+  Pbuild.re2ml ["src/re2ml/ml/re2ml.native"];
   dispatch_default;
 ])

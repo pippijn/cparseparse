@@ -37,3 +37,9 @@ setup.data:
 
 # OASIS_STOP
 -include /usr/local/share/pbuild/common.mk
+
+profile: testsuite/json/trees-utf8.json build
+	$(CALLGRIND) ./json.native -timing $<
+
+%-utf8.json: %.json
+	iconv -f iso-8859-1 -t utf-8 $< -o $@

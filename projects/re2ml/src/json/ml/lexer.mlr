@@ -1,0 +1,81 @@
+(*+ -auto-loc
+ *)
+{
+  open Parser
+
+  let remove_quotes str =
+    String.sub str 1 (String.length str - 2)
+
+  let parse_string str =
+    ExtString.unescaped (remove_quotes str)
+
+
+  let fake_float = TOK_FLOAT 0.0
+  let fake_int = TOK_INTEGER 0
+  let fake_name = TOK_NAME "fake"
+  let fake_string = TOK_STRING "fake"
+}
+
+
+let ident = ['A'-'Z' 'a'-'z' '_'] ['A'-'Z' 'a'-'z' '_' '0'-'9']*
+
+let dstring = '"' ('\\' _ | [^ '"'  '\\' '\n'])* '"'
+let sstring = "'" ('\\' _ | [^ '\'' '\\' '\n'])+ "'"
+
+let d = ['0'-'9']
+
+let ws = [' ' '\t' '\r' '\n']
+
+
+rule token = parse
+(* Whitespace *)
+| ws+					{ token lexbuf }
+
+(* Identifier *)
+| "null"				{ TOK_NULL }
+| ident					{ fake_name (* TOK_NAME (Lexing.lexeme lexbuf) *) }
+
+(* Integer *)
+| d+					{ fake_int (* TOK_INTEGER (int_of_string (Lexing.lexeme lexbuf)) *) }
+
+(* Float *)
+| d+ '.' d+				{ fake_float (* TOK_FLOAT (float_of_string (Lexing.lexeme lexbuf)) *) }
+
+(* String/character *)
+| dstring | sstring			{ fake_string (* TOK_STRING (parse_string (Lexing.lexeme lexbuf)) *) }
+
+(* Punctuators *)
+| '{'					{ TOK_LBRACE }
+| '}'					{ TOK_RBRACE }
+| '['					{ TOK_LBRACK }
+| ']'					{ TOK_RBRACK }
+| '('					{ TOK_LPAREN }
+| ')'					{ TOK_RPAREN }
+| ':'					{ TOK_COLON }
+| ','					{ TOK_COMMA }
+
+| _					{ failwith (String.escaped (Lexing.lexeme lexbuf)) }
+
+| eof					{ EOF }
+
+
+{
+  let to_string = function
+    | TOK_INTEGER i -> Printf.sprintf "TOK_INTEGER %d" i
+    | TOK_FLOAT f -> Printf.sprintf "TOK_FLOAT %f" f
+    | TOK_NAME id -> "TOK_NAME " ^ id
+    | TOK_STRING id -> "TOK_STRING " ^ id
+    | TOK_NULL -> "TOK_NULL"
+
+    | TOK_COMMA -> "TOK_COMMA"
+    | TOK_COLON -> "TOK_COLON"
+
+    | TOK_LBRACE -> "TOK_LBRACE"
+    | TOK_RBRACE -> "TOK_RBRACE"
+    | TOK_LBRACK -> "TOK_LBRACK"
+    | TOK_RBRACK -> "TOK_RBRACK"
+    | TOK_LPAREN -> "TOK_LPAREN"
+    | TOK_RPAREN -> "TOK_RPAREN"
+
+    | EOF -> "EOF"
+}

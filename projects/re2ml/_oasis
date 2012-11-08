@@ -34,6 +34,15 @@ Executable re2ml
 #        NativeOpt:              -inline 0
 
 
+Executable json
+        Path:                   src/json
+        BuildTools:             ocamlbuild,re2ml
+        BuildDepends:           baselib,yojson
+        CompiledObject:         native
+        MainIs:                 ml/json.ml
+        NativeOpt:              -inline 999
+
+
 ########################################################################
 ## :: Testsuite
 ########################################################################

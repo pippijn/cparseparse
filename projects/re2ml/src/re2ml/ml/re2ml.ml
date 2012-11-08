@@ -40,9 +40,14 @@ let parse file =
   if false then
     Printf.printf "finished minimisation with %d states\n" (state_count dfas);
 
-  Timing.progress "emitting ML code" (EmitCode.emit pre post) dfas;
-
-  ()
+  match ExtString.without_suffix ".mlr" file, ExtString.without_suffix ".mll" file with
+  | Some base, _ ->
+      let outfile = base ^ ".ml" in
+      Timing.progress "emitting ML code" (EmitCode.emit outfile pre post) dfas
+  | None, Some base ->
+      Timing.progress "emitting ML code" (EmitCode.emit "/dev/null" pre post) dfas
+  | None, None ->
+      failwith ("invalid filename (does not end in .mlr or .mll): " ^ file)
 
 
 let main files =

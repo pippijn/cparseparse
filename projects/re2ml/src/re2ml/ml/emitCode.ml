@@ -308,16 +308,33 @@ let emit_automaton (action_funcs, automata) (name, args, (dfa, actions)) =
   automaton :: automata
 
 
-let emit pre post dfas =
+let emit outfile pre post dfas =
   let (action_funcs, items) = List.fold_left emit_automaton ([], []) dfas in
 
   let impl =
     let _loc = Loc.ghost in
 
+    let eof_reached =
+      if Options._string () then
+        <:str_item<
+          let eof_reached lexbuf =
+            let open Lexing in
+            lexbuf.lex_curr_pos == lexbuf.lex_buffer_len
+          ;;
+        >>
+      else
+        <:str_item<
+          let eof_reached lexbuf =
+            let open Lexing in
+            lexbuf.lex_eof_reached
+          ;;
+        >>
+    in
+
     let items =
       <:str_item<
         let error lexbuf =
-          if lexbuf.Lexing.lex_eof_reached then
+          if eof_reached lexbuf then
             raise End_of_file
           else
             failwith (Lexing.lexeme lexbuf)
@@ -347,27 +364,48 @@ let emit pre post dfas =
           :: items
     in
 
+    let refill =
+      if Options._string () then
+        <:str_item<>>
+      else
+        <:str_item<
+          let curr_char lexbuf state =
+            let open Lexing in
+            if lexbuf.lex_curr_pos == lexbuf.lex_buffer_len then (
+              if trace_lexing then (
+                print_endline $str:"\\027[1;33mrefill\\027[0m"$;
+              );
+              lexbuf.refill_buff lexbuf;
+            );
+
+            curr_char lexbuf state
+          ;;
+        >>
+    in
+
     <:str_item<
       let trace_lexing = false;;
 
+      $eof_reached$;;
+
       let advance lexbuf =
-        let open Lexing in
-        if lexbuf.lex_eof_reached then (
+        if eof_reached lexbuf then (
           (* on EOF, do nothing (yywrap?) *)
           lexbuf
         ) else (
+          let open Lexing in
           lexbuf.lex_curr_pos <- lexbuf.lex_curr_pos + 1;
           lexbuf
         )
       ;;
 
       let curr_char lexbuf state =
-        let open Lexing in
-        if lexbuf.lex_eof_reached then (
+        if eof_reached lexbuf then (
           $chr:"\\000"$
         ) else (
+          let open Lexing in
           if trace_lexing then (
-            Printf.printf "state %3d: process char %d (%d-%d / %d) '%s'\n"
+            Printf.printf $str:"state %3d: process char %d (%d-%d / %d) '%s'\\n"$
               state
               lexbuf.lex_abs_pos
               lexbuf.lex_start_pos
@@ -380,25 +418,15 @@ let emit pre post dfas =
         )
       ;;
 
-      let curr_char lexbuf state =
-        let open Lexing in
-        if lexbuf.lex_curr_pos == lexbuf.lex_buffer_len then (
-          if trace_lexing then (
-            print_endline "[1;33mrefill[0m";
-          );
-          lexbuf.refill_buff lexbuf;
-        );
-
-        curr_char lexbuf state
-      ;;
+      $refill$;;
 
       let accept lexbuf action =
-        let open Lexing in
         if trace_lexing then (
-          if lexbuf.lex_eof_reached then (
-            Printf.printf "[1;32maccept at eof: %d[0m\n" action;
+          if eof_reached lexbuf then (
+            Printf.printf $str:"\\027[1;32maccept at eof: %d\\027[0m\\n"$ action;
           ) else (
-            Printf.printf "[1;32maccept %d-%d '%s': %d[0m\n"
+            let open Lexing in
+            Printf.printf $str:"\\027[1;32maccept %d-%d '%s': %d\\027[0m\\n"$
               lexbuf.lex_start_pos
               (lexbuf.lex_curr_pos - 1)
               (Lexing.lexeme lexbuf)
@@ -411,41 +439,14 @@ let emit pre post dfas =
       let reject lexbuf =
         let open Lexing in
         if trace_lexing then (
-          Printf.printf "[1;31mreject at %d[0m\n" lexbuf.lex_curr_pos;
+          Printf.printf $str:"\\027[1;31mreject at %d\\027[0m\\n"$ lexbuf.lex_curr_pos;
         );
         -1
       ;;
 
       (* DFA modules and user functions *)
       $Ast.stSem_of_list (List.rev items)$
-
-      (* sample function tokenising the entire lexbuf *)
-      (*
-      let rec loop lexbuf =
-        let t = token lexbuf in
-        if trace_lexing then (
-          print_endline "getting next token";
-          Printf.printf "position %d\n"
-            (lexbuf.Lexing.lex_abs_pos);
-          print_token t;
-        );
-        loop lexbuf
-      ;;
-
-      let () =
-        Printexc.record_backtrace true;
-        try
-          let open Lexing in
-          let lexbuf = from_channel stdin in
-          String.fill lexbuf.lex_buffer 0 (String.length lexbuf.lex_buffer) '\255';
-          loop lexbuf
-        with e ->
-          flush stdout;
-          Printf.printf "\nException:\n  %s\n" (Printexc.to_string e);
-          Printexc.print_backtrace stdout;
-      ;;
-      *)
     >>
   in
 
-  print_implem "dfa.ml" impl
+  print_implem outfile impl
