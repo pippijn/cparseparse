@@ -2,7 +2,7 @@ let _dot = ref false
 let _dump_automata = ref false
 
 let _auto_loc = ref false
-let _string = ref true
+let _string = ref false
 
 let _trace_lexing = ref false
 

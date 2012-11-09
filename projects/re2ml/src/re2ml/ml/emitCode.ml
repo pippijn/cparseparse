@@ -34,7 +34,7 @@ let emit_action_func name params actions =
 
   let cases =
     BatArray.fold_lefti (fun cases action code ->
-      <:match_case<$int:string_of_int action$ -> $CamlAst.expr_of_loc_string code$>>
+      <:match_case<$`int:action$ -> $CamlAst.expr_of_loc_string code$>>
       :: cases
     ) [] actions
     |> List.rev
@@ -204,7 +204,7 @@ let accept_case _loc targets =
     List.fold_left (fun case transition ->
       match transition with
       | Dfa.Transition.Accept action ->
-          Some <:match_case<_ -> accept lexbuf $int:string_of_int action$>>
+          Some <:match_case<_ -> accept lexbuf $`int:action$>>
       | Dfa.Transition.Chr _ ->
           case
     ) case transitions
@@ -270,7 +270,7 @@ let emit_automaton (action_funcs, automata) (name, args, (dfa, actions)) =
       let func =
         <:binding<
           $lid:"state_" ^ string_of_int state$ lexbuf =
-            match curr_char lexbuf $int:string_of_int state$ with
+            match curr_char lexbuf $`int:state$ with
             $cases$
         >>
       in
@@ -373,7 +373,7 @@ let emit outfile pre post dfas =
             let open Lexing in
             if lexbuf.lex_curr_pos == lexbuf.lex_buffer_len then (
               if trace_lexing then (
-                print_endline $str:"\\027[1;33mrefill\\027[0m"$;
+                print_endline $`str:"\027[1;33mrefill\027[0m"$;
               );
               lexbuf.refill_buff lexbuf;
             );
@@ -405,7 +405,7 @@ let emit outfile pre post dfas =
         ) else (
           let open Lexing in
           if trace_lexing then (
-            Printf.printf $str:"state %3d: process char %d (%d-%d / %d) '%s'\\n"$
+            Printf.printf $`str:"state %3d: process char %d (%d-%d / %d) '%s'\n"$
               state
               lexbuf.lex_abs_pos
               lexbuf.lex_start_pos
@@ -423,10 +423,10 @@ let emit outfile pre post dfas =
       let accept lexbuf action =
         if trace_lexing then (
           if eof_reached lexbuf then (
-            Printf.printf $str:"\\027[1;32maccept at eof: %d\\027[0m\\n"$ action;
+            Printf.printf $`str:"\027[1;32maccept at eof: %d\027[0m\n"$ action;
           ) else (
             let open Lexing in
-            Printf.printf $str:"\\027[1;32maccept %d-%d '%s': %d\\027[0m\\n"$
+            Printf.printf $`str:"\027[1;32maccept %d-%d '%s': %d\027[0m\n"$
               lexbuf.lex_start_pos
               (lexbuf.lex_curr_pos - 1)
               (Lexing.lexeme lexbuf)
@@ -439,7 +439,7 @@ let emit outfile pre post dfas =
       let reject lexbuf =
         let open Lexing in
         if trace_lexing then (
-          Printf.printf $str:"\\027[1;31mreject at %d\\027[0m\\n"$ lexbuf.lex_curr_pos;
+          Printf.printf $`str:"\027[1;31mreject at %d\027[0m\n"$ lexbuf.lex_curr_pos;
         );
         -1
       ;;
