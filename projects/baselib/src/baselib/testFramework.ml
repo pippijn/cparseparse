@@ -23,10 +23,15 @@ let reset = TermColour.ANSI.reset
 (* |                Execute command and build list of lines                | *)
 (* +=====~~~-------------------------------------------------------~~~=====+ *)
 
-let execute cmd =
-  let ic = Unix.open_process_in cmd and lst = ref [] in
+let slurp ic =
+  let lst = ref [] in
   try while true do lst := input_line ic :: !lst done; assert false
-  with End_of_file -> ignore (Unix.close_process_in ic); List.rev !lst
+  with End_of_file -> List.rev !lst
+
+
+let execute cmd =
+  BatStd.with_dispose ~dispose:(fun ic -> ignore (Unix.close_process_in ic))
+    slurp (Unix.open_process_in cmd)
 
 
 (* +=====~~~-------------------------------------------------------~~~=====+ *)

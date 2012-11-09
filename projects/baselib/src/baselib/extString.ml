@@ -47,58 +47,69 @@ let without_suffixes suffixes str =
 type escape_state =
   | NoEscape
   | Escape
-  | HexEscape of int
+  | HexEscape of int * int
 
-let unescaped str =
-  let state, chars =
-    BatString.fold_left (fun (state, chars) -> function
-      | '"'  when state == Escape -> NoEscape, '"'    :: chars
-      | '\'' when state == Escape -> NoEscape, '\''   :: chars
-      | '\\' when state == Escape -> NoEscape, '\\'   :: chars
-      | 't'  when state == Escape -> NoEscape, '\t'   :: chars
-      | 'r'  when state == Escape -> NoEscape, '\r'   :: chars
-      | 'n'  when state == Escape -> NoEscape, '\n'   :: chars
-      | 'v'  when state == Escape -> NoEscape, '\x0c' :: chars
-      | 'f'  when state == Escape -> NoEscape, '\x0b' :: chars
+let unescape str =
+  let state, pos =
+    BatString.fold_left (fun (state, pos) c ->
+      match c with
+      | '"' | '\'' | '\\' when state == Escape -> str.[pos] <- c; NoEscape, pos + 1
+      | 't'  when state == Escape -> str.[pos] <- '\t'; NoEscape, pos + 1
+      | 'r'  when state == Escape -> str.[pos] <- '\r'; NoEscape, pos + 1
+      | 'n'  when state == Escape -> str.[pos] <- '\n'; NoEscape, pos + 1
+      | 'v'  when state == Escape -> str.[pos] <- '\x0c'; NoEscape, pos + 1
+      | 'f'  when state == Escape -> str.[pos] <- '\x0b'; NoEscape, pos + 1
 
-      | 'x'  when state == Escape -> HexEscape 0, chars
+      | 'x'  when state == Escape -> HexEscape (0, 2), pos
 
       | '0' .. '9' as c ->
           begin match state with
-          | HexEscape i ->
+          | HexEscape (i, 0) ->
+              str.[pos + 0] <- char_of_int i;
+              str.[pos + 1] <- c; NoEscape, pos + 2
+          | HexEscape (i, l) ->
               let m = int_of_char c - int_of_char '0' in
-              HexEscape (i * 16 + m), chars
-          | _ -> state, c :: chars
+              HexEscape (i * 16 + m, l - 1), pos
+          | _ ->
+              str.[pos] <- c; state, pos + 1
           end
 
       | 'a' .. 'f' as c ->
           begin match state with
-          | HexEscape i ->
+          | HexEscape (i, 0) ->
+              str.[pos + 0] <- char_of_int i;
+              str.[pos + 1] <- c; NoEscape, pos + 2
+          | HexEscape (i, l) ->
               let m = int_of_char c - int_of_char 'a' in
-              HexEscape (i * 16 + m), chars
-          | _ -> state, c :: chars
+              HexEscape (i * 16 + m, l - 1), pos
+          | _ -> str.[pos] <- c; state, pos + 1
           end
 
       | 'A' .. 'F' as c ->
           begin match state with
-          | HexEscape i ->
+          | HexEscape (i, 0) ->
+              str.[pos + 0] <- char_of_int i;
+              str.[pos + 1] <- c; NoEscape, pos + 2
+          | HexEscape (i, l) ->
               let m = int_of_char c - int_of_char 'A' in
-              HexEscape (i * 16 + m), chars
-          | _ -> state, c :: chars
+              HexEscape (i * 16 + m, l - 1), pos
+          | _ -> str.[pos] <- c; state, pos + 1
           end
 
-      | c    when state == Escape -> failwith ("Unknown escape sequence: " ^ Char.escaped c)
+      | c when state == Escape ->
+          failwith ("Unknown escape sequence: " ^ Char.escaped c)
 
-      | '\\' -> Escape, chars
-      | c -> NoEscape, c :: chars
-    ) (NoEscape, []) str
+      | '\\' -> Escape, pos
+      | c -> str.[pos] <- c; NoEscape, pos + 1
+    ) (NoEscape, 0) str
   in
 
-  let chars =
+  let pos =
     match state with
-    | NoEscape -> chars
+    | NoEscape -> pos
     | Escape -> failwith "unterminated escape sequence"
-    | HexEscape i -> char_of_int i :: chars
+    | HexEscape (i, 0) -> str.[pos] <- char_of_int i; pos + 1
+    | HexEscape (i, l) -> failwith "unterminated hex escape"
   in
 
-  BatString.of_list (List.rev chars)
+  String.sub str 0 pos
