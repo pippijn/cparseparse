@@ -1,5 +1,5 @@
 (* OASIS_START *)
-(* DO NOT EDIT (digest: 378c0c4b52601cf52e3a7135e5291fe6) *)
+(* DO NOT EDIT (digest: 0879946d8bca85ac2c2d3e2aeec61cb1) *)
 module OASISGettext = struct
 # 21 "/home/pippijn/code/wip/oasis/src/oasis/OASISGettext.ml"
 
@@ -479,21 +479,16 @@ end
 open Ocamlbuild_plugin;;
 let package_default =
   {
-     MyOCamlbuildBase.lib_ocaml = [];
+     MyOCamlbuildBase.lib_ocaml =
+       [("json", ["src/json"]); ("pa_json", ["src/pa_json"])];
      lib_c = [];
-     flags =
-       [
-          (["oasis_executable_json_native"; "ocaml"; "link"; "native"],
-            [(OASISExpr.EBool true, S [A "-inline"; A "999"])]);
-          (["oasis_executable_json_native"; "ocaml"; "ocamldep"; "native"],
-            [(OASISExpr.EBool true, S [A "-inline"; A "999"])]);
-          (["oasis_executable_json_native"; "ocaml"; "compile"; "native"],
-            [(OASISExpr.EBool true, S [A "-inline"; A "999"])])
-       ];
+     flags = [];
      includes =
        [
+          ("testsuite", ["src/json"]);
           ("src/re2ml/ml", ["src/re2ml"]);
           ("src/re2ml", ["src/re2ml/ml"]);
+          ("src/pa_json", ["src/json"]);
           ("src/json/ml", ["src/json"]);
           ("src/json", ["src/json/ml"])
        ];
@@ -502,7 +497,7 @@ let package_default =
 
 let dispatch_default = MyOCamlbuildBase.dispatch_default package_default;;
 
-# 506 "myocamlbuild.ml"
+# 501 "myocamlbuild.ml"
 (* OASIS_STOP *)
 (* PBUILD_START *)
 module Pbuild = struct
@@ -693,7 +688,7 @@ module Pbuild = struct
     | _ -> ()
   ;;
 end
-# 697 "myocamlbuild.ml"
+# 692 "myocamlbuild.ml"
 (* PBUILD_STOP *)
 
 let _ = Ocamlbuild_plugin.dispatch (MyOCamlbuildBase.dispatch_combine [

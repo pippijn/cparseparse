@@ -577,6 +577,23 @@ module Pbuild = struct
   
   
   (****************************************************************************
+   * :: Re2ml rules
+   ***************************************************************************)
+  
+  let re2ml re2ml = function
+    | After_rules ->
+        rule "Compile re2ml specification to ML"
+          ~prod:"%.ml"
+          ~deps:("%.mlr" :: re2ml)
+          begin fun env build ->
+            Cmd(S[A(tool re2ml "re2ml"); A"-auto-loc"; A(env "%.mlr")])
+          end;
+  
+    | _ -> ()
+  ;;
+  
+  
+  (****************************************************************************
    * :: Treematch rules
    ***************************************************************************)
   
@@ -637,7 +654,7 @@ module Pbuild = struct
   ;;
   
   (****************************************************************************
-   * :: Elkhound rules
+   * :: C++ rules
    ***************************************************************************)
   
   let cxx args = function
@@ -657,7 +674,7 @@ module Pbuild = struct
     | _ -> ()
   ;;
 end
-# 661 "myocamlbuild.ml"
+# 678 "myocamlbuild.ml"
 (* PBUILD_STOP *)
 
 let _ = Ocamlbuild_plugin.dispatch (MyOCamlbuildBase.dispatch_combine [
