@@ -3,10 +3,10 @@ let slurp = true
 
 let parse lexbuf =
   try
-    Parser.parse Lexer.token lexbuf
+    ignore (Json.Parser.parse (Json.Lexer.token (Buffer.create 20)) lexbuf)
   with
-  | Parser.StateError (token, state) ->
-      print_endline ("Error at " ^ Lexer.to_string token)
+  | Json.Parser.StateError (token, state) ->
+      print_endline ("Error at " ^ Json.Lexer.to_string token)
 
 
 let lex name lexer file =
@@ -22,14 +22,20 @@ let lex name lexer file =
 
 
 let lexer lexbuf =
-  while Lexer.token lexbuf != Parser.EOF do
-    ()
-  done
+  let strbuf = Buffer.create 20 in
+  try
+    while true do
+      ignore (Json.Lexer.token strbuf lexbuf)
+    done
+  with End_of_file -> ()
 
 let olexer lexbuf =
-  while Olexer.token lexbuf != Parser.EOF do
-    ()
-  done
+  let strbuf = Buffer.create 20 in
+  try
+    while true do
+      ignore (Json.Olexer.token strbuf lexbuf)
+    done
+  with End_of_file -> ()
 
 
 let re2ml file =
@@ -59,6 +65,6 @@ let yojson file =
   ignore (Timing.time "yojson" Yojson.Raw.from_file file)
 
 
-let () = Cmdline.run (List.iter (lex "re2ml" lexer))
-(*let () = Cmdline.run (List.iter re2ml)*)
+(*let () = Cmdline.run (List.iter (lex "re2ml" lexer))*)
+let () = Cmdline.run (List.iter re2ml)
 (*let () = Cmdline.run (List.iter yojson)*)

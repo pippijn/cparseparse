@@ -1,23 +1,20 @@
 %{
+  open Basic
 %}
-
-%token EOF
 
 /* ===================== tokens ============================ */
 
 /* tokens that have many lexical spellings */
 %token <int>		TOK_INTEGER
 %token <float>		TOK_FLOAT
-
-%token <string>		TOK_NAME
 %token <string>		TOK_STRING
 
 /* keywords */
 %token			TOK_NULL
+%token			TOK_TRUE
+%token			TOK_FALSE
 
 /* punctuators */
-%token TOK_LPAREN		/* "("	*/
-%token TOK_RPAREN		/* ")"	*/
 %token TOK_LBRACK		/* "["	*/
 %token TOK_RBRACK		/* "]"	*/
 %token TOK_LBRACE		/* "{"	*/
@@ -28,7 +25,7 @@
 
 /* ===================== productions ======================= */
 
-%start <unit> parse
+%start <Basic.json> parse
 %%
 
 /* The actions in this file simply build an Abstract Syntax Tree (AST)
@@ -36,49 +33,51 @@
 
 
 /* start symbol */
-parse
-	: json EOF					{ }
+parse:
+	| json_object					{ $1 }
+	| json_array					{ $1 }
 
 
-json
-	: json_object					{ }
-	| json_array					{ }
-	| json_string					{ }
-	| json_number					{ }
-	| TOK_NULL					{ }
+json:
+	| json_object					{ $1 }
+	| json_array					{ $1 }
+	| json_string					{ $1 }
+	| json_number					{ $1 }
+	| json_bool					{ $1 }
+	| TOK_NULL					{ `Null }
 
 
-json_object
-	: TOK_LBRACE object_members TOK_RBRACE		{ }
+json_object:
+	| TOK_LBRACE object_members TOK_RBRACE		{ `Assoc ($2) }
 
 
-object_members
-	: object_member					{ }
-	| object_members object_member			{ }
+object_members:
+	| object_member					{ [$1] }
+	| object_members TOK_COMMA object_member	{ $3 :: $1 }
 
 
-object_member
-	: TOK_STRING TOK_COLON json TOK_COMMA?		{ }
-	| TOK_NAME TOK_COLON json TOK_COMMA?		{ }
+object_member:
+	| TOK_STRING TOK_COLON json			{ $1, $3 }
 
 
-json_array
-	: TOK_LBRACK array_members TOK_RBRACK		{ }
+json_array:
+	| TOK_LBRACK array_members TOK_RBRACK		{ `List ($2) }
 
 
-array_members
-	: array_member					{ }
-	| array_members array_member			{ }
+array_members:
+	| json						{ [$1] }
+	| array_members TOK_COMMA json			{ $3 :: $1 }
 
 
-array_member
-	: json TOK_COMMA?				{ }
+json_string:
+	| TOK_STRING					{ `String $1 }
 
 
-json_string
-	: TOK_STRING					{ }
+json_number:
+	| TOK_INTEGER					{ `Int $1 }
+	| TOK_FLOAT					{ `Float $1 }
 
 
-json_number
-	: TOK_INTEGER					{ }
-	| TOK_FLOAT					{ }
+json_bool:
+	| TOK_TRUE					{ `Bool true }
+	| TOK_FALSE					{ `Bool false }

@@ -3,69 +3,92 @@
 {
   open Parser
 
-  let remove_quotes str =
-    String.sub str 1 (String.length str - 2)
+  let parse_number str =
+    if String.length str < 19 then
+      TOK_INTEGER (int_of_string str)
+    else
+      TOK_FLOAT (float_of_string str)
 
-  let parse_string str =
-    ExtString.unescaped (remove_quotes str)
-
-
-  let fake_float = TOK_FLOAT 0.0
-  let fake_int = TOK_INTEGER 0
-  let fake_name = TOK_NAME "fake"
-  let fake_string = TOK_STRING "fake"
+  let finish_string strbuf =
+    let t = TOK_STRING (Buffer.contents strbuf) in
+    Buffer.clear strbuf;
+    t
 }
 
 
-let ident = ['A'-'Z' 'a'-'z' '_'] ['A'-'Z' 'a'-'z' '_' '0'-'9']*
-
-let dstring = '"' ('\\' _ | [^ '"'  '\\' '\n'])* '"'
-let sstring = "'" ('\\' _ | [^ '\'' '\\' '\n'])+ "'"
-
 let d = ['0'-'9']
 
-let ws = [' ' '\t' '\r' '\n']
+
+rule sstring strbuf = parse
+| '\''					{ finish_string strbuf }
+| "\\'"					{ Buffer.add_char strbuf '\''; sstring strbuf lexbuf }
+| "\\\\"				{ Buffer.add_char strbuf '\\'; sstring strbuf lexbuf }
+| "\\U" d d d d d d d d			{ Buffer.add_char strbuf 'X'; sstring strbuf lexbuf }
+| "\\u" d d d d				{ Buffer.add_char strbuf 'X'; sstring strbuf lexbuf }
+| "\\x" d d				{ Buffer.add_char strbuf 'X'; sstring strbuf lexbuf }
+| "\\v"					{ Buffer.add_char strbuf '\x0c'; sstring strbuf lexbuf }
+| "\\f"					{ Buffer.add_char strbuf '\x0b'; sstring strbuf lexbuf }
+| "\\t"					{ Buffer.add_char strbuf '\t'; sstring strbuf lexbuf }
+| "\\r"					{ Buffer.add_char strbuf '\r'; sstring strbuf lexbuf }
+| "\\n"					{ Buffer.add_char strbuf '\n'; sstring strbuf lexbuf }
+| [^ '\\' '\'']+			{ Buffer.add_string strbuf (Lexing.lexeme lexbuf); sstring strbuf lexbuf }
 
 
-rule token = parse
+and dstring strbuf = parse
+| '"'					{ finish_string strbuf }
+| "\\\""				{ Buffer.add_char strbuf '\''; dstring strbuf lexbuf }
+| "\\\\"				{ Buffer.add_char strbuf '\\'; dstring strbuf lexbuf }
+| "\\U" d d d d d d d d			{ Buffer.add_char strbuf 'X'; dstring strbuf lexbuf }
+| "\\u" d d d d				{ Buffer.add_char strbuf 'X'; dstring strbuf lexbuf }
+| "\\x" d d				{ Buffer.add_char strbuf 'X'; dstring strbuf lexbuf }
+| "\\v"					{ Buffer.add_char strbuf '\x0c'; dstring strbuf lexbuf }
+| "\\f"					{ Buffer.add_char strbuf '\x0b'; dstring strbuf lexbuf }
+| "\\t"					{ Buffer.add_char strbuf '\t'; dstring strbuf lexbuf }
+| "\\r"					{ Buffer.add_char strbuf '\r'; dstring strbuf lexbuf }
+| "\\n"					{ Buffer.add_char strbuf '\n'; dstring strbuf lexbuf }
+| [^ '\\' '"']+				{ Buffer.add_string strbuf (Lexing.lexeme lexbuf); dstring strbuf lexbuf }
+
+
+and token strbuf = parse
 (* Whitespace *)
-| ws+					{ token lexbuf }
+| [' ' '\t' '\r' '\n']+			{ token strbuf lexbuf }
 
-(* Identifier *)
+(* Keywords *)
 | "null"				{ TOK_NULL }
-| ident					{ fake_name (* TOK_NAME (Lexing.lexeme lexbuf) *) }
+| "true"				{ TOK_TRUE }
+| "false"				{ TOK_FALSE }
 
 (* Integer *)
-| d+					{ fake_int (* TOK_INTEGER (int_of_string (Lexing.lexeme lexbuf)) *) }
+| d+					{ parse_number (Lexing.lexeme lexbuf) }
 
 (* Float *)
-| d+ '.' d+				{ fake_float (* TOK_FLOAT (float_of_string (Lexing.lexeme lexbuf)) *) }
+| d+ '.' d+				{ TOK_FLOAT (float_of_string (Lexing.lexeme lexbuf)) }
 
 (* String/character *)
-| dstring | sstring			{ fake_string (* TOK_STRING (parse_string (Lexing.lexeme lexbuf)) *) }
+| '"'					{ dstring strbuf lexbuf }
+| '\''					{ sstring strbuf lexbuf }
 
 (* Punctuators *)
 | '{'					{ TOK_LBRACE }
 | '}'					{ TOK_RBRACE }
 | '['					{ TOK_LBRACK }
 | ']'					{ TOK_RBRACK }
-| '('					{ TOK_LPAREN }
-| ')'					{ TOK_RPAREN }
 | ':'					{ TOK_COLON }
 | ','					{ TOK_COMMA }
 
 | _					{ failwith (String.escaped (Lexing.lexeme lexbuf)) }
 
-| eof					{ EOF }
+| eof					{ raise End_of_file }
 
 
 {
   let to_string = function
     | TOK_INTEGER i -> Printf.sprintf "TOK_INTEGER %d" i
     | TOK_FLOAT f -> Printf.sprintf "TOK_FLOAT %f" f
-    | TOK_NAME id -> "TOK_NAME " ^ id
     | TOK_STRING id -> "TOK_STRING " ^ id
     | TOK_NULL -> "TOK_NULL"
+    | TOK_TRUE -> "TOK_TRUE"
+    | TOK_FALSE -> "TOK_FALSE"
 
     | TOK_COMMA -> "TOK_COMMA"
     | TOK_COLON -> "TOK_COLON"
@@ -74,8 +97,4 @@ rule token = parse
     | TOK_RBRACE -> "TOK_RBRACE"
     | TOK_LBRACK -> "TOK_LBRACK"
     | TOK_RBRACK -> "TOK_RBRACK"
-    | TOK_LPAREN -> "TOK_LPAREN"
-    | TOK_RPAREN -> "TOK_RPAREN"
-
-    | EOF -> "EOF"
 }

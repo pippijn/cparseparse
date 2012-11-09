@@ -31,16 +31,38 @@ Executable re2ml
                                 batteries                               # external
         CompiledObject:         native
         MainIs:                 ml/re2ml.ml
-#        NativeOpt:              -inline 0
 
 
-Executable json
-        Path:                   src/json
+Executable jsontest
+        Path:                   testsuite
         BuildTools:             ocamlbuild,re2ml
-        BuildDepends:           baselib,yojson
+        BuildDepends:           baselib,yojson,json
         CompiledObject:         native
-        MainIs:                 ml/json.ml
-        NativeOpt:              -inline 999
+        MainIs:                 jsontest.ml
+
+
+########################################################################
+## :: Libraries
+########################################################################
+
+Library json
+        Path:                   src/json
+        Pack:                   true
+        BuildTools:             ocamlbuild,re2ml
+        CompiledObject:         native
+        Modules:                Json_info
+        InternalModules:        ml/Basic,
+                                ml/Lexer,
+                                ml/Olexer,
+                                ml/Parser
+
+Library pa_json
+        Path:                   src/pa_json
+        BuildTools:             ocamlbuild,camlp4o
+        BuildDepends:           json,camlp4.quotations.r,camlp4.extend
+        Modules:                Jq_ast,
+                                Jq_parser,
+                                Jq_quotations
 
 
 ########################################################################
