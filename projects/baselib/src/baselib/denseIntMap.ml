@@ -15,8 +15,8 @@ module Make(T : Sig.IntegralType) = struct
   let mapi_fun f i e = f (T.of_int i) e
 
   (* public functions *)
-  let t_of_sexp sx () = repr_of_sexp sx () ()
-  let sexp_of_t ar () = sexp_of_repr ar () ()
+  let t_of_sexp of_sexp sx = repr_of_sexp of_sexp () sx
+  let sexp_of_t sexp_of ar = sexp_of_repr sexp_of () ar
 
   let readonly = identity
 
