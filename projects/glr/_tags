@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 2b664ba9bb0ace4d758df7ce4f6e155b)
+# DO NOT EDIT (digest: 84b6c830bfc6adc9bfe3d913250e38d0)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -100,7 +100,6 @@
 <src/gramanl/*.ml{,i}>: use_glr
 <src/gramanl/*.ml{,i}>: pkg_baselib
 <src/gramanl/*.ml{,i}>: pkg_sexplib
-<src/gramanl/*.ml{,i}>: pkg_camlp4
 <src/gramanl/*.ml{,i}>: pkg_camlp4.fulllib
 <src/gramanl/*.ml{,i}>: pkg_batteries
 <src/gramanl/*.ml{,i}>: pkg_codegen
@@ -109,7 +108,6 @@
 <src/gramanl/ml/*.ml{,i}>: use_glr
 <src/gramanl/ml/*.ml{,i}>: pkg_baselib
 <src/gramanl/ml/*.ml{,i}>: pkg_sexplib
-<src/gramanl/ml/*.ml{,i}>: pkg_camlp4
 <src/gramanl/ml/*.ml{,i}>: pkg_camlp4.fulllib
 <src/gramanl/ml/*.ml{,i}>: pkg_batteries
 <src/gramanl/ml/*.ml{,i}>: pkg_codegen
@@ -120,7 +118,6 @@
 "src/elkhound/elkhound.native": use_glr
 "src/elkhound/elkhound.native": pkg_baselib
 "src/elkhound/elkhound.native": pkg_sexplib
-"src/elkhound/elkhound.native": pkg_camlp4
 "src/elkhound/elkhound.native": pkg_camlp4.fulllib
 "src/elkhound/elkhound.native": pkg_batteries
 "src/elkhound/elkhound.native": pkg_codegen
@@ -130,7 +127,6 @@
 <src/elkhound/*.ml{,i}>: use_glr
 <src/elkhound/*.ml{,i}>: pkg_baselib
 <src/elkhound/*.ml{,i}>: pkg_sexplib
-<src/elkhound/*.ml{,i}>: pkg_camlp4
 <src/elkhound/*.ml{,i}>: pkg_camlp4.fulllib
 <src/elkhound/*.ml{,i}>: pkg_batteries
 <src/elkhound/*.ml{,i}>: pkg_codegen

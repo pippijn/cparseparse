@@ -27,7 +27,7 @@ Executable elkhound
         Path:                   src/elkhound
         BuildTools:             ocamlbuild,camlp4o
         BuildDepends:           gramanl,                                # internal
-                                camlp4,camlp4.fulllib,                  # core
+                                camlp4.fulllib,                         # core
                                 batteries                               # external
         CompiledObject:         native
         MainIs:                 elkhound.ml
@@ -65,7 +65,7 @@ Library gramanl
         Pack:                   true
         BuildTools:             ocamlbuild,camlp4of
         BuildDepends:           baselib,glr,codegen,                    # internal
-                                unix,camlp4,camlp4.fulllib,             # core
+                                unix,camlp4.fulllib,                    # core
                                 batteries,sexplib,ocamlgraph            # external
         CompiledObject:         native
 #        NativeOpt:              -inline 999 -unsafe -noassert

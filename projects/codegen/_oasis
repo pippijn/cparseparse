@@ -23,7 +23,7 @@ Library codegen
         Path:                   src/codegen
         BuildTools:             ocamlbuild,camlp4o
         BuildDepends:           baselib,                                # internal
-                                camlp4,camlp4.fulllib,                  # core
+                                camlp4.quotations,                      # core
                                 sexplib                                 # external
         CompiledObject:         native
 #        NativeOpt:              -inline 999 -unsafe -noassert

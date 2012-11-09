@@ -27,7 +27,7 @@ Executable treematch
         Path:                   src/treematch
         BuildTools:             ocamlbuild,camlp4of
         BuildDepends:           baselib,                                # internal
-                                camlp4,camlp4.fulllib,                  # core
+                                camlp4.lib,                             # core
                                 batteries,sexplib                       # external
         CompiledObject:         native
         MainIs:                 treematch.ml

@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: bd920948d1c04929f336dee854bfabd7)
+# DO NOT EDIT (digest: f6fafcf8cd32acc7f196a5e6e578a98e)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -15,13 +15,11 @@
 "_darcs": not_hygienic
 # Executable treematch
 "src/treematch/treematch.native": pkg_baselib
-"src/treematch/treematch.native": pkg_camlp4
-"src/treematch/treematch.native": pkg_camlp4.fulllib
+"src/treematch/treematch.native": pkg_camlp4.lib
 "src/treematch/treematch.native": pkg_batteries
 "src/treematch/treematch.native": pkg_sexplib
 <src/treematch/*.ml{,i}>: pkg_baselib
-<src/treematch/*.ml{,i}>: pkg_camlp4
-<src/treematch/*.ml{,i}>: pkg_camlp4.fulllib
+<src/treematch/*.ml{,i}>: pkg_camlp4.lib
 <src/treematch/*.ml{,i}>: pkg_batteries
 <src/treematch/*.ml{,i}>: pkg_sexplib
 # Executable runtests

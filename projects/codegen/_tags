@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 2098c6877f0e8a143348aa26b99165b4)
+# DO NOT EDIT (digest: 789f9306244fd4667a93b749c45d46c3)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -16,8 +16,7 @@
 # Library codegen
 "src/codegen/codegen.cmxs": use_codegen
 <src/codegen/*.ml{,i}>: pkg_baselib
-<src/codegen/*.ml{,i}>: pkg_camlp4
-<src/codegen/*.ml{,i}>: pkg_camlp4.fulllib
+<src/codegen/*.ml{,i}>: pkg_camlp4.quotations
 <src/codegen/*.ml{,i}>: pkg_sexplib
 # OASIS_STOP
 
