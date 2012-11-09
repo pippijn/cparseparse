@@ -11,7 +11,7 @@ let ghost = Sloc.ghost "emitTables"
 let exSem_of_int_list table =
   let _loc = ghost 15 in
   Array.map (fun value ->
-    <:expr<$int:string_of_int value$>>
+    <:expr<$`int:value$>>
   ) table
   |> Array.to_list
   |> Ast.exSem_of_list
@@ -23,16 +23,16 @@ let make_tables tables =
   let _loc = ghost 26 in
   <:str_item<
     let parseTables = Glr.ParseTablesType.({
-      numTerms = $int:string_of_int tables.numTerms$;
-      numNonterms = $int:string_of_int tables.numNonterms$;
-      numProds = $int:string_of_int tables.numProds$;
+      numTerms = $`int:tables.numTerms$;
+      numNonterms = $`int:tables.numNonterms$;
+      numProds = $`int:tables.numProds$;
 
-      numStates = $int:string_of_int tables.numStates$;
+      numStates = $`int:tables.numStates$;
 
-      actionCols = $int:string_of_int tables.actionCols$;
+      actionCols = $`int:tables.actionCols$;
       actionTable = [| $exSem_of_int_list tables.actionTable$ |];
 
-      gotoCols = $int:string_of_int tables.gotoCols$;
+      gotoCols = $`int:tables.gotoCols$;
       gotoTable = [| $exSem_of_int_list tables.gotoTable$ |];
 
       prodInfo_rhsLen = [| $exSem_of_int_list tables.prodInfo_rhsLen$ |];
@@ -44,8 +44,8 @@ let make_tables tables =
 
       nontermOrder = [| $exSem_of_int_list tables.nontermOrder$ |];
 
-      startState = $int:string_of_int tables.startState$;
-      finalProductionIndex = $int:string_of_int tables.finalProductionIndex$;
+      startState = $`int:tables.startState$;
+      finalProductionIndex = $`int:tables.finalProductionIndex$;
     })
   >>
 
@@ -70,7 +70,7 @@ let make_ml_tables tables dat =
             Marshal.from_string
               (Zlib.uncompress
                 $str:String.escaped compressed$
-                $int:string_of_int len$) 0
+                $`int:len$) 0
         >>
       ) else (
         Some <:str_item<

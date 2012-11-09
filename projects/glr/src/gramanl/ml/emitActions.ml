@@ -74,14 +74,14 @@ let make_ml_actions variant index =
 	if semtype = polytype then
 	  <:binding<
 	    $lid:tag$ : $semtype$ =
-	      (Glr.SemanticValue.obj svals.($int:string_of_int rhs_index$))
+	      (Glr.SemanticValue.obj svals.($`int:rhs_index$))
 	  >>
 	else
 	  <:binding<
 	    (* explicitly state polymorphic type variable so the typing
 	     * stays sound even when users specify types *)
 	    $lid:tag$ : $semtype$ =
-	      (Glr.SemanticValue.obj svals.($int:string_of_int rhs_index$) : $polytype$)
+	      (Glr.SemanticValue.obj svals.($`int:rhs_index$) : $polytype$)
 	  >>
       in
 
@@ -162,7 +162,7 @@ let make_ml_spec_func default semtype rettype kind func id =
   match func with
   | None ->
       let _loc = ghost 166 in
-      <:expr<$default$ ($int:string_of_int id$)>>
+      <:expr<$default$ ($`int:id$)>>
 
   | Some { params; code } ->
       let real_rettype =
@@ -229,7 +229,7 @@ let make_spec_func_closures variant name rettype kind base func syms =
     ) syms
     |> array_expr_of_array
   else
-    <:expr<Array.init $int:string_of_int (Array.length syms)$ (fun i -> $default$ i)>>
+    <:expr<Array.init $`int:(Array.length syms)$ (fun i -> $default$ i)>>
 
 
 let make_ml_dup_del_merge variant terms nonterms =
