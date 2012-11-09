@@ -7,10 +7,14 @@ PROJECTS = $(notdir $(wildcard projects/*))
 ## :: Rules
 ########################################################################
 
+setup:		$(addprefix .setup.,	$(PROJECTS))	; $(RM) $^
 build:		$(addprefix .build.,	$(PROJECTS))	; $(RM) $^
 test:		$(addprefix .test.,	$(PROJECTS))	; $(RM) $^
 clean:		$(addprefix .clean.,	$(PROJECTS))	; $(RM) $^
 uninstall:	$(addprefix .uninstall.,$(PROJECTS))	; $(RM) $^
+
+.setup.%:
+	cd projects/$* && oasis setup -setup-update weak
 
 .build.%:
 	$(MAKE) -C projects/$* build reinstall
