@@ -1,5 +1,5 @@
 # OASIS_START
-# DO NOT EDIT (digest: 823400c3ab3216ee13acd9c6a9b1e727)
+# DO NOT EDIT (digest: 32896a7f39cd3e18ae28b9a8597ab932)
 # Ignore VCS directories, you can use the same kind of rule outside 
 # OASIS_START/STOP if you want to exclude directories that contains 
 # useless stuff for the build process
@@ -26,42 +26,6 @@
 <src/re2ml/ml/*.ml{,i}>: pkg_codegen
 <src/re2ml/ml/*.ml{,i}>: pkg_camlp4.fulllib
 <src/re2ml/ml/*.ml{,i}>: pkg_batteries
-# Library json
-"src/json/json.cmxs": use_json
-"src/json/json_info.cmx": for-pack(Json)
-"src/json/ml/basic.cmx": for-pack(Json)
-"src/json/ml/lexer.cmx": for-pack(Json)
-"src/json/ml/olexer.cmx": for-pack(Json)
-"src/json/ml/parser.cmx": for-pack(Json)
-<src/json/*.ml{,i}>: pkg_baselib
-<src/json/*.ml{,i}>: pkg_codegen
-<src/json/*.ml{,i}>: pkg_camlp4.fulllib
-<src/json/*.ml{,i}>: pkg_batteries
-<src/json/ml/*.ml{,i}>: pkg_baselib
-<src/json/ml/*.ml{,i}>: pkg_codegen
-<src/json/ml/*.ml{,i}>: pkg_camlp4.fulllib
-<src/json/ml/*.ml{,i}>: pkg_batteries
-# Executable jsontest
-"testsuite/jsontest.native": use_json
-"testsuite/jsontest.native": pkg_baselib
-"testsuite/jsontest.native": pkg_yojson
-"testsuite/jsontest.native": pkg_codegen
-"testsuite/jsontest.native": pkg_camlp4.fulllib
-"testsuite/jsontest.native": pkg_batteries
-<testsuite/*.ml{,i}>: use_json
-<testsuite/*.ml{,i}>: pkg_yojson
-<testsuite/*.ml{,i}>: pkg_codegen
-<testsuite/*.ml{,i}>: pkg_camlp4.fulllib
-<testsuite/*.ml{,i}>: pkg_batteries
-# Library pa_json
-"src/pa_json/pa_json.cmxs": use_pa_json
-<src/pa_json/*.ml{,i}>: use_json
-<src/pa_json/*.ml{,i}>: pkg_baselib
-<src/pa_json/*.ml{,i}>: pkg_camlp4.quotations.r
-<src/pa_json/*.ml{,i}>: pkg_camlp4.extend
-<src/pa_json/*.ml{,i}>: pkg_codegen
-<src/pa_json/*.ml{,i}>: pkg_camlp4.fulllib
-<src/pa_json/*.ml{,i}>: pkg_batteries
 # Executable runtests
 "testsuite/runtests.native": pkg_baselib
 <testsuite/*.ml{,i}>: pkg_baselib

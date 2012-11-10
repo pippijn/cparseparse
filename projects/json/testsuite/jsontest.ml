@@ -1,4 +1,4 @@
-let slurp = true
+let slurp = false
 
 
 let parse lexbuf =
@@ -38,6 +38,10 @@ let olexer lexbuf =
   with End_of_file -> ()
 
 
+let yojson file =
+  ignore (Timing.time "yojson" Yojson.Raw.from_file file)
+
+
 let re2ml file =
   Timing.time "lexing and parsing" parse (Lexing.from_channel (open_in file));
 
@@ -50,6 +54,8 @@ let re2ml file =
   ignore (Timing.time "loading with JSON::XS"
     Sys.command ("src/json/perl/load " ^ file));
 
+  yojson file;
+
 (*
   let open Lexing in
   while not lexbuf.lex_eof_reached do
@@ -59,10 +65,6 @@ let re2ml file =
   done
 *)
 ;;
-
-
-let yojson file =
-  ignore (Timing.time "yojson" Yojson.Raw.from_file file)
 
 
 (*let () = Cmdline.run (List.iter (lex "re2ml" lexer))*)

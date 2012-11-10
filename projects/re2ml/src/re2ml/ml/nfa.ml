@@ -111,6 +111,15 @@ let rec construct_regexp nfa state_id regexp =
       failwith ("unresolved regexp: " ^ Sexplib.Sexp.to_string_hum (sexp_of_regexp regexp))
 
 
+let rec is_single_char = function
+  | CharClass _ | Char _ ->
+      true
+  | Alternation group ->
+      List.for_all is_single_char group
+  | _ ->
+      false
+
+
 let construct_rule nfa actions (Rule (regexp, code)) =
   (* create a local start state for this rule and an epsilon transition
    * from the global start state *)
@@ -119,9 +128,17 @@ let construct_rule nfa actions (Rule (regexp, code)) =
   (* construct one NFA for this rule's regexp *)
   let end_state = construct_regexp nfa start_state regexp in
 
+  let binding =
+    match regexp with
+    | Binding (regexp, name) ->
+        Some (is_single_char regexp, name)
+    | _ ->
+        None
+  in
+
   (* make the final accept-transition back to 0 via semantic action *)
   let action = BatDynArray.length actions in
-  BatDynArray.add actions code;
+  BatDynArray.add actions (code, binding);
   Fsm.add_outgoing nfa end_state (Transition.Accept action) (State.start ())
 
 

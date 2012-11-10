@@ -33,9 +33,25 @@ let emit_action_func name params actions =
   let _loc, name = Sloc._loc name in
 
   let cases =
-    BatArray.fold_lefti (fun cases action code ->
-      <:match_case<$`int:action$ -> $CamlAst.expr_of_loc_string code$>>
-      :: cases
+    BatArray.fold_lefti (fun cases action (code, binding) ->
+      let code = CamlAst.expr_of_loc_string code in
+
+      let code =
+        match binding with
+        | Some (is_char, name) ->
+            let _loc, name = Sloc._loc name in
+            let lexeme =
+              if is_char then
+                <:expr<Lexing.lexeme_char lexbuf 0>>
+              else
+                <:expr<Lexing.lexeme lexbuf>>
+            in
+            <:expr<let $lid:name$ = $lexeme$ in $code$>>
+        | None ->
+            code
+      in
+
+      <:match_case<$`int:action$ -> $code$>> :: cases
     ) [] actions
     |> List.rev
     |> Ast.mcOr_of_list
@@ -233,7 +249,7 @@ let find_action outgoing actions =
     ) outgoing in
     match action with
     | Dfa.Transition.Accept action, _ ->
-        let _loc, _ = Sloc._loc actions.(action) in
+        let _loc, _ = Sloc._loc (fst actions.(action)) in
         Some _loc
     | _ -> assert false
   with Not_found ->

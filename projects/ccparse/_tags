@@ -95,6 +95,7 @@
 <testsuite/*.ml{,i}>: pkg_baselib
 # OASIS_STOP
 
+true:		use_menhir
 true:		debug
 true:		annot
 "testsuite":	-traverse

@@ -33,6 +33,7 @@
 "src/baselib/ml_Zlib.c": pkg_sexplib
 # OASIS_STOP
 
+true:		use_menhir
 true:		debug
 true:		annot
 "testsuite":	-traverse

@@ -1,8 +1,8 @@
 OASISFormat:                    0.3
 OCamlVersion:                   >= 3.12
-Name:                           re2ml
+Name:                           json
 Version:                        0.1
-Synopsis:                       Fast ocamllex replacement
+Synopsis:                       JSON parser and quotations
 Authors:                        Pippijn van Steenhoven
 License:                        GPL
 LicenseFile:                    COPYING
@@ -15,22 +15,43 @@ XStdFilesREADME:                false
 
 SourceRepository head
         Type:                   git
-        Location:               git://git.xinutec.org/devel/re2ml.git
-        Browser:                http://xinutec.org/git/devel/re2ml.git
+        Location:               git://git.xinutec.org/devel/json.git
+        Browser:                http://xinutec.org/git/devel/json.git
 
 
 ########################################################################
 ## :: Tools
 ########################################################################
 
-Executable re2ml
-        Path:                   src/re2ml
-        BuildTools:             ocamlbuild,camlp4o
-        BuildDepends:           baselib,codegen,                        # internal
-                                camlp4.fulllib,                         # core
-                                batteries                               # external
+Executable jsontest
+        Path:                   testsuite
+        BuildTools:             ocamlbuild,re2ml
+        BuildDepends:           baselib,yojson,json
         CompiledObject:         native
-        MainIs:                 ml/re2ml.ml
+        MainIs:                 jsontest.ml
+
+
+########################################################################
+## :: Libraries
+########################################################################
+
+Library json
+        Path:                   src/json
+        Pack:                   true
+        BuildTools:             ocamlbuild,re2ml
+        Modules:                Json_info
+        InternalModules:        ml/Basic,
+                                ml/Lexer,
+                                ml/Olexer,
+                                ml/Parser
+
+Library pa_json
+        Path:                   src/pa_json
+        BuildTools:             ocamlbuild,camlp4o
+        BuildDepends:           json,camlp4.quotations.r,camlp4.extend
+        Modules:                Jq_ast,
+                                Jq_parser,
+                                Jq_quotations
 
 
 ########################################################################

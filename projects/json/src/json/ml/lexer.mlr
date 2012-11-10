@@ -31,7 +31,7 @@ rule sstring strbuf = parse
 | "\\t"					{ Buffer.add_char strbuf '\t'; sstring strbuf lexbuf }
 | "\\r"					{ Buffer.add_char strbuf '\r'; sstring strbuf lexbuf }
 | "\\n"					{ Buffer.add_char strbuf '\n'; sstring strbuf lexbuf }
-| [^ '\\' '\'']+			{ Buffer.add_string strbuf (Lexing.lexeme lexbuf); sstring strbuf lexbuf }
+| [^ '\\' '\'']+ as s			{ Buffer.add_string strbuf s; sstring strbuf lexbuf }
 
 
 and dstring strbuf = parse
@@ -46,7 +46,7 @@ and dstring strbuf = parse
 | "\\t"					{ Buffer.add_char strbuf '\t'; dstring strbuf lexbuf }
 | "\\r"					{ Buffer.add_char strbuf '\r'; dstring strbuf lexbuf }
 | "\\n"					{ Buffer.add_char strbuf '\n'; dstring strbuf lexbuf }
-| [^ '\\' '"']+				{ Buffer.add_string strbuf (Lexing.lexeme lexbuf); dstring strbuf lexbuf }
+| [^ '\\' '"']+ as s			{ Buffer.add_string strbuf s; dstring strbuf lexbuf }
 
 
 and token strbuf = parse
@@ -59,10 +59,10 @@ and token strbuf = parse
 | "false"				{ TOK_FALSE }
 
 (* Integer *)
-| d+					{ parse_number (Lexing.lexeme lexbuf) }
+| d+ as i				{ parse_number i }
 
 (* Float *)
-| d+ '.' d+				{ TOK_FLOAT (float_of_string (Lexing.lexeme lexbuf)) }
+| (d+ '.' d+) as f			{ TOK_FLOAT (float_of_string f) }
 
 (* String/character *)
 | '"'					{ dstring strbuf lexbuf }
@@ -76,7 +76,7 @@ and token strbuf = parse
 | ':'					{ TOK_COLON }
 | ','					{ TOK_COMMA }
 
-| _					{ failwith (String.escaped (Lexing.lexeme lexbuf)) }
+| _ as c				{ failwith (Char.escaped c) }
 
 | eof					{ raise End_of_file }
 

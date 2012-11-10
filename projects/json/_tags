@@ -1,0 +1,43 @@
+# OASIS_START
+# DO NOT EDIT (digest: d73aaa89080f1f3efaa42549fd8db67a)
+# Ignore VCS directories, you can use the same kind of rule outside 
+# OASIS_START/STOP if you want to exclude directories that contains 
+# useless stuff for the build process
+<**/.svn>: -traverse
+<**/.svn>: not_hygienic
+".bzr": -traverse
+".bzr": not_hygienic
+".hg": -traverse
+".hg": not_hygienic
+".git": -traverse
+".git": not_hygienic
+"_darcs": -traverse
+"_darcs": not_hygienic
+# Library json
+"src/json/json.cmxs": use_json
+"src/json/json_info.cmx": for-pack(Json)
+"src/json/ml/basic.cmx": for-pack(Json)
+"src/json/ml/lexer.cmx": for-pack(Json)
+"src/json/ml/olexer.cmx": for-pack(Json)
+"src/json/ml/parser.cmx": for-pack(Json)
+# Executable jsontest
+"testsuite/jsontest.native": use_json
+"testsuite/jsontest.native": pkg_baselib
+"testsuite/jsontest.native": pkg_yojson
+<testsuite/*.ml{,i}>: use_json
+<testsuite/*.ml{,i}>: pkg_yojson
+# Library pa_json
+"src/pa_json/pa_json.cmxs": use_pa_json
+<src/pa_json/*.ml{,i}>: use_json
+<src/pa_json/*.ml{,i}>: pkg_camlp4.quotations.r
+<src/pa_json/*.ml{,i}>: pkg_camlp4.extend
+# Executable runtests
+"testsuite/runtests.native": pkg_baselib
+<testsuite/*.ml{,i}>: pkg_baselib
+# OASIS_STOP
+
+true:		use_menhir
+true:		debug
+true:		annot
+"testsuite":	-traverse
+"wip":		-traverse

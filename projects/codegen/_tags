@@ -20,6 +20,7 @@
 <src/codegen/*.ml{,i}>: pkg_sexplib
 # OASIS_STOP
 
+true:		use_menhir
 true:		debug
 true:		annot
 "testsuite":	-traverse

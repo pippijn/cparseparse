@@ -13,7 +13,7 @@ let check_reachable dfa actions =
 
   Array.iteri (fun action reachable ->
     if not reachable then
-      Diagnostics.warning actions.(action)
+      Diagnostics.warning (fst actions.(action))
         "This action will never be executed, as earlier rules hide it
          Consider reordering rules";
   ) reachable
