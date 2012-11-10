@@ -6,6 +6,9 @@
 *.clib
 *.mllib
 *.mlpack
+*.cm[ioxa]
+*.cmx[as]
+*.o
 META
 callgrind.out.*
 gmon.out
