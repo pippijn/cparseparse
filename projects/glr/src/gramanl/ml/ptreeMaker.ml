@@ -143,7 +143,7 @@ let require_tag sym =
 
 let map_prods variant nonterms reachable has_merge prods =
   match prods with
-  | [prod] when is_singleton_nonterminal prod && not has_merge ->
+  | [prod] when is_singleton_nonterminal prod && not has_merge && Options._optimise () ->
       let _loc = ghost 147 in
       check_noname nonterms prod;
 
@@ -158,7 +158,7 @@ let map_prods variant nonterms reachable has_merge prods =
 
       [set_action variant prod action]
 
-  | [tail; head_tail] when is_list_nonterminal tail head_tail && not has_merge ->
+  | [tail; head_tail] when is_list_nonterminal tail head_tail && not has_merge && Options._optimise () ->
       let _loc = ghost 162 in
       check_noname nonterms tail;
       check_noname nonterms head_tail;
@@ -184,7 +184,7 @@ let map_prods variant nonterms reachable has_merge prods =
       | _ -> failwith "error in is_list_nonterminal"
       end
 
-  | [none; some] when is_option_nonterminal none some && not has_merge ->
+  | [none; some] when is_option_nonterminal none some && not has_merge && Options._optimise () ->
       let _loc = ghost 188 in
       begin match symbols_of_production some with
       | [some_sym] ->
@@ -197,7 +197,7 @@ let map_prods variant nonterms reachable has_merge prods =
       | _ -> failwith "error in is_option_nonterminal"
       end
 
-  | [none; some] when is_boolean_nonterminal none some && not has_merge ->
+  | [none; some] when is_boolean_nonterminal none some && not has_merge && Options._optimise () ->
       let _loc = ghost 201 in
       [
         set_action variant none <:expr<false>>;

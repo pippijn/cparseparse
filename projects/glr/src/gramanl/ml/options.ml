@@ -20,6 +20,8 @@ let _use_table_dump = ref true
 let _inline_table_dump = ref true
 let _compress_table_dump = ref true
 
+let _optimise = ref false
+
 let _trace_lexing = ref false
 let _trace_renumbering = ref false
 let _trace_closure = ref false
@@ -58,6 +60,8 @@ let () =
     "-use-table-dump",		Set _use_table_dump,		" load serialised tables instead of emitting arrays in code";
     "-inline-table-dump",	Set _inline_table_dump,		" inline serialised tables into the Tables module as string";
     "-compress-table-dump",	Set _compress_table_dump,	" compress serialised tables with zlib";
+
+    "-optimise",		Set _optimise,			" perform various optimisations on the grammar and ptree";
 
     "-trace-lexing",		Set _trace_lexing,		" output each token as it is parsed";
     "-trace-renumbering",	Set _trace_renumbering,		" output details on state renumbering";
@@ -106,6 +110,8 @@ let _gen_table_text () = !_gen_table_text
 let _use_table_dump () = !_use_table_dump
 let _inline_table_dump () = !_inline_table_dump
 let _compress_table_dump () = !_compress_table_dump
+
+let _optimise () = !_optimise
 
 let _trace_lexing () = !_trace_lexing
 let _trace_renumbering () = !_trace_renumbering

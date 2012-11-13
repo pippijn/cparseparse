@@ -19,7 +19,7 @@ let repeat c p s =
 
 
 let uint8 stream =
-  int_of_char (Bitstream.next stream)
+  Char.code (Bitstream.next stream)
 
 
 let sint8 stream =
@@ -37,8 +37,8 @@ let sint8 stream =
 let net16 stream =
   let open Bitstream in
   let value = 0
-    lor (int_of_char stream.data.[stream.pos + 0] lsl (1 * 8))
-    lor (int_of_char stream.data.[stream.pos + 1] lsl (0 * 8))
+    lor (Char.code stream.data.[stream.pos + 0] lsl (1 * 8))
+    lor (Char.code stream.data.[stream.pos + 1] lsl (0 * 8))
   in
 
   stream.pos <- stream.pos + 2;
@@ -49,10 +49,10 @@ let net16 stream =
 let net32 stream =
   let open Bitstream in
   let value = 0
-    lor (int_of_char stream.data.[stream.pos + 0] lsl (3 * 8))
-    lor (int_of_char stream.data.[stream.pos + 1] lsl (2 * 8))
-    lor (int_of_char stream.data.[stream.pos + 2] lsl (1 * 8))
-    lor (int_of_char stream.data.[stream.pos + 3] lsl (0 * 8))
+    lor (Char.code stream.data.[stream.pos + 0] lsl (3 * 8))
+    lor (Char.code stream.data.[stream.pos + 1] lsl (2 * 8))
+    lor (Char.code stream.data.[stream.pos + 2] lsl (1 * 8))
+    lor (Char.code stream.data.[stream.pos + 3] lsl (0 * 8))
   in
 
   stream.pos <- stream.pos + 4;
@@ -60,7 +60,7 @@ let net32 stream =
 
 
 let rec ber value stream =
-  let digit = int_of_char (Bitstream.next stream) in
+  let digit = Char.code (Bitstream.next stream) in
   let value = value lor (digit land 0x7f) in
 
   if digit land 0x80 == 0 then

@@ -56,25 +56,25 @@ let production_types index term_mods left has_merge prods =
   in
 
   match prods with
-  | [prod] when PtreeMaker.is_singleton_nonterminal prod && not has_merge ->
+  | [prod] when PtreeMaker.is_singleton_nonterminal prod && not has_merge && Options._optimise () ->
       let right = PtreeMaker.right_symbol prod in
       add_term_mod right;
       let semtype = ctyp_of_symbol index right in
       (left, Alias semtype)
 
-  | [tail; head_tail] when PtreeMaker.is_list_nonterminal tail head_tail && not has_merge ->
+  | [tail; head_tail] when PtreeMaker.is_list_nonterminal tail head_tail && not has_merge && Options._optimise () ->
       let right = PtreeMaker.right_symbol head_tail in
       add_term_mod right;
       let semtype = ctyp_of_symbol index right in
       (left, List semtype)
 
-  | [none; some] when PtreeMaker.is_option_nonterminal none some && not has_merge ->
+  | [none; some] when PtreeMaker.is_option_nonterminal none some && not has_merge && Options._optimise () ->
       let right = PtreeMaker.right_symbol some in
       add_term_mod right;
       let semtype = ctyp_of_symbol index right in
       (left, Option semtype)
 
-  | [none; some] when PtreeMaker.is_boolean_nonterminal none some && not has_merge ->
+  | [none; some] when PtreeMaker.is_boolean_nonterminal none some && not has_merge && Options._optimise () ->
       (left, Native (Ast.(TyId (_loc, IdLid (_loc, "bool")))))
 
   | prods ->

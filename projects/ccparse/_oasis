@@ -15,8 +15,8 @@ XStdFilesREADME:                false
 
 SourceRepository head
         Type:                   git
-        Location:               git://git.xinutec.org/devel/codegen.git
-        Browser:                http://xinutec.org/git/devel/codegen.git
+        Location:               git://git.xinutec.org/lang/cxxparse.git
+        Browser:                http://xinutec.org/git/lang/cxxparse.git
 
 
 ########################################################################

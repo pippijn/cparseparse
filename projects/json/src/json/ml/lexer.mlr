@@ -13,6 +13,12 @@
     let t = TOK_STRING (Buffer.contents strbuf) in
     Buffer.clear strbuf;
     t
+
+  let add_lexeme strbuf lexbuf =
+    let open Lexing in
+    let len = lexbuf.lex_curr_pos - lexbuf.lex_start_pos in
+    Buffer.add_substring strbuf lexbuf.lex_buffer lexbuf.lex_start_pos len
+
 }
 
 
@@ -46,7 +52,7 @@ and dstring strbuf = parse
 | "\\t"					{ Buffer.add_char strbuf '\t'; dstring strbuf lexbuf }
 | "\\r"					{ Buffer.add_char strbuf '\r'; dstring strbuf lexbuf }
 | "\\n"					{ Buffer.add_char strbuf '\n'; dstring strbuf lexbuf }
-| [^ '\\' '"']+ as s			{ Buffer.add_string strbuf s; dstring strbuf lexbuf }
+| [^ '\\' '"']+				{ add_lexeme strbuf lexbuf; dstring strbuf lexbuf }
 
 
 and token strbuf = parse
