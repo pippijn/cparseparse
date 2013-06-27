@@ -1,14 +1,6 @@
-/.ditz-config
 /html
 /wip
+/.ditz-config
 
-*.bak
-*.clib
-*.mllib
-*.mlpack
-*.cm[ioxa]
-*.cmx[as]
-*.o
-META
 callgrind.out.*
 gmon.out
