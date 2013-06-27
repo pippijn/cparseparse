@@ -2,7 +2,7 @@
 title: Design lousy AST for cxx
 desc: We need to be able to have initial AST before the symbol resolution that does not require to build the symbol table during parsing.
 type: :task
-component: parser
+component: cxxparse
 release: 
 reporter: Wojciech Meyer <wojciech.meyer@gmail.com>
 status: :closed

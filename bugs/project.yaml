@@ -4,19 +4,5 @@ version: "0.5"
 components: 
 - !ditz.rubyforge.org,2008-03-06/component 
   name: cxxparse
-- !ditz.rubyforge.org,2008-03-06/component 
-  name: parser
-- !ditz.rubyforge.org,2008-03-06/component 
-  name: infrastructure
-- !ditz.rubyforge.org,2008-03-06/component 
-  name: gramanl
-- !ditz.rubyforge.org,2008-03-06/component 
-  name: treematch
-- !ditz.rubyforge.org,2008-03-06/component 
-  name: cabs
-- !ditz.rubyforge.org,2008-03-06/component 
-  name: baselib
-- !ditz.rubyforge.org,2008-03-06/component 
-  name: glr-core
 releases: []
 

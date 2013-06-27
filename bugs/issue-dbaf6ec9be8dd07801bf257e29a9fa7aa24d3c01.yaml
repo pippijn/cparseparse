@@ -6,7 +6,7 @@ desc: |-
   to make this possible. It might become more necessary in the future. For now,
   having a glrOptions.ml is okay.
 type: :bugfix
-component: infrastructure
+component: cxxparse
 release: 
 reporter: Pippijn van Steenhoven <pippijn@xinutec.org>
 status: :closed

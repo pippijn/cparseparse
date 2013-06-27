@@ -7,7 +7,7 @@ desc: |-
   
   Doing this will allow us to leverage existing code from the C front-end.
 type: :task
-component: parser
+component: cxxparse
 release: 
 reporter: Pippijn van Steenhoven <pippijn@xinutec.org>
 status: :unstarted
