@@ -1,6 +1,0 @@
-# sexplib
-"ccPtree.ml":		syntax_camlp4o, pkg_sexplib.syntax
-"ccTreematch.ml":	syntax_camlp4o, pkg_sexplib.syntax
-
-# pack
-<*.cmx>:		for-pack(Ccparse)

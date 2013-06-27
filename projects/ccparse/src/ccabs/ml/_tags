@@ -1,5 +1,0 @@
-# sexplib
-"ast.ml":		syntax_camlp4o, pkg_sexplib.syntax
-
-# monad
-"disambiguation.ml":	syntax_camlp4o

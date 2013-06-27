@@ -1,4 +1,0 @@
-# camlp4
-"jq_ast.ml":		syntax_camlp4o
-"jq_parser.ml":		syntax_camlp4o
-"jq_quotations.ml":	syntax_camlp4o

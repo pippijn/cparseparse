@@ -1,7 +1,0 @@
-#!/usr/bin/env perl
-
-use common::sense;
-use JSON::XS;
-
-my $text = do { local $/; open my $fh, '<', $ARGV[0] or die $!; <$fh> };
-my $data = decode_json $text;

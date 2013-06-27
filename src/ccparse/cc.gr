@@ -1,0 +1,5 @@
+(* see license.txt for copyright and terms of use *)
+terminals {
+  (* grab token list *)
+  include("ccTerminals.ids")
+}

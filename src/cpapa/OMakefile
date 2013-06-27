@@ -1,0 +1,12 @@
+# Target
+Target		= cpapa
+
+# Sources
+Modules[] =
+	Cpapa
+
+# Library dependencies
+Requires[] =
+	ccparse
+
+ocaml-program ()

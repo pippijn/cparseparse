@@ -1,6 +1,0 @@
-# sexplib
-"template.ml":	syntax_camlp4o, pkg_sexplib.syntax
-
-# camlp4
-"pa_unpack.ml":	syntax_camlp4o, pkg_camlp4.quotations, pkg_camlp4.extend
-"expander.ml":	syntax_camlp4o, pkg_camlp4.quotations
