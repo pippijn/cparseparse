@@ -1,12 +1,12 @@
 # Target
-Target		= cpapa
+Name		= cpapa
 
 # Sources
 Modules[] =
-	Cpapa
+  Cpapa
 
 # Library dependencies
-Requires[] =
-	ccparse
+OCaml-Requires[] =
+  ccparse
 
-ocaml-program ()
+program-install (.DEFAULT)

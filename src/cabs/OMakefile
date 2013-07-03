@@ -1,19 +1,19 @@
 # Target
-Target		= cabs
+Name		= cabs
 Description	= C Abstract Syntax Tree
 Version		= 0.1
 
 # Sources
 Modules[] =
-	Ast
-	Constant
-	Sclass
-	Tqual
+  Ast
+  Constant
+  Sclass
+  Tqual
 
 # Library dependencies
-Requires[] =
-	batteries
-	sexplib.syntax
+OCaml-Requires[] =
+  batteries
+  sexplib.syntax
 
 # Camlp4
 Flags. +=
@@ -22,4 +22,4 @@ Flags. +=
   $|sclass.ml|		= -syntax camlp4o
   $|tqual.ml|		= -syntax camlp4o
 
-ocaml-pack ()
+ocaml-pack-install (.DEFAULT)
