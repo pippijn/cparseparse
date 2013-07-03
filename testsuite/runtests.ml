@@ -4,7 +4,7 @@
 
 TestFramework.(run "testsuite" [
   {
-    tool = "cpapa";
+    tool = "cpapa.native";
     suffixes = [".cc"; ".c"; ".ii"; ".i"];
     options = Some "-trivial";
     dirs = [
