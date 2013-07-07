@@ -1,3 +1,4 @@
+open CorePervasives
 open Ccabs
 open Ast
 
@@ -106,13 +107,13 @@ let keep_declaration d =
         ) hd
       in
 
-      let keep = List.for_all BatPervasives.identity keeps in
+      let keep = List.for_all identity keeps in
 
       if keep then (
         (* either all ambiguous alternatives say "keep" *)
       ) else (
         (* or none say "keep" *)
-        assert (not (List.exists BatPervasives.identity keeps));
+        assert (not (List.exists identity keeps));
         cancel "due to TYPENAME ::NAME"
       );
 
