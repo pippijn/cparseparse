@@ -1,7 +1,7 @@
 open Ast
 
 
-let rec disambig_nontype_targ = let open BatOption.Monad in function
+let rec disambig_nontype_targ = let open CoreOption in function
   | E_ambig (l, r) ->
       (* We are asking whether an ambiguous expression has an
        * unparenthesized greater-than operator (UGTO), because the

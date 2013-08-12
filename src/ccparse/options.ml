@@ -14,6 +14,15 @@ let _xc = ref false
 let _rt = ref false
 
 
+let is_c_source s =
+  let length = String.length s in
+  if length < 3 then
+    false
+  else
+    s.[length - 2] = '.' &&
+    s.[length - 1] = 'c'
+
+
 let () =
   Cmdline.register "parser" Arg.([
     "-ptree",		Set _ptree,		" build parse tree";
@@ -34,7 +43,7 @@ let () =
     if !_dump_toks || !_tokens then
       _pp := true;
 
-    if List.filter (fun s -> BatString.ends_with s ".c") inputs <> [] then
+    if List.filter is_c_source inputs <> [] then
       _xc := true;
   )
 

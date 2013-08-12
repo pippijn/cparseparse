@@ -2015,7 +2015,7 @@ nonterm MemberDeclarator {
 
   -> n:IdentifierOpt ":" e:ConstantExpression	(* bitfield *)
 	[Bitfield] {
-	  let n = BatOption.map (fun n -> PQ_name n) n in
+	  let n = CoreOption.map (fun n -> PQ_name n) n in
 	  DC_decl (D_bitfield (n, e), (*~init*)None)
 	}
 }
@@ -2494,7 +2494,7 @@ nonterm UnqualifiedDeclarator {
   fun keep(d) {
     let n = Query.id_of_declarator d in
     (* n is never None *)
-    if Query.name_has_qualifiers (BatOption.get n) then
+    if Query.name_has_qualifiers (CoreOption.get n) then
       cancel "qualified UnqualifiedDeclarator"
     else
       true

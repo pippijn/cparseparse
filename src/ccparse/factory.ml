@@ -94,7 +94,7 @@ let keep_declaration d =
             loop base
 
         | D_name (name) ->
-            not (is_global_scope_qualified (BatOption.get name))
+            not (is_global_scope_qualified (CoreOption.get name))
 
         | _ ->
             (* something precedes ::, so it is ok *)
@@ -138,15 +138,15 @@ let keep_function_definition f =
   assert (Query.bottom_is_dfunc declr);
 
   let n = Query.id_of_declarator declr in
-  if ends_with_identifier f.retspec && is_global_scope_qualified (BatOption.get n) then
+  if ends_with_identifier f.retspec && is_global_scope_qualified (CoreOption.get n) then
     cancel "rejecting TYPENAME ::NAME"
   else
     true
 
 
 let merge_template_argument_list l r =
-  Some (TA_ambig (BatOption.get l, BatOption.get r))
+  Some (TA_ambig (CoreOption.get l, CoreOption.get r))
 
 
 let merge_template_parameter_list l r =
-  Some (TP_ambig (BatOption.get l, BatOption.get r))
+  Some (TP_ambig (CoreOption.get l, CoreOption.get r))

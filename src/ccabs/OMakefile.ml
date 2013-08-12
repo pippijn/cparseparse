@@ -14,7 +14,7 @@ install Package ".DEFAULT" [
 
   (* Library dependencies *)
   OCamlRequires [
-    "batteries";
+    "corelib";
     "monad-custom";
     "sexplib.syntax";
   ];

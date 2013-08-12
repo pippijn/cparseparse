@@ -10,5 +10,6 @@ install Program ".DEFAULT" [
   (* Library dependencies *)
   OCamlRequires [
     "ccparse";
+    "baselib";
   ];
 ]
