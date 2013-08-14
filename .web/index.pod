@@ -1,0 +1,7 @@
+=head1 C++ Parser
+
+This project aims to create an extensible C++ parser for building source to
+source transformation tools. It may also serve as a compiler front-end, in the
+future.
+
+L<Git repository|https://github.com/pippijn/cparseparse>
