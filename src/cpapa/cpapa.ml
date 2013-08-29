@@ -41,7 +41,7 @@ let lexer_from_list tokens =
 
 let lexer_from_dump input =
   let tokens =
-    BatStd.with_dispose ~dispose:close_in
+    BatPervasives.with_dispose ~dispose:close_in
       input_value (open_in_bin (input ^ ".tkd"))
   in
   lexer_from_list tokens, ignore
@@ -70,7 +70,7 @@ let lexer_from_file input =
       if Options._dump_toks () then (
         if Options._load_toks () then
           failwith "-dump-toks and -load-toks are mutually exclusive";
-        BatStd.with_dispose ~dispose:close_out
+        BatPervasives.with_dispose ~dispose:close_out
           (fun out -> output_value out tokens) (open_out_bin (input ^ ".tkd"));
       );
 
@@ -106,14 +106,14 @@ let parse_file actions tables input =
     if Options._tokens () then
       None
     else
-      BatStd.with_dispose ~dispose (Parser.glrparse actions tables input) lexer
+      BatPervasives.with_dispose ~dispose (Parser.glrparse actions tables input) lexer
   in
 
   tree
 
 
 let dump_tree tree =
-  BatStd.with_dispose ~dispose:close_out
+  BatPervasives.with_dispose ~dispose:close_out
     (fun out -> output_value out tree) (open_out_bin "result.bin")
 
 
