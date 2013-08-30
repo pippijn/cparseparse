@@ -1,0 +1,1090 @@
+{
+  let return i : int =
+    (*Printf.printf "in %d\n" i;*)
+    i
+}
+
+%token TOK_EOF
+%token <string> TOK_NAME
+%token <string> TOK_INT_LITERAL
+%token <string> TOK_FLOAT_LITERAL
+%token <string> TOK_STRING_LITERAL
+%token <string> TOK_CHAR_LITERAL
+%token TOK_ASM
+%token TOK_AUTO
+%token TOK_BREAK
+%token TOK_BOOL
+%token TOK_CASE
+%token TOK_CATCH
+%token TOK_CDECL
+%token TOK_CHAR
+%token TOK_CLASS
+%token TOK_CONST
+%token TOK_CONST_CAST
+%token TOK_CONTINUE
+%token TOK_DEFAULT
+%token TOK_DELETE
+%token TOK_DO
+%token TOK_DOUBLE
+%token TOK_DYNAMIC_CAST
+%token TOK_ELSE
+%token TOK_ENUM
+%token TOK_EXPLICIT
+%token TOK_EXPORT
+%token TOK_EXTERN
+%token TOK_FALSE
+%token TOK_FLOAT
+%token TOK_FOR
+%token TOK_FRIEND
+%token TOK_GOTO
+%token TOK_IF
+%token TOK_INLINE
+%token TOK_INT
+%token TOK_LONG
+%token TOK_MUTABLE
+%token TOK_NAMESPACE
+%token TOK_NEW
+%token TOK_OPERATOR
+%token TOK_PASCAL
+%token TOK_PRIVATE
+%token TOK_PROTECTED
+%token TOK_PUBLIC
+%token TOK_REGISTER
+%token TOK_REINTERPRET_CAST
+%token TOK_RETURN
+%token TOK_SHORT
+%token TOK_SIGNED
+%token TOK_SIZEOF
+%token TOK_STATIC
+%token TOK_STATIC_CAST
+%token TOK_STRUCT
+%token TOK_SWITCH
+%token TOK_TEMPLATE
+%token TOK_THIS
+%token TOK_THROW
+%token TOK_TRUE
+%token TOK_TRY
+%token TOK_TYPEDEF
+%token TOK_TYPEID
+%token TOK_TYPENAME
+%token TOK_UNION
+%token TOK_UNSIGNED
+%token TOK_USING
+%token TOK_VIRTUAL
+%token TOK_VOID
+%token TOK_VOLATILE
+%token TOK_WCHAR_T
+%token TOK_WHILE
+%token TOK_LPAREN
+%token TOK_RPAREN
+%token TOK_LBRACKET
+%token TOK_RBRACKET
+%token TOK_ARROW
+%token TOK_COLONCOLON
+%token TOK_DOT
+%token TOK_BANG
+%token TOK_TILDE
+%token TOK_PLUS
+%token TOK_MINUS
+%token TOK_PLUSPLUS
+%token TOK_MINUSMINUS
+%token TOK_AND
+%token TOK_STAR
+%token TOK_DOTSTAR
+%token TOK_ARROWSTAR
+%token TOK_SLASH
+%token TOK_PERCENT
+%token TOK_LEFTSHIFT
+%token TOK_RIGHTSHIFT
+%token TOK_LESSTHAN
+%token TOK_LESSEQ
+%token TOK_GREATERTHAN
+%token TOK_GREATEREQ
+%token TOK_EQUALEQUAL
+%token TOK_NOTEQUAL
+%token TOK_XOR
+%token TOK_OR
+%token TOK_ANDAND
+%token TOK_OROR
+%token TOK_QUESTION
+%token TOK_COLON
+%token TOK_EQUAL
+%token TOK_STAREQUAL
+%token TOK_SLASHEQUAL
+%token TOK_PERCENTEQUAL
+%token TOK_PLUSEQUAL
+%token TOK_MINUSEQUAL
+%token TOK_ANDEQUAL
+%token TOK_XOREQUAL
+%token TOK_OREQUAL
+%token TOK_LEFTSHIFTEQUAL
+%token TOK_RIGHTSHIFTEQUAL
+%token TOK_COMMA
+%token TOK_ELLIPSIS
+%token TOK_SEMICOLON
+%token TOK_LBRACE
+%token TOK_RBRACE
+%token TOK_ANNOTATION
+%token TOK_PREFER_REDUCE
+%token TOK_PREFER_SHIFT
+%token TOK___BUILTIN_CONSTANT_P
+%token TOK___ALIGNOF__
+%token TOK___OFFSETOF__
+%token TOK___BUILTIN_OFFSETOF
+%token TOK___ATTRIBUTE__
+%token TOK___FUNCTION__
+%token TOK___LABEL__
+%token TOK___PRETTY_FUNCTION__
+%token TOK___TYPEOF__
+%token TOK___EXTENSION__
+%token TOK___BUILTIN_EXPECT
+%token TOK___BUILTIN_VA_ARG
+%token TOK_MIN_OP
+%token TOK_MAX_OP
+%token TOK_REAL
+%token TOK_IMAG
+%token TOK_RESTRICT
+%token TOK_COMPLEX
+%token TOK_IMAGINARY
+
+%token TOK_NOEXCEPT
+%token TOK_CONSTEXPR
+%token TOK_DECLTYPE
+%token TOK_NULLPTR
+%token TOK_STATIC_ASSERT
+%token TOK_CHAR16_t
+%token TOK_CHAR32_t
+
+%start main
+
+%%
+
+main: nFile TOK_EOF { return 0 }
+
+nFile: nTranslationUnit { return 1 }
+
+nIdentifier: TOK_NAME { return 2 }
+
+nTranslationUnit: /* empty */ { return 3 }
+               | nTranslationUnit nDeclaration { return 4 }
+               | nTranslationUnit TOK_SEMICOLON { return 5 }
+
+nPrimaryExpression: nLiteral { return 6 }
+                 | TOK_THIS { return 7 }
+                 | TOK_LPAREN nExpression TOK_RPAREN { return 8 }
+                 | nIdExpression { return 9 }
+                 | TOK_LPAREN nCompoundStatement TOK_RPAREN { return 10 }
+                 | TOK_LPAREN nTypeId TOK_RPAREN nCompoundInitializer { return 11 }
+                 | TOK_REAL nPrimaryExpression { return 12 }
+                 | TOK_IMAG nPrimaryExpression { return 13 }
+
+nLiteral: TOK_INT_LITERAL { return 14 }
+       | TOK_FLOAT_LITERAL { return 15 }
+       | nStringLiteral { return 16 }
+       | TOK_CHAR_LITERAL { return 17 }
+       | TOK_TRUE { return 18 }
+       | TOK_FALSE { return 19 }
+
+nPreprocString: TOK_STRING_LITERAL { return 20 }
+             | TOK___FUNCTION__ { return 21 }
+             | TOK___PRETTY_FUNCTION__ { return 22 }
+
+nStringLiteral: nPreprocString { return 23 }
+             | nPreprocString nStringLiteral { return 24 }
+
+nIdExpression: nPQualifiedId { return 25 }
+            | TOK_COLONCOLON nPQualifiedId { return 26 }
+
+nUnqualifiedId: nIdentifier { return 27 }
+             | nOperatorFunctionId { return 28 }
+             | nConversionFunctionId { return 29 }
+             | nTemplateId { return 30 }
+
+nPQualifiedId: nUnqualifiedId { return 31 }
+            | nIdentifier TOK_COLONCOLON nPQualifiedId { return 32 }
+            | nIdentifier TOK_LESSTHAN nTemplateArgumentListOpt TOK_GREATERTHAN TOK_COLONCOLON nPQualifiedId { return 33 }
+            | TOK_TEMPLATE nIdentifier TOK_LESSTHAN nTemplateArgumentListOpt TOK_GREATERTHAN TOK_COLONCOLON nPQualifiedId { return 34 }
+
+nArgumentList: TOK_LPAREN nExpressionListOpt TOK_RPAREN { return 35 }
+
+nPostfixExpression: nPrimaryExpression { return 36 }
+                 | nPostfixExpression TOK_LBRACKET nExpression TOK_RBRACKET { return 37 }
+                 | nPostfixExpression nArgumentList { return 38 }
+                 | TOK_TYPENAME nIdExpression nArgumentList { return 39 }
+                 | nCtorExpressionType nArgumentList { return 40 }
+                 | nPostfixExpression TOK_DOT nNameAfterDot { return 41 }
+                 | nPostfixExpression TOK_ARROW nNameAfterDot { return 42 }
+                 | nPostfixExpression TOK_PLUSPLUS { return 43 }
+                 | nPostfixExpression TOK_MINUSMINUS { return 44 }
+                 | nCastKeyword TOK_LESSTHAN nTypeId TOK_GREATERTHAN TOK_LPAREN nExpression TOK_RPAREN { return 45 }
+                 | TOK_TYPEID TOK_LPAREN nExpression TOK_RPAREN { return 46 }
+                 | TOK_TYPEID TOK_LPAREN nTypeId TOK_RPAREN { return 47 }
+                 | TOK___BUILTIN_CONSTANT_P nParenthesizedExpression { return 48 }
+                 | TOK___ALIGNOF__ TOK_LPAREN nTypeId TOK_RPAREN { return 49 }
+                 | TOK___ALIGNOF__ TOK_LPAREN nExpression TOK_RPAREN { return 50 }
+                 | TOK___BUILTIN_OFFSETOF TOK_LPAREN nTypeId TOK_COMMA nNamesAfterDot TOK_RPAREN { return 51 }
+                 | TOK___OFFSETOF__ TOK_LPAREN nExpression TOK_RPAREN { return 52 }
+                 | TOK___BUILTIN_EXPECT TOK_LPAREN nExpression TOK_COMMA nExpression TOK_RPAREN { return 53 }
+                 | TOK___BUILTIN_VA_ARG TOK_LPAREN nExpression TOK_COMMA nTypeId TOK_RPAREN { return 54 }
+
+nCtorExpressionType: nPQTypeName { return 55 }
+                  | TOK_CHAR { return 56 }
+                  | TOK_WCHAR_T { return 57 }
+                  | TOK_BOOL { return 58 }
+                  | TOK_SHORT { return 59 }
+                  | TOK_INT { return 60 }
+                  | TOK_LONG { return 61 }
+                  | TOK_SIGNED { return 62 }
+                  | TOK_UNSIGNED { return 63 }
+                  | TOK_FLOAT { return 64 }
+                  | TOK_DOUBLE { return 65 }
+                  | TOK_VOID { return 66 }
+
+nCastKeyword: TOK_DYNAMIC_CAST { return 67 }
+           | TOK_STATIC_CAST { return 68 }
+           | TOK_REINTERPRET_CAST { return 69 }
+           | TOK_CONST_CAST { return 70 }
+
+nExpressionList: nAssignmentExpression { return 71 }
+              | nAssignmentExpression TOK_COMMA nExpressionList { return 72 }
+
+nExpressionListOpt: /* empty */ { return 73 }
+                 | nExpressionList { return 74 }
+
+nUnaryExpression: nPostfixExpression { return 75 }
+               | TOK_PLUSPLUS nCastExpression { return 76 }
+               | TOK_MINUSMINUS nCastExpression { return 77 }
+               | TOK_SIZEOF nUnaryExpression { return 78 }
+               | nDeleteExpression { return 79 }
+               | TOK_STAR nCastExpression { return 80 }
+               | TOK_AND nCastExpression { return 81 }
+               | TOK_PLUS nCastExpression { return 82 }
+               | TOK_MINUS nCastExpression { return 83 }
+               | TOK_BANG nCastExpression { return 84 }
+               | TOK_TILDE nCastExpression { return 85 }
+               | TOK_SIZEOF TOK_LPAREN nTypeId TOK_RPAREN { return 86 }
+               | nNewExpression { return 87 }
+               | TOK_ANDAND nIdentifier { return 88 }
+
+nColonColonOpt: /* empty */ { return 89 }
+             | TOK_COLONCOLON { return 90 }
+
+nNewExpression: nColonColonOpt TOK_NEW nNewPlacementOpt nNewTypeId nNewInitializerOpt { return 91 }
+             | nColonColonOpt TOK_NEW nNewPlacementOpt TOK_LPAREN nTypeId TOK_RPAREN nNewInitializerOpt { return 92 }
+
+nNewPlacementOpt: /* empty */ { return 93 }
+               | TOK_LPAREN nExpressionList TOK_RPAREN { return 94 }
+
+nNewTypeId: nTypeSpecifier nNewDeclaratorOpt { return 95 }
+
+nNewDeclaratorOpt: /* empty */ { return 96 }
+                | TOK_STAR nCVQualifierSeqOpt nNewDeclaratorOpt { return 97 }
+                | nPtrToMemberName TOK_STAR nCVQualifierSeqOpt nNewDeclaratorOpt { return 98 }
+                | nDirectNewDeclarator { return 99 }
+
+nDirectNewDeclarator: TOK_LBRACKET nExpression TOK_RBRACKET { return 100 }
+                   | nDirectNewDeclarator TOK_LBRACKET nConstantExpression TOK_RBRACKET { return 101 }
+
+nNewInitializerOpt: /* empty */ { return 102 }
+                 | TOK_LPAREN nExpressionListOpt TOK_RPAREN { return 103 }
+
+nDeleteExpression: nColonColonOpt TOK_DELETE nCastExpression { return 104 }
+                | nColonColonOpt TOK_DELETE TOK_LBRACKET TOK_RBRACKET nCastExpression { return 105 }
+
+nNameAfterDot: nNAD1 { return 106 }
+            | TOK_COLONCOLON nNAD2 { return 107 }
+
+nNAD1: nNAD2 { return 108 }
+    | TOK_TEMPLATE nIdentifier TOK_LESSTHAN nTemplateArgumentListOpt TOK_GREATERTHAN { return 109 }
+    | TOK_TILDE nIdentifier { return 110 }
+    | TOK_TILDE nIdentifier TOK_LESSTHAN nTemplateArgumentListOpt TOK_GREATERTHAN { return 111 }
+    | nConversionFunctionId { return 112 }
+    | TOK_TEMPLATE nIdentifier TOK_LESSTHAN nTemplateArgumentListOpt TOK_GREATERTHAN TOK_COLONCOLON nNAD1 { return 113 }
+
+nNAD2: nIdentifier TOK_LESSTHAN nTemplateArgumentListOpt TOK_GREATERTHAN { return 114 }
+    | nIdentifier { return 115 }
+    | nOperatorFunctionId { return 116 }
+    | nOperatorFunctionId TOK_LESSTHAN nTemplateArgumentListOpt TOK_GREATERTHAN { return 117 }
+    | TOK_TEMPLATE nOperatorFunctionId TOK_LESSTHAN nTemplateArgumentListOpt TOK_GREATERTHAN { return 118 }
+    | nIdentifier TOK_LESSTHAN nTemplateArgumentListOpt TOK_GREATERTHAN TOK_COLONCOLON nNAD1 { return 119 }
+    | nIdentifier TOK_COLONCOLON nNAD1 { return 120 }
+
+nCastExpression: nUnaryExpression { return 121 }
+              | TOK_LPAREN nTypeId TOK_RPAREN nCastExpression { return 122 }
+              | TOK_LPAREN nImplicitIntTypeId TOK_RPAREN nCastExpression { return 123 }
+
+nBinExp_high: nCastExpression { return 124 }
+           | nBinExp_high TOK_DOTSTAR nBinExp_high { return 125 }
+           | nBinExp_high TOK_ARROWSTAR nBinExp_high { return 126 }
+           | nBinExp_high TOK_STAR nBinExp_high { return 127 }
+           | nBinExp_high TOK_SLASH nBinExp_high { return 128 }
+           | nBinExp_high TOK_PERCENT nBinExp_high { return 129 }
+           | nBinExp_high TOK_PLUS nBinExp_high { return 130 }
+           | nBinExp_high TOK_MINUS nBinExp_high { return 131 }
+           | nBinExp_high TOK_LEFTSHIFT nBinExp_high { return 132 }
+           | nBinExp_high TOK_RIGHTSHIFT nBinExp_high { return 133 }
+
+nBinExp_mid: nBinExp_high { return 134 }
+          | nBinExp_mid TOK_LESSTHAN nBinExp_high { return 135 }
+          | nBinExp_mid TOK_GREATERTHAN nBinExp_high { return 136 }
+          | nBinExp_mid TOK_LESSEQ nBinExp_high { return 137 }
+          | nBinExp_mid TOK_GREATEREQ nBinExp_high { return 138 }
+          | nBinExp_mid TOK_MIN_OP nBinExp_high { return 139 }
+          | nBinExp_mid TOK_MAX_OP nBinExp_high { return 140 }
+
+nBinaryExpression: nBinExp_mid { return 141 }
+                | nBinaryExpression TOK_EQUALEQUAL nBinaryExpression { return 142 }
+                | nBinaryExpression TOK_NOTEQUAL nBinaryExpression { return 143 }
+                | nBinaryExpression TOK_AND nBinaryExpression { return 144 }
+                | nBinaryExpression TOK_XOR nBinaryExpression { return 145 }
+                | nBinaryExpression TOK_OR nBinaryExpression { return 146 }
+                | nBinaryExpression TOK_ANDAND nBinaryExpression { return 147 }
+                | nBinaryExpression TOK_OROR nBinaryExpression { return 148 }
+
+nConditionalExpression: nBinaryExpression { return 149 }
+                     | nBinaryExpression TOK_QUESTION nExpression TOK_COLON nAssignmentExpression { return 150 }
+                     | nBinaryExpression TOK_QUESTION TOK_COLON nAssignmentExpression { return 151 }
+
+nAssignmentExpression: nConditionalExpression { return 152 }
+                    | nBinaryExpression nAssignmentOperator nAssignmentExpression { return 153 }
+                    | nThrowExpression { return 154 }
+
+nAssignmentOperator: TOK_STAREQUAL { return 155 }
+                  | TOK_SLASHEQUAL { return 156 }
+                  | TOK_PERCENTEQUAL { return 157 }
+                  | TOK_PLUSEQUAL { return 158 }
+                  | TOK_MINUSEQUAL { return 159 }
+                  | TOK_RIGHTSHIFTEQUAL { return 160 }
+                  | TOK_LEFTSHIFTEQUAL { return 161 }
+                  | TOK_ANDEQUAL { return 162 }
+                  | TOK_XOREQUAL { return 163 }
+                  | TOK_OREQUAL { return 164 }
+                  | TOK_EQUAL { return 165 }
+
+nExpression: nAssignmentExpression { return 166 }
+          | nExpression TOK_COMMA nAssignmentExpression { return 167 }
+
+nExpressionOpt: /* empty */ { return 168 }
+             | nExpression { return 169 }
+
+nConstantExpression: nAssignmentExpression { return 170 }
+
+nConstantExpressionOpt: /* empty */ { return 171 }
+                     | nConstantExpression { return 172 }
+
+nLabelAndColon: nIdentifier TOK_COLON { return 173 }
+             | nIdentifier TOK_COLON nAttributeSpecifierList { return 174 }
+
+nStatement: nLabelAndColon nStatement { return 175 }
+         | TOK_CASE nConstantExpression TOK_COLON nStatement { return 176 }
+         | TOK_DEFAULT TOK_COLON nStatement { return 177 }
+         | nExpressionStatement { return 178 }
+         | nCompoundStatement { return 179 }
+         | TOK_IF TOK_LPAREN nCondition TOK_RPAREN nStatement { return 180 }
+         | TOK_IF TOK_LPAREN nCondition TOK_RPAREN nStatement TOK_ELSE nStatement { return 181 }
+         | TOK_SWITCH TOK_LPAREN nCondition TOK_RPAREN nStatement { return 182 }
+         | TOK_WHILE TOK_LPAREN nCondition TOK_RPAREN nStatement { return 183 }
+         | TOK_DO nStatement TOK_WHILE TOK_LPAREN nExpression TOK_RPAREN TOK_SEMICOLON { return 184 }
+         | TOK_FOR TOK_LPAREN nForInitStatement nConditionOpt TOK_SEMICOLON nExpressionOpt TOK_RPAREN nStatement { return 185 }
+         | TOK_BREAK TOK_SEMICOLON { return 186 }
+         | TOK_CONTINUE TOK_SEMICOLON { return 187 }
+         | TOK_RETURN nExpression TOK_SEMICOLON { return 188 }
+         | TOK_RETURN TOK_SEMICOLON { return 189 }
+         | TOK_GOTO nIdentifier TOK_SEMICOLON { return 190 }
+         | nBlockDeclaration { return 191 }
+         | nTryBlock { return 192 }
+         | nAsmDefinition { return 193 }
+         | nNamespaceDecl { return 194 }
+         | nFunctionDefinition { return 195 }
+         | nKandRFunctionDefinition { return 196 }
+         | TOK_CASE nConstantExpression TOK_ELLIPSIS nConstantExpression TOK_COLON nStatement { return 197 }
+         | TOK_GOTO TOK_STAR nExpression TOK_SEMICOLON { return 198 }
+         | nUberModifierSeq nInitDeclaratorList TOK_SEMICOLON { return 199 }
+
+nExpressionStatement: TOK_SEMICOLON { return 200 }
+                   | nExpression TOK_SEMICOLON { return 201 }
+
+nCompoundStatement: nCompoundStmtHelper TOK_RBRACE { return 202 }
+                 | nCompoundStmtHelper nLabeledEmptyStatementList TOK_RBRACE { return 203 }
+
+nCompoundStmtHelper: TOK_LBRACE { return 204 }
+                  | nCompoundStmtHelper nStatement nAnnotationOpt { return 205 }
+
+nCondition: nExpression { return 206 }
+         | nTypeSpecifier nDeclarator TOK_EQUAL nAssignmentExpression { return 207 }
+
+nConditionOpt: /* empty */ { return 208 }
+            | nCondition { return 209 }
+
+nForInitStatement: nExpressionStatement { return 210 }
+                | nSimpleDeclaration { return 211 }
+
+nDeclaration: nBlockDeclaration { return 212 }
+           | nFunctionDefinition { return 213 }
+           | nTemplateDeclaration { return 214 }
+           | nExplicitInstantiation { return 215 }
+           | nLinkageSpecification { return 216 }
+           | nAsmDefinition { return 217 }
+           | nNamespaceDefinition { return 218 }
+           | nNamespaceDecl { return 219 }
+           | nKandRFunctionDefinition { return 220 }
+           | nKandRFunctionDefinition_implInt { return 221 }
+           | nImplIntFunctionDefinition { return 222 }
+           | nUberModifierSeqOpt nInitDeclaratorList TOK_SEMICOLON { return 223 }
+
+nBlockDeclaration: nSimpleDeclaration { return 224 }
+
+nSimpleDeclaration: nDeclSpecifier nInitDeclaratorList TOK_SEMICOLON { return 225 }
+                 | nDeclSpecifier TOK_SEMICOLON { return 226 }
+
+nDeclSpecifier: nPQTypeName nUberModifierSeqOpt { return 227 }
+             | nUberModifierSeq nPQTypeName nUberModifierSeqOpt { return 228 }
+             | nUberTypeKeyword nUberTypeAndModifierSeqOpt { return 229 }
+             | nUberModifierSeq nUberTypeKeyword nUberTypeAndModifierSeqOpt { return 230 }
+             | nElaboratedOrSpecifier nUberModifierSeqOpt { return 231 }
+             | nUberModifierSeq nElaboratedOrSpecifier nUberModifierSeqOpt { return 232 }
+             | nTypeofTypeSpecifier nUberModifierSeqOpt { return 233 }
+             | nUberModifierSeq nTypeofTypeSpecifier nUberModifierSeqOpt { return 234 }
+             | nPQTypeName nBuggyGccTypeModifier nUberModifierSeqOpt { return 235 }
+             | nUberModifierSeq nPQTypeName nBuggyGccTypeModifier nUberModifierSeqOpt { return 236 }
+
+nElaboratedOrSpecifier: nElaboratedTypeSpecifier { return 237 }
+                     | nClassSpecifier { return 238 }
+                     | nEnumSpecifier { return 239 }
+
+nUberModifierSeq: nUberModifier { return 240 }
+               | nUberModifierSeq nUberModifier { return 241 }
+
+nUberModifierSeqOpt: /* empty */ { return 242 }
+                  | nUberModifierSeq { return 243 }
+
+nUberTypeAndModifierSeqOpt: /* empty */ { return 244 }
+                         | nUberTypeAndModifierSeqOpt nUberModifier { return 245 }
+                         | nUberTypeAndModifierSeqOpt nUberTypeKeyword { return 246 }
+
+nUberCVQualifierSeq: nUberCVQualifier { return 247 }
+                  | nUberCVQualifierSeq nUberCVQualifier { return 248 }
+
+nUberCVQualifierSeqOpt: /* empty */ { return 249 }
+                     | nUberCVQualifierSeq { return 250 }
+
+nUberTypeAndCVQualifierSeqOpt: /* empty */ { return 251 }
+                            | nUberTypeAndCVQualifierSeqOpt nUberCVQualifier { return 252 }
+                            | nUberTypeAndCVQualifierSeqOpt nUberTypeKeyword { return 253 }
+
+nUberModifier: TOK_AUTO { return 254 }
+            | TOK_REGISTER { return 255 }
+            | TOK_STATIC { return 256 }
+            | TOK_EXTERN { return 257 }
+            | TOK_MUTABLE { return 258 }
+            | TOK_INLINE { return 259 }
+            | TOK_VIRTUAL { return 260 }
+            | TOK_FRIEND { return 261 }
+            | TOK_TYPEDEF { return 262 }
+            | TOK_CONST { return 263 }
+            | TOK_VOLATILE { return 264 }
+            | TOK_RESTRICT { return 265 }
+            | nAttributeSpecifier { return 266 }
+
+nUberCVQualifier: TOK_CONST { return 267 }
+               | TOK_VOLATILE { return 268 }
+               | TOK_RESTRICT { return 269 }
+               | nAttributeSpecifier { return 270 }
+
+nUberTypeKeyword: TOK_CHAR { return 271 }
+               | TOK_WCHAR_T { return 272 }
+               | TOK_BOOL { return 273 }
+               | TOK_SHORT { return 274 }
+               | TOK_INT { return 275 }
+               | TOK_LONG { return 276 }
+               | TOK_SIGNED { return 277 }
+               | TOK_UNSIGNED { return 278 }
+               | TOK_FLOAT { return 279 }
+               | TOK_DOUBLE { return 280 }
+               | TOK_VOID { return 281 }
+               | TOK_COMPLEX { return 282 }
+               | TOK_IMAGINARY { return 283 }
+
+nElaboratedTypeSpecifier: nClassKey nPQTypeName { return 284 }
+                       | TOK_ENUM nPQTypeName { return 285 }
+                       | TOK_TYPENAME nPQTypeName { return 286 }
+                       | nClassKey nAttributeSpecifier nPQTypeName { return 287 }
+                       | TOK_ENUM nAttributeSpecifierList nPQTypeName { return 288 }
+
+nTypeSpecifier: nPQTypeName nUberCVQualifierSeqOpt { return 289 }
+             | nUberCVQualifierSeq nPQTypeName nUberCVQualifierSeqOpt { return 290 }
+             | nUberTypeKeyword nUberTypeAndCVQualifierSeqOpt { return 291 }
+             | nUberCVQualifierSeq nUberTypeKeyword nUberTypeAndCVQualifierSeqOpt { return 292 }
+             | nElaboratedOrSpecifier nUberCVQualifierSeqOpt { return 293 }
+             | nUberCVQualifierSeq nElaboratedOrSpecifier nUberCVQualifierSeqOpt { return 294 }
+             | nTypeofTypeSpecifier nUberCVQualifierSeqOpt { return 295 }
+             | nUberCVQualifierSeq nTypeofTypeSpecifier nUberCVQualifierSeqOpt { return 296 }
+
+nPQTypeName: nPQTypeName_ncc { return 297 }
+          | TOK_COLONCOLON nPQTypeName_ncc { return 298 }
+
+nPQTypeName_ncc: nIdentifier { return 299 }
+              | nTemplateId { return 300 }
+              | nIdentifier TOK_COLONCOLON nPQTypeName_notfirst { return 301 }
+              | nIdentifier TOK_LESSTHAN nTemplateArgumentListOpt TOK_GREATERTHAN TOK_COLONCOLON nPQTypeName_notfirst { return 302 }
+
+nPQTypeName_notfirst: nPQTypeName_ncc { return 303 }
+                   | TOK_TEMPLATE nTemplateId { return 304 }
+                   | TOK_TEMPLATE nIdentifier TOK_LESSTHAN nTemplateArgumentListOpt TOK_GREATERTHAN TOK_COLONCOLON nPQTypeName_notfirst { return 305 }
+
+nEnumSpecifier: TOK_ENUM TOK_LBRACE nEnumeratorListOpt TOK_RBRACE { return 306 }
+             | TOK_ENUM nIdentifier TOK_LBRACE nEnumeratorListOpt TOK_RBRACE { return 307 }
+             | TOK_ENUM nAttributeSpecifierList TOK_LBRACE nEnumeratorListOpt TOK_RBRACE { return 308 }
+             | TOK_ENUM nAttributeSpecifierList nPQTypeName TOK_LBRACE nEnumeratorListOpt TOK_RBRACE { return 309 }
+
+nEnumeratorListOpt: /* empty */ { return 310 }
+                 | nEnumeratorDefinition { return 311 }
+                 | nEnumeratorDefinition TOK_COMMA nEnumeratorListOpt { return 312 }
+
+nEnumeratorDefinition: nIdentifier { return 313 }
+                    | nIdentifier TOK_EQUAL nConstantExpression { return 314 }
+
+nAsmDefinition: TOK_ASM TOK_LPAREN nStringLiteral TOK_RPAREN TOK_SEMICOLON { return 315 }
+             | TOK_ASM nCVQualifierSeq TOK_LPAREN nStringLiteral TOK_RPAREN TOK_SEMICOLON { return 316 }
+             | TOK_ASM nCVQualifierSeq TOK_LPAREN nStringLiteral nNonemptyOpConstraints TOK_RPAREN TOK_SEMICOLON { return 317 }
+             | TOK_ASM TOK_LPAREN nStringLiteral nNonemptyOpConstraints TOK_RPAREN TOK_SEMICOLON { return 318 }
+
+nLinkageSpecification: TOK_EXTERN TOK_STRING_LITERAL TOK_LBRACE nTranslationUnit TOK_RBRACE { return 319 }
+                    | TOK_EXTERN TOK_STRING_LITERAL nDeclaration { return 320 }
+
+nInitDeclaratorList: nInitDeclarator { return 321 }
+                  | nInitDeclarator TOK_COMMA nInitDeclaratorList { return 322 }
+                  | nInitDeclarator TOK_COMMA nAttributeSpecifierList nInitDeclaratorList { return 323 }
+
+nInitDeclarator: nDeclarator { return 324 }
+              | nDeclarator nInitializer { return 325 }
+
+nInitializer: TOK_EQUAL nSimpleInitializerClause { return 326 }
+           | TOK_LPAREN nExpressionList TOK_RPAREN { return 327 }
+
+nSimpleInitializerClause: nAssignmentExpression { return 328 }
+                       | nCompoundInitializer { return 329 }
+
+nInitializerClause: nSimpleInitializerClause { return 330 }
+                 | nIdentifier TOK_COLON nSimpleInitializerClause { return 331 }
+                 | nDesignatorList TOK_EQUAL nSimpleInitializerClause { return 332 }
+                 | nDesignatorList nSimpleInitializerClause { return 333 }
+
+nCompoundInitializer: TOK_LBRACE nInitializerList nCommaOpt TOK_RBRACE { return 334 }
+                   | TOK_LBRACE TOK_RBRACE { return 335 }
+
+nCommaOpt: /* empty */ { return 336 }
+        | TOK_COMMA { return 337 }
+
+nInitializerList: nInitializerClause { return 338 }
+               | nInitializerList TOK_COMMA nInitializerClause { return 339 }
+
+nDeclarator: TOK_STAR nCVQualifierSeqOpt nDeclarator { return 340 }
+          | TOK_AND nCVQualifierSeqOpt nDeclarator { return 341 }
+          | nPtrToMemberName TOK_STAR nCVQualifierSeqOpt nDeclarator { return 342 }
+          | nDirectDeclarator { return 343 }
+          | nDirectDeclarator TOK_ASM TOK_LPAREN nStringLiteral TOK_RPAREN { return 344 }
+          | nDirectDeclarator TOK_ASM TOK_LPAREN nStringLiteral TOK_RPAREN nAttributeSpecifierList { return 345 }
+          | TOK_STAR nCVQualifierSeqOpt nAttributeSpecifier nCVQualAttrSeqOpt nDeclarator { return 346 }
+          | nDirectDeclarator nAttributeSpecifierList { return 347 }
+
+nDirectDeclarator: nIdExpression { return 348 }
+                | nPQDtorName { return 349 }
+                | nDirectDeclarator TOK_LPAREN nParameterDeclarationClause TOK_RPAREN nCVQualifierSeqOpt nExceptionSpecificationOpt { return 350 }
+                | nDirectDeclarator TOK_LBRACKET nConstantExpressionOpt TOK_RBRACKET { return 351 }
+                | TOK_LPAREN nDeclarator TOK_RPAREN { return 352 }
+                | nDirectDeclarator TOK_LBRACKET nCVQualifierSeq TOK_RBRACKET { return 353 }
+                | TOK_LPAREN nAttributeSpecifierList nDeclarator TOK_RPAREN { return 354 }
+
+nPQDtorName: TOK_TILDE nIdentifier { return 355 }
+          | TOK_TILDE nIdentifier TOK_LESSTHAN nTemplateArgumentListOpt TOK_GREATERTHAN { return 356 }
+          | nIdentifier TOK_COLONCOLON nPQDtorName { return 357 }
+          | nIdentifier TOK_LESSTHAN nTemplateArgumentListOpt TOK_GREATERTHAN TOK_COLONCOLON nPQDtorName { return 358 }
+          | TOK_TEMPLATE nIdentifier TOK_LESSTHAN nTemplateArgumentListOpt TOK_GREATERTHAN TOK_COLONCOLON nPQDtorName { return 359 }
+
+nPtrToMemberName: nIdExpression TOK_COLONCOLON { return 360 }
+
+nCVQualifierSeqOpt: /* empty */ { return 361 }
+                 | nCVQualifierSeq { return 362 }
+
+nCVQualifierSeq: nCVQualifier { return 363 }
+              | nCVQualifier nCVQualifierSeq { return 364 }
+
+nCVQualifier: TOK_CONST { return 365 }
+           | TOK_VOLATILE { return 366 }
+           | TOK_RESTRICT { return 367 }
+
+nTypeId: nTypeSpecifier nAbstractDeclaratorOpt { return 368 }
+
+nAbstractDeclaratorOpt: /* empty */ { return 369 }
+                     | nAbstractDeclarator { return 370 }
+
+nAbstractDeclarator: TOK_STAR nCVQualifierSeqOpt nAbstractDeclaratorOpt { return 371 }
+                  | TOK_AND nCVQualifierSeqOpt nAbstractDeclaratorOpt { return 372 }
+                  | nPtrToMemberName TOK_STAR nCVQualifierSeqOpt nAbstractDeclaratorOpt { return 373 }
+                  | nDirectAbstractDeclarator { return 374 }
+                  | TOK_STAR nCVQualifierSeqOpt nAttributeSpecifier nCVQualAttrSeqOpt nAbstractDeclaratorOpt { return 375 }
+                  | nDirectAbstractDeclarator nAttributeSpecifierList { return 376 }
+
+nDirectAbstractDeclaratorOpt: /* empty */ { return 377 }
+                           | nDirectAbstractDeclarator { return 378 }
+
+nDirectAbstractDeclarator: nDirectAbstractDeclaratorOpt TOK_LPAREN nParameterDeclarationClause TOK_RPAREN nCVQualifierSeqOpt nExceptionSpecificationOpt { return 379 }
+                        | nDirectAbstractDeclaratorOpt TOK_LBRACKET nConstantExpressionOpt TOK_RBRACKET { return 380 }
+                        | TOK_LPAREN nAbstractDeclarator TOK_RPAREN { return 381 }
+                        | nDirectAbstractDeclaratorOpt TOK_LBRACKET nCVQualifierSeq TOK_RBRACKET { return 382 }
+                        | TOK_LPAREN nAttributeSpecifierList nAbstractDeclarator TOK_RPAREN { return 383 }
+
+nParameterDeclarationClause: nParameterDeclarationList { return 384 }
+                          | /* empty */ { return 385 }
+
+nParameterDeclarationList: TOK_ELLIPSIS { return 386 }
+                        | nParameterDeclaration TOK_ELLIPSIS { return 387 }
+                        | nParameterDeclaration { return 388 }
+                        | nParameterDeclaration TOK_COMMA nParameterDeclarationList { return 389 }
+
+nParameterDeclaration: nTypeSpecifier nParameterDeclarator { return 390 }
+                    | TOK_REGISTER nTypeSpecifier nParameterDeclarator { return 391 }
+                    | nTypeSpecifier TOK_REGISTER nParameterDeclarator { return 392 }
+                    | nUnqualifiedDeclarator { return 393 }
+                    | TOK_REGISTER nUnqualifiedDeclarator { return 394 }
+
+nParameterDeclarator: nUnqualifiedDeclarator { return 395 }
+                   | nUnqualifiedDeclarator TOK_EQUAL nAssignmentExpression { return 396 }
+                   | nAbstractDeclaratorOpt { return 397 }
+                   | nAbstractDeclaratorOpt TOK_EQUAL nAssignmentExpression { return 398 }
+
+nFunctionDefinition: nDeclSpecifier nFDDeclarator nFunctionBody { return 399 }
+                  | nDeclSpecifier nFDDeclarator TOK_TRY nFunctionBody nHandlerSeq { return 400 }
+                  | nCDtorModifierSeq nFDDeclarator nCtorInitializerOpt nFunctionBody { return 401 }
+                  | nFDDeclarator nCtorInitializerOpt nFunctionBody { return 402 }
+                  | nCDtorModifierSeq nFDDeclarator TOK_TRY nCtorInitializerOpt nFunctionBody nHandlerSeq { return 403 }
+                  | nFDDeclarator TOK_TRY nCtorInitializerOpt nFunctionBody nHandlerSeq { return 404 }
+
+nFDDeclarator: nDeclarator { return 405 }
+
+nFunctionBody: nCompoundStatement { return 406 }
+
+nCtorInitializerOpt: /* empty */ { return 407 }
+                  | TOK_COLON nMemInitializerList { return 408 }
+
+nClassSpecifier: nClassKey nClassHeadNameOpt nBaseClauseOpt TOK_LBRACE nMemberDeclarationSeqOpt TOK_RBRACE { return 409 }
+              | nClassKey nAttributeSpecifierList nClassHeadNameOpt nBaseClauseOpt TOK_LBRACE nMemberDeclarationSeqOpt TOK_RBRACE { return 410 }
+
+nClassHeadNameOpt: /* empty */ { return 411 }
+                | nClassHeadName { return 412 }
+
+nClassHeadName: nIdentifier { return 413 }
+             | nTemplateId { return 414 }
+             | nIdentifier TOK_COLONCOLON nClassHeadName { return 415 }
+             | nIdentifier TOK_LESSTHAN nTemplateArgumentListOpt TOK_GREATERTHAN TOK_COLONCOLON nClassHeadName { return 416 }
+             | TOK_TEMPLATE nIdentifier TOK_LESSTHAN nTemplateArgumentListOpt TOK_GREATERTHAN TOK_COLONCOLON nClassHeadName { return 417 }
+
+nClassKey: TOK_CLASS { return 418 }
+        | TOK_STRUCT { return 419 }
+        | TOK_UNION { return 420 }
+
+nMemberDeclarationSeqOpt: /* empty */ { return 421 }
+                       | nMemberDeclarationSeqOpt TOK_SEMICOLON { return 422 }
+                       | nMemberDeclarationSeqOpt nMemberDeclaration { return 423 }
+                       | nMemberDeclarationSeqOpt nAccessSpecifier TOK_COLON { return 424 }
+
+nAccessSpecifier: TOK_PUBLIC { return 425 }
+               | TOK_PRIVATE { return 426 }
+               | TOK_PROTECTED { return 427 }
+
+nMemberDeclaration: nDeclSpecifier nMemberDeclaratorList TOK_SEMICOLON { return 428 }
+                 | nDeclSpecifier TOK_SEMICOLON { return 429 }
+                 | nPQualifiedId TOK_SEMICOLON { return 430 }
+                 | TOK_USING nIdExpression TOK_SEMICOLON { return 431 }
+                 | nFunctionDefinition { return 432 }
+                 | nCDtorProtoDecl { return 433 }
+                 | nTemplateDeclaration { return 434 }
+
+nCDtorProtoDecl: nCDtorModifierSeq nMemberDeclarator TOK_SEMICOLON { return 435 }
+              | nMemberDeclarator TOK_SEMICOLON { return 436 }
+
+nMemberDeclaratorList: nMemberDeclarator { return 437 }
+                    | nMemberDeclarator TOK_COMMA nMemberDeclaratorList { return 438 }
+
+nMemberDeclarator: nDeclarator { return 439 }
+                | nDeclarator TOK_EQUAL nConstantExpression { return 440 }
+                | nIdentifierOpt TOK_COLON nConstantExpression { return 441 }
+                | nIdentifierOpt TOK_COLON nConstantExpression nAttributeSpecifierList { return 442 }
+
+nIdentifierOpt: /* empty */ { return 443 }
+             | nIdentifier { return 444 }
+
+nCDtorModifier: TOK_EXPLICIT { return 445 }
+             | TOK_VIRTUAL { return 446 }
+             | TOK_INLINE { return 447 }
+             | TOK_FRIEND { return 448 }
+             | nAttributeSpecifier { return 449 }
+
+nCDtorModifierSeq: nCDtorModifier { return 450 }
+                | nCDtorModifierSeq nCDtorModifier { return 451 }
+
+nBaseClauseOpt: /* empty */ { return 452 }
+             | TOK_COLON nBaseSpecifierList { return 453 }
+
+nBaseSpecifierList: nBaseSpecifier { return 454 }
+                 | nBaseSpecifier TOK_COMMA nBaseSpecifierList { return 455 }
+
+nBaseSpecifier: nPQClassName { return 456 }
+             | TOK_VIRTUAL nAccessSpecifierOpt nPQClassName { return 457 }
+             | nAccessSpecifier nVirtualOpt nPQClassName { return 458 }
+
+nVirtualOpt: /* empty */ { return 459 }
+          | TOK_VIRTUAL { return 460 }
+
+nAccessSpecifierOpt: /* empty */ { return 461 }
+                  | nAccessSpecifier { return 462 }
+
+nPQClassName: nPQTypeName { return 463 }
+
+nConversionFunctionId: TOK_OPERATOR nConversionTypeId { return 464 }
+
+nConversionTypeId: nTypeSpecifier nConversionDeclaratorOpt { return 465 }
+
+nConversionDeclaratorOpt: /* empty */ { return 466 }
+                       | TOK_STAR nCVQualifierSeqOpt nConversionDeclaratorOpt { return 467 }
+                       | TOK_AND nCVQualifierSeqOpt nConversionDeclaratorOpt { return 468 }
+                       | nPtrToMemberName TOK_STAR nCVQualifierSeqOpt nConversionDeclaratorOpt { return 469 }
+
+nMemInitializerList: nMemInitializer { return 470 }
+                  | nMemInitializer TOK_COMMA nMemInitializerList { return 471 }
+
+nMemInitializer: nMemInitializerId TOK_LPAREN nExpressionListOpt TOK_RPAREN { return 472 }
+
+nMemInitializerId: nPQTypeName { return 473 }
+
+nOperatorFunctionId: TOK_OPERATOR nOperator { return 474 }
+
+nOperator: TOK_NEW { return 475 }
+        | TOK_DELETE { return 476 }
+        | TOK_NEW TOK_LBRACKET TOK_RBRACKET { return 477 }
+        | TOK_DELETE TOK_LBRACKET TOK_RBRACKET { return 478 }
+        | TOK_BANG { return 479 }
+        | TOK_TILDE { return 480 }
+        | TOK_PLUSPLUS { return 481 }
+        | TOK_MINUSMINUS { return 482 }
+        | TOK_PLUS { return 483 }
+        | TOK_MINUS { return 484 }
+        | TOK_STAR { return 485 }
+        | TOK_SLASH { return 486 }
+        | TOK_PERCENT { return 487 }
+        | TOK_LEFTSHIFT { return 488 }
+        | TOK_RIGHTSHIFT { return 489 }
+        | TOK_AND { return 490 }
+        | TOK_XOR { return 491 }
+        | TOK_OR { return 492 }
+        | TOK_EQUAL { return 493 }
+        | TOK_PLUSEQUAL { return 494 }
+        | TOK_MINUSEQUAL { return 495 }
+        | TOK_STAREQUAL { return 496 }
+        | TOK_SLASHEQUAL { return 497 }
+        | TOK_PERCENTEQUAL { return 498 }
+        | TOK_LEFTSHIFTEQUAL { return 499 }
+        | TOK_RIGHTSHIFTEQUAL { return 500 }
+        | TOK_ANDEQUAL { return 501 }
+        | TOK_XOREQUAL { return 502 }
+        | TOK_OREQUAL { return 503 }
+        | TOK_EQUALEQUAL { return 504 }
+        | TOK_NOTEQUAL { return 505 }
+        | TOK_LESSTHAN { return 506 }
+        | TOK_GREATERTHAN { return 507 }
+        | TOK_LESSEQ { return 508 }
+        | TOK_GREATEREQ { return 509 }
+        | TOK_ANDAND { return 510 }
+        | TOK_OROR { return 511 }
+        | TOK_ARROW { return 512 }
+        | TOK_ARROWSTAR { return 513 }
+        | TOK_LBRACKET TOK_RBRACKET { return 514 }
+        | TOK_LPAREN TOK_RPAREN { return 515 }
+        | TOK_COMMA { return 516 }
+        | TOK_MIN_OP { return 517 }
+        | TOK_MAX_OP { return 518 }
+
+nTemplateDeclaration: nTemplatePreamble nFunctionDefinition { return 519 }
+                   | nTemplatePreamble nSimpleDeclaration { return 520 }
+                   | nTemplatePreamble nTemplateDeclaration { return 521 }
+                   | nTemplatePreamble nCDtorProtoDecl { return 522 }
+
+nTemplatePreamble: TOK_TEMPLATE TOK_LESSTHAN nTemplateParameterList TOK_GREATERTHAN { return 523 }
+                | TOK_EXPORT TOK_TEMPLATE TOK_LESSTHAN nTemplateParameterList TOK_GREATERTHAN { return 524 }
+                | TOK_TEMPLATE TOK_LESSTHAN TOK_GREATERTHAN { return 525 }
+                | TOK_EXPORT TOK_TEMPLATE TOK_LESSTHAN TOK_GREATERTHAN { return 526 }
+
+nTemplateParameterList: nClassOrTypename nIdentifierOpt nDefaultTypeOpt nTemplateParameterListContinuation { return 527 }
+                     | nParameterDeclaration nTemplateParameterListContinuation { return 528 }
+                     | TOK_TEMPLATE TOK_LESSTHAN nTemplateParameterList TOK_GREATERTHAN TOK_CLASS nIdentifierOpt nDefaultTemplateOpt nTemplateParameterListContinuation { return 529 }
+
+nTemplateParameterListContinuation: /* empty */ { return 530 }
+                                 | TOK_COMMA nTemplateParameterList { return 531 }
+
+nClassOrTypename: TOK_CLASS { return 532 }
+               | TOK_TYPENAME { return 533 }
+
+nDefaultTypeOpt: /* empty */ { return 534 }
+              | TOK_EQUAL nTypeId { return 535 }
+
+nDefaultTemplateOpt: /* empty */ { return 536 }
+                  | TOK_EQUAL nIdExpression { return 537 }
+
+nTemplateArgumentListOpt: /* empty */ { return 538 }
+                       | nTemplateArgumentList { return 539 }
+
+nTemplateId: nIdentifier TOK_LESSTHAN nTemplateArgumentListOpt TOK_GREATERTHAN { return 540 }
+          | nOperatorFunctionId TOK_LESSTHAN nTemplateArgumentListOpt TOK_GREATERTHAN { return 541 }
+
+nTemplateArgumentList: nTemplateArgument { return 542 }
+
+nTemplateArgumentListTailOpt: /* empty */ { return 543 }
+                           | TOK_COMMA nTemplateArgument { return 544 }
+
+nTemplateArgument: nTypeId nTemplateArgumentListTailOpt { return 545 }
+                | nAssignmentExpression nTemplateArgumentListTailOpt { return 546 }
+
+nExplicitInstantiation: TOK_TEMPLATE nBlockDeclaration { return 547 }
+                     | TOK_INLINE TOK_TEMPLATE nBlockDeclaration { return 548 }
+                     | TOK_EXTERN TOK_TEMPLATE nBlockDeclaration { return 549 }
+
+nTryBlock: TOK_TRY nCompoundStatement nHandlerSeq { return 550 }
+
+nHandlerSeq: nHandler { return 551 }
+          | nHandler nHandlerSeq { return 552 }
+
+nHandler: TOK_CATCH TOK_LPAREN nHandlerParameter TOK_RPAREN nCompoundStatement { return 553 }
+       | TOK_CATCH TOK_LPAREN TOK_ELLIPSIS TOK_RPAREN nCompoundStatement { return 554 }
+
+nHandlerParameter: nTypeSpecifier nUnqualifiedDeclarator { return 555 }
+                | nTypeSpecifier nAbstractDeclaratorOpt { return 556 }
+
+nUnqualifiedDeclarator: nDeclarator { return 557 }
+
+nThrowExpression: TOK_THROW { return 558 }
+               | TOK_THROW nAssignmentExpression { return 559 }
+
+nExceptionSpecificationOpt: /* empty */ { return 560 }
+                         | TOK_THROW TOK_LPAREN TOK_RPAREN { return 561 }
+                         | TOK_THROW TOK_LPAREN nTypeIdList TOK_RPAREN { return 562 }
+
+nTypeIdList: nTypeId { return 563 }
+          | nTypeId TOK_COMMA nTypeIdList { return 564 }
+
+nNamespaceDefinition: TOK_NAMESPACE nIdentifierOpt TOK_LBRACE nTranslationUnit TOK_RBRACE { return 565 }
+                   | TOK_NAMESPACE nIdentifierOpt nAttributeSpecifierList TOK_LBRACE nTranslationUnit TOK_RBRACE { return 566 }
+
+nNamespaceDecl: TOK_NAMESPACE nIdentifier TOK_EQUAL nIdExpression TOK_SEMICOLON { return 567 }
+             | TOK_USING nIdExpression TOK_SEMICOLON { return 568 }
+             | TOK_USING TOK_NAMESPACE nIdExpression TOK_SEMICOLON { return 569 }
+             | TOK_USING TOK_NAMESPACE nIdExpression nAttributeSpecifierList TOK_SEMICOLON { return 570 }
+
+nAnnotationOpt: /* empty */ { return 571 }
+             | nAnnotationList { return 572 }
+
+nAnnotationList: TOK_ANNOTATION { return 573 }
+              | TOK_ANNOTATION nAnnotationList { return 574 }
+
+nNamesAfterDot: nNameAfterDot { return 575 }
+             | nNamesAfterDot TOK_DOT nNameAfterDot { return 576 }
+             | nNamesAfterDot TOK_LBRACKET nExpression TOK_RBRACKET { return 577 }
+
+nParenthesizedExpression: TOK_LPAREN nExpression TOK_RPAREN { return 578 }
+
+nLabeledEmptyStatementList: nLabelAndColon nLabeledEmptyStatementListOpt { return 579 }
+                         | TOK_CASE nConstantExpression TOK_COLON nLabeledEmptyStatementListOpt { return 580 }
+                         | TOK_CASE nConstantExpression TOK_ELLIPSIS nConstantExpression TOK_COLON nLabeledEmptyStatementListOpt { return 581 }
+                         | TOK_DEFAULT TOK_COLON nLabeledEmptyStatementListOpt { return 582 }
+
+nLabeledEmptyStatementListOpt: /* empty */ { return 583 }
+                            | nLabeledEmptyStatementList { return 584 }
+
+nTypeofTypeSpecifier: nTypeofExpr { return 585 }
+                   | nTypeofType { return 586 }
+
+nTypeofExpr: TOK___TYPEOF__ TOK_LPAREN nExpression TOK_RPAREN { return 587 }
+
+nTypeofType: TOK___TYPEOF__ TOK_LPAREN nTypeId TOK_RPAREN { return 588 }
+
+nBracketedWordOpt: /* empty */ { return 589 }
+                | TOK_LBRACKET nIdentifier TOK_RBRACKET { return 590 }
+
+nParenthesizedExpressionOpt: /* empty */ { return 591 }
+                          | TOK_LPAREN nExpression TOK_RPAREN { return 592 }
+
+nOpConstraint: nBracketedWordOpt nStringLiteral nParenthesizedExpressionOpt { return 593 }
+
+nOpConstraintList: /* empty */ { return 594 }
+                | nOpConstraint { return 595 }
+                | nOpConstraint TOK_COMMA nOpConstraintList { return 596 }
+
+nOpConstraints: /* empty */ { return 597 }
+             | nNonemptyOpConstraints { return 598 }
+
+nNonemptyOpConstraints: nOpConstraints TOK_COLON nOpConstraintList { return 599 }
+                     | nOpConstraints TOK_COLONCOLON nOpConstraintList { return 600 }
+
+nDesignatorList: nDesignator { return 601 }
+              | nDesignator nDesignatorList { return 602 }
+
+nDesignator: TOK_DOT nIdentifier { return 603 }
+          | TOK_LBRACKET nConstantExpression TOK_RBRACKET { return 604 }
+          | TOK_LBRACKET nConstantExpression TOK_ELLIPSIS nConstantExpression TOK_RBRACKET { return 605 }
+
+nBuggyGccTypeModifier: TOK_LONG { return 606 }
+                    | TOK_SHORT { return 607 }
+                    | TOK_SIGNED { return 608 }
+                    | TOK_UNSIGNED { return 609 }
+                    | TOK_LONG nBuggyGccTypeModifier { return 610 }
+                    | TOK_SHORT nBuggyGccTypeModifier { return 611 }
+                    | TOK_SIGNED nBuggyGccTypeModifier { return 612 }
+                    | TOK_UNSIGNED nBuggyGccTypeModifier { return 613 }
+
+nCVQualAttrSeqOpt: /* empty */ { return 614 }
+                | nCVQualAttrSeq { return 615 }
+
+nCVQualAttrSeq: nCVQualAttr { return 616 }
+             | nCVQualAttr nCVQualAttrSeq { return 617 }
+
+nCVQualAttr: nCVQualifier { return 618 }
+          | nAttributeSpecifier { return 619 }
+
+nAttributeWord: TOK_NAME { return 620 }
+             | TOK_ASM { return 621 }
+             | TOK_AUTO { return 622 }
+             | TOK_BREAK { return 623 }
+             | TOK_BOOL { return 624 }
+             | TOK_CASE { return 625 }
+             | TOK_CATCH { return 626 }
+             | TOK_CDECL { return 627 }
+             | TOK_CHAR { return 628 }
+             | TOK_CLASS { return 629 }
+             | TOK_CONST { return 630 }
+             | TOK_CONST_CAST { return 631 }
+             | TOK_CONTINUE { return 632 }
+             | TOK_DEFAULT { return 633 }
+             | TOK_DELETE { return 634 }
+             | TOK_DO { return 635 }
+             | TOK_DOUBLE { return 636 }
+             | TOK_DYNAMIC_CAST { return 637 }
+             | TOK_ELSE { return 638 }
+             | TOK_ENUM { return 639 }
+             | TOK_EXPLICIT { return 640 }
+             | TOK_EXPORT { return 641 }
+             | TOK_EXTERN { return 642 }
+             | TOK_FALSE { return 643 }
+             | TOK_FLOAT { return 644 }
+             | TOK_FOR { return 645 }
+             | TOK_FRIEND { return 646 }
+             | TOK_GOTO { return 647 }
+             | TOK_IF { return 648 }
+             | TOK_INLINE { return 649 }
+             | TOK_INT { return 650 }
+             | TOK_LONG { return 651 }
+             | TOK_MUTABLE { return 652 }
+             | TOK_NAMESPACE { return 653 }
+             | TOK_NEW { return 654 }
+             | TOK_OPERATOR { return 655 }
+             | TOK_PASCAL { return 656 }
+             | TOK_PRIVATE { return 657 }
+             | TOK_PROTECTED { return 658 }
+             | TOK_PUBLIC { return 659 }
+             | TOK_REGISTER { return 660 }
+             | TOK_REINTERPRET_CAST { return 661 }
+             | TOK_RETURN { return 662 }
+             | TOK_SHORT { return 663 }
+             | TOK_SIGNED { return 664 }
+             | TOK_SIZEOF { return 665 }
+             | TOK_STATIC { return 666 }
+             | TOK_STATIC_CAST { return 667 }
+             | TOK_STRUCT { return 668 }
+             | TOK_SWITCH { return 669 }
+             | TOK_TEMPLATE { return 670 }
+             | TOK_THIS { return 671 }
+             | TOK_THROW { return 672 }
+             | TOK_TRUE { return 673 }
+             | TOK_TRY { return 674 }
+             | TOK_TYPEDEF { return 675 }
+             | TOK_TYPEID { return 676 }
+             | TOK_TYPENAME { return 677 }
+             | TOK_UNION { return 678 }
+             | TOK_UNSIGNED { return 679 }
+             | TOK_USING { return 680 }
+             | TOK_VIRTUAL { return 681 }
+             | TOK_VOID { return 682 }
+             | TOK_VOLATILE { return 683 }
+             | TOK_WCHAR_T { return 684 }
+             | TOK_WHILE { return 685 }
+
+nCommaSepExpressionListOpt: /* empty */ { return 686 }
+                         | nExpressionList { return 687 }
+
+nAttributeParameters: nCommaSepExpressionListOpt { return 688 }
+
+nAttribute: /* empty */ { return 689 }
+         | nAttributeWord { return 690 }
+         | nAttributeWord TOK_LPAREN nAttributeParameters TOK_RPAREN { return 691 }
+
+nAttributeList: nAttribute { return 692 }
+             | nAttribute TOK_COMMA nAttributeList { return 693 }
+
+nAttributeSpecifier: TOK___ATTRIBUTE__ TOK_LPAREN TOK_LPAREN nAttributeList TOK_RPAREN TOK_RPAREN { return 694 }
+
+nAttributeSpecifierList: nAttributeSpecifier { return 695 }
+                      | nAttributeSpecifier nAttributeSpecifierList { return 696 }
+
+nKandRFunctionDefinition: nDeclSpecifier nKandRDeclarator nKandRSimpleDeclarationSeq nFunctionBody { return 697 }
+
+nKandRFunctionDefinition_implInt: nKandRDeclarator nKandRSimpleDeclarationSeq nFunctionBody { return 698 }
+                               | nUberModifierSeq nKandRDeclarator nKandRSimpleDeclarationSeq nFunctionBody { return 699 }
+
+nKandRSimpleDeclarationSeq: nKandRSimpleDeclaration { return 700 }
+                         | nKandRSimpleDeclarationSeq nKandRSimpleDeclaration { return 701 }
+
+nKandRSimpleDeclaration: nDeclSpecifier nKandRInitDeclaratorList TOK_SEMICOLON { return 702 }
+                      | TOK_REGISTER nKandRInitDeclaratorList TOK_SEMICOLON { return 703 }
+
+nKandRInitDeclaratorList: nKandRInitDeclarator { return 704 }
+                       | nKandRInitDeclarator TOK_COMMA nKandRInitDeclaratorList { return 705 }
+
+nKandRInitDeclarator: nDeclarator { return 706 }
+
+nKandRDeclarator: TOK_STAR nCVQualifierSeqOpt nKandRDeclarator { return 707 }
+               | nKandRDirectDeclarator { return 708 }
+
+nKandRDirectDeclarator: nKandRIdExpression TOK_LPAREN nKandRIdentifierList TOK_RPAREN { return 709 }
+                     | TOK_LPAREN nKandRIdExpression TOK_RPAREN TOK_LPAREN nKandRIdentifierList TOK_RPAREN { return 710 }
+                     | nKandRDirectDeclarator TOK_LPAREN nParameterDeclarationClause TOK_RPAREN { return 711 }
+                     | nKandRDirectDeclarator TOK_LBRACKET nConstantExpressionOpt TOK_RBRACKET { return 712 }
+                     | TOK_LPAREN nKandRDeclarator TOK_RPAREN { return 713 }
+
+nKandRIdExpression: nKandRIdentifier { return 714 }
+
+nKandRIdentifierList: nKandRIdentifier { return 715 }
+                   | nKandRIdentifier TOK_COMMA nKandRIdentifierList { return 716 }
+
+nKandRIdentifier: nIdentifier { return 717 }
+
+nCFuncModifier_no_inline: TOK_STATIC { return 718 }
+                       | TOK_EXTERN { return 719 }
+                       | TOK_CONST { return 720 }
+                       | TOK_VOLATILE { return 721 }
+
+nCFuncModifier: nCFuncModifier_no_inline { return 722 }
+             | TOK_INLINE { return 723 }
+
+nCFuncModifierSeq: nCFuncModifier { return 724 }
+                | nCFuncModifierSeq nCFuncModifier { return 725 }
+
+nCFuncModifierSeqOpt: /* empty */ { return 726 }
+                   | nCFuncModifier { return 727 }
+
+nImplIntFunctionDefinition: nCFuncModifier_no_inline nDeclarator nFunctionBody { return 728 }
+                         | nCFuncModifier_no_inline nCFuncModifierSeq nDeclarator nFunctionBody { return 729 }
+                         | TOK_INLINE nCFuncModifier_no_inline nCFuncModifierSeqOpt nDeclarator nFunctionBody { return 730 }
+
+nImplicitIntTypeSpecifier: nUberCVQualifierSeq { return 731 }
+
+nImplicitIntTypeId: nImplicitIntTypeSpecifier { return 732 }
+
