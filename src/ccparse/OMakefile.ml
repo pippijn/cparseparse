@@ -11,7 +11,6 @@ install Package ".DEFAULT" [
     "Factory";
     "Lexer";
     "Options";
-    "Parser";
   ];
 
   (* Library dependencies *)

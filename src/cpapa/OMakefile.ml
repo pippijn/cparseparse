@@ -5,11 +5,13 @@ install Program ".DEFAULT" [
   (* Sources *)
   Modules [
     "Cpapa";
+    "Parser";
   ];
 
   (* Library dependencies *)
   OCamlRequires [
-    "ccparse";
     "baselib";
+    "ccparse";
+    "glr";
   ];
 ]

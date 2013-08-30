@@ -30,7 +30,7 @@ let rec tokenise tokens token lexbuf =
 
 let lexer_from_list tokens =
   let tokens = ref tokens in
-  Glr.Lexerint.({ Parser.cc_lexer with
+  Lexerint.({ Parser.cc_lexer with
     token = (fun () ->
       let next = List.hd !tokens in
       tokens := List.tl !tokens;
@@ -48,7 +48,7 @@ let lexer_from_dump input =
 
 
 let lexer_from_lexing lexbuf =
-  Glr.Lexerint.({ Parser.cc_lexer with
+  Lexerint.({ Parser.cc_lexer with
     token = (fun () ->
       Lexer.token lexbuf
     )
@@ -97,7 +97,7 @@ let parse_file actions tables input =
 
   let lexer =
     if Options._ptree () then
-      Glr.PtreeActions.make_lexer actions lexer
+      PtreeActions.make_lexer actions lexer
     else
       lexer
   in
@@ -153,7 +153,7 @@ let elkmain inputs =
 
   if Options._ptree () then (
 
-    let actions = Glr.PtreeActions.make_actions actions tables in
+    let actions = PtreeActions.make_actions actions tables in
     let trees = parse_files actions tables inputs in
     List.iter (function
       | None -> ()
@@ -161,7 +161,7 @@ let elkmain inputs =
           if Options._print () then
             Printf.printf "@%d %s"
               (Obj.magic tree)
-              (Glr.PtreeNode.to_string tree true)
+              (PtreeNode.to_string tree true)
     ) trees
 
   ) else if Options._tptree () then (
@@ -192,7 +192,7 @@ let elkmain inputs =
 
   ) else if Options._trivial () then (
 
-    let actions = Glr.UserActions.make_trivial actions in
+    let actions = UserActions.make_trivial actions in
     let trees = parse_files actions tables inputs in
     List.iter (function None | Some () -> ()) trees
 

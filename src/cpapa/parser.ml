@@ -1,4 +1,7 @@
-let cc_lexer = Glr.Lexerint.({
+open Ccparse
+
+
+let cc_lexer = Lexerint.({
   token = (fun () -> CcTokens.TOK_EOF, Lexing.dummy_pos, Lexing.dummy_pos);
   index = (fun (t, s, e) -> CcTokens.index t);
   sval  = (fun (t, s, e) -> CcTokens.sval t);
@@ -40,7 +43,7 @@ let glrparse actions tables filename lexer =
   (* print accounting statistics from glr.ml *)
   if Glr.Options._accounting () then (
     let open Glr.Engine in
-    let stats = stats_of_glr glr in
+    let stats = stats glr in
 
     Printf.printf "stack nodes: num=%d max=%d\n"
       stats.numStackNodesAllocd

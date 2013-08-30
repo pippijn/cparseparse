@@ -2,7 +2,7 @@ open CorePervasives
 open Ccabs
 open Ast
 
-let cancel = Glr.Engine.cancel
+let cancel = UserActions.cancel
 
 
 (* make a D_func but not if it attempts to be the return value of
