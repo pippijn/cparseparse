@@ -1,6 +1,3 @@
-open Ccparse
-
-
 exception ExitStatus of int
 
 let handle_return = function
@@ -8,6 +5,7 @@ let handle_return = function
       ()
   | Unix.WEXITED status ->
       Printf.printf "child exited with status %d\n" status;
+      raise (ExitStatus status)
   | Unix.WSIGNALED signum ->
       Printf.printf "child was killed by signal %d\n" signum;
       raise (ExitStatus 1)
@@ -18,7 +16,7 @@ let handle_return = function
 
 let rec tokenise tokens token lexbuf =
   match token lexbuf with
-  | CcTokens.TOK_EOF, _, _ as next ->
+  | Ccparse.CcTokens.TOK_EOF, _, _ as next ->
       if false then (
         Printf.printf "%d tokens\n" (List.length tokens);
         flush stdout;
@@ -50,7 +48,7 @@ let lexer_from_dump input =
 let lexer_from_lexing lexbuf =
   Lexerint.({ Parser.cc_lexer with
     token = (fun () ->
-      Lexer.token lexbuf
+      Ccparse.Lexer.token lexbuf
     )
   })
 
@@ -64,7 +62,7 @@ let lexer_from_file input =
   let lexer =
     if Options._pp () then (
       let tokens =
-        Timing.time ~alloc:true "lexing" (tokenise [] Lexer.token) lexbuf
+        Timing.time ~alloc:true "lexing" (tokenise [] Ccparse.Lexer.token) lexbuf
       in
 
       if Options._dump_toks () then (
@@ -138,18 +136,18 @@ let parse_files actions tables files =
 
 
 let print_tptree tree =
-  Sexplib.Sexp.output_hum stdout (CcPtree.Ptree.sexp_of_t tree);
+  Sexplib.Sexp.output_hum stdout (Ccparse.CcPtree.Ptree.sexp_of_t tree);
   print_newline ()
 
 
 let print_treematch tree =
-  Sexplib.Sexp.output_hum stdout (CcTreematch.Ptree.sexp_of_t tree);
+  Sexplib.Sexp.output_hum stdout (Ccparse.CcTreematch.Ptree.sexp_of_t tree);
   print_newline ()
 
 
 let elkmain inputs =
-  let actions = CcActions.userActions in
-  let tables  = CcTables.parseTables in
+  let actions = Ccparse.CcActions.userActions in
+  let tables  = Ccparse.CcTables.parseTables in
 
   if Options._ptree () then (
 
@@ -166,7 +164,7 @@ let elkmain inputs =
 
   ) else if Options._tptree () then (
 
-    let actions = CcPtreeActions.userActions in
+    let actions = Ccparse.CcPtreeActions.userActions in
     let trees = parse_files actions tables inputs in
     if Options._print () then
       List.iter (function
@@ -180,7 +178,7 @@ let elkmain inputs =
 
   ) else if Options._treematch () then (
 
-    let actions = CcTreematchActions.userActions in
+    let actions = Ccparse.CcTreematchActions.userActions in
     let trees = parse_files actions tables inputs in
     if Options._print () then
       List.iter (function
