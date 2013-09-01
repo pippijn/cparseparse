@@ -18,6 +18,6 @@ yyerror (YYLTYPE *loc, char const *msg)
 int
 main ()
 {
-  yydebug = 1;
+  yydebug = 0;
   yyparse ();
 }
