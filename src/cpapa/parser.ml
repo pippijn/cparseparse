@@ -14,7 +14,7 @@ let glrparse actions tables filename lexer =
 
   let tree =
     try
-      Some (Timing.time ~alloc:true "parsing" (Glr.Engine.parse glr) lexer)
+      Some (Timing.time ~alloc:true "parsing" (Glr.Engine.parse glr) lexer ())
     with Glr.Engine.Located ((start_p, end_p), e, extra) ->
       let open Lexing in
       (* print source position *)
