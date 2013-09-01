@@ -1,6 +1,6 @@
 install Program ".DEFAULT" [
   (* Target *)
-  Name		"ccbison";
+  Name		"cpapa-bison";
 
   Sources [
     "lexer.l";

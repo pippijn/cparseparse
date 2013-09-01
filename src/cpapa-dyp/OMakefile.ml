@@ -1,6 +1,6 @@
 install Program ".DEFAULT" [
   (* Target *)
-  Name		"ccdyp";
+  Name		"cpapa-dyp";
 
   (* Sources *)
   Modules [
