@@ -6,7 +6,6 @@ install Program ".DEFAULT" [
   Modules [
     "Cpapa";
     "Options";
-    "Parser";
   ];
 
   (* Library dependencies *)

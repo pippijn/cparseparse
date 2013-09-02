@@ -16,8 +16,14 @@ yyerror (YYLTYPE *loc, char const *msg)
 }
 
 int
-main ()
+main (int argc, char **argv)
 {
+  extern FILE *yyin;
+  int result;
+
+  if (argc > 1)
+    yyin = fopen (argv[1], "r");
+
   yydebug = 0;
   yyparse ();
 }

@@ -12,4 +12,6 @@ install Program ".DEFAULT" [
     "main.h";
     "parser.h";
   ];
+
+  Var ("OM_CFLAGS", "-O2");
 ]
