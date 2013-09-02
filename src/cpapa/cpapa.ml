@@ -13,7 +13,7 @@ module Parser = Glr.Frontend.Make
     type lexbuf = Lexing.lexbuf
     type token = CcTokens.t
 
-    let from_channel = Lexing.from_channel
+    let from_channel file = Lexing.from_channel
     let token = Lexer.token
 
   end)
