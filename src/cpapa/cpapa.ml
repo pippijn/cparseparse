@@ -1,22 +1,36 @@
 module Parser = Glr.Frontend.Make
-  (Ccparse.CcActions)
-  (Ccparse.CcTables)
-  (Ccparse.CcPtree)
-  (Ccparse.CcPtreeActions)
-  (Ccparse.CcTreematch)
-  (Ccparse.CcTreematchActions)
-  (Ccparse.CcTokens)
+  (CcActions)
+  (CcTables)
+  (CcPtree)
+  (CcPtreeActions)
+  (CcTreematch)
+  (CcTreematchActions)
+  (CcTokens)
   (struct
-
-    open Ccparse
 
     type lexbuf = Lexing.lexbuf
     type token = CcTokens.t
 
     let from_channel file = Lexing.from_channel
-    let token = Lexer.token
+    let token = CcLexer.token
 
   end)
+
+
+module Options = struct
+
+  let _rt		= ref false
+
+
+  let () =
+    Cmdline.register "cpapa" Arg.([
+      "-rt",		Set _rt,		" set real-time scheduling policy with highest priority";
+    ])
+
+
+  let _rt		() = !_rt
+
+end
 
 
 let main inputs =

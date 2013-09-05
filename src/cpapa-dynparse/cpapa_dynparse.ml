@@ -1,5 +1,4 @@
 module Parser = struct
-  open Ccparse
 
   let make_lexer token = Lexerint.({
     token;
@@ -11,7 +10,7 @@ module Parser = struct
   let parse_string code =
     let lexbuf = Lexing.from_string code in
 
-    let lexer = make_lexer Lexer.token in
+    let lexer = make_lexer CcLexer.token in
 
     let glr = Glr.Engine.create CcActions.userActions CcTables.parseTables in
 

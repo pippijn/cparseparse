@@ -900,7 +900,7 @@ nonterm ForInitStatement {
   (* ambiguous:
    *   x * y = z
    * could be an expression or a declaration *)
-  fun merge(l,r) { unimplemented 203 }
+  fun merge(l,r) { S_ambig (l, r) }
 
   -> s:ExpressionStatement	[Expr]	{ s }
   -> s:SimpleDeclaration	[Decl]	{ S_decl (s) }
@@ -2301,9 +2301,9 @@ nonterm TemplatePreamble {
 
   (* template declaration *)
   -> "template" "<" plist:TemplateParameterList ">"
-	[Template] { plist }
+	[Template] { Some plist }
   -> "export" "template" "<" plist:TemplateParameterList ">"
-	[ExportTemplate] { plist }
+	[ExportTemplate] { Some plist }
 
   (* explicit specialisation *)
   -> "template" "<" ">"
@@ -2315,12 +2315,12 @@ nonterm TemplatePreamble {
 nonterm TemplateParameterList {
   (* unfortunately, while we can record an ambiguous template parameter
    * list, we do not currently disambiguate it properly; see in/t0465.cc *)
-  fun merge(l,r) { Factory.merge_template_parameter_list l r }
+  fun merge(l,r) { TP_ambig (l, r) }
 
   (* non-template type parameter *)
   -> next:TemplateParameterListContinuation
      ClassOrTypename i:IdentifierOpt t:DefaultTypeOpt
-	[TyParam] { Some (TP_type (i, t, next))  }
+	[TyParam] { TP_type (i, t, next)  }
 
   (* non-type parameter *)
   -> next:TemplateParameterListContinuation
@@ -2332,13 +2332,13 @@ nonterm TemplateParameterList {
 	  if Query.can_be_type_param (Query.spec_of_type_id p) then
 	    cancel "template parameter can be type param"
 	  else
-	    Some (TP_nontype (p, next))
+	    TP_nontype (p, next)
 	}
 
   (* template type parameter *)
   -> next:TemplateParameterListContinuation
      "template" "<" pl:TemplateParameterList ">" "class" i:IdentifierOpt t:DefaultTemplateOpt
-	[TemplTyParam] { unimplemented 1231 }
+	[TemplTyParam] { TP_template (pl, i, t, next) }
 }
 
 (* what comes after a template paramter: nothing, or else
@@ -2351,7 +2351,7 @@ nonterm TemplateParameterListContinuation {
 
   (* non-template type parameter *)
   -> l:TemplateParameterList ","
-	[Some] { l }
+	[Some] { Some l }
 }
 
 nonterm ClassOrTypename {

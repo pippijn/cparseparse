@@ -6,83 +6,6 @@ type linkage_type = string with sexp
 type string_literal = string list with sexp (* non-empty *)
 
 
-type modifier = [
-    (* decl flags *)
-  | `UM_AUTO
-  | `UM_REGISTER
-  | `UM_STATIC
-  | `UM_EXTERN
-  | `UM_MUTABLE
-  | `UM_INLINE
-  | `UM_VIRTUAL
-  | `UM_EXPLICIT
-  | `UM_FRIEND
-  | `UM_TYPEDEF
-
-    (* cv-qualifier *)
-  | `UM_CONST
-  | `UM_VOLATILE
-  | `UM_RESTRICT
-
-    (* type keywords *)
-  | `UM_WCHAR_T
-  | `UM_BOOL
-  | `UM_SHORT
-  | `UM_INT
-  | `UM_LONG
-  | `UM_SIGNED
-  | `UM_UNSIGNED
-  | `UM_FLOAT
-  | `UM_DOUBLE
-  | `UM_VOID
-  | `UM_CHAR
-  | `UM_COMPLEX
-  | `UM_IMAGINARY
-] with sexp
-type modifiers = modifier list with sexp
-
-
-type type_flag = [
-  | `UM_WCHAR_T
-  | `UM_BOOL
-  | `UM_SHORT
-  | `UM_INT
-  | `UM_LONG
-  | `UM_SIGNED
-  | `UM_UNSIGNED
-  | `UM_FLOAT
-  | `UM_DOUBLE
-  | `UM_VOID
-  | `UM_CHAR
-  | `UM_COMPLEX
-  | `UM_IMAGINARY
-] with sexp
-type type_flags = type_flag list with sexp
-
-
-type cv_flag = [
-  | `UM_CONST
-  | `UM_VOLATILE
-  | `UM_RESTRICT
-] with sexp
-type cv_flags = cv_flag list with sexp
-
-
-type decl_flag = [
-  | `UM_AUTO
-  | `UM_REGISTER
-  | `UM_STATIC
-  | `UM_EXTERN
-  | `UM_MUTABLE
-  | `UM_INLINE
-  | `UM_VIRTUAL
-  | `UM_EXPLICIT
-  | `UM_FRIEND
-  | `UM_TYPEDEF
-] with sexp
-type decl_flags = decl_flag list with sexp
-
-
 type simple_type_id =
   | ST_Char
   | ST_UChar
@@ -90,6 +13,9 @@ type simple_type_id =
 
   | ST_SInt
   | ST_UInt
+
+  | ST_SIntN of int
+  | ST_UIntN of int
 
   | ST_SLong
   | ST_ULong
@@ -655,7 +581,7 @@ and template_parameter =
   (* non-type parameters *)
   | TP_nontype of (*param*)type_id * (*next*)template_parameter_list
   (* template template parameter *)
-  | TP_template of (*parameters*)template_parameter list
+  | TP_template of (*parameters*)template_parameter
   		 * (*name*)string option
                  * (*defaultTemplate*)pq_name option
                  * (*next*)template_parameter_list
@@ -724,7 +650,7 @@ and attribute =
 
 
 (* ----------- gcc typeof ----------- *)
-(* types denoted with 'typeof' keyword *)
+(* types denoted with 'typeof' keyword, also used for decltype *)
 and typeof =
   | TO_ambig of typeof * typeof
   | TO_expr of (*expr*)full_expression
@@ -732,5 +658,90 @@ and typeof =
 
 
 (* ----------- END OF AST ----------- *)
+and modifier = [
+  (* decl flags *)
+  | `UM_AUTO
+  | `UM_REGISTER
+  | `UM_STATIC
+  | `UM_EXTERN
+  | `UM_MUTABLE
+  | `UM_INLINE
+  | `UM_VIRTUAL
+  | `UM_EXPLICIT
+  | `UM_FRIEND
+  | `UM_TYPEDEF
+
+  (* cv-qualifier *)
+  | `UM_CONST
+  | `UM_VOLATILE
+  | `UM_RESTRICT
+
+  (* type keywords *)
+  | `UM_WCHAR_T
+  | `UM_BOOL
+  | `UM_SHORT
+  | `UM_INT
+  | `UM_LONG
+  | `UM_SIGNED
+  | `UM_UNSIGNED
+  | `UM_FLOAT
+  | `UM_DOUBLE
+  | `UM_VOID
+  | `UM_CHAR
+  | `UM_COMPLEX
+  | `UM_IMAGINARY
+  (* special __int128 and such *)
+  | `UM_INT_N of int
+
+  (* GCC Attributes *)
+  | `UM_ATTRIB of attribute list
+]
+and modifiers = modifier list
+
+
+and type_flag = [
+  | `UM_WCHAR_T
+  | `UM_BOOL
+  | `UM_SHORT
+  | `UM_INT
+  | `UM_LONG
+  | `UM_SIGNED
+  | `UM_UNSIGNED
+  | `UM_FLOAT
+  | `UM_DOUBLE
+  | `UM_VOID
+  | `UM_CHAR
+  | `UM_COMPLEX
+  | `UM_IMAGINARY
+  | `UM_INT_N of int
+]
+and type_flags = type_flag list
+
+
+and cv_flag = [
+  | `UM_CONST
+  | `UM_VOLATILE
+  | `UM_RESTRICT
+  | `UM_ATTRIB of attribute list
+]
+and cv_flags = cv_flag list
+
+
+and decl_flag = [
+  | `UM_AUTO
+  | `UM_REGISTER
+  | `UM_STATIC
+  | `UM_EXTERN
+  | `UM_MUTABLE
+  | `UM_INLINE
+  | `UM_VIRTUAL
+  | `UM_EXPLICIT
+  | `UM_FRIEND
+  | `UM_TYPEDEF
+  | `UM_ATTRIB of attribute list
+]
+and decl_flags = decl_flag list
+
+
   (* all of the above gets sexp *)
   with sexp

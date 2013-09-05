@@ -9,6 +9,7 @@ let types_of_modifiers mods : type_flags =
     | `UM_BOOL
     | `UM_SHORT
     | `UM_INT
+    | `UM_INT_N _
     | `UM_LONG
     | `UM_SIGNED
     | `UM_UNSIGNED
@@ -39,7 +40,8 @@ let dflags_of_modifiers mods : decl_flags =
     | `UM_VIRTUAL
     | `UM_EXPLICIT
     | `UM_FRIEND
-    | `UM_TYPEDEF as hd) :: tl ->
+    | `UM_TYPEDEF
+    | `UM_ATTRIB _ as hd) :: tl ->
         filter_dflags (hd :: flags) tl
     | hd :: tl ->
         filter_dflags flags tl
@@ -54,7 +56,8 @@ let cv_of_modifiers mods : cv_flags =
     | [] -> flags
     |(`UM_CONST
     | `UM_VOLATILE
-    | `UM_RESTRICT as hd) :: tl ->
+    | `UM_RESTRICT
+    | `UM_ATTRIB _ as hd) :: tl ->
         filter_cv (hd :: flags) tl
     | hd :: tl ->
         filter_cv flags tl
@@ -73,20 +76,21 @@ let modifier_compare a b =
     (* Modifiable types. *)
     | `UM_CHAR		->  3
     | `UM_INT		->  4
-    | `UM_FLOAT		->  5
-    | `UM_DOUBLE	->  6
+    | `UM_INT_N _	->  5
+    | `UM_FLOAT		->  6
+    | `UM_DOUBLE	->  7
 
     (* Modifiers for int/double. *)
-    | `UM_SHORT		->  7
-    | `UM_LONG		->  8
+    | `UM_SHORT		->  8
+    | `UM_LONG		->  9
 
     (* Signedness for char/int. *)
-    | `UM_SIGNED	->  9
-    | `UM_UNSIGNED	-> 10
+    | `UM_SIGNED	-> 10
+    | `UM_UNSIGNED	-> 11
 
     (* Modifiers for char/int/float/double. *)
-    | `UM_COMPLEX	-> 11
-    | `UM_IMAGINARY	-> 12
+    | `UM_COMPLEX	-> 12
+    | `UM_IMAGINARY	-> 13
   in
 
   compare
@@ -97,14 +101,22 @@ let modifier_compare a b =
 let stype_of_modifiers mods =
   (* implement cppstd Table 7, p.109 *)
   match List.sort modifier_compare (types_of_modifiers mods) with
-  (* Base type		Modifier		Signedness *)
+  (* Base type		Modifier		Signed/Complex *)
   | [`UM_VOID;							] -> ST_Void
 
   | [`UM_BOOL;							] -> ST_Bool
   | [`UM_WCHAR_T;						] -> ST_WCharT
 
+  | [`UM_FLOAT;					`UM_COMPLEX;	] -> ST_CFloat
+  | [`UM_DOUBLE;				`UM_COMPLEX;	] -> ST_CDouble
+  | [`UM_DOUBLE;	`UM_LONG;		`UM_COMPLEX;	] -> ST_CLDouble
+
+  | [`UM_FLOAT;					`UM_IMAGINARY;	] -> ST_IFloat
+  | [`UM_DOUBLE;				`UM_IMAGINARY;	] -> ST_IDouble
+  | [`UM_DOUBLE;	`UM_LONG;		`UM_IMAGINARY;	] -> ST_ILDouble
+
   | [`UM_FLOAT;							] -> ST_Float
-  | [`UM_DOUBLE							] -> ST_Double
+  | [`UM_DOUBLE;						] -> ST_Double
   | [`UM_DOUBLE;	`UM_LONG;				] -> ST_LDouble
 
   | [`UM_CHAR;							] -> ST_Char
@@ -116,6 +128,10 @@ let stype_of_modifiers mods =
   | [`UM_INT;					`UM_SIGNED;	] -> ST_SInt
   | [						`UM_UNSIGNED;	]
   | [`UM_INT;					`UM_UNSIGNED;	] -> ST_UInt
+
+  | [`UM_INT_N n;						]
+  | [`UM_INT_N n;				`UM_SIGNED;	] -> ST_SIntN n
+  | [`UM_INT_N n;				`UM_UNSIGNED;	] -> ST_UIntN n
 
   | [			`UM_SHORT;				]
   | [`UM_INT;		`UM_SHORT;				]
@@ -140,7 +156,7 @@ let stype_of_modifiers mods =
 
   | mods ->
       let mods = Sexplib.Sexp.to_string_hum (sexp_of_modifiers mods) in
-      failwith ("Malformed type: " ^ mods)
+      failwith ("malformed type: " ^ mods)
 
 
 (* TODO: check whether ocv is ever something other than [] *)

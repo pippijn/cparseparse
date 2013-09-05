@@ -6,9 +6,28 @@ option reduce_reduce_conflicts 18;
 (* decltype *)
 nonterm DeclSpecifier {
   -> te:DecltypeTypeSpecifier m2:UberModifierSeqOpt 
-	[Decltype] { unimplemented 1011 }
+	[Decltype] {
+	  let m = m2 in
+	  {
+	    dflags = Flags.dflags_of_modifiers m;
+	    spec = TS_typeof (
+	      Flags.cv_of_modifiers m,
+	      te);
+	    decllist = [];
+	  }
+	}
+
   -> m1:UberModifierSeq te:DecltypeTypeSpecifier m2:UberModifierSeqOpt
-	[ModDecltype] { unimplemented 1012 }
+	[ModDecltype] {
+	  let m = m1 @ m2 in
+	  {
+	    dflags = Flags.dflags_of_modifiers m;
+	    spec = TS_typeof (
+	      Flags.cv_of_modifiers m,
+	      te);
+	    decllist = [];
+	  }
+	}
 }
 
 
@@ -21,21 +40,20 @@ nonterm TypeSpecifier {
 
 
 nonterm DecltypeTypeSpecifier {
-  fun merge(l,r) { unimplemented 1017 }
+  fun merge(l,r) { TO_ambig (l, r) }
 
-  -> e:DecltypeExpr	[DeclTypeExpr]	{ unimplemented 1015 }
-  -> t:DecltypeType	[DeclTypeType]	{ unimplemented 1016 }
+  -> e:DecltypeExpr	[DeclTypeExpr]	{ TO_expr (e) }
+  -> t:DecltypeType	[DeclTypeType]	{ TO_type (t) }
 }
 
 
 nonterm DecltypeExpr {
   -> "decltype" "(" e:Expression ")"
-	{ unimplemented 1018 }
+	{ FullExpression (e) }
 }
 
 nonterm DecltypeType {
-  -> "decltype" "(" t:TypeId ")"
-	{ unimplemented 1019 }
+  -> "decltype" "(" t:TypeId ")";
 }
 
 
@@ -93,11 +111,30 @@ nonterm TemplateParameterList {
 	[VariadicTemplate] { unimplemented 1026 }
 }
 
-nonterm TemplateArgumentList {
-  -> next:TemplateArgumentListContinuation
-     typeid:TypeId "..."
+nonterm TypeSpecifier {
+  -> base:TypeSpecifier "..."
 	[UnpackVarArg] { unimplemented 511 }
 }
+
+nonterm PrimaryExpression {
+  -> e:PrimaryExpression "..."
+	[UnpackVarArg] { unimplemented 513 }
+}
+
+nonterm UnaryExpression {
+  (* size of expression *)
+  -> "sizeof" "..." e:UnaryExpression	[VarargSizeofExpr]	{ E_sizeofExpr (e) }
+  (* size of type *)
+  -> "sizeof" "..." "(" t:TypeId ")"	[VarargSizeofType]	{ E_sizeofType (t) }
+}
+
+(* Initialiser lists. *)
+(*
+nonterm PrimaryExpression {
+  -> i:CompoundInitialiser
+	[InitialiserList] { unimplemented 512 }
+}
+*)
 
 (* rvalue references *)
 (*

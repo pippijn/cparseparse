@@ -1,4 +1,5 @@
 // Comment 1
+//
 /* Comment 2 */
 #define FOO 0
 #define BAR

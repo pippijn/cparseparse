@@ -1,4 +1,4 @@
-install Package ".DEFAULT" [
+install Library ".DEFAULT" [
   (* Target *)
   Name		"ccparse";
   Description	"C++ Parser";
@@ -6,10 +6,10 @@ install Package ".DEFAULT" [
 
   (* Sources *)
   Modules [
-    "Cc_keywords";
+    "CcLexer";
     "CcTerminals";
+    "Cc_keywords";
     "Factory";
-    "Lexer";
     "Options";
   ];
 
@@ -21,8 +21,8 @@ install Package ".DEFAULT" [
   Grammars [
     "gr/c++1998.gr";
     "gr/c++2011.gr";
-    "gr/kandr.gr";
     "gr/gnu.gr";
+    "gr/kandr.gr";
   ];
 
   Tokens [

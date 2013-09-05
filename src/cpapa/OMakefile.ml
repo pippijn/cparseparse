@@ -5,7 +5,6 @@ install Program ".DEFAULT" [
   (* Sources *)
   Modules [
     "Cpapa";
-    "Options";
   ];
 
   (* Library dependencies *)

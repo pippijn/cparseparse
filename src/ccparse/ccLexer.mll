@@ -114,6 +114,7 @@ rule token = parse
 | "/*" ([^ '*'] | "*" [^ '/'])* "*/"				{ token lexbuf }
 
 (* identifier *)
+| "__int" (d+ as n)						{ return lexbuf (TOK_INT_N (int_of_string n)) }
 | identifier as id						{ return lexbuf (classify id) }
 
 (* integers *)

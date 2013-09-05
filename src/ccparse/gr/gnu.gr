@@ -39,6 +39,8 @@ option reduce_reduce_conflicts 125;
 
 
 terminals {
+  token(int) TOK_INT_N;
+
   precedence {
     (* see note at end regarding implementation of __attribute__ *)
     prec  190 "__attribute__" "restrict";
@@ -141,11 +143,6 @@ nonterm ConditionalExpression {
 nonterm Statement {
   -> f:FunctionDefinition
 	[NestedFunc] { unimplemented 558 }
-  (* quarl 2006-06-15
-   *	nested K&R functions; unimplemented for now but I guess we just need
-   *	to do the same as above?  see in/gnu/k0010.c *)
-  -> k:KandRFunctionDefinition
-	[NestedKandRFunc] { unimplemented 559 }
 }
 
 
@@ -500,8 +497,8 @@ nonterm Statement {
 (* http://gcc.gnu.org/onlinedocs/gcc-3.1/gcc/Complex.html *)
 (* C99 6.2.5p11, 6.7.2, Annex G *)
 nonterm SimpleTypeSpecifier {
-  -> "_Complex"      [Complex] { unimplemented 606 }
-  -> "_Imaginary"    [Imaginary] { unimplemented 607 }
+  -> "_Complex"		[Complex]	{ `UM_COMPLEX }
+  -> "_Imaginary"	[Imaginary]	{ `UM_IMAGINARY }
 }
 
 (* The gcc manual says the syntax is "__real__" Expression, but I'll
@@ -513,9 +510,9 @@ nonterm SimpleTypeSpecifier {
  * in that these are component accesses. *)
 nonterm PrimaryExpression {
   -> "__real__" e:PrimaryExpression
-	[Real] { unimplemented 608 }
+	[Real] { E_fieldAcc (e, PQ_name "__real__") }
   -> "__imag__" e:PrimaryExpression
-	[Imag] { unimplemented 609 }
+	[Imag] { E_fieldAcc (e, PQ_name "__imag__") }
 }
 
 
@@ -582,11 +579,11 @@ nonterm EnumSpecifier {
  * no arguments, you could get by with a new UberModifier flag and
  * associated DeclFlag. *)
 nonterm(modifier) UberModifier {
-  -> AttributeSpecifier      [Attr]	{ unimplemented 617 }
+  -> attr:AttributeSpecifier	[Attr]	{ `UM_ATTRIB attr }
 }
 
 nonterm(cv_flag) UberCVQualifier {
-  -> AttributeSpecifier      [Attr]	{ failwith "unimplemented 618" }
+  -> attr:AttributeSpecifier	[Attr]	{ `UM_ATTRIB attr }
 }
 
 
@@ -665,7 +662,7 @@ nonterm MemberDeclarator {
 (* dsw: from Taras Glek, tglek at mozilla dot com *)
 nonterm CDtorModifier {
  -> attr:AttributeSpecifier
-	[Attr] { unimplemented 633 }
+	[Attr] { `UM_ATTRIB attr }
 }
 
 (* 2007-09-15: This is in the gcc-4.2.1 headers. *)
@@ -806,6 +803,11 @@ nonterm AttributeSpecifierList {
 nonterm NamespaceDecl {
   -> "using" "namespace" n:IdExpression AttributeSpecifierList ";"
 	[UsingDeclAttr] { unimplemented 712 }
+}
+
+nonterm SimpleTypeSpecifier {
+  -> n:TOK_INT_N
+	[IntN]	{ `UM_INT_N n }
 }
 
 
