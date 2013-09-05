@@ -54,7 +54,7 @@ terminals {
 (* http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Statement-Exprs.html *)
 nonterm PrimaryExpression {
   -> "(" cs:CompoundStatement ")"
-	[Statement] { unimplemented 538 }
+	[Statement] { E_statement (cs) }
 }
 
 
@@ -67,7 +67,7 @@ nonterm PrimaryExpression {
  * which would assign x=4 and y=5 in 'myfoo' *)
 nonterm PrimaryExpression {
   -> "(" t:TypeId ")" i:CompoundInitialiser
-	[CompoundLiteral] { unimplemented 539 }
+	[CompoundLiteral] { E_compoundLit (t, i) }
 }
 
 
@@ -77,8 +77,8 @@ nonterm PreprocString {
   (* slightly subtle: ordinary strings are yielded *with quotes*,
    * whereas these special guys are not quoted; also note that
    * yielding of these token codes depends on lang.gccFuncBehavior *)
-  -> TOK___FUNCTION__		[FuncString] { unimplemented 540 }
-  -> TOK___PRETTY_FUNCTION__	[PrettyFuncString] { unimplemented 541 }
+  -> TOK___FUNCTION__		[FuncString] { "__FUNCTION__" }
+  -> TOK___PRETTY_FUNCTION__	[PrettyFuncString] { "__PRETTY_FUNCTION__" }
 }
 
 (* dmandelin@mozilla.com *)
@@ -154,7 +154,7 @@ nonterm ExplicitInstantiation {
   (* here's one for things like (in/gnu/g0002.cc)
    *   extern template class allocator<char>; *)
   -> "extern" "template" d:BlockDeclaration
-	[Extern] { unimplemented 560 }
+	[Extern] { TF_explicitInst ([`UM_EXTERN], d) }
 }
 
 
@@ -310,49 +310,49 @@ nonterm VolatileOpt {
 *)
 
 
-(* dsw: FIX: add returning semantic value *)
+(* TODO: add returning semantic value *)
 nonterm BracketedWordOpt {
-  -> empty { unimplemented 900 }
-  -> "[" id:Identifier "]" { unimplemented 901 }
+  -> empty {}
+  -> "[" id:Identifier "]" {}
 }
 
 
-(* dsw: FIX: add returning semantic value *)
+(* TODO: add returning semantic value *)
 nonterm ParenthesizedExpressionOpt {
-  -> empty { unimplemented 901 }
-  ->  "(" e:Expression ")" { unimplemented 902 }
+  -> empty {}
+  ->  "(" e:Expression ")" {}
 }
 
 
-(* dsw: FIX: add returning semantic value *)
+(* TODO: add returning semantic value *)
 nonterm OpConstraint {
   -> name:BracketedWordOpt constr:StringLiteral e:ParenthesizedExpressionOpt
-	[Constraint] { unimplemented 903 }
+	[Constraint] {}
 }
 
 
-(* dsw: FIX: add returning semantic value *)
+(* TODO: add returning semantic value *)
 nonterm OpConstraintList {
   -> empty
-	[None] { unimplemented 904 }
+	[None] {}
   -> oc:OpConstraint
-	[Head] { unimplemented 905 }
+	[Head] {}
   -> oc:OpConstraint "," ocl:OpConstraintList
-	[Tail] { unimplemented 906 }
+	[Tail] {}
 }
 
 
 (* dsw: FIX: add returning semantic value *)
 (* note: technically you can only have up to 3, but I allow 0 or more *)
 nonterm OpConstraints {
-  -> empty { unimplemented 907 }
-  -> ocs:NonemptyOpConstraints { unimplemented 908 }
+  -> empty	{}
+  -> ocs:NonemptyOpConstraints	{}
 }
 nonterm NonemptyOpConstraints {
   -> ocs:OpConstraints ":" ocl:OpConstraintList
-	[Colon] { unimplemented 909 }
+	[Colon]	{}
   -> ocs:OpConstraints "::" ocl:OpConstraintList
-	[ColonColon] { unimplemented 910 }
+	[ColonColon]	{}
 }
 
 
@@ -366,15 +366,15 @@ nonterm AsmDefinition {
 
   (* NOTE: CVQualifierSeqOpt is simply discarded here *)
   -> "asm" q:CVQualifierSeq "(" s:StringLiteral ")" ";"
-	[Qualified] { unimplemented 584 }
+	[Qualified] { s }
 
   (* I write two rules, exposing the optionality of CVQualifierSeq at
    * this level instead of pushing it down into CVQualifierSeqOpt, to
    * avoid an S/R conflict. *)
   -> "asm" q:CVQualifierSeq "(" s:StringLiteral ocs:NonemptyOpConstraints ")" ";"
-	[QualifiedConstrained] { unimplemented 585 }
+	[QualifiedConstrained] { s }
   -> "asm" "(" s:StringLiteral ocs:NonemptyOpConstraints ")" ";"
-	[Constrained] { unimplemented 586 }
+	[Constrained] { s }
 }
 
 

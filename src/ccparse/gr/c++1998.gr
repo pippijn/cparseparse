@@ -129,11 +129,13 @@ terminals {
 
 
 impl_verbatim {
-  open Ccabs
   open Ast
 
   let cancel = UserActions.cancel
   let unimplemented s = failwith ("unimplemented " ^ string_of_int s)
+  let warn_multi_yield s x =
+    print_endline ("WARNING: multi-yield " ^ string_of_int s);
+    x
 
   let output to_sexp x =
     Sexplib.Sexp.output_hum stdout (to_sexp x);
@@ -153,7 +155,7 @@ impl_verbatim {
 }
 
 
-nonterm(Ccabs.Ast.translation_unit) File {
+nonterm(Ast.translation_unit) File {
   -> t:TranslationUnit;
 }
 
@@ -183,10 +185,13 @@ nonterm TypeName {
 (* ------ A.3 Basic Concepts ------ *)
 nonterm TranslationUnit {
   fun merge (l, r) { unimplemented 1552 }
-  fun dup(n) { unimplemented 1234 }	(* prevent multi-yield *)
+  fun dup(n) { warn_multi_yield 1234 n }	(* prevent multi-yield *)
 
-  -> empty					[Empty]		{ [] }
-  -> xs:TranslationUnit x:Declaration		[List]		{ x :: xs }
+  -> empty					[Nil]		{ [] }
+  -> xs:TranslationUnit x:Declaration		[Cons]		{ x :: xs }
+
+  (* arg!  Mozilla is littered with toplevel semicolons.. *)
+  -> xs:TranslationUnit ";"			[Semicolon]	{ xs }
 }
 
 (* ------ A.4 Expressions ------ *)
@@ -386,20 +391,15 @@ nonterm CtorExpressionType {
 }
 
 nonterm CastKeyword {
-  -> "dynamic_cast"		[DynamicCast]		{ unimplemented 58 }
-  -> "static_cast"		[StaticCast]		{ unimplemented 59 }
-  -> "reinterpret_cast"		[ReinterpretCast]	{ unimplemented 60 }
-  -> "const_cast"		[ConstCast]		{ unimplemented 61 }
+  -> "dynamic_cast"		[DynamicCast]		{ CK_DYNAMIC }
+  -> "static_cast"		[StaticCast]		{ CK_STATIC }
+  -> "reinterpret_cast"		[ReinterpretCast]	{ CK_REINTERPRET }
+  -> "const_cast"		[ConstCast]		{ CK_CONST }
 }
 
-(* here, and everywhere else that FakeList is used, I use right
- * recursion to construct the list; this does mean the stack size
- * is linear in the size of the list, but the benefit of not
- * having to reverse the list or use ASTList (which is difficult
- * to share) is worth it *)
 nonterm ExpressionList {
   (* ambiguous; see t0182.cc *)
-  fun merge(l,r) { unimplemented 62 }
+  fun merge(l,r) { [AE_ambig (l, r)] }
 
   -> a:AssignmentExpression
 	[Head] { [AE_expr (a)] }
@@ -450,28 +450,28 @@ nonterm UnaryExpression {
 
 (* ---------------- "new" and "delete" expressions -------------- *)
 nonterm ColonColonOpt {
-  -> empty	{ unimplemented 81 }
-  -> "::"	{ unimplemented 82 }
+  -> empty	{ false }
+  -> "::"	{ true }
 }
 
 nonterm NewExpression {
   (* ambiguous (see in/t0482.cc) *)
-  fun merge(l,r) { unimplemented 83 }
+  fun merge(l,r) { E_ambig (l, r) }
 
   -> c:ColonColonOpt "new" p:NewPlacementOpt t:NewTypeId i:NewInitialiserOpt
-	[Normal] { unimplemented 84 }
+	[Normal] { E_new (c, p, t, i) }
   -> c:ColonColonOpt "new" p:NewPlacementOpt "(" t:TypeId ")" i:NewInitialiserOpt
-	[Parenthesised] { unimplemented 85 }
+	[Parenthesised] { E_new (c, p, t, i) }
 }
 
 nonterm NewPlacementOpt {
-  -> empty				{ unimplemented 86 }
-  -> "(" lst:ExpressionList ")"		{ unimplemented 87 }
+  -> empty				{ [] }
+  -> "(" lst:ExpressionList ")"		{ lst }
 }
 
 nonterm NewTypeId {
   -> spec:TypeSpecifier decl:NewDeclaratorOpt
-	[NewTypeId] { unimplemented 88 }
+	[NewTypeId] { T_type (spec, DC_decl (decl, (*~init*)None)) }
 }
 
 (* NewDeclaratorOpt is, as a regular expression:
@@ -484,37 +484,35 @@ nonterm NewTypeId {
  * it (so I'll see the counterexample syntax if it exists) *)
 nonterm NewDeclaratorOpt {
   -> empty
-	[Empty] { unimplemented 89 }
+	[Empty] { D_name None }
 
   (* pointers *)
   -> "*" cv:CVQualifierSeqOpt d:NewDeclaratorOpt
-	[Pointer] { unimplemented 90 }
+	[Pointer] { D_pointer (cv, d) }
   -> n:PtrToMemberName "*" cv:CVQualifierSeqOpt d:NewDeclaratorOpt
-	[MemPtr] { unimplemented 91 }
+	[MemPtr] { D_ptrToMember (n, cv, d) }
 
   (* commit to at least one "[" ... "]" *)
   -> d:DirectNewDeclarator
-	[Direct] { unimplemented 92 }
+	[Direct] { d }
 }
 nonterm DirectNewDeclarator {
-  fun keep(x) { unimplemented 1310 }
-
   -> (*abstract declarator*) "[" sz:Expression "]"
-	[Array] { unimplemented 93 }
+	[Array] { Factory.make_d_array (D_name None) (Some sz) }
   -> d:DirectNewDeclarator "[" sz:ConstantExpression "]"
-	[ConstArray] { unimplemented 94 }
+	[ConstArray] { Factory.make_d_array d (Some sz) }
 }
 
 nonterm NewInitialiserOpt {
-  -> empty				{ unimplemented 95 }
-  -> "(" lst:ExpressionListOpt ")"	{ unimplemented 96 }
+  -> empty				{ None }
+  -> "(" lst:ExpressionListOpt ")"	{ Some lst }
 }
 
 nonterm DeleteExpression {
   -> c:ColonColonOpt "delete" e:CastExpression
-	[Delete] { unimplemented 97 }
+	[Delete] { E_delete (c, (*~array*)false, e) }
   -> c:ColonColonOpt "delete" "[" "]" e:CastExpression
-	[DeleteArray] { unimplemented 98 }
+	[DeleteArray] { E_delete (c, (*~array*)true, e) }
 }
 (* ------------ end of "new" and "delete" expressions ------------- *)
 
@@ -610,7 +608,7 @@ nonterm BinExp_high {
    *   (x) - (y)
    * could either be the difference of expressions x and y, or
    * it could be negation of expression y, cast to type x *)
-  fun merge(l,r) { unimplemented 120 }
+  fun merge(l,r) { E_ambig (l, r) }
 
   -> e:CastExpression [CastExpression];
 
@@ -922,7 +920,6 @@ nonterm DeclarationSeqOpt {
 nonterm Declaration {
   fun merge(l,r) { unimplemented 1302 }
 
-  -> e:EmptyDeclaration			[Empty]			{ unimplemented 1200 }
   -> d:BlockDeclaration			[Block]			{ TF_decl (d) }
   -> f:FunctionDefinition		[Function]		{ TF_func (f) }
   -> t:TemplateDeclaration		[Template]		{ TF_template (t) }
@@ -934,11 +931,6 @@ nonterm Declaration {
   -> a:AsmDefinition			[Asm]			{ TF_asm (a) }
   -> n:NamespaceDefinition		[NamespaceDefn]		{ n }
   -> n:NamespaceDecl			[NamespaceDecl]		{ TF_namespaceDecl (n) }
-}
-
-nonterm EmptyDeclaration {
-  (* arg!  Mozilla is littered with toplevel semicolons.. *)
-  -> ";"				[Empty]			{ unimplemented 206 }
 }
 
 nonterm BlockDeclaration {
@@ -1285,7 +1277,7 @@ nonterm PQTypeName_notfirst {
   (*-> "template" q:Identifier "::" n:PQTypeName_notfirst *)
   (*	{ unimplemented 279 } *)
   -> "template" q:Identifier "<" targs:TemplateArgumentListOpt ">" "::" n:PQTypeName_notfirst
-	[TemplateQual] { unimplemented 280 }
+	[TemplateQual] { PQ_qualifier (Some q, templateUsed targs, n) }
 }
 
 
@@ -1400,7 +1392,7 @@ nonterm InitialiserOpt {
 
 nonterm Initialiser {
   -> "=" i:SimpleInitialiserClause
-	[Init] { i }
+	[Init];
 
   -> "(" args:ExpressionList ")"
 	[CtorInit] { IN_ctor (args) }
@@ -1413,28 +1405,28 @@ nonterm SimpleInitialiserClause {
   -> e:AssignmentExpression		(* scalar *)
 	[Expr] { IN_expr e }
   -> c:CompoundInitialiser		(* array/structure initialiser *)
-	[Compound] { c }
+	[Compound];
 }
 
 (* this nonterminal exists so that extensions can augment it with
  * possibilities for designated initialisers *)
 nonterm InitialiserClause {
   -> init:SimpleInitialiserClause
-	[Simple] { unimplemented 302 }
+	[Simple];
 }
 
 nonterm CompoundInitialiser {
   (* zero whatever it is *)
-  -> "{" "}"	{ unimplemented 304 }
+  -> "{" "}"	{ IN_compound [] }
 
   (* array/structure initialiser *)
-  -> "{" list:InitialiserList CommaOpt "}"	{ unimplemented 303 }
+  -> "{" list:InitialiserList CommaOpt "}"	{ IN_compound list }
 }
 
 (* useful syntactic quirk *)
 nonterm CommaOpt {
-  -> empty { unimplemented 1214 }
-  -> "," { unimplemented 1215 }
+  -> empty;
+  -> ",";
 }
 
 nonterm InitialiserList {
@@ -1442,11 +1434,11 @@ nonterm InitialiserList {
   fun dup(i) { unimplemented 305 }	(* prevent multi-yield *)
 
   -> init:InitialiserClause
-	[Head] { unimplemented 306 }
+	[Head] { [init] }
 
   (* destructive action on 'list' *)
   -> list:InitialiserList "," init:InitialiserClause
-	[Tail] { unimplemented 307 }
+	[Tail] { init :: list }
 }
 
 
@@ -1543,7 +1535,7 @@ nonterm PQDtorName {
 nonterm PtrToMemberName {
   fun merge(l,r) { unimplemented 325 }
 
-  -> n:IdExpression "::"	[ClassName]	{ unimplemented 326 }
+  -> n:IdExpression "::"	[ClassName];
 }
 
 
@@ -1868,7 +1860,7 @@ nonterm ClassKey {
  * since there are often many members of classes *)
 nonterm MemberDeclarationSeqOpt {
   fun merge(l,r) { unimplemented 1305 }
-  fun dup(m) { unimplemented 384 }		(* prevent multi-yield *)
+  fun dup(m) { warn_multi_yield 384 m }		(* prevent multi-yield *)
 
   -> empty
 	[Empty] { [] }
@@ -2132,7 +2124,7 @@ nonterm ConversionDeclaratorOpt {
    * there is still an S/R conflict for "::" and I'm not sure how
    * to resolve that one... *)
   -> empty			precedence(TOK_PREFER_SHIFT)
-	{ D_name ((*~name*)None) }
+	{ D_name (*~name*)None }
 
   -> d:ConversionDeclarator
 	{ d }
@@ -2463,27 +2455,44 @@ nonterm ExplicitInstantiation {
 
 (* ------ A.13 Exception handling ------ *)
 nonterm TryBlock {
-  -> "try" s:CompoundStatement h:HandlerSeq	[Try]	{ unimplemented 515 }
+  -> "try" s:CompoundStatement h:HandlerSeq	[Try]	{ S_try (s, h) }
 }
 
 nonterm HandlerSeq {
-  -> h:Handler			{ unimplemented 516 }
-  -> seq:HandlerSeq h:Handler	{ unimplemented 517 }
+  -> h:Handler			{ [h] }
+  -> seq:HandlerSeq h:Handler	{ h :: seq }
 }
 
 nonterm Handler {
   -> "catch" "(" d:HandlerParameter ")" s:CompoundStatement
-	[CatchType] { unimplemented 518 }
+	[CatchType] {
+	  {
+	    type_id = d;
+	    hbody = s;
+	  }
+	}
 
   -> "catch" "(" "..." ")" s:CompoundStatement
-	[CatchAll] { unimplemented 519 }
+	[CatchAll] {
+	  {
+	    type_id =
+	      T_type (
+		TS_simple ([], ST_Ellipsis),
+		DC_decl (
+		  D_name (*~name*)None,
+		  (*~init*)None
+		)
+	      );
+	    hbody = s;
+	  }
+	}
 }
 
 nonterm HandlerParameter {
   -> s:TypeSpecifier d:UnqualifiedDeclarator
-	[Normal] { unimplemented 520 }
+	[Normal]   { T_type (s, DC_decl (d, (*~init*)None)) }
   -> s:TypeSpecifier d:AbstractDeclaratorOpt
-	[Abstract] { unimplemented 521 }
+	[Abstract] { T_type (s, DC_decl (d, (*~init*)None)) }
 }
 
 
@@ -2508,8 +2517,8 @@ nonterm UnqualifiedDeclarator {
 
 
 nonterm ThrowExpression {
-  -> "throw"				[ReThrow] { unimplemented 523 }
-  -> "throw" e:AssignmentExpression	[Throw] { unimplemented 524 }
+  -> "throw"				[ReThrow] { E_throw (None) }
+  -> "throw" e:AssignmentExpression	[Throw]   { E_throw (Some e) }
 }
 
 

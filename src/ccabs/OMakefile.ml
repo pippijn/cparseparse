@@ -1,4 +1,4 @@
-install Package ".DEFAULT" [
+install Library ".DEFAULT" [
   (* Target *)
   Name		"ccabs";
   Description	"C++ Abstract Syntax Tree";

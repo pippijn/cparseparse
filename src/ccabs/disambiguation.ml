@@ -4,7 +4,7 @@ open Ast
 let rec disambig_nontype_targ = let open CoreOption in function
   | E_ambig (l, r) ->
       (* We are asking whether an ambiguous expression has an
-       * unparenthesized greater-than operator (UGTO), because the
+       * unparenthesised greater-than operator (UGTO), because the
        * parser wants to reject such things.  But this expression is
        * ambiguous!  So, if some of the alternatives contain UGTO
        * but others do not, simply remove the UGTO alternatives and
@@ -90,8 +90,15 @@ let rec disambig_nontype_targ = let open CoreOption in function
         expr <-- disambig_nontype_targ expr;
         return (E_delete (global, array, expr))
 
+  | E_gnuCond (cond, elseExpr) ->
+      perform
+        cond <-- disambig_nontype_targ cond;
+        elseExpr <-- disambig_nontype_targ elseExpr;
+        return (E_gnuCond (cond, elseExpr))
+
   (* everything else, esp. E_grouping, is false *)
   | E_grouping _
+  | E_compoundLit _
   | E_keywordCast _
   | E_boolLit _
   | E_intLit _
@@ -107,5 +114,10 @@ let rec disambig_nontype_targ = let open CoreOption in function
   | E_throw _
   | E_arrow _
   | E_typeidExpr _
-  | E_typeidType _ as e ->
+  | E_typeidType _
+  | E___builtin_constant_p _
+  | E___builtin_va_arg _
+  | E_alignofType _
+  | E_alignofExpr _
+  | E_statement _ as e ->
       return e

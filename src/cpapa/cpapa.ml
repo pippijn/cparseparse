@@ -32,7 +32,7 @@ let main inputs =
             | file, None -> ()
             | file, Some tree ->
                 Sexplib.Sexp.output_hum stdout
-                  (Ccabs.Ast.sexp_of_translation_unit tree);
+                  (Ast.sexp_of_translation_unit tree);
                 print_newline ()
           ) trees
       )

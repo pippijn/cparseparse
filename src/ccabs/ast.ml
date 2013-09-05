@@ -35,12 +35,29 @@ type modifier = [
   | `UM_FLOAT
   | `UM_DOUBLE
   | `UM_VOID
-  | `UM_LONG_LONG
   | `UM_CHAR
   | `UM_COMPLEX
   | `UM_IMAGINARY
 ] with sexp
 type modifiers = modifier list with sexp
+
+
+type type_flag = [
+  | `UM_WCHAR_T
+  | `UM_BOOL
+  | `UM_SHORT
+  | `UM_INT
+  | `UM_LONG
+  | `UM_SIGNED
+  | `UM_UNSIGNED
+  | `UM_FLOAT
+  | `UM_DOUBLE
+  | `UM_VOID
+  | `UM_CHAR
+  | `UM_COMPLEX
+  | `UM_IMAGINARY
+] with sexp
+type type_flags = type_flag list with sexp
 
 
 type cv_flag = [
@@ -282,7 +299,7 @@ and function_definition = {
    * 2. name of function
    * 3. names/types of parameters *)
   name_and_params : declarator;
-  (* (for ctors only) member initialization list *)
+  (* (for ctors only) member initialisation list *)
   inits : member_init list;
   (* body of function *)
   fbody : statement; (* TODO: restrict to S_compound *)
@@ -357,9 +374,9 @@ and type_specifier =
                   
                     (* 'name' is the user-provided name, if any.
                      * Why is this a PQName instead of just a string?
-                     *   - it could be a template specialization, and therefore
+                     *   - it could be a template specialisation, and therefore
                      *     has template arguments
-                     *   - it could be a definition or specialization of a class
+                     *   - it could be a definition or specialisation of a class
                      *     declared in another namespace
                      * See cppstd 14.5.4 para 6 for an example of both at once. *)
                   * (*name*)pq_name option
@@ -406,10 +423,10 @@ and declarator =
   (* ambiguity representation *)
   | DC_ambig of declarator * declarator
   | DC_decl of (*decl*)ideclarator (* syntax of type designation *)
-  	     * (*init*)initialiser option (* optional data initializer *)
+  	     * (*init*)initialiser option (* optional data initialiser *)
 
 (* inner declarator; things *recursively* buried inside declarators;
- * cannot have initializers; the internal structure can be ignored
+ * cannot have initialisers; the internal structure can be ignored
  * once typechecking determines what type is denoted *)
 and ideclarator =
   (* "x" (None means abstract declarator or anonymous parameter);
@@ -496,7 +513,7 @@ and condition =
   | CN_ambig of condition * condition
   (* simple expression *)
   | CN_expr of (*expr*)full_expression
-  (* type, name, & initializer (must all be present) *)
+  (* type, name, & initialiser (must all be present) *)
   | CN_decl of (*typeId*)type_id
 
 (* exception handler *)
@@ -568,23 +585,49 @@ and expression =
   (* retained explicitly for possible operator overloading *)
   | E_arrow of expression * pq_name
 
+  (* gcc statement expression
+   * http://gcc.gnu.org/onlinedocs/gcc-3.1/gcc/Statement-Exprs.html
+   *
+   * statement can only be S_compound.
+   *)
+  | E_statement of statement
+  (* gcc compound literals
+   * http://gcc.gnu.org/onlinedocs/gcc-3.1/gcc/Compound-Literals.html
+   * and C99 6.5.2.5
+   *
+   * init can only be IN_compound.
+   *)
+  | E_compoundLit of (*stype*)type_id * (*init*)initialiser
+  (* miscellanous builtins that for whatever reason find themselves
+   * as AST nodes instead of ordinary function calls (...)
+   * http://gcc.gnu.org/onlinedocs/gcc-3.1/gcc/Other-Builtins.html *)
+  | E___builtin_constant_p of (*expr*)expression
+  | E___builtin_va_arg of (*expr*)expression * (*atype*)type_id
+  (* alignment inquiry
+   * http://gcc.gnu.org/onlinedocs/gcc-3.1/gcc/Alignment.html *)
+  | E_alignofType of (*atype*)type_id
+  | E_alignofExpr of (*expr*)expression
+  (* conditional with no middle operand
+   * http://gcc.gnu.org/onlinedocs/gcc-3.1/gcc/Conditionals.html *)
+  | E_gnuCond of (*cond*)expression * (*elseExpr*)expression
+
 (* maximal expressions: the parent is not an expression
  * (cppstd 1.9 para 12) *)
 and full_expression =
   | FullExpression of (*expr*)expression
 
 and arg_expression =
-  | AE_ambig of arg_expression * arg_expression
+  | AE_ambig of arg_expression list * arg_expression list
   (* expression in an argument list *)
   | AE_expr of (*expr*)expression
 
 (* things that appear after declarations to assign initial values *)
 and initialiser =
-  (* simple initializer, like "int x = 3" *)
+  (* simple initialiser, like "int x = 3" *)
   | IN_expr of (*e*)expression
-  (* compound initializer, like "int x[4] = { 1,2,3,4 };" *)
+  (* compound initialiser, like "int x[4] = { 1,2,3,4 };" *)
   | IN_compound of (*inits*)initialiser list
-  (* constructor initializer, like "int x(3);" *)
+  (* constructor initialiser, like "int x(3);" *)
   | IN_ctor of (*args*)arg_expression list
 
 (* ------------------- templates ------------------- *)
@@ -607,7 +650,7 @@ and template_parameter =
    * 'defaultType' provides a default argument
    *
    * 'name' can be None after parsing, but the type checker sticks
-   * in a synthesized name, so after tchecking it is never None *)
+   * in a synthesised name, so after tchecking it is never None *)
   | TP_type of (*name*)string option * (*defaultType*)type_id option * (*next*)template_parameter_list
   (* non-type parameters *)
   | TP_nontype of (*param*)type_id * (*next*)template_parameter_list

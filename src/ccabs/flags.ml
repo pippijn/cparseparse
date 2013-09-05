@@ -1,31 +1,35 @@
 open Ast
 
 
-let is_type_keyword = function
-  | `UM_WCHAR_T
-  | `UM_BOOL
-  | `UM_SHORT
-  | `UM_INT
-  | `UM_LONG
-  | `UM_SIGNED
-  | `UM_UNSIGNED
-  | `UM_FLOAT
-  | `UM_DOUBLE
-  | `UM_VOID
-  | `UM_LONG_LONG
-  | `UM_CHAR
-  | `UM_COMPLEX
-  | `UM_IMAGINARY ->
-      true
-  | _ ->
-      false
-
-
-let dflags_of_modifiers mods =
-  let rec filter flags mods =
+let types_of_modifiers mods : type_flags =
+  let rec filter_types flags mods =
     match mods with
-    | [] ->
-        flags
+    | [] -> flags
+    |(`UM_WCHAR_T
+    | `UM_BOOL
+    | `UM_SHORT
+    | `UM_INT
+    | `UM_LONG
+    | `UM_SIGNED
+    | `UM_UNSIGNED
+    | `UM_FLOAT
+    | `UM_DOUBLE
+    | `UM_VOID
+    | `UM_CHAR
+    | `UM_COMPLEX
+    | `UM_IMAGINARY as hd) :: tl ->
+        filter_types (hd :: flags) tl
+    | hd :: tl ->
+        filter_types flags tl
+  in
+
+  filter_types [] mods
+
+
+let dflags_of_modifiers mods : decl_flags =
+  let rec filter_dflags flags mods =
+    match mods with
+    | [] -> flags
     |(`UM_AUTO
     | `UM_REGISTER
     | `UM_STATIC
@@ -36,69 +40,107 @@ let dflags_of_modifiers mods =
     | `UM_EXPLICIT
     | `UM_FRIEND
     | `UM_TYPEDEF as hd) :: tl ->
-        filter (hd :: flags) tl
+        filter_dflags (hd :: flags) tl
     | hd :: tl ->
-        filter flags tl
+        filter_dflags flags tl
   in
 
-  filter [] mods
+  filter_dflags [] mods
 
 
-let cv_of_modifiers mods =
-  let rec filter flags mods =
+let cv_of_modifiers mods : cv_flags =
+  let rec filter_cv flags mods =
     match mods with
-    | [] ->
-        flags
+    | [] -> flags
     |(`UM_CONST
     | `UM_VOLATILE
     | `UM_RESTRICT as hd) :: tl ->
-        filter (hd :: flags) tl
+        filter_cv (hd :: flags) tl
     | hd :: tl ->
-        filter flags tl
+        filter_cv flags tl
   in
 
-  filter [] mods
+  filter_cv [] mods
+
+
+let modifier_compare a b =
+  let type_order = function
+    (* Unmodifiable types. *)
+    | `UM_VOID		->  0
+    | `UM_BOOL		->  1
+    | `UM_WCHAR_T	->  2
+
+    (* Modifiable types. *)
+    | `UM_CHAR		->  3
+    | `UM_INT		->  4
+    | `UM_FLOAT		->  5
+    | `UM_DOUBLE	->  6
+
+    (* Modifiers for int/double. *)
+    | `UM_SHORT		->  7
+    | `UM_LONG		->  8
+
+    (* Signedness for char/int. *)
+    | `UM_SIGNED	->  9
+    | `UM_UNSIGNED	-> 10
+
+    (* Modifiers for char/int/float/double. *)
+    | `UM_COMPLEX	-> 11
+    | `UM_IMAGINARY	-> 12
+  in
+
+  compare
+    (type_order a)
+    (type_order b)
 
 
 let stype_of_modifiers mods =
   (* implement cppstd Table 7, p.109 *)
-  match List.sort compare (List.filter is_type_keyword mods) with
-  | [`UM_BOOL					] -> ST_Bool
+  match List.sort modifier_compare (types_of_modifiers mods) with
+  (* Base type		Modifier		Signedness *)
+  | [`UM_VOID;							] -> ST_Void
 
-  | [`UM_FLOAT					] -> ST_Float
-  | [`UM_DOUBLE					] -> ST_Double
-  | [`UM_LONG; `UM_DOUBLE			] -> ST_LDouble
+  | [`UM_BOOL;							] -> ST_Bool
+  | [`UM_WCHAR_T;						] -> ST_WCharT
 
-  | [`UM_CHAR					] -> ST_Char
-  | [`UM_CHAR; `UM_SIGNED			] -> ST_SChar
-  | [`UM_CHAR; `UM_UNSIGNED			] -> ST_UChar
+  | [`UM_FLOAT;							] -> ST_Float
+  | [`UM_DOUBLE							] -> ST_Double
+  | [`UM_DOUBLE;	`UM_LONG;				] -> ST_LDouble
 
-  | [`UM_WCHAR_T				] -> ST_WCharT
+  | [`UM_CHAR;							] -> ST_Char
+  | [`UM_CHAR;					`UM_SIGNED;	] -> ST_SChar
+  | [`UM_CHAR;					`UM_UNSIGNED;	] -> ST_UChar
 
-  | [`UM_SHORT					] -> ST_SShort
-  | [`UM_SHORT; `UM_UNSIGNED			]
-  | [`UM_SHORT; `UM_UNSIGNED; `UM_INT		] -> ST_UShort
+  | [`UM_INT;							]
+  | [						`UM_SIGNED;	]
+  | [`UM_INT;					`UM_SIGNED;	] -> ST_SInt
+  | [						`UM_UNSIGNED;	]
+  | [`UM_INT;					`UM_UNSIGNED;	] -> ST_UInt
 
-  | [`UM_INT					]
-  | [`UM_SIGNED; `UM_INT			] -> ST_SInt
-  | [`UM_UNSIGNED;				]
-  | [`UM_UNSIGNED; `UM_INT			] -> ST_UInt
+  | [			`UM_SHORT;				]
+  | [`UM_INT;		`UM_SHORT;				]
+  | [			`UM_SHORT;		`UM_SIGNED;	]
+  | [`UM_INT;		`UM_SHORT;		`UM_SIGNED;	] -> ST_SShort
+  | [			`UM_SHORT;		`UM_UNSIGNED;	]
+  | [`UM_INT;		`UM_SHORT;		`UM_UNSIGNED;	] -> ST_UShort
 
-  | [`UM_LONG;					]
-  | [`UM_LONG; `UM_INT				] -> ST_SLong
+  | [			`UM_LONG;				]
+  | [`UM_INT;		`UM_LONG;				]
+  | [			`UM_LONG;		`UM_SIGNED;	]
+  | [`UM_INT;		`UM_LONG;		`UM_SIGNED;	] -> ST_SLong
+  | [			`UM_LONG;		`UM_UNSIGNED;	]
+  | [`UM_INT;		`UM_LONG;		`UM_UNSIGNED;	] -> ST_ULong
 
-  | [`UM_UNSIGNED; `UM_LONG;			]
-  | [`UM_UNSIGNED; `UM_LONG; `UM_INT		] -> ST_ULong
+  | [			`UM_LONG; `UM_LONG;			]
+  | [`UM_INT;		`UM_LONG; `UM_LONG;			]
+  | [			`UM_LONG; `UM_LONG;	`UM_SIGNED;	]
+  | [`UM_INT;		`UM_LONG; `UM_LONG;	`UM_SIGNED;	] -> ST_SLLong
+  | [			`UM_LONG; `UM_LONG;	`UM_UNSIGNED;	]
+  | [`UM_INT;		`UM_LONG; `UM_LONG;	`UM_UNSIGNED;	] -> ST_ULLong
 
-  | [`UM_LONG; `UM_LONG				]
-  | [`UM_LONG; `UM_LONG; `UM_INT		] -> ST_SLLong
-
-  | [`UM_UNSIGNED; `UM_LONG; `UM_LONG		]
-  | [`UM_UNSIGNED; `UM_LONG; `UM_LONG; `UM_INT	] -> ST_ULLong
-
-  | [`UM_VOID					] -> ST_Void
-
-  | mods -> failwith ("malformed type: " ^ Sexplib.Sexp.to_string_hum (sexp_of_modifiers mods))
+  | mods ->
+      let mods = Sexplib.Sexp.to_string_hum (sexp_of_modifiers mods) in
+      failwith ("Malformed type: " ^ mods)
 
 
 (* TODO: check whether ocv is ever something other than [] *)

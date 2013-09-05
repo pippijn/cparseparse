@@ -1,5 +1,4 @@
 open CorePervasives
-open Ccabs
 open Ast
 
 let cancel = UserActions.cancel
