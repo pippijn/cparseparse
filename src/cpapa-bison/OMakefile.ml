@@ -14,4 +14,5 @@ install Program ".DEFAULT" [
   ];
 
   Var ("OM_CFLAGS", "-O2");
+  Var ("OM_YFLAGS", "-d");
 ]

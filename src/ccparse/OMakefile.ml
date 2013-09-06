@@ -31,5 +31,5 @@ install Library ".DEFAULT" [
     "tok/gnu.tok";
   ];
 
-  Parser (Elkhound, "cc");
+  Parser (Glr, "cc");
 ]

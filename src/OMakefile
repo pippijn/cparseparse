@@ -1,1 +1,2 @@
-recurse-into ($(glob D, *))
+#recurse-into ($(glob D, *))
+recurse-into (cabs ccabs ccparse cpapa cpapa-bison cpapa-dynparse)
