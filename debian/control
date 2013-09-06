@@ -1,0 +1,82 @@
+Source: ocaml-cparseparse
+Section: ocaml
+Priority: optional
+Maintainer: Pippijn van Steenhoven <pip88nl@gmail.com>
+Uploaders: 
+  Pippijn van Steenhoven <pip88nl@gmail.com>
+Build-Depends:
+  ocaml-nox (>= 3.12),
+  ocaml-findlib,
+  omake,
+  noweb,
+  libbaselib-ocaml-dev,
+  libsexplib-camlp4-dev,
+  dh-ocaml,
+  debhelper (>= 8.0.0)
+Standards-Version: 3.9.2
+Homepage: https://github.com/pippijn/cparseparse
+Vcs-Git: git://github.com/pippijn/cparseparse
+Vcs-Browser: https://github.com/pippijn/cparseparse
+
+Package: cpapa
+Architecture: any
+Depends: ${ocaml:Depends}, ${misc:Depends}, ${shlibs:Depends}
+Provides: ${ocaml:Provides}
+Description: Fast lexer generator compatible with ocamllex
+ Stuff.
+
+Package: libcabs-ocaml
+Architecture: any
+Depends: ${ocaml:Depends}, ${misc:Depends}, ${shlibs:Depends}
+Provides: ${ocaml:Provides}
+Description: Fast lexer generator compatible with ocamllex
+ Stuff.
+
+Package: libcabs-ocaml-dev
+Architecture: any
+Depends: ${ocaml:Depends}, ${misc:Depends}, ${shlibs:Depends}
+Provides: ${ocaml:Provides}
+Description: Fast lexer generator compatible with ocamllex
+ Stuff.
+
+Package: libccabs-ocaml
+Architecture: any
+Depends: ${ocaml:Depends}, ${misc:Depends}, ${shlibs:Depends}
+Provides: ${ocaml:Provides}
+Description: Fast lexer generator compatible with ocamllex
+ Stuff.
+
+Package: libccabs-ocaml-dev
+Architecture: any
+Depends: ${ocaml:Depends}, ${misc:Depends}, ${shlibs:Depends}
+Provides: ${ocaml:Provides}
+Description: Fast lexer generator compatible with ocamllex
+ Stuff.
+
+Package: libccparse-ocaml
+Architecture: any
+Depends: ${ocaml:Depends}, ${misc:Depends}, ${shlibs:Depends}
+Provides: ${ocaml:Provides}
+Description: Fast lexer generator compatible with ocamllex
+ Stuff.
+
+Package: libccparse-ocaml-dev
+Architecture: any
+Depends: ${ocaml:Depends}, ${misc:Depends}, ${shlibs:Depends}
+Provides: ${ocaml:Provides}
+Description: Fast lexer generator compatible with ocamllex
+ Stuff.
+
+Package: libcpapa-dynparse-ocaml
+Architecture: any
+Depends: ${ocaml:Depends}, ${misc:Depends}, ${shlibs:Depends}
+Provides: ${ocaml:Provides}
+Description: Fast lexer generator compatible with ocamllex
+ Stuff.
+
+Package: libcpapa-dynparse-ocaml-dev
+Architecture: any
+Depends: ${ocaml:Depends}, ${misc:Depends}, ${shlibs:Depends}
+Provides: ${ocaml:Provides}
+Description: Fast lexer generator compatible with ocamllex
+ Stuff.

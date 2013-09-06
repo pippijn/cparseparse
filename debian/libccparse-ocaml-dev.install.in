@@ -1,0 +1,3 @@
+@OCamlStdlibDir@/ccparse/*.a
+@OCamlStdlibDir@/ccparse/*.cm[ix]
+@OCamlStdlibDir@/ccparse/*.cmxa

@@ -1,0 +1,3 @@
+@OCamlStdlibDir@/cpapa-dynparse/META
+@OCamlStdlibDir@/cpapa-dynparse/*.cma
+@OCamlStdlibDir@/cpapa-dynparse/*.cmxs

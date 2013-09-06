@@ -1,0 +1,3 @@
+@OCamlStdlibDir@/cabs/*.a
+@OCamlStdlibDir@/cabs/*.cm[ix]
+@OCamlStdlibDir@/cabs/*.cmxa

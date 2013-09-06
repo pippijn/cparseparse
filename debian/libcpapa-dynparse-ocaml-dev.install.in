@@ -1,0 +1,3 @@
+@OCamlStdlibDir@/cpapa-dynparse/*.a
+@OCamlStdlibDir@/cpapa-dynparse/*.cm[ix]
+@OCamlStdlibDir@/cpapa-dynparse/*.cmxa
