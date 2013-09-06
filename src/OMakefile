@@ -1,2 +1,20 @@
-#recurse-into ($(glob D, *))
-recurse-into (ccabs ccparse cpapa cpapa-bison cpapa-dynparse)
+SUBDIRS[] =
+  ccabs
+  ccparse
+  cpapa
+  cpapa-bison
+  cpapa-dynparse
+
+if $(has-prog $(DYPGEN)):
+  SUBDIRS += cpapa-dyp
+  export
+
+if $(has-ocaml-package gtk_intf):
+  SUBDIRS += cpapa-gtk
+  export
+
+if $(has-ocaml-package js_intf):
+  SUBDIRS += cpapa-js
+  export
+
+recurse-into ($(SUBDIRS))
