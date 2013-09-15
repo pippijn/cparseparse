@@ -90,24 +90,24 @@ nonterm PostfixExpression {
    * of no way to handle this other than putting it into the grammar
    * directly. *)
   -> "__builtin_constant_p" e:ParenthesizedExpression
-	[BuiltinConstantP] { unimplemented 542 }
+	[BuiltinConstantP] { E___builtin_constant_p (e) }
 
   (* http://gcc.gnu.org/onlinedocs/gcc-3.2.2/gcc/Alignment.html *)
   -> "__alignof__" "(" t:TypeId ")"
-	[AlignofType] { unimplemented 543 }
+	[AlignofType] { E_alignofType (t) }
   -> "__alignof__" "(" e:Expression ")"
-	[AlignofExpr] { unimplemented 544 }
+	[AlignofExpr] { E_alignofExpr (e) }
 
   (* quarl 2006-07-12 *)
   (*	Handle __offsetof__ (gcc-3.4), __builtin_offsetof (gcc-4.x) *)
   -> "__builtin_offsetof" "(" t:TypeId "," n:MemberNameSeq ")"
-	[BuiltinOffsetof] { unimplemented 546 }
+	[BuiltinOffsetof] { E_offsetof (t, n) }
 
   -> "__offsetof__" "(" e:Expression ")"
-	[Offsetof] { unimplemented 547 }
+	[Offsetof] { E_grouping (e) }
 
   -> "__builtin_va_arg" "(" e:Expression "," t:TypeId ")"
-	[BuiltinVaArg] { unimplemented 551 }
+	[BuiltinVaArg] { E___builtin_va_arg (e, t) }
 }
 
 (* dmandelin@mozilla.com  bug 416051 *)
@@ -118,17 +118,17 @@ nonterm PostfixExpression {
  * the context fill in the cast and NULL in the offsetof action. *)
 nonterm MemberNameSeq {
   -> n:MemberName
-	[Name] { unimplemented 553 }
+	[Name] { E_arrow (E_this, n) }
   -> n:MemberNameSeq "." n2:MemberName
-	[Member] { unimplemented 554 }
+	[Member] { E_fieldAcc (n, n2) }
   -> n:MemberNameSeq "[" e:Expression "]"
-	[Array] { unimplemented 555 }
+	[Array] { E_binary (n, BIN_BRACKETS, e) }
 }
 
 (* dsw: had to break this out for location recording reasons *)
 nonterm ParenthesizedExpression {
   -> "(" e:Expression ")"
-	{ unimplemented 556 }
+	{ E_grouping (e) }
 }
 
 

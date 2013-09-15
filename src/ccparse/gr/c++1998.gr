@@ -136,6 +136,9 @@ impl_verbatim {
   let warn_multi_yield s x =
     print_endline ("WARNING: multi-yield " ^ string_of_int s);
     x
+  let warn_merge s l r =
+    print_endline ("WARNING: unimplemented merge " ^ string_of_int s);
+    l
 
   let output to_sexp x =
     Sexplib.Sexp.output_hum stdout (to_sexp x);
@@ -184,7 +187,7 @@ nonterm TypeName {
 
 (* ------ A.3 Basic Concepts ------ *)
 nonterm TranslationUnit {
-  fun merge (l, r) { unimplemented 1552 }
+  fun merge (l, r) { warn_merge 1552 l r }
   fun dup(n) { warn_multi_yield 1234 n }	(* prevent multi-yield *)
 
   -> empty					[Nil]		{ [] }
@@ -233,7 +236,7 @@ nonterm StringLiteral {
 
 (* possibly-qualified name *)
 nonterm IdExpression {
-  fun merge(l,r) { unimplemented 18 }
+  fun merge(l,r) { warn_merge 18 l r }
 
   -> id:PQualifiedId
 	[Id];
@@ -247,7 +250,7 @@ nonterm IdExpression {
 
 (* names that are not qualified *)
 nonterm UnqualifiedId {
-  fun merge(l,r) { unimplemented 21 }
+  fun merge(l,r) { warn_merge 21 l r }
 
   -> id:Identifier			[Name]		{ PQ_name (id) }
   -> on:OperatorFunctionId		[Operator]	{ PQ_operator (on) }
@@ -264,7 +267,7 @@ nonterm UnqualifiedId {
  * UnqualifiedId; there is no option here that uses "~", since that
  * is handled by PQDtorName *)
 nonterm PQualifiedId {
-  fun merge(l,r) { unimplemented 26 }
+  fun merge(l,r) { warn_merge 26 l r }
 
   -> id:UnqualifiedId			precedence("::")
 	[Unqual];
@@ -290,7 +293,7 @@ nonterm PQualifiedId {
    * marking all as TEMPLATE_QUALIFIER_HACK
    *)
   -> "template" n:Identifier "<" targs:TemplateArgumentListOpt ">" "::" id:PQualifiedId
-	[TemplateQual] { unimplemented 31 }
+	[TemplateQual] { PQ_qualifier (Some n, templateUsed targs, id) }
 }
 
 
@@ -527,7 +530,7 @@ nonterm DeleteExpression {
  * part of the grammar. *)
 
 nonterm MemberName {
-  fun merge(l,r) { unimplemented 99 }
+  fun merge(l,r) { warn_merge 99 l r }
 
   -> n:SpecialMemberName
 	[Name];
@@ -539,7 +542,7 @@ nonterm MemberName {
 
 (* can begin with "~" or "template" or Identifier or "operator" *)
 nonterm SpecialMemberName {
-  fun merge(l,r) { unimplemented 102 }
+  fun merge(l,r) { warn_merge 102 l r }
 
   -> n:IdentifierMemberName
 	[Identifier];
@@ -562,7 +565,7 @@ nonterm SpecialMemberName {
 (* can begin with Identifier, "template" or "operator"; this is
  * essentially what follows "::" in cppstd's qualified-id *)
 nonterm IdentifierMemberName {
-  fun merge(l,r) { unimplemented 109 }
+  fun merge(l,r) { warn_merge 109 l r }
 
   (* final names *)
   -> n:Identifier "<" list:TemplateArgumentListOpt ">"
@@ -676,7 +679,7 @@ nonterm BinaryExpression -> e:BinExp_low;
 
 nonterm ConditionalExpression {
   (* in/k0012.cc *)
-  fun merge(l,r) { unimplemented 146 }
+  fun merge(l,r) { warn_merge 146 l r }
 
   -> e:BinaryExpression [BinaryExpression];
 
@@ -688,7 +691,7 @@ nonterm ConditionalExpression {
  * that in another language spec?  clearly both alternatives would have
  * to be like-typed lvalues, but... *)
 nonterm AssignmentExpression {
-  fun merge(l,r) { unimplemented 1301 }
+  fun merge(l,r) { warn_merge 1301 l r }
 
   -> e:ConditionalExpression [ConditionalExpression];
 
@@ -777,7 +780,7 @@ nonterm LabelAndColon {
   (* 10/20/04: The precedence specification here fixes in/c/t0018.c by
    * telling the parser to shift any __attribute__ that follows the ":". *)
   -> n:Identifier ":"	precedence(TOK_PREFER_SHIFT)
-	[Label] { unimplemented 171 }
+	[Label] { n }
 }
 
 (* labelled-statement *)
@@ -875,7 +878,7 @@ nonterm Condition {
   (* ambiguous:
    *   if (A * a = 0) { /*...*/ }
    * could either be a CN_expr (mult+assign) or CN_decl (of variable 'a') *)
-  fun merge(l,r) { unimplemented 198 }
+  fun merge(l,r) { warn_merge 198 l r }
 
   -> e:Expression
 	[ExprCond] { CN_expr (FullExpression e) }
@@ -918,7 +921,7 @@ nonterm DeclarationSeqOpt {
 *)
 
 nonterm Declaration {
-  fun merge(l,r) { unimplemented 1302 }
+  fun merge(l,r) { warn_merge 1302 l r }
 
   -> d:BlockDeclaration			[Block]			{ TF_decl (d) }
   -> f:FunctionDefinition		[Function]		{ TF_func (f) }
@@ -951,7 +954,7 @@ nonterm BlockDeclaration {
  * ok, why is the InitDeclaratorList optional?
  *   for declaring classes and enums *)
 nonterm SimpleDeclaration {
-  fun merge(l,r) { unimplemented 208 }
+  fun merge(l,r) { warn_merge 208 l r }
   fun keep(d) { Factory.keep_declaration d }
 
   (* destructive action on 'spec' *)
@@ -990,7 +993,7 @@ nonterm SimpleDeclaration {
  *   -> UberModifierSeqOpt PQTypeName UberModifierSeqOpt
  * because the latter would cause shift/reduce conflicts. *)
 nonterm DeclSpecifier {
-  (*fun dup(d) { unimplemented 210 }	[> prevent multi-yield <]*)
+  fun dup(d) { warn_multi_yield 210 d }	(* prevent multi-yield *)
 
   (* TS_name: triggered by PQTypeName *)
   -> n:PQTypeName m2:UberModifierSeqOpt
@@ -1231,7 +1234,7 @@ nonterm TypeSpecifier {
  * the parser can never distinguish, so the grammar shouldn't suggest
  * that it can *)
 nonterm PQTypeName {
-  fun merge(l,r) { unimplemented 268 }
+  fun merge(l,r) { warn_merge 268 l r }
 
   -> n:PQTypeName_ncc
 	[Local] { n }
@@ -1241,7 +1244,7 @@ nonterm PQTypeName {
 
 (* no-colon-colon *)
 nonterm PQTypeName_ncc {
-  fun merge(l,r) { unimplemented 271 }
+  fun merge(l,r) { warn_merge 271 l r }
 
   -> n:Identifier			precedence("::")
 	[Id] { PQ_name (n) }
@@ -1258,7 +1261,7 @@ nonterm PQTypeName_ncc {
  * squirreled away down here because otherwise it becomes ambiguous
  * with the 'template' at the start of an ElaboratedTypeSpecifier *)
 nonterm PQTypeName_notfirst {
-  fun merge(l,r) { unimplemented 276 }
+  fun merge(l,r) { warn_merge 276 l r }
 
   -> id:PQTypeName_ncc			precedence("::")
 	[Unqual];
@@ -1293,7 +1296,7 @@ nonterm EnumSpecifier {
  * lookahead whether this is the last enumerator definition; this
  * allows an optional comma at the end, on purpose *)
 nonterm EnumeratorListOpt {
-  fun merge(l,r) { unimplemented 1303 }
+  fun merge(l,r) { warn_merge 1303 l r }
 
   -> empty
 	[Empty] { [] }
@@ -1324,7 +1327,7 @@ nonterm EnumeratorExpressionOpt {
  * C++. *)
 nonterm AsmDefinition {
   -> "asm" "(" s:StringLiteral ")" ";"
-	[Standard] { unimplemented 288 }
+	[Standard] { s }
 }
 
 
@@ -1430,8 +1433,8 @@ nonterm CommaOpt {
 }
 
 nonterm InitialiserList {
-  fun merge (l, r) { unimplemented 1553 }
-  fun dup(i) { unimplemented 305 }	(* prevent multi-yield *)
+  fun merge (l, r) { warn_merge 1553 l r }
+  fun dup(i) { warn_multi_yield 305 i }	(* prevent multi-yield *)
 
   -> init:InitialiserClause
 	[Head] { [init] }
@@ -1504,7 +1507,7 @@ nonterm DirectDeclarator {
  * (I notice the standard calls this PseudoDestructorName; I'll stick with
  * my terminology.) *)
 nonterm PQDtorName {
-  fun merge(l,r) { unimplemented 317 }
+  fun merge(l,r) { warn_merge 317 l r }
 
   -> "~" n:Identifier
 	[Name] { PQ_name ("~" ^ n) }
@@ -1533,7 +1536,7 @@ nonterm PQDtorName {
 
 (* syntax that precedes "*" in the pointer-to-member declarator syntax *)
 nonterm PtrToMemberName {
-  fun merge(l,r) { unimplemented 325 }
+  fun merge(l,r) { warn_merge 325 l r }
 
   -> n:IdExpression "::"	[ClassName];
 }
@@ -1583,7 +1586,7 @@ nonterm DirectAbstractDeclaratorOpt {
 
 (* this also must have some ground syntax *)
 nonterm DirectAbstractDeclarator {
-  fun merge (l, r) { unimplemented 1554 }
+  fun merge (l, r) { warn_merge 1554 l r }
 
   (* note: the "opt" in the DirectAbstractDeclarator part of the
    * function type constructor creates an ambiguity:
@@ -1622,7 +1625,7 @@ nonterm ParameterDeclarationClause {
 
 (* little bending over backwards here to accomodate FakeList *)
 nonterm ParameterDeclarationList {
-  fun merge(l,r) { unimplemented 1300 }
+  fun merge(l,r) { warn_merge 1300 l r }
 
   (* last (and perhaps only) arg is "..." *)
   -> e:Ellipsis
@@ -1701,7 +1704,7 @@ nonterm FunctionDefinition {
    * but missing the D_func, or 'x' as constructor name and 'y' as a
    * parameter type.  So I will cancel any FunctionDefinition whose
    * declarator doesn't have a D_func at the bottom. *)
-  fun merge(l,r) { unimplemented 1304 }
+  fun merge(l,r) { warn_merge 1304 l r }
 
   (* ordinary function: *)
   (* return type      name/params   body *)
@@ -1822,7 +1825,7 @@ nonterm ClassSpecifier {
 
 (* this is the name portion of what the standard calls "ClassHead" *)
 nonterm ClassHeadNameOpt {
-  fun merge(l,r) { unimplemented 371 }
+  fun merge(l,r) { warn_merge 371 l r }
 
   -> empty			[None]		{ None }
   -> n:ClassHeadName		[Some]		{ Some n }
@@ -1830,7 +1833,7 @@ nonterm ClassHeadNameOpt {
 
 (* a possibly-qualified Identifier or TemplateId *)
 nonterm ClassHeadName {
-  fun merge(l,r) { unimplemented 374 }
+  fun merge(l,r) { warn_merge 374 l r }
 
   -> n:Identifier		precedence("::")
 	[Id] { PQ_name (n) }
@@ -1859,7 +1862,7 @@ nonterm ClassKey {
 (* I'm using an encapsulated ASTList to avoid right recursion,
  * since there are often many members of classes *)
 nonterm MemberDeclarationSeqOpt {
-  fun merge(l,r) { unimplemented 1305 }
+  fun merge(l,r) { warn_merge 1305 l r }
   fun dup(m) { warn_multi_yield 384 m }		(* prevent multi-yield *)
 
   -> empty
@@ -1890,7 +1893,7 @@ nonterm AccessSpecifier {
 }
 
 nonterm MemberDeclaration {
-  fun merge(l,r) { unimplemented 1306 }
+  fun merge(l,r) { warn_merge 1306 l r }
 
   (* destructive action on 'spec'
    * member fn decl, or data member *)
@@ -1981,7 +1984,7 @@ nonterm CDtorProtoDecl {
 }
 
 nonterm MemberDeclaratorList {
-  fun merge (l, r) { unimplemented 1551 }
+  fun merge (l, r) { warn_merge 1551 l r }
 
   -> d:MemberDeclarator
 	[Head] { [d] }
@@ -2098,7 +2101,7 @@ nonterm AccessSpecifierOpt {
 }
 
 nonterm PQClassName {
-  fun merge(l,r) { unimplemented 427 }
+  fun merge(l,r) { warn_merge 427 l r }
 
   -> n:PQTypeName [Name];
 }
@@ -2251,7 +2254,7 @@ nonterm ExportOpt {
 *)
 
 nonterm TemplateDeclaration {
-  fun merge(l,r) { unimplemented 1308 }
+  fun merge(l,r) { warn_merge 1308 l r }
 
   (* these are the std's rules for template declarations and specialisations:
    *   -> ExportOpt "template" "<" TemplateParameterList ">" Declaration;
@@ -2318,13 +2321,13 @@ nonterm TemplateParameterList {
   fun merge(l,r) { TP_ambig (l, r) }
 
   (* non-template type parameter *)
-  -> next:TemplateParameterListContinuation
-     ClassOrTypename i:IdentifierOpt t:DefaultTypeOpt
+  -> ClassOrTypename i:IdentifierOpt t:DefaultTypeOpt
+    next:TemplateParameterListContinuation
 	[TyParam] { TP_type (i, t, next)  }
 
   (* non-type parameter *)
-  -> next:TemplateParameterListContinuation
-     p:ParameterDeclaration
+  -> p:ParameterDeclaration
+     next:TemplateParameterListContinuation
 	[NonTyParam] {
 	  (* if the specifier is a TS_elaborated, then it could be a type
 	   * parameter; cppstd 14.1 para 3 seems to say that in that case it
@@ -2336,21 +2339,21 @@ nonterm TemplateParameterList {
 	}
 
   (* template type parameter *)
-  -> next:TemplateParameterListContinuation
-     "template" "<" pl:TemplateParameterList ">" "class" i:IdentifierOpt t:DefaultTemplateOpt
+  -> "template" "<" pl:TemplateParameterList ">" "class" i:IdentifierOpt t:DefaultTemplateOpt
+     next:TemplateParameterListContinuation
 	[TemplTyParam] { TP_template (pl, i, t, next) }
 }
 
 (* what comes after a template paramter: nothing, or else
  * a comma and then more parameters *)
 nonterm TemplateParameterListContinuation {
-  fun merge(l,r) { unimplemented 490 }
+  fun merge(l,r) { warn_merge 490 l r }
 
   -> empty
 	[None] { None }
 
   (* non-template type parameter *)
-  -> l:TemplateParameterList ","
+  -> "," l:TemplateParameterList
 	[Some] { Some l }
 }
 
@@ -2407,12 +2410,12 @@ nonterm TemplateArgumentList {
    * due to angle brackets vs. less-than *)
   fun merge(l,r) { Factory.merge_template_argument_list l r }
 
-  -> next:TemplateArgumentListContinuation
-     typeid:TypeId
+  -> typeid:TypeId
+     next:TemplateArgumentListContinuation
 	[Type] { Some (TA_type (typeid, next)) }
 
-  -> next:TemplateArgumentListContinuation
-     e:AssignmentExpression
+  -> e:AssignmentExpression
+     next:TemplateArgumentListContinuation
 	[NonType] {
 	  match Disambiguation.disambig_nontype_targ e with
 	  | None ->
@@ -2437,20 +2440,20 @@ nonterm TemplateArgumentList {
 }
 
 nonterm TemplateArgumentListContinuation {
-  fun merge(l,r) { unimplemented 1006 }
+  fun merge(l,r) { warn_merge 1006 l r }
 
   -> empty
 	[Head] { None }
 
-  -> x:TemplateArgumentList ","
+  -> "," x:TemplateArgumentList
 	[Tail] { x }
 }
 
 nonterm ExplicitInstantiation {
   -> "template" d:BlockDeclaration
-	[Normal] { unimplemented 513 }
+	[Normal] { TF_explicitInst ([], d) }
   -> "inline" "template" d:BlockDeclaration
-	[Inline] { unimplemented 514 }
+	[Inline] { TF_explicitInst ([`UM_INLINE], d) }
 }
 
 (* ------ A.13 Exception handling ------ *)

@@ -536,6 +536,7 @@ and expression =
   (* conditional with no middle operand
    * http://gcc.gnu.org/onlinedocs/gcc-3.1/gcc/Conditionals.html *)
   | E_gnuCond of (*cond*)expression * (*elseExpr*)expression
+  | E_offsetof of (*atype*)type_id * (*fieldName*)expression
 
 (* maximal expressions: the parent is not an expression
  * (cppstd 1.9 para 12) *)

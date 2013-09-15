@@ -117,6 +117,7 @@ let rec disambig_nontype_targ = let open CoreOption in function
   | E_typeidType _
   | E___builtin_constant_p _
   | E___builtin_va_arg _
+  | E_offsetof _
   | E_alignofType _
   | E_alignofExpr _
   | E_statement _ as e ->
