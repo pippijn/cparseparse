@@ -1,0 +1,13 @@
+Name		= cpapa-dynparse
+Description	= C++ Dynparse interface
+Version		= 0.1
+
+OCaml-Sources[] =
+  Cpapa_dynparse
+
+OCaml-Requires[] =
+  glr
+  ccparse
+
+TARGET = $(library-install)
+.DEFAULT: $(TARGET)

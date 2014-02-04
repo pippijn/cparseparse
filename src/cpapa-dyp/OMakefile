@@ -1,0 +1,15 @@
+Name = cpapa-dyp
+
+OCaml-Sources[] =
+  Cc
+  Cc_keywords
+  Cc_lexer
+  Cc_parser
+
+OCaml-Requires[] =
+  dyp
+
+NO_ANNOT = true
+
+TARGET = $(program-install)
+.DEFAULT: $(TARGET)

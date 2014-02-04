@@ -1,0 +1,12 @@
+Name = cpapa
+
+OCaml-Sources[] =
+  Cpapa
+
+OCaml-Requires[] =
+  baselib
+  ccparse
+  glr
+
+TARGET = $(program-install)
+.DEFAULT: $(TARGET)

@@ -1,0 +1,16 @@
+Name		= cpapa-bison
+
+C-Sources[] =
+  main.c
+  lexer.l
+  parser.y
+
+C-Headers[] =
+  main.h
+  parser.h
+
+OM_CFLAGS = -O2
+OM_YFLAGS = -d
+
+TARGET = $(program-install)
+.DEFAULT: $(TARGET)

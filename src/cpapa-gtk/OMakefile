@@ -1,0 +1,15 @@
+# Target
+Name = cpapa_gtk
+
+# Sources
+OCaml-Sources[] =
+  Cpapa_gtk
+
+# Library dependencies
+OCaml-Requires[] =
+  cpapa-dynparse
+  glr
+  gtk_intf
+
+TARGET = $(program-install)
+#.DEFAULT: $(TARGET)
