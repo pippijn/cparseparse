@@ -1,4 +1,4 @@
-Name = cpapa
+Name		= cpapa
 
 OCaml-Sources[] =
   Cpapa

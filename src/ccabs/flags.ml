@@ -155,7 +155,7 @@ let stype_of_modifiers mods =
   | [`UM_INT;		`UM_LONG; `UM_LONG;	`UM_UNSIGNED;	] -> ST_ULLong
 
   | mods ->
-      let mods = Sexplib.Sexp.to_string_hum (sexp_of_modifiers mods) in
+      let mods = Sexplib.Sexp.to_string_hum (sexp_of_modifiers (mods :> modifiers)) in
       failwith ("malformed type: " ^ mods)
 
 
