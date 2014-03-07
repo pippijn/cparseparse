@@ -9,6 +9,8 @@ Build-Depends:
   ocaml-findlib,
   obuild,
   noweb,
+  glrgen,
+  treematch,
   libbaselib-ocaml-dev,
   libglr-ocaml-dev,
   libmonad-custom-camlp4-dev,
