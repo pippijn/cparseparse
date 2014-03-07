@@ -7,7 +7,7 @@ Uploaders:
 Build-Depends:
   ocaml-nox (>= 3.12),
   ocaml-findlib,
-  omake,
+  obuild,
   noweb,
   libbaselib-ocaml-dev,
   libsexplib-camlp4-dev,
