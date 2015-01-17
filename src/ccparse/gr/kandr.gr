@@ -122,7 +122,13 @@ nonterm KandRDirectDeclarator {
      ql:QLiterals				(* qualifier literals *)
      cv:CVQualifierSeqOpt
 *)
-	[Function] { unimplemented 728 }
+	[Function] {
+	  Factory.make_d_func_kandr
+	    d
+	    kAndR_params
+	    [] (* CV *)
+	    None (* exception spec *)
+	}
 
   (* sm: for in/c/k0003.c; the KandR declarator structure is
    * pretty messed up, but when I made a few tweaks it introduced

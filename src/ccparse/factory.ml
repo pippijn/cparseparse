@@ -12,7 +12,11 @@ let make_d_func base params cv exnspec =
   | D_func _ ->
       cancel "function returning a function"
   | _ ->
-      D_func (base, params, cv, exnspec)
+      D_func (base, params, cv, exnspec, [])
+
+
+let make_d_func_kandr base params cv exnspec =
+  D_func (base, [], cv, exnspec, params)
 
 
 let make_d_array base size =
@@ -88,7 +92,7 @@ let keep_declaration d =
         (* skip past type constructors that come *after* the name;
          * if they come before, then they separate the :: from the
          * TYPENAME, and hence :: could be the global scope qualifier *)
-        | D_func (base, _, _, _)
+        | D_func (base, _, _, _, _)
         | D_array (base, _) ->
             loop base
 

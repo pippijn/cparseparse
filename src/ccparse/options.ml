@@ -1,4 +1,5 @@
 let _xc = ref false
+let _wchar_t = ref false
 
 
 let is_c_source s =
@@ -13,6 +14,7 @@ let is_c_source s =
 let () =
   Cmdline.register "parser" Arg.([
     "-xc",		Set _xc,		" parse code as C, not as C++ (implicit if any input file name ends with .c)";
+    "-wchar_t",		Set _wchar_t,		" treat wchar_t as built-in type";
   ]) ~action:(fun inputs ->
     if List.filter is_c_source inputs <> [] then
       _xc := true;
@@ -20,3 +22,4 @@ let () =
 
 
 let _xc () = !_xc
+let _wchar_t () = !_wchar_t

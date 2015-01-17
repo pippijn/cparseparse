@@ -34,7 +34,6 @@ let c89_keywords = [
   "unsigned",                   TOK_UNSIGNED;
   "void",                       TOK_VOID;
   "volatile",                   TOK_VOLATILE;
-  "wchar_t",                    TOK_WCHAR_T;
   "while",                      TOK_WHILE;
 ]
 
@@ -147,10 +146,16 @@ let gnu_keywords = [
 ]
 
 let keywords = lazy (List.fold_left (fun map (kw, tok) -> StringMap.add kw tok map) StringMap.empty (
-  if Options._xc () then
-    c89_keywords @ c99_keywords @ gnu_keywords
+  let kws =
+    if Options._xc () then
+      c89_keywords @ c99_keywords @ gnu_keywords
+    else
+      c89_keywords @ gnu_keywords @ cxx1998_keywords @ cxx2011_keywords
+  in
+  if Options._wchar_t () then
+    ("wchar_t", TOK_WCHAR_T) :: kws
   else
-    c89_keywords @ gnu_keywords @ cxx1998_keywords @ cxx2011_keywords
+    kws
 ))
 
 let string_table = Hashtbl.create 16381

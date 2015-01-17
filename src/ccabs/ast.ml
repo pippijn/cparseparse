@@ -369,6 +369,7 @@ and ideclarator =
   	    * (*params*)type_id list (* params with optional default values *)
             * (*cv*)cv_flags (* optional "const" for member functions *)
             * (*exnSpec*)exception_spec option (* throwable exceptions *)
+            * (*kandrParams*)pq_name list (* params if a K&R function *)
   (* "a[5]" or "b[]" *)
   | D_array of (*base*)ideclarator * (*size*)expression option
   (* "c : 2"

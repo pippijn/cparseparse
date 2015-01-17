@@ -14,7 +14,7 @@ let rec bottom d prev =
   | D_pointer (_, base)
   | D_reference (_, base)
   | D_ptrToMember (_, _, base)
-  | D_func (base, _, _, _)
+  | D_func (base, _, _, _, _)
   | D_array (base, _) ->
       bottom base d
 
@@ -40,7 +40,7 @@ let rec id_of_declarator = function
   | D_pointer (_, base)
   | D_reference (_, base)
   | D_ptrToMember (_, _, base)
-  | D_func (base, _, _, _)
+  | D_func (base, _, _, _, _)
   | D_array (base, _) ->
       id_of_declarator base
 
